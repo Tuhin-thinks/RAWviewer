@@ -424,10 +424,14 @@ def _file_stats_row(
 class LRUCache:
     """Thread-safe LRU cache implementation."""
 
-    def __init__(self, max_size: int = 20):
+    def __init__(self, max_size: int = 20, *, on_evict=None):
         self.max_size = max_size
         self.cache = OrderedDict()
         self.lock = threading.RLock()
+        # Called with the key dropped to make room. Diagnostics only: a miss
+        # says nothing about whether an entry was never stored, evicted for
+        # capacity, or explicitly invalidated, and those want different fixes.
+        self.on_evict = on_evict
         self.hits = 0
         self.misses = 0
 
@@ -474,7 +478,12 @@ class LRUCache:
                 self.cache[key] = value
                 if len(self.cache) > self.max_size:
                     # Remove least recently used item
-                    self.cache.popitem(last=False)
+                    evicted_key, _ = self.cache.popitem(last=False)
+                    if self.on_evict is not None:
+                        try:
+                            self.on_evict(evicted_key)
+                        except Exception:
+                            pass
 
     def remove(self, key: str) -> bool:
         with self.lock:
@@ -1845,7 +1854,18 @@ class ImageCache(QObject):
         self.preview_cache = LRUCache(
             max_size=cache_sizes['preview_images']
         )  # High-res preview working set (RAM-adaptive)
-        self.full_image_cache = LRUCache(max_size=cache_sizes['full_images'])
+        # Why a full image is no longer cached. A repeated full decode of the
+        # same file is expensive (a 33MP embedded JPEG, seconds of work) and
+        # the plain hit/miss counters cannot tell an eviction from an
+        # invalidation. Bounded; diagnostics only.
+        self._full_cache_reasons: OrderedDict = OrderedDict()
+
+        def _note_full_evicted(key):
+            self._note_full_cache_reason(key, "evicted (capacity %d)" % cache_sizes['full_images'])
+
+        self.full_image_cache = LRUCache(
+            max_size=cache_sizes['full_images'], on_evict=_note_full_evicted
+        )
         self.pixmap_cache = LRUCache(max_size=cache_sizes['full_images'])
         self.libraw_preview_paths: set = set()
         if self.cache_dir:
@@ -2177,6 +2197,8 @@ class ImageCache(QObject):
         logger.info("Performing aggressive cache purge...")
         
         # Clear heavy caches entirely
+        for _k in list(self.full_image_cache.cache.keys()):
+            self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
         
@@ -2681,6 +2703,16 @@ class ImageCache(QObject):
         while len(self.libraw_preview_paths) > max_paths:
             self.libraw_preview_paths.pop()
 
+    def _note_full_cache_reason(self, file_path: str, reason: str) -> None:
+        """Record why a full image left the cache (diagnostics only)."""
+        try:
+            self._full_cache_reasons[file_path] = reason
+            self._full_cache_reasons.move_to_end(file_path)
+            while len(self._full_cache_reasons) > 256:
+                self._full_cache_reasons.popitem(last=False)
+        except Exception:
+            pass
+
     def get_full_image(self, file_path: str) -> Optional[np.ndarray]:
         """Get cached full image or return None if not cached."""
         self.stats['full_image_requests'] += 1
@@ -2692,6 +2724,16 @@ class ImageCache(QObject):
             return image
         else:
             self.cache_miss.emit(file_path, 'full_image')
+            if os.environ.get("RAWVIEWER_DEBUG_FULLCACHE"):
+                import logging
+
+                logging.getLogger(__name__).info(
+                    "[FULLCACHE] miss %s -- %s (cache holds %d/%d)",
+                    os.path.basename(file_path or ""),
+                    self._full_cache_reasons.get(file_path, "never cached this session"),
+                    len(self.full_image_cache.cache),
+                    self.full_image_cache.max_size,
+                )
             return None
 
     def put_full_image(
@@ -3131,7 +3173,8 @@ class ImageCache(QObject):
         """Drop in-memory full-res / pixmap tiers; keep preview/grid/thumbnail on disk."""
         if not file_path:
             return
-        self.full_image_cache.remove(file_path)
+        if self.full_image_cache.remove(file_path):
+            self._note_full_cache_reason(file_path, "invalidated (invalidate_file)")
         self.pixmap_cache.remove(file_path)
 
     def invalidate_file(self, file_path: str) -> None:
@@ -3140,7 +3183,8 @@ class ImageCache(QObject):
         self.thumbnail_cache.remove(key)
         self.grid_cache.remove(key)
         self.preview_cache.remove(key)
-        self.full_image_cache.remove(file_path)
+        if self.full_image_cache.remove(file_path):
+            self._note_full_cache_reason(file_path, "invalidated (invalidate_file)")
         self.pixmap_cache.remove(file_path)
         self.disk_thumbnail_cache.remove(file_path)
         self.disk_grid_cache.remove(file_path)
@@ -3154,6 +3198,8 @@ class ImageCache(QObject):
         self.thumbnail_cache.clear()
         self.grid_cache.clear()
         self.preview_cache.clear()
+        for _k in list(self.full_image_cache.cache.keys()):
+            self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
         self.libraw_preview_paths.clear()
