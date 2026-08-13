@@ -333,43 +333,50 @@ To clear cache: **`scripts\Launch\windows\clear_cache.bat`** (Windows) · **`scr
 
 Project directions and remaining work that are **not** tied to a particular release. Release notes cover shipped features only.
 
+Rule of thumb: **if it can ship in Plus, it counts as feasible** even when Standard must omit it (size / no ML).
+
 ### 🛠️ In Active Development (Development Branch / Worktree)
+
+These are on `development` for **3.1.0** (not yet tagged). GitHub Releases still ship **3.0.x**.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| **AI Denoise on Export** (SCUNet / NAFNet ONNX) | **Landed, stabilising** | Tiled ONNX denoise for Plus export, with an **AI Detail** slider trading denoise against retained texture. NAFNet is the CPU-platform default; half-res mode with detail restore keeps large frames tractable (`src/onnx_scunet.py`, `src/onnx_restormer.py`) |
-| **AI Upscale 2× on Export** (Real-ESRGAN) | **Landed, stabilising** | Tiled Real-ESRGAN x2 as the final export stage, so every earlier stage still runs at native resolution — ~65s for a 32MP frame. Being a GAN it *invents* plausible detail rather than reconstructing it, and reads over-sharpened on already-clean RAW output, so its strength is dialable toward a plain resize (`src/onnx_realesrgan.py`) |
-| **Local masks** (brush, linear, radial, AI) | **Landed, stabilising** | Stacked mask layers with per-layer adjustments. Brush with Size / Flow / Feather; linear and radial gradients placed by dragging on the photo, with handles to reshape them; **Smart Object** and **Sky** find a mask in one press; **AI Selection** masks whatever you click. One colour overlay covers every kind (`src/raw_mask_layers.py`, `src/raw_mask_shapes.py`, `src/raw_ai_masks.py`) |
-| **Camera Colour Calibration** (ColorChecker) | **Landed, stabilising** | Auto-detect or hand-place a 24-patch chart; solves WB + HSL per camera/ISO and inherits by EXIF model. Regression-covered against a real RAW (`src/color_calibration.py`) |
-| **Generative Editing** (instruction-based) | **Shelved** (parked on `generative-editing`) | Backend complete and tested — provider layer, staging, derived-file lifecycle — but the UI is removed and nothing in the app reaches it. Parked because no generative editor that is *good* is small enough to embed, and the ones small enough are not good: every current model pairs a diffusion transformer with a multi-billion-parameter LLM/VLM text encoder that is roughly half its weight, putting the floor around 6–7 GB resident. Measurements and the revival plan are in `docs/GENERATIVE_BACKLOG.md` on that branch |
-| **Mask grouping** (Lightroom-style) | **Landed, stabilising** | Drag one mask onto another to combine them into a single mask: components hold coverage and combine by add/subtract, the group holds one set of adjustments. Drag a component out to separate it again; <kbd>Ctrl</kbd>+<kbd>Z</kbd> restores adjustments a group discarded. Grouping is *cheaper* to render than separate layers — one adjustment pass through the combined alpha (`src/raw_mask_layers.py`, `src/mask_layers_xmp.py`) |
-| **Lens distortion** (barrel / pincushion) | **Landed, stabilising** | Automatic correction from a matched lens profile, plus a manual **Distortion** slider for lenses with none — positive corrects pincushion, negative barrel. Runs before straighten, since distortion is a property of the capture (`src/raw_lens_correction.py`, `src/raw_transform.py`) |
-| **Anamorphic Lens Desqueeze** | **Landed, stabilising** | Preset selector for fixed desqueeze ratios (1.33× / 1.5× / 1.6× / 2.0×) to restore squeezed anamorphic imagery |
-| **HDR Merge** | **Landed, stabilising** | Align exposures, de-ghost, and merge highlights/shadows via Exposure Fusion |
-| **Panorama Stitching / HDR Panorama** | **Landed, stabilising** | Feature matching, homography warping, and tiled multi-band blending, with automatic border cropping |
+| **Local masks** (brush, luminance, colour, AI, depth) | **Landed, stabilising** | Stacked mask layers with per-layer Light / Color / Detail. Brush, Luminance, Color, **AI Selection**, **Smart Object**, **Sky**, and **Depth**; Depth + Blur is continuous defocus from the focus plane. Linear and radial gradients still place coverage by dragging on the photo (`src/raw_mask_layers.py`, `src/raw_ai_masks.py`, `src/raw_depth_blur.py`) |
+| **Mask grouping** (Lightroom-style) | **Landed, stabilising** | Drag one mask onto another to combine them: components hold coverage (add/subtract), the group holds one adjustment set. Cheaper to render than separate layers (`src/raw_mask_layers.py`, `src/mask_layers_xmp.py`) |
+| **Auto Tone** | **Landed, stabilising** | One press sets Exposure, Contrast, Highlights, Shadows, Whites and Blacks from the unedited photo. Highlights/Shadows follow the linear stop budget; it will not pin Highlights on a little specular clip (`src/raw_auto_adjust.py`) |
+| **Highlight recovery on Adjust** | **Landed, stabilising** | Edit-base Reconstructs clipped CFA (with WB gain so default Adjust stays as bright as browse). Highlights see single-channel clips, not only Rec.709 luma. **P** remains a session-only recovery *preview* — not the sliders |
+| **Photo merging** | **Landed, stabilising** | HDR, panorama, panorama HDR, and focus stacking from a gallery selection, with a live preview before commit |
+| **Non-destructive JPEG / TIFF / WebP / PNG** | **Landed, stabilising** | Ordinary image files open in Adjust with XMP sidecars. 16-bit files keep their bit depth through the editor |
+| **AI Denoise on Export** (SCUNet / NAFNet ONNX) | **Landed, stabilising** | Tiled ONNX denoise for Plus export with an **AI Detail** slider. NAFNet is the CPU-platform default; half-res mode with detail restore keeps large frames tractable |
+| **AI Upscale 2× on Export** (Real-ESRGAN) | **Landed, stabilising** | Tiled Real-ESRGAN as the final export stage, ~65s for a 32MP frame. Being a GAN it invents plausible detail rather than reconstructing it, so its strength is dialable toward a plain resize |
+| **Camera Colour Calibration** (ColorChecker) | **Landed, stabilising** | Auto-detect or hand-place a 24-patch chart; solves WB + HSL per camera/ISO and inherits by EXIF model. Profiles record the decode they were calibrated against and warn if it changes |
+| **Lens distortion + anamorphic desqueeze** | **Landed, stabilising** | Profile correction plus a Distortion slider; desqueeze presets 1.33× / 1.5× / 1.6× / 2.0×. Local masks stay aligned with the unsqueezed frame |
+| **Share to WhatsApp / Signal / AirDrop** | **Landed, stabilising** | Messaging apps get a JPEG (they reject camera RAW); AirDrop still sends the original, with a Mac person picker outside Qt |
+| **Slower-machine editing** | **Landed, stabilising** | RAM tier caps the Adjust working copy on ≤16 GB (live-drag and settle). Export still decodes full resolution |
 | **Edit Nikon HE/HE\* NEF** | **Landed, stabilising** | LibRaw still cannot demosaic these, so the editor falls back to the embedded JPEG. An 8-bit display-referred base: white balance and highlight recovery have far less headroom, everything else behaves as it does editing a JPEG |
-| **Focus Stacking** | **Landed, stabilising** | Alignment with parallax correction, high-frequency focus measurement, and seam-aware multi-band fusion for extended DoF |
+| **Generative Editing** (instruction-based) | **Shelved** (parked on `generative-editing`) | Backend complete and tested, UI removed. Models that are *good* are too large to embed (~6–7 GB resident). Revival path is a local OpenAI-compatible image-edits server, not an in-process provider |
 
-"Landed, stabilising" means the feature is on `development` and working, but has not yet been through a tagged release.
+"Landed, stabilising" means the feature is on `development` and working, but has not been through a tagged release.
 
 ### 🔮 Planned Future Roadmap (Not Yet in Worktree)
 
 | Rank | Item | Feasibility | Effort | Notes |
 |------|------|-------------|--------|-------|
-| 1 | **Cold-folder edited tile regen** (`SIDECAR_ADJUST` / edited-preview opt-in) | **High** | M | Save-from-Adjust already bakes editor-aligned thumb/grid/preview; cold folders still show embedded JPEG until next Adjust visit |
-| 3 | **User-facing upscale strength control** | **High** | S | Real-ESRGAN ships over-sharpened at full strength; the blend already exists as an env var and wants to be a slider with a gentler default |
-| 3b | **Negative clicks for AI Selection** | **Medium–High** | M | The model accepts "not this" points; only positive ones are sent, so an over-reaching selection can be trimmed by brush but not re-solved |
-| 4 | **Generative editing via a local server** | **High** | S | Superseded "embed a local provider". A model running on the user's own machine behind an OpenAI-compatible `/v1/images/edits` endpoint (mlx-serve, ComfyUI) keeps the photo on-device with **zero** bytes shipped and never goes stale as models change. `LocalServerProvider` is written and tested on `generative-editing`; only the UI to select it was removed with the rest |
-| 5 | **Windows HDR display path** | **Medium** | L | macOS EDR was removed for Fast RAW perf; Windows still SDR tone-map |
-| 6 | **Restore macOS EDR alongside Fast RAW** | **Low–Medium** | L | Previously conflicted with the fast load pipeline; needs a non-regressing design |
-| 7 | **VLM-assisted auto adjust** | **Low–Medium** | L | Product + model/API scope (e.g. local Ollama); not blocked by editor plumbing alone |
-| 8 | **Google Drive browse / edit / XMP sync** | **Medium** | L | Local cache sync (download → existing pipeline → upload XMP/export); OAuth + virtual folder session |
-| 9 | **Edit Nikon HE/HE\* NEF as sensor data** | **Low** | L+ | Editing works today from the embedded JPEG; true RAW development still waits on a LibRaw decoder for HE mosaics |
+| 1 | **Cold-folder edited tile regen** (`SIDECAR_ADJUST` / edited-preview opt-in) | **High** | M | Save-from-Adjust already bakes editor-aligned thumb/grid/preview; cold folders still show embedded JPEG until the next Adjust visit |
+| 2 | **User-facing upscale strength** | **High** | S | Real-ESRGAN ships over-sharpened at full strength; the blend already exists as an env var and wants a slider with a gentler default |
+| 3 | **Negative clicks for AI Selection** | **Medium–High** | M | The model accepts "not this" points; only positive ones are sent, so an over-reaching selection can be trimmed by brush but not re-solved |
+| 4 | **Generative editing via a local server** | **High** | S | A model on the user's machine behind an OpenAI-compatible `/v1/images/edits` endpoint (mlx-serve, ComfyUI). `LocalServerProvider` is written on `generative-editing`; only the UI to select it was removed |
+| 5 | **DNG export / round-trip** | **Medium** | L | Writer removed 2026-07; needs a real DNG path, not a stub |
+| 6 | **Windows HDR display path** | **Medium** | L | macOS EDR was removed for Fast RAW perf; Windows still SDR tone-map |
+| 7 | **Restore macOS EDR alongside Fast RAW** | **Low–Medium** | L | Previously conflicted with the fast load pipeline; needs a non-regressing design |
+| 8 | **VLM-assisted auto adjust** | **Low–Medium** | L | Product + model/API scope (e.g. local Ollama); not blocked by editor plumbing alone |
+| 9 | **Google Drive browse / edit / XMP sync** | **Medium** | L | Local cache sync (download → existing pipeline → upload XMP/export); OAuth + virtual folder session |
+| 10 | **Edit Nikon HE/HE\* NEF as sensor data** | **Low** | L+ | Editing works today from the embedded JPEG; true RAW development still waits on a LibRaw decoder for HE mosaics |
 
 **Current limits (not aspirational):**
 - **Cold gallery tiles** for never-opened-in-Adjust edits may still show embedded JPEG (edited **badge** + save-bake cover the common path). Same root as row 1.
-- **Nikon HE-NEF** edits from the embedded JPEG, not sensor data — an 8-bit base, so heavy white-balance and highlight-recovery moves have little to work with (row 9).
-- **AI mask, denoise and upscale weights download on first use**, not bundled — each needs one online session before it works offline.
+- **Nikon HE-NEF** edits from the embedded JPEG, not sensor data — an 8-bit base, so heavy white-balance and highlight-recovery moves have little to work with (row 10).
+- **AI model weights download on first use**, not bundled: the mask, denoise and upscale features each need one online session before they work offline.
 - **Smart Object returns one mask.** It finds everything salient — on a studio scene, eleven separate regions — but hands them back as a single mask. Use AI Selection to isolate one thing.
 
 ---
