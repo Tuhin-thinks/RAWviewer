@@ -113,8 +113,12 @@ Semantic batch/chunk size for AI indexing is **auto-tuned separately** on first 
 | `RAWVIEWER_SIDECAR_ADJUST=0` | **Default.** Browse shows original pixels; edits render in Adjust. Set `1` to apply saved XMP in browse |
 | `RAWVIEWER_LIBRAW_CONSISTENT_PREVIEW=1` | Same color pipeline for fit vs 100% zoom on RAW (default on) |
 | `RAWVIEWER_EXIF_BACKEND=auto` | `auto`, `pyexiv2`, or `exifread` |
-| `RAWVIEWER_SHARE_MENU=1` | macOS: Qt share menu (recommended) |
+| `RAWVIEWER_SHARE_MENU=1` | macOS: Qt share menu (recommended). Lists AirDrop; messaging apps get a JPEG proxy for RAW |
 | `RAWVIEWER_SHARE_TRY_NATIVE_PICKER=1` | macOS: try native share sheet first |
+| `RAWVIEWER_SHARE_SHOW_AIRDROP=0` | Hide AirDrop from the Qt share menu (default is shown) |
+| `RAWVIEWER_AIRDROP_PERFORM=0` | After osascript fails, skip in-process AirDrop and go straight to Finder |
+| `RAWVIEWER_EDIT_BASE_MAX_EDGE` | Cap working Adjust decode long edge (RAM tier sets this on ≤16 GB; export uncapped) |
+| `RAWVIEWER_BANDED_WORKERS` | Max row-band threads for export/uncached edit (default min(4, OMP); RAM tier 2 on ≤12 GB) |
 | `RAWVIEWER_INDEX_DEFER_FACE_SCAN=1` | Defer face scan until after semantic index (default) |
 | `RAWVIEWER_SEMANTIC_PREP_WORKERS` | Parallel CPU workers before AI encode (RAM tier may set this) |
 | `RAWVIEWER_SEMANTIC_BATCH_AUTO=1` | Auto-tune AI batch/chunk size on index (default) |
@@ -126,7 +130,7 @@ Semantic batch/chunk size for AI indexing is **auto-tuned separately** on first 
 | `RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS` | Milliseconds to wait after first paint before full decode on session restore (default `2500`) |
 | `RAWVIEWER_DISABLE_SESSION_RESTORE=1` | Opt out of the normal feature that reopens the last folder/file on launch (useful for cold benches / low-RAM edge cases) |
 
-Full list and dev defaults: [`scripts/Launch/README.md`](../scripts/Launch/README.md), [`docs/macos-sharing-v21-v22.md`](macos-sharing-v21-v22.md).
+Full list and dev defaults: [`scripts/Launch/README.md`](../scripts/Launch/README.md), [`docs/macos-sharing.md`](macos-sharing.md).
 
 ## MobileCLIP models (Full — AI search)
 
@@ -137,9 +141,13 @@ Full list and dev defaults: [`scripts/Launch/README.md`](../scripts/Launch/READM
 
 **Lite builds** do not use MobileCLIP models.
 
+## UI languages
+
+Prepared copy (not loaded at runtime yet): [`i18n/catalog.json`](../i18n/catalog.json) — English source, Traditional Chinese, Japanese. See [`i18n/README.md`](../i18n/README.md). Language will follow the OS once `QTranslator` is wired; there is no in-app language picker until then.
+
 ## Upcoming / remaining work
 
-Tracked in the README — [Looking ahead](../README.md#looking-ahead) (not in release notes; those cover shipped features only).
+Not-done / later trains: README [Looking ahead](../README.md#looking-ahead) (**3.2+**). **3.1.0 is a stability + performance patch vs 3.0.2**, not the mask/feature release: [RELEASE_NOTES.md](../RELEASE_NOTES.md#version-310) and [`testplan/TEST_PLAN_3.1.md`](../testplan/TEST_PLAN_3.1.md).
 
 **Shipped in 3.0:** Fast RAW vs 2.5, Adjust panel (HSL, Creative LUT, WB presets, crop, D&B + Heal, vignette/dehaze, XMP presets), OpenMP LibRaw in macOS packages, star ratings, burst / Compare (**C**), Lite without torch, gallery loading overhaul. GPU **viewport** on by default (`RAWVIEWER_GPU_VIEW=0` to disable).
 
@@ -152,6 +160,11 @@ Tracked in the README — [Looking ahead](../README.md#looking-ahead) (not in re
 - **Cache** — memory-first; optional disk cache via env; **RAM-tier defaults** at startup (`rawviewer_profile.py`)
 - **Semantic index** — SQLite + local embeddings (Core ML on macOS, ONNX on Windows; **Full only**); background passes abort when folder scope changes (**v2.5.0**)
 - **Gallery (JustifiedGallery)** — justified grid with zoom slider; capture-time order after EXIF sort (**v2.5.0**+ gallery fill overhaul in **v3.0.0**)
-- **RAW recovery preview** — **P** key, half-res linear decode + local tone recovery (**v2.5.0**)
+- **RAW recovery preview** — **P** key: half-res Reconstruct decode + local polish; **not** the Adjust Highlights/Shadows sliders (**v2.5.0**). Edit-base (Adjust working buffer) also Reconstructs clipped CFA, then restores browse brightness — default Adjust is not the P-key preview.
 - **Clipping overlay** — **J** key (`exposure_clipping.py`; **v2.5.0**)
 - **Lite profile** — no torch/kornia; semantic/face off; CPU Fast RAW + Adjust (**v3.0.0**)
+- **Headless MCP** — later train (**3.2+**, not 3.1.0). Code may be in the working tree (`src/rawviewer_mcp/`; **[MCP.md](MCP.md)**).
+
+## Headless MCP *(3.2+, not 3.1.0 shipping)*
+
+AI agents can develop photos without the GUI when that train ships. All paths are rooted (`--root` / `RAWVIEWER_MCP_ROOT`). See **[MCP.md](MCP.md)**.

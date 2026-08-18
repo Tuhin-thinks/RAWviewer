@@ -3,8 +3,73 @@
 **Language / 語言：** English · [繁體中文](RELEASE_NOTES.zh-TW.md)
 
 
+## 🚀 Version 3.1.0
+**Status: not yet released — stability + performance patch vs tagged 3.0.2**
+
+GitHub Releases still ship **3.0.x**. **3.1.0 is not a feature dump.** It is the next patch for memory, gallery load/scroll, cache, export reliability, and crash/cancel paths relative to **3.0.2**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md).
+
+There is **no** user-facing memory-tier picker; RAM caps stay automatic. **Generative editing stays shelved.**
+
+**Honest provenance.** `development` also holds a large **later train** (masks, merges, ColorChecker, pairing, MCP, Share to AI, …). That code is **kept in the tree** for **3.2+**; it is **not** what 3.1.0 claims to ship. Items marked *(uncommitted)* are dirty-tree hardening aimed at this patch and are **not** in git yet.
+
+### Memory and RAM tier *(in `development`)*
+
+- **Low-RAM machines keep a usable gallery** without inheriting 24 GB prefetch defaults (idle-preload 120, 12 preload threads, hover full-res). The RAM tier overlays those numbers.
+- **Adjust settle stays light on slower machines.** Live-drag was already 640 px; settle still used a half-sensor frame (often ~12 MP). On ≤16 GB the RAM tier now caps that working base (and the live-drag edge). **Export still decodes at full resolution.**
+- **Gallery, Compare, and heavy jobs stay usable on slower machines**, in shoot order — not a 24 GB studio profile on an 8 GB laptop.
+- **Banded export / OpenCV and native math threads no longer take every core.** Caps follow the RAM tier; OpenBLAS / Accelerate follow the same OpenMP limit so decode + preview do not freeze the UI.
+- **Full-image cache is a byte budget**, not a hard count of 8, so smaller files keep more of them.
+
+### Gallery scroll and load *(in `development`; bubble throttle uncommitted)*
+
+- **The load queue aims at the viewport**, not enqueue order. Jumping no longer waits behind everything you scrolled past. Cancelled off-screen thumbs no longer block visible ones (a stall that needed a folder reload).
+- **A cancelled-at-start load finishes once**, not twice.
+- **Missing tiles come back.** A transient failure used to cache a grey placeholder for the rest of the session.
+- **Trackpad scrolling keeps sub-pixel movement** instead of discarding it (choppy scroll).
+- **Changing folder no longer wipes the thumbnail cache** (was ~27 s on a 3000-file folder).
+- **Opening Adjust and leaving without an edit no longer drops every cache tier** for that photo.
+- **An edited photo's gallery tile refreshes** after you visit it, instead of staying on the embedded JPEG.
+- **Scrollbar date bubble does not flash or decode on every tick** *(uncommitted)*: content is throttled; preview is an in-memory cache hit only, never disk.
+
+### EXIF / sidecar cache
+
+- **Sidecar XML is parsed once and shared** while a photo is in use *(in `development`)* — opening an edited file is cheaper and less likely to storm the parser.
+- **EXIF disk cache can persist fields that previously lived only in RAM** *(uncommitted)* so gallery metadata (stars today; later-train labels if present) survives restart instead of vanishing until a rescan. This is a cache-correctness fix, not a new catalog product.
+
+### Export and Plus AI denoise *(fixes on the 3.0.2 path)*
+
+- **Export band seams** and a path where **AI denoise was silently skipped** on banded export.
+- **Dither in encoded space, not linear** — shadow noise on JPEG/WebP.
+- **Plus AI denoise export still cancels and reports progress** (3.0.2 behaviour) and must not hang or leave a partial file. First-use model download is not timed out as a failed denoise.
+- Faster CPU denoise (NAFNet / half-res + detail restore) and **AI Detail** stay on the existing Plus denoise export — performance of a 3.0.2 feature, not a new export menu.
+
+### Crashes, threads, cancel *(in `development`)*
+
+Review rounds on this line fixed: **`QPixmap` built on worker threads**, a **decode-slot double-free** on cancel paths, a registry keyed on **`id()`** that could match a recycled object, **shared caches with per-instance locks** (so they can be purged), and a **CUDA-GL resource released on the wrong thread**. Idle prefetch no longer error-storms on undecodable files.
+
+### Necessary exception (crash / refuse, not a feature tour)
+
+- **Nikon HE/HE\* NEF:** 3.0 already browsed these; 3.1.0 **stops refusing Adjust** by developing the **embedded JPEG** (8-bit base). LibRaw still cannot demosaic HE. **Undecodable RAW keeps the embedded preview** instead of a permanent grey tile. This is here so those files do not error out — not a new JPEG-develop product (that waits with 3.2+).
+
+### What 3.1.0 does **not** claim
+
+Masks tab / AI masks / Blur background, Auto Tone, HDR / panorama / focus stack, ColorChecker, anamorphic / manual distortion, raster develop, WhatsApp / Signal / AirDrop share, AI Upscale, color labels / keywords, RAW+JPEG pairing, export filename template / GPS strip / watermark / export queue, MCP, Share to AI, splash, LUT thumbs, DPReview ColorChecker samples, Adjust dock left/right. See README [Looking ahead](README.md#looking-ahead) (**3.2+**). Watermark **corner-patch** (when that train ships) composites a corner instead of a full-page overlay — a memory choice, not a 3.1.0 feature.
+
+### Upgrade
+
+Install over 3.0.2. No cache clear required for this patch.
+
+---
+
 ## 🚀 Version 3.0.2
 **Release Date: July 22, 2026**
+
+### What's new for you
+
+- **AI denoise is back — and faster than before.** SCUNet real-image noise reduction returns via **ONNX Runtime** instead of PyTorch, so it no longer needs the multi-GB torch install that got it removed in 3.0.1. Runs in **fp16** on DirectML — about **25x faster per tile** than an fp32 export, with no measurable quality loss.
+- **AI Denoise is now an explicit export choice, not automatic.** The Export menu has a new **AI Denoise (SCUNet)** submenu with its own 16-bit TIFF / JPEG / WebP entries — pick one to export with AI denoise; the plain format entries below still use whatever Chroma NR method is set in Noise Reduction, unchanged. One click now fully specifies both the format and whether AI denoise runs, instead of a separate checkbox you could forget to set.
+- **AI denoise export can now be cancelled, and shows real progress.** Previously, cancelling mid-export while AI denoise was running did nothing — the pass had no way to be interrupted and reported no progress for the whole (often multi-minute) span, which looked like a hang. Export now shows live "Denoising (AI)…" progress and responds to Cancel immediately.
+- **Plus-only, downloads with the other AI models** (~100 MB, bundled into the existing ~600 MB AI model download — now ~700 MB total). Standard keeps the existing chroma/luma noise reduction; no change there.
 
 ### ✨ Smoother & Faster Editing
 
@@ -76,7 +141,7 @@ RAWviewer 3.0 turns the viewer into a complete **cull-and-develop** tool: a full
 - **Tone & color:** exposure/contrast/highlights/shadows/whites/blacks, point + parametric **tone curve** (RGB and per-channel), **HSL color mixer**, saturation/vibrance.
 - **White balance:** As Shot (from EXIF Kelvin when present), presets (Daylight / Cloudy / Shade / Tungsten / Fluorescent / Flash), eyedropper, and **Auto WB** estimation.
 - **Transform:** interactive **crop overlay** with aspect presets (Free / Original / 1:1 / 4:3 / 3:2 / 16:9), **straighten with Auto**, keystone perspective, optional lens correction.
-- **Local tools:** **Dodge & Burn** with soft circular stamps, Edge Assist, and mask overlay; **Heal (H)** inpainting for dust/smudge removal. Both work in Lite and Full.
+- **Local tools:** **Dodge & Burn** with soft circular stamps, Edge Assist, and mask overlay; **Heal (H)** inpainting for dust/smudge removal — small strokes stay on Telea, larger holes use Navier–Stokes then a light Telea clean-up. Both work in Lite and Full.
 - **Effects & detail:** vignette (Amount/Midpoint), dehaze, sharpness, chroma noise reduction with selectable method.
 - **Looks:** **Creative LUT** (`.cube` drag-drop + managed library) and managed **XMP presets** — import, apply, remove.
 - **Export** to JPEG / WebP / 16-bit TIFF with a progress dialog and cancel.
