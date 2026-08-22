@@ -115,6 +115,14 @@ def _mark_libraw_unsupported(path_key: str) -> None:
         prune_libraw_unsupported_paths(max_keep=_LIBRAW_UNSUPPORTED_MAX // 2)
 
 
+def release_edit_base_cache() -> int:
+    """Drop in-memory half-res edit bases (e.g. after a LibRaw binary swap)."""
+    with _EDIT_BASE_LRU_LOCK:
+        n = len(_EDIT_BASE_LRU)
+        _EDIT_BASE_LRU.clear()
+        return n
+
+
 def decode_raw_file(file_path: str, params: Dict[str, Any]) -> np.ndarray:
     """
     Helper function for process pool to decode RAW files.
@@ -431,14 +439,20 @@ class UnifiedImageProcessor:
         apply_lens_correction: bool = False,
     ) -> Optional[np.ndarray]:
         """
-        Demosaic from RAW sensor data for the adjust panel.
-        Returns 16-bit scene-linear RGB (never embedded JPEG; not cached for browse).
-        Defaults to LibRaw half-size for responsive live editing.
+        Edit-panel working base for a RAW file.
+
+        Prefer LibRaw scene-linear demosaic (16-bit / float). When LibRaw cannot
+        demosaic (HE/HE* NEF, ARW6 before the packaging pin, …), fall back to
+        the largest embedded JPEG as an 8-bit display-referred base — same
+        contract the pipeline already uses for uint8 inputs. Not cached for
+        browse. Defaults to half-size for responsive live editing.
 
         ``apply_lens_correction``: if True, undistort using a lensfun profile
         matched from this file's EXIF (see raw_lens_correction.py) -- applied
         once here, after orientation correction (so the Modifier sees the
         buffer's final width/height), not as a per-tick pipeline adjustment.
+        Only applied on the LibRaw demosaic path (embedded JPEG is already
+        camera-processed).
         """
         skip_key = os.path.normcase(os.path.abspath(file_path))
         # Half-size only: full-res export bases are too large to keep around.
@@ -656,16 +670,28 @@ class UnifiedImageProcessor:
                 )
                 return None
 
-            # Nikon HE/HE* (and any other demosaic-failed NEF): browse shows
-            # embedded JPEG, but Adjust must not use that as an edit base —
-            # no scene-linear demosaic is available.
-            if file_path.lower().endswith(".nef"):
-                logging.getLogger(__name__).warning(
-                    "[EDIT] No LibRaw demosaic edit base for %s (HE/HE* or unsupported)",
+            # LibRaw cannot demosaic (Nikon HE/HE*, Sony ARW6 before the
+            # packaging LibRaw pin, exotic compressions, …): fall back to the
+            # largest embedded JPEG as an 8-bit display-referred edit base.
+            # WB / highlight recovery have far less headroom than a real RAW
+            # base, but tone/colour/masks/crop/detail match the JPEG path the
+            # pipeline already supports via uint8→linear.
+            embedded = self._embedded_jpeg_edit_base(
+                file_path, use_full_resolution=use_full_resolution
+            )
+            if embedded is not None:
+                logging.getLogger(__name__).info(
+                    "[EDIT] Embedded-JPEG edit base for %s (%dx%d, 8-bit) "
+                    "-- no LibRaw demosaic available",
                     os.path.basename(file_path),
+                    embedded.shape[1],
+                    embedded.shape[0],
                 )
-                return None
-
+                return embedded
+            logging.getLogger(__name__).warning(
+                "[EDIT] No demosaic base and no usable embedded JPEG for %s",
+                os.path.basename(file_path),
+            )
             return None
         except Exception as e:
             logging.getLogger(__name__).error(
@@ -2314,6 +2340,58 @@ class UnifiedImageProcessor:
             thumb = self.process_thumbnail(file_path, allow_heavy_fallback, target_size)
             return exif, thumb
     
+    def _embedded_jpeg_edit_base(
+        self, file_path: str, *, use_full_resolution: bool
+    ) -> Optional[np.ndarray]:
+        """Largest embedded preview as an 8-bit RGB edit base, or None.
+
+        Used when LibRaw cannot demosaic (Nikon HE/HE*, Sony ARW6 before the
+        packaging LibRaw pin, …). Returns uint8 RGB already orientation-corrected
+        so the edit pipeline can divide by 255 the same way it does for a JPEG.
+
+        Half-res matches the LibRaw path's ``half_size`` budget (long edge ≤2048)
+        so live Adjust stays responsive regardless of base kind.
+        """
+        try:
+            import cv2
+
+            # apply_sidecar_adjustments=False: an edit base must be unedited,
+            # or every adjustment would be applied twice once the pipeline runs.
+            preview = self.process_full_image(
+                file_path,
+                use_full_resolution=True,
+                apply_sidecar_adjustments=False,
+            )
+            if preview is None:
+                preview = self.process_thumbnail(file_path, allow_heavy_fallback=True)
+            if preview is None:
+                return None
+            img = np.asarray(preview)
+            if img.ndim != 3 or img.shape[2] < 3:
+                return None
+            if img.dtype != np.uint8:
+                img = np.clip(img, 0, 255).astype(np.uint8)
+            img = np.ascontiguousarray(img[..., :3])
+
+            if not use_full_resolution:
+                h, w = img.shape[:2]
+                if max(h, w) > 2048:
+                    scale = 2048.0 / float(max(h, w))
+                    img = cv2.resize(
+                        img,
+                        (
+                            max(1, int(round(w * scale))),
+                            max(1, int(round(h * scale))),
+                        ),
+                        interpolation=cv2.INTER_AREA,
+                    )
+            return img
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Embedded-JPEG edit base failed for %s: %s", file_path, exc
+            )
+            return None
+
     def _apply_orientation_correction(
         self,
         image_array: np.ndarray,

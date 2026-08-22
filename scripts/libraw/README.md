@@ -54,3 +54,8 @@ python -c "import rawpy; print(rawpy.libraw_version)"
 # Optional: point at an A7 V ARW
 python -c "import rawpy; rawpy.imread(r'path\to\file.ARW').close(); print('OK')"
 ```
+
+When LibRaw still cannot demosaic a file, Adjust falls back to the embedded
+JPEG as an 8-bit edit base (same path as Nikon HE/HE*). Persisted demosaic
+thumb/grid/preview caches invalidate automatically when the native LibRaw
+binary beside rawpy changes (`libraw_runtime_stamp` in `image_cache.py`).

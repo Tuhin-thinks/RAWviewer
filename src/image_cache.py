@@ -26,6 +26,49 @@ from PyQt6.QtCore import QObject, pyqtSignal
 logger = logging.getLogger(__name__)
 
 
+def libraw_runtime_stamp() -> str:
+    """Fingerprint the LibRaw binary backing rawpy (version + native lib file).
+
+    Packaging may swap ``raw_r.dll`` / ``libraw_r*.dylib`` while leaving
+    ``rawpy.libraw_version`` unchanged (master still reports 0.22.0). Size and
+    mtime of the bundled native library catch that swap so demosaic caches
+    invalidate. Returns "" if rawpy is unavailable.
+    """
+    try:
+        import rawpy
+    except Exception:
+        return ""
+    try:
+        ver = getattr(rawpy, "libraw_version", None) or ()
+        ver_s = ".".join(str(int(x)) for x in ver[:3]) if ver else "unknown"
+    except Exception:
+        ver_s = "unknown"
+    lib_s = "nolib"
+    try:
+        rawpy_dir = os.path.dirname(os.path.abspath(rawpy.__file__))
+        candidates = []
+        for name in os.listdir(rawpy_dir):
+            lower = name.lower()
+            if lower in ("raw_r.dll",) or (
+                lower.startswith("libraw_r") and lower.endswith((".dylib", ".so", ".dll"))
+            ):
+                candidates.append(os.path.join(rawpy_dir, name))
+        if candidates:
+            # Prefer the primary shared lib; fall back to first match.
+            primary = None
+            for path in candidates:
+                base = os.path.basename(path).lower()
+                if base == "raw_r.dll" or base.startswith("libraw_r.") or base == "libraw_r.dylib":
+                    primary = path
+                    break
+            path = primary or sorted(candidates)[0]
+            st = os.stat(path)
+            lib_s = f"{os.path.basename(path)}:{st.st_size}:{int(st.st_mtime)}"
+    except Exception:
+        pass
+    return f"{ver_s}|{lib_s}"
+
+
 def _encode_exif_blob(data: Dict[str, Any] | None) -> bytes:
     """Serialize EXIF blob as UTF-8 JSON (safe; no pickle on write)."""
     payload = data if isinstance(data, dict) else {}
@@ -1766,6 +1809,7 @@ class ImageCache(QObject):
             self.disk_preview_cache = PersistentPreviewCache(cache_dir)
             self._purge_stale_oriented_pixel_caches(cache_dir)
             self._purge_stale_edit_baked_pixel_caches(cache_dir)
+            self._purge_stale_libraw_pixel_caches(cache_dir)
         else:
             # Trial mode: keep all acceleration in RAM and never create/write local cache files.
             self.exif_cache = MemoryOnlyPersistentCache()
@@ -1906,6 +1950,54 @@ class ImageCache(QObject):
                     pass
             with open(marker, "w", encoding="utf-8") as fh:
                 fh.write(str(int(self.EDIT_BAKE_PIXEL_VER)))
+        except Exception:
+            pass
+
+    def _purge_stale_libraw_pixel_caches(self, cache_dir: str) -> None:
+        """Purge demosaic/preview pixel tiers when the LibRaw binary changes.
+
+        Disk thumb/grid/preview for RAW often hold LibRaw-rendered pixels.
+        Stock rawpy and the packaging-swapped LibRaw (ARW6 master pin) can
+        report the same libraw_version tuple while producing different pixels,
+        so the stamp fingerprints the native library file beside rawpy as well.
+        """
+        try:
+            stamp = libraw_runtime_stamp()
+            if not stamp:
+                return
+            marker = os.path.join(cache_dir, "libraw_pixel_ver.txt")
+            stored = None
+            try:
+                with open(marker, "r", encoding="utf-8") as fh:
+                    stored = (fh.read() or "").strip() or None
+            except Exception:
+                stored = None
+            if stored == stamp:
+                return
+            print(
+                "[CACHE] LibRaw runtime changed "
+                f"({stored!r} -> {stamp!r}); purging persisted pixel caches"
+            )
+            for cache in (
+                self.disk_thumbnail_cache,
+                self.disk_grid_cache,
+                self.disk_preview_cache,
+            ):
+                try:
+                    cache.clear()
+                except Exception:
+                    pass
+            try:
+                from unified_image_processor import release_edit_base_cache
+            except Exception:
+                release_edit_base_cache = None
+            if release_edit_base_cache is not None:
+                try:
+                    release_edit_base_cache()
+                except Exception:
+                    pass
+            with open(marker, "w", encoding="utf-8") as fh:
+                fh.write(stamp)
         except Exception:
             pass
 

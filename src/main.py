@@ -21456,12 +21456,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         return not already
 
     def _editing_supported_for_file(self, file_path: str | None) -> bool:
-        """Whether the Adjust panel can produce a true RAW demosaic edit base.
+        """Whether the Adjust panel can open for this file.
 
-        Unsupported: non-RAW (JPEG/HEIC/TIFF/…), animated images, and RAW that
-        LibRaw cannot demosaic (HE/HE* NEF, X-Trans fallbacks, linear / composite
-        DNG panoramas, …). Embedded-JPEG substitutes are browse-only — the
-        editor requires scene-linear demosaic, not a camera JPEG.
+        Supported: RAW files that either demosaic via LibRaw or can fall back
+        to an embedded-JPEG edit base (HE/HE* NEF, ARW6 before the packaging
+        pin, …). Unsupported: non-RAW rasters, animated images, and DNGs that
+        prefer a composite/embedded preview with no usable demosaic path.
         """
         if not file_path:
             return False
@@ -21474,15 +21474,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             if not is_raw_file(file_path):
                 return False
             from common_image_loader import dng_prefers_embedded_preview_first
-            from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
 
+            # Composite/HDR DNGs: browse-only (no demosaic edit base).
             if dng_prefers_embedded_preview_first(file_path):
                 return False
-            if self._nef_he_compressed(file_path):
-                return False
-            key = os.path.normcase(os.path.abspath(file_path))
-            if key in _LIBRAW_UNSUPPORTED_PATHS:
-                return False
+            # HE/HE* and other demosaic-failed RAWs stay editable: decode falls
+            # back to the embedded-JPEG edit base (see decode_raw_edit_base).
         except Exception:
             return False
         return True
@@ -21600,8 +21597,8 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._show_auto_dismiss_notice(
                 "Editing not available for this file",
                 detail=(
-                    "Adjust needs a demosaiced RAW base. "
-                    "JPEG/HEIC and unsupported RAW (e.g. Nikon HE/HE*) are browse-only."
+                    "This file has neither a demosaicable RAW base nor a "
+                    "usable embedded preview to edit."
                 ),
                 duration_ms=2000,
             )
