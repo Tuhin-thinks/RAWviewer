@@ -21,7 +21,7 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
-    from image_cache import ImageCache, libraw_runtime_stamp
+    from image_cache import ImageCache, _libraw_native_search_dirs, libraw_runtime_stamp
     import unified_image_processor as uip
 
     stamp = libraw_runtime_stamp()
@@ -67,6 +67,23 @@ def main() -> int:
     check(
         "ImageCache init calls _purge_stale_libraw_pixel_caches",
         "_purge_stale_libraw_pixel_caches" in init_src,
+    )
+
+    purge_src = inspect.getsource(ImageCache._purge_stale_libraw_pixel_caches)
+    check(
+        "stamp change clears the LibRaw unsupported set",
+        "prune_libraw_unsupported_paths" in purge_src and "clear_all=True" in purge_src,
+    )
+    check(
+        "stamp change clears libraw_preview_paths",
+        "libraw_preview_paths.clear" in purge_src,
+    )
+
+    helper_src = inspect.getsource(_libraw_native_search_dirs)
+    check(
+        "stamp search includes packaged _internal / MEIPASS layouts",
+        "_internal" in helper_src and "_MEIPASS" in helper_src,
+        "PyInstaller / installer DLL is not only beside rawpy",
     )
 
     print(f"\n{len(FAILURES)} failure(s)")

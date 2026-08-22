@@ -109,6 +109,20 @@ def prune_libraw_unsupported_paths(
         _LIBRAW_UNSUPPORTED_PATHS.discard(k)
 
 
+def _is_libraw_unsupported_error(exc: BaseException) -> bool:
+    """True when LibRaw rejected the file (not a transient decode failure)."""
+    try:
+        import rawpy
+
+        cls = getattr(rawpy, "LibRawFileUnsupportedError", None)
+        if cls is not None and isinstance(exc, cls):
+            return True
+    except Exception:
+        pass
+    msg = str(exc).lower()
+    return "unsupported" in msg or "not recognized" in msg
+
+
 def _mark_libraw_unsupported(path_key: str) -> None:
     _LIBRAW_UNSUPPORTED_PATHS.add(path_key)
     if len(_LIBRAW_UNSUPPORTED_PATHS) > _LIBRAW_UNSUPPORTED_MAX:
@@ -627,11 +641,7 @@ class UnifiedImageProcessor:
                             dmax_over_dmin / 65535.0
                         )
                 except Exception as libraw_err:
-                    is_unsupported = (
-                        "unsupported" in str(libraw_err).lower()
-                        or "not recognized" in str(libraw_err).lower()
-                    )
-                    if is_unsupported:
+                    if _is_libraw_unsupported_error(libraw_err):
                         _mark_libraw_unsupported(skip_key)
                     logging.getLogger(__name__).warning(
                         "[EDIT] LibRaw linear decode failed for %s: %s",
@@ -2149,7 +2159,7 @@ class UnifiedImageProcessor:
             import logging
             logger = logging.getLogger(__name__)
             
-            is_unsupported = "unsupported" in str(e).lower() or "not recognized" in str(e).lower()
+            is_unsupported = _is_libraw_unsupported_error(e)
             if is_unsupported:
                 _mark_libraw_unsupported(skip_key)
                 logger.warning(
@@ -2351,40 +2361,36 @@ class UnifiedImageProcessor:
 
         Half-res matches the LibRaw path's ``half_size`` budget (long edge ≤2048)
         so live Adjust stays responsive regardless of base kind.
+
+        Extract via byte-scan — do not route through ``process_full_image`` /
+        ``process_thumbnail``, which refuse LibRaw-unsupported RAW or decode a
+        full-size JPEG only to downscale it for live Adjust.
         """
         try:
-            import cv2
+            from enhanced_raw_processor import extract_embedded_jpeg_by_scan
 
-            # apply_sidecar_adjustments=False: an edit base must be unedited,
-            # or every adjustment would be applied twice once the pipeline runs.
-            preview = self.process_full_image(
-                file_path,
-                use_full_resolution=True,
-                apply_sidecar_adjustments=False,
-            )
-            if preview is None:
-                preview = self.process_thumbnail(file_path, allow_heavy_fallback=True)
-            if preview is None:
+            # 0 = largest embed (export); 2048 = live-Adjust budget.
+            max_size = 0 if use_full_resolution else 2048
+            img = extract_embedded_jpeg_by_scan(file_path, max_size)
+            if img is None:
                 return None
-            img = np.asarray(preview)
+            img = np.asarray(img)
             if img.ndim != 3 or img.shape[2] < 3:
                 return None
             if img.dtype != np.uint8:
                 img = np.clip(img, 0, 255).astype(np.uint8)
             img = np.ascontiguousarray(img[..., :3])
 
-            if not use_full_resolution:
-                h, w = img.shape[:2]
-                if max(h, w) > 2048:
-                    scale = 2048.0 / float(max(h, w))
-                    img = cv2.resize(
-                        img,
-                        (
-                            max(1, int(round(w * scale))),
-                            max(1, int(round(h * scale))),
-                        ),
-                        interpolation=cv2.INTER_AREA,
+            # Scan returns TIFF-IFD pixels without the container Orientation.
+            try:
+                exif_data = self.exif_extractor.extract_exif_data(file_path)
+                orientation = (exif_data or {}).get("orientation", 1)
+                if orientation != 1:
+                    img = self._apply_orientation_correction(
+                        img, orientation, exif_data
                     )
+            except Exception:
+                pass
             return img
         except Exception as exc:
             logging.getLogger(__name__).warning(

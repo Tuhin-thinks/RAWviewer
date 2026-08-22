@@ -6,6 +6,7 @@ to dramatically improve browsing performance.
 """
 
 import os
+import sys
 import json
 import logging
 import platform
@@ -26,6 +27,87 @@ from PyQt6.QtCore import QObject, pyqtSignal
 logger = logging.getLogger(__name__)
 
 
+def _is_libraw_native_name(name: str) -> bool:
+    lower = name.lower()
+    return lower == "raw_r.dll" or (
+        lower.startswith("libraw_r") and lower.endswith((".dylib", ".so", ".dll"))
+    )
+
+
+def _libraw_native_search_dirs() -> list[str]:
+    """Directories that may hold the packaged LibRaw shared library.
+
+    Dev installs keep ``raw_r.dll`` beside the rawpy package. Frozen / installer
+    layouts often put it next to the exe or under ``_internal/`` (PyInstaller
+    ``sys._MEIPASS``). Searching only rawpy's folder made the stamp report
+    ``nolib`` after packaging, so a later pin swap would not invalidate caches.
+    """
+    dirs: list[str] = []
+    try:
+        import rawpy
+
+        rawpy_dir = os.path.dirname(os.path.abspath(rawpy.__file__))
+        dirs.append(rawpy_dir)
+        parent = os.path.dirname(rawpy_dir)
+        if parent:
+            dirs.append(parent)
+    except Exception:
+        pass
+    try:
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        dirs.append(exe_dir)
+        dirs.append(os.path.join(exe_dir, "_internal"))
+        dirs.append(os.path.join(exe_dir, "_internal", "rawpy"))
+    except Exception:
+        pass
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        dirs.append(meipass)
+        dirs.append(os.path.join(meipass, "rawpy"))
+    try:
+        if getattr(sys, "frozen", False) and sys.argv:
+            root = os.path.dirname(os.path.abspath(sys.argv[0]))
+            dirs.append(root)
+            dirs.append(os.path.join(root, "_internal"))
+            dirs.append(os.path.join(root, "_internal", "rawpy"))
+    except Exception:
+        pass
+    out: list[str] = []
+    seen: set[str] = set()
+    for d in dirs:
+        if not d:
+            continue
+        key = os.path.normcase(os.path.abspath(d))
+        if key in seen:
+            continue
+        if os.path.isdir(d):
+            seen.add(key)
+            out.append(d)
+    return out
+
+
+def _libraw_native_fingerprint() -> str:
+    candidates: list[str] = []
+    for directory in _libraw_native_search_dirs():
+        try:
+            for name in os.listdir(directory):
+                if _is_libraw_native_name(name):
+                    candidates.append(os.path.join(directory, name))
+        except Exception:
+            continue
+    if not candidates:
+        return "nolib"
+    primary = None
+    for path in candidates:
+        base = os.path.basename(path).lower()
+        if base == "raw_r.dll" or base.startswith("libraw_r.") or base == "libraw_r.dylib":
+            primary = path
+            break
+    path = primary or sorted(candidates)[0]
+    st = os.stat(path)
+    return f"{os.path.basename(path)}:{st.st_size}:{int(st.st_mtime)}"
+
+
 def libraw_runtime_stamp() -> str:
     """Fingerprint the LibRaw binary backing rawpy (version + native lib file).
 
@@ -43,29 +125,10 @@ def libraw_runtime_stamp() -> str:
         ver_s = ".".join(str(int(x)) for x in ver[:3]) if ver else "unknown"
     except Exception:
         ver_s = "unknown"
-    lib_s = "nolib"
     try:
-        rawpy_dir = os.path.dirname(os.path.abspath(rawpy.__file__))
-        candidates = []
-        for name in os.listdir(rawpy_dir):
-            lower = name.lower()
-            if lower in ("raw_r.dll",) or (
-                lower.startswith("libraw_r") and lower.endswith((".dylib", ".so", ".dll"))
-            ):
-                candidates.append(os.path.join(rawpy_dir, name))
-        if candidates:
-            # Prefer the primary shared lib; fall back to first match.
-            primary = None
-            for path in candidates:
-                base = os.path.basename(path).lower()
-                if base == "raw_r.dll" or base.startswith("libraw_r.") or base == "libraw_r.dylib":
-                    primary = path
-                    break
-            path = primary or sorted(candidates)[0]
-            st = os.stat(path)
-            lib_s = f"{os.path.basename(path)}:{st.st_size}:{int(st.st_mtime)}"
+        lib_s = _libraw_native_fingerprint()
     except Exception:
-        pass
+        lib_s = "nolib"
     return f"{ver_s}|{lib_s}"
 
 
@@ -1988,14 +2051,28 @@ class ImageCache(QObject):
                 except Exception:
                     pass
             try:
-                from unified_image_processor import release_edit_base_cache
+                from unified_image_processor import (
+                    prune_libraw_unsupported_paths,
+                    release_edit_base_cache,
+                )
             except Exception:
+                prune_libraw_unsupported_paths = None
                 release_edit_base_cache = None
             if release_edit_base_cache is not None:
                 try:
                     release_edit_base_cache()
                 except Exception:
                     pass
+            if prune_libraw_unsupported_paths is not None:
+                try:
+                    prune_libraw_unsupported_paths(clear_all=True)
+                except Exception:
+                    pass
+            try:
+                self.libraw_preview_paths.clear()
+                self._save_libraw_preview_paths()
+            except Exception:
+                pass
             with open(marker, "w", encoding="utf-8") as fh:
                 fh.write(stamp)
         except Exception:

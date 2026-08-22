@@ -66,6 +66,25 @@ def main() -> int:
         'endswith(".nef")' not in impl or "_embedded_jpeg_edit_base" in impl,
     )
 
+    embed_src = inspect.getsource(uip.UnifiedImageProcessor._embedded_jpeg_edit_base)
+    check(
+        "JPEG edit base uses extract_embedded_jpeg_by_scan",
+        "extract_embedded_jpeg_by_scan" in embed_src,
+    )
+    check(
+        "JPEG edit base does not route through process_full_image",
+        "self.process_full_image" not in embed_src,
+    )
+    check(
+        "JPEG edit base does not route through process_thumbnail",
+        "self.process_thumbnail" not in embed_src,
+    )
+    check(
+        "LibRaw unsupported uses LibRawFileUnsupportedError",
+        "_is_libraw_unsupported_error" in impl
+        or "LibRawFileUnsupportedError" in impl,
+    )
+
     # --- _nef_he_compressed helper still works for browse detection ---
     class FakeCache:
         def __init__(self, row):

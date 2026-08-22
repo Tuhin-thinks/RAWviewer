@@ -2400,8 +2400,8 @@ class _AdjustExportWorker(QRunnable):
                 try:
                     if processor.is_libraw_unsupported(self.file_path):
                         detail_bits.append(
-                            "LibRaw marked this file unsupported (e.g. Nikon HE/HE* NEF, "
-                            "composite DNG, or unrecognized RAW)."
+                            "LibRaw cannot demosaic this file and no usable "
+                            "embedded JPEG was found."
                         )
                 except Exception:
                     pass
@@ -2409,10 +2409,10 @@ class _AdjustExportWorker(QRunnable):
                     detail_bits.append(str(last_decode_err))
                 detail = (" " + " ".join(detail_bits)) if detail_bits else ""
                 raise RuntimeError(
-                    "Full-resolution RAW decode failed — cannot export."
+                    "Full-resolution decode failed — cannot export."
                     f"{detail} "
-                    "Adjust preview can still work from half-size or embedded JPEG; "
-                    "export needs a demosaicable RAW. "
+                    "Neither a LibRaw demosaic nor a usable embedded preview "
+                    "was available at export resolution. "
                     "If the app vanished mid-export, the Mac may have run out of memory "
                     "on a large full-res demosaic."
                 )
@@ -22181,19 +22181,11 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             panel.set_lens_correction_available(has_lens_profile, lens_profile_name)
         if base is None or not hasattr(base, "shape"):
             # Silent handling: an edit-base decode failure used to just show
-            # a 5s error and leave the editor stuck on the broken file (no
-            # image, no way forward except manually navigating away).
-            # _editing_supported_for_file/_advance_index_past_unsupported_
-            # for_editing already skip files known unsupported BEFORE a
-            # decode is attempted (animated images, DNGs preferring the
-            # embedded preview, RAWs already in _LIBRAW_UNSUPPORTED_PATHS);
-            # this covers the remaining case -- a RAW variant that only
-            # reveals it can't be edited once LibRaw actually tries and
-            # fails for a reason decode_raw_edit_base's own "unsupported"/
-            # "not recognized" substring match didn't catch (corrupt file,
-            # decode timeout, ...). Mark it unsupported here too, then move
-            # on to the next editable image exactly like the pre-emptive
-            # skip does, instead of leaving the editor stuck.
+            # a 5s error and leave the editor stuck on the broken file.
+            # decode_raw_edit_base already tried LibRaw then the embedded-JPEG
+            # fallback; None means both failed (corrupt file, no embed, …).
+            # Mark it so browse skips a doomed LibRaw retry, then move on
+            # instead of leaving the editor stuck.
             try:
                 from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
 
