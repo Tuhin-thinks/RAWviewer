@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from typing import Optional
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
+_scunet_availability_logged = False
 
 from raw_adjustments import (
     DEFAULT_ADJUSTMENTS,
@@ -197,6 +201,9 @@ def process_linear_edit_buffer(
     *,
     preview: bool = False,
     chroma_denoise: Optional[bool] = None,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
 ) -> np.ndarray:
     """
     Scene-linear uint16/float → adjusted scene-linear float32.
@@ -209,7 +216,13 @@ def process_linear_edit_buffer(
     merged.update(adj or {})
     img = _linear_float_from_buffer(rgb_image)
 
-    if is_default_adjustments(merged) and not uses_recovery_tone_map(merged):
+    # AI Denoise is export-only and independent of slider defaults: do not
+    # skip the pipeline when the user explicitly chose it from the menu.
+    if (
+        is_default_adjustments(merged)
+        and not uses_recovery_tone_map(merged)
+        and not use_ai_denoise
+    ):
         return img
 
     # Geometry first: every later stage (dodge/burn coordinates included)
@@ -225,7 +238,15 @@ def process_linear_edit_buffer(
             use_ai_denoise=use_ai_denoise, cancel_check=cancel_check, progress_cb=progress_cb,
         )
 
-    return _process_linear_edit_tail(img, merged, preview=preview, chroma_denoise=chroma_denoise)
+    return _process_linear_edit_tail(
+        img,
+        merged,
+        preview=preview,
+        chroma_denoise=chroma_denoise,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
 
 
 def _process_linear_edit_tail(
@@ -234,6 +255,9 @@ def _process_linear_edit_tail(
     *,
     preview: bool,
     chroma_denoise: Optional[bool],
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
 ) -> np.ndarray:
     """WB -> exposure -> dodge/burn -> denoise -> PV2012 tone on a (possibly banded) buffer."""
     img = _apply_wb_tint(img, merged)
@@ -264,16 +288,82 @@ def _process_linear_edit_tail(
     do_denoise = chroma_denoise if chroma_denoise is not None else chroma_denoise_enabled()
     nr_amount = float(merged.get("ColorNoiseReduction", 0.0))
     method = int(float(merged.get("DenoiseMethod", 0.0)))
-    if nr_amount > 1e-4:
-        img = apply_chroma_denoise(
-            img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview
-        )
-    elif do_denoise and not preview:
-        img = apply_chroma_denoise(img, method=method, preview=False)
 
-    luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
-    if luma_nr_amount > 1e-4:
-        img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
+    use_scunet = False
+    model_path = ""
+    if not preview and use_ai_denoise:
+        from onnx_scunet import SCUNetONNX, scunet_model_path
+
+        model_path = scunet_model_path()
+        scunet_enabled_env = (
+            os.environ.get("RAWVIEWER_EXPORT_SCUNET_ONNX", os.environ.get("RAWVIEWER_EXPORT_RESTORMER_ONNX", "1")) == "1"
+        )
+        scunet_model_present = os.path.exists(model_path) if model_path else False
+        # AI denoise is export-only and opt-in: the Adjust panel's Chroma NR
+        # dropdown (Bilateral/Guided/Off) always applies as selected, live in
+        # preview and by default at export -- use_ai_denoise (set by the Export
+        # menu's "AI Denoise" toggle) is what additionally switches the export
+        # pass over to SCUNet/NAFNet instead of the legacy method.
+        use_scunet = scunet_enabled_env and scunet_model_present
+
+        global _scunet_availability_logged
+        if not _scunet_availability_logged:
+            _scunet_availability_logged = True
+            if not scunet_enabled_env:
+                logger.info("[DENOISE] AI denoise (SCUNet ONNX) disabled via RAWVIEWER_EXPORT_SCUNET_ONNX=0")
+            elif not scunet_model_present:
+                logger.warning(
+                    "[DENOISE] AI denoise model not found at %s -- falling back to legacy chroma/luma "
+                    "noise reduction.",
+                    model_path,
+                )
+            else:
+                logger.info("[DENOISE] AI denoise model found at %s", model_path)
+
+    if use_scunet:
+        # The AI Denoise export submenu is explicit user intent: run the model
+        # unconditionally. (Previously gated on nr_amount/do_denoise, which
+        # silently exported a non-denoised file when the NR sliders were 0.)
+        # Default: half-res denoise + edge-weighted detail restore (~5x faster,
+        # measured to match full-res on noise/detail metrics). Set
+        # RAWVIEWER_AI_DENOISE_FULLRES=1 to force full-resolution inference.
+        downscale = 1 if os.environ.get("RAWVIEWER_AI_DENOISE_FULLRES", "0") == "1" else 2
+        detail_gain = float(merged.get("DenoiseDetail", 50.0)) / 100.0
+        logger.info(
+            "[DENOISE] Using AI denoise (model=%s, %s, detail=%.0f%%) for this export",
+            os.path.basename(model_path),
+            "full-res" if downscale == 1 else "half-res+detail-restore",
+            detail_gain * 100.0,
+        )
+        scunet = SCUNetONNX(model_path)
+
+        def _denoise_progress(frac: float) -> None:
+            if progress_cb is not None:
+                progress_cb(frac)
+
+        img = scunet.process(
+            img,
+            cancel_check=cancel_check,
+            progress_callback=_denoise_progress,
+            downscale=downscale,
+            detail_gain=detail_gain,
+        )
+
+        # Legacy luma NR still applies on top if the user set it explicitly.
+        luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
+        if luma_nr_amount > 1e-4:
+            img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
+    else:
+        if nr_amount > 1e-4:
+            img = apply_chroma_denoise(
+                img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview
+            )
+        elif do_denoise and not preview:
+            img = apply_chroma_denoise(img, method=method, preview=False)
+
+        luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
+        if luma_nr_amount > 1e-4:
+            img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
 
     if not uses_recovery_tone_map(merged):
         img = apply_pv2012_tone_rgb(img, merged)
@@ -722,13 +812,28 @@ def _apply_display_color_adjustments(
     return out
 
 
+_dither_tile_cache: Optional[np.ndarray] = None
+
+
+def _dither_tile() -> np.ndarray:
+    """512x512 triangular-PDF dither tile in [-1, 1), built once, deterministic."""
+    global _dither_tile_cache
+    if _dither_tile_cache is None:
+        rng = np.random.default_rng(0xD17E)
+        _dither_tile_cache = (
+            rng.random((512, 512), dtype=np.float32)
+            - rng.random((512, 512), dtype=np.float32)
+        )
+    return _dither_tile_cache
+
+
 def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None) -> np.ndarray:
     # dcraw BT.709 encode, NOT the IEC sRGB OETF: browse renders encode with
     # this exact curve, and the two differ most in the toe (12.92x vs 4.5x
     # linear slope) -- the sRGB encode lifted the deepest shadows ~3x over
     # the browse render, surfacing sensor noise ("grainy" report). One curve
     # everywhere = editor default is pixel-comparable with browse.
-    from fast_raw_decode import _gamma_lut8
+    from fast_raw_decode import gamma_curve16
     from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_tone_curve import apply_channel_curves_encoded
 
@@ -740,7 +845,31 @@ def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None
         display = _apply_display_stage(img, merged)
     display = apply_pipeline_lut_linear(display, merged)
     idx = np.clip(display * 65535.0 + 0.5, 0, 65535).astype(np.uint16)
-    encoded = apply_pipeline_lut_encoded(_gamma_lut8()[idx], merged, 255.0)
+
+    # TPDF dither (±1 LSB of the 8-bit output) applied in ENCODED space,
+    # immediately before the 8-bit quantization it exists to smooth.
+    # Denoised smooth gradients otherwise posterize into visible banding on
+    # 8-bit export -- the sensor noise that used to dither them for free is
+    # gone. Deterministic tiled pattern (no per-call RNG state, no
+    # full-frame random buffer) so exports stay byte-reproducible.
+    #
+    # This used to add +/-1/255 to the LINEAR buffer instead. The BT.709
+    # toe has a 4.5x slope, so near black that perturbation came out as
+    # +/-4-5 output codes rather than +/-1: deep shadows were visibly
+    # noisy, a black frame quantized to 1 instead of 0, and a ramp lost
+    # monotonicity. Dithering after the encode makes "1 LSB" mean one LSB
+    # at every brightness, which is the whole point of dithering.
+    tile = _dither_tile()
+    th, tw = display.shape[0], display.shape[1]
+    d = tile[np.arange(th) % tile.shape[0]][:, np.arange(tw) % tile.shape[1]]
+
+    # 256 units of the 16-bit encoded curve == 1 LSB of the 8-bit output.
+    enc16 = gamma_curve16()[idx].astype(np.float32) + (d * 256.0)[..., None]
+    # >> 8 (truncation) matches dcraw's write_ppm and _gamma_lut8 exactly,
+    # so a zero-dither pixel encodes bit-identically to the old path.
+    encoded = (np.clip(enc16, 0.0, 65535.0).astype(np.uint16) >> 8).astype(np.uint8)
+
+    encoded = apply_pipeline_lut_encoded(encoded, merged, 255.0)
     return apply_channel_curves_encoded(encoded, merged, 255.0)
 
 
@@ -812,12 +941,22 @@ def _chroma_denoise_for_export(adj: dict[str, float]) -> bool:
     return float((adj or {}).get("ColorNoiseReduction", 0.0)) > 0 or chroma_denoise_enabled()
 
 
-def _process_for_export(rgb_linear: np.ndarray, adj: dict[str, float]) -> np.ndarray:
+def _process_for_export(
+    rgb_linear: np.ndarray,
+    adj: dict[str, float],
+    *,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
+) -> np.ndarray:
     return process_linear_edit_buffer(
         rgb_linear,
         adj,
         preview=False,
         chroma_denoise=_chroma_denoise_for_export(adj),
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
     )
 
 
@@ -869,9 +1008,18 @@ def export_adjusted_tiff16(
     output_path: str,
     *,
     embed_xmp_path: Optional[str] = None,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
 ) -> None:
     """Bake adjustments to 16-bit sRGB TIFF; optionally embed XMP packet."""
-    processed = _process_for_export(rgb_linear, adj)
+    processed = _process_for_export(
+        rgb_linear,
+        adj,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
     out = linear_to_export_uint16_srgb(processed, adj)
     _write_16bit_rgb_tiff(output_path, out, embed_xmp_path=embed_xmp_path)
 
@@ -882,9 +1030,18 @@ def export_adjusted_jpeg(
     output_path: str,
     *,
     quality: int = 92,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
 ) -> None:
     """Bake adjustments to 8-bit JPEG."""
-    processed = _process_for_export(rgb_linear, adj)
+    processed = _process_for_export(
+        rgb_linear,
+        adj,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
     out = linear_to_display_uint8(processed, adj)
     from PIL import Image
 
@@ -910,10 +1067,23 @@ def export_adjusted_webp(
     adj: dict[str, float],
     output_path: str,
     *,
-    quality: int = 88,
+    quality: int = 95,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
 ) -> None:
-    """Bake adjustments to 8-bit WebP."""
-    processed = _process_for_export(rgb_linear, adj)
+    """Bake adjustments to 8-bit WebP.
+
+    Default quality 95 + method 6: at q88/method 4 lossy WebP flattens smooth
+    denoised gradients into visible 16x16 macroblock grid banding.
+    """
+    processed = _process_for_export(
+        rgb_linear,
+        adj,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
     out = linear_to_display_uint8(processed, adj)
     from PIL import Image
 
@@ -923,7 +1093,7 @@ def export_adjusted_webp(
         output_path,
         format="WEBP",
         quality=max(1, min(100, int(quality))),
-        method=4,
+        method=6,
     )
 
 
@@ -945,18 +1115,24 @@ def export_adjusted_image(
     embed_xmp_path: Optional[str] = None,
     cancel_check=None,
     progress_cb=None,
+    use_ai_denoise: bool = False,
 ) -> None:
     """Dispatch baked export (TIFF16 / JPEG / WebP)."""
     fmt = (export_format or EXPORT_FORMAT_TIFF16).strip().lower()
+    extra = dict(
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
     if rgb_linear is None:
         raise RuntimeError("Full-resolution RAW decode failed")
     if cancel_check is not None and cancel_check():
         raise ExportCancelled()
     if fmt == EXPORT_FORMAT_JPEG:
-        export_adjusted_jpeg(rgb_linear, adj, output_path)
+        export_adjusted_jpeg(rgb_linear, adj, output_path, **extra)
     elif fmt == EXPORT_FORMAT_WEBP:
-        export_adjusted_webp(rgb_linear, adj, output_path)
+        export_adjusted_webp(rgb_linear, adj, output_path, **extra)
     else:
         export_adjusted_tiff16(
-            rgb_linear, adj, output_path, embed_xmp_path=embed_xmp_path,
+            rgb_linear, adj, output_path, embed_xmp_path=embed_xmp_path, **extra,
         )

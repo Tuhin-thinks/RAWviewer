@@ -34,6 +34,7 @@ run "compile check" -m py_compile \
 run "tone engine invariants" testplan/auto/t_tone_engine.py
 run "xmp round-trip" testplan/auto/t_xmp_roundtrip.py
 run "slider specs" testplan/auto/t_slider_specs.py
+run "AI denoise gating" testplan/auto/t_ai_denoise_gating.py
 run "cache semantics" testplan/auto/t_cache_semantics.py
 run "dodge & burn" testplan/auto/t_dodge_burn.py
 run "gallery closes editor" testplan/auto/t_gallery_closes_editor.py

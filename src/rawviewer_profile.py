@@ -159,6 +159,27 @@ def is_plus_build() -> bool:
     return resolved_profile() == "full"
 
 
+def ai_export_enabled() -> bool:
+    """False in Standard, where AI denoise is not offered.
+
+    The export menu used to decide this on model presence alone, which is
+    not an edition check. On any machine where the files exist for another
+    reason (previously ran Plus, dev checkout, downgrade), Standard then
+    offered Plus features. Mirrors Plus-when-unknown for dev checkouts.
+    """
+    if os.environ.get("RAWVIEWER_FORCE_AI_EXPORT", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return True
+    try:
+        return not is_lite_build()
+    except Exception:
+        return True
+
+
 def edition_display_name() -> str:
     """User-facing edition name: Standard or Plus."""
     return "Standard" if is_lite_build() else "Plus"

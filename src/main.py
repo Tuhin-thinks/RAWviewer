@@ -2312,6 +2312,7 @@ class _AdjustExportWorker(QRunnable):
         export_format: str,
         process_pool: Any,
         signals: _AdjustExportSignals,
+        use_ai_denoise: bool = False,
     ):
         super().__init__()
         self.file_path = file_path
@@ -2320,6 +2321,8 @@ class _AdjustExportWorker(QRunnable):
         self.export_format = export_format
         self.process_pool = process_pool
         self.signals = signals
+        # Export-only, not persisted to the XMP sidecar.
+        self.use_ai_denoise = bool(use_ai_denoise)
         # Set from the export progress dialog's Cancel button (main thread);
         # polled between export stages and between NN-denoise tiles.
         import threading as _threading
@@ -2418,8 +2421,20 @@ class _AdjustExportWorker(QRunnable):
                 )
             # Remaining work (tonemap + encode) is one opaque call, so the bar
             # steps to a "working" milestone rather than faking granularity
-            # nothing backs.
-            emit_progress(70, "Encoding…")
+            # nothing backs. AI denoise has a real tile loop we can track.
+            emit_progress(
+                40 if self.use_ai_denoise else 70,
+                "Denoising (AI)…" if self.use_ai_denoise else "Encoding…",
+            )
+
+            def _export_progress(frac: float, stage: str = "denoise") -> None:
+                frac_val = max(0.0, min(1.0, float(frac)))
+                if self.use_ai_denoise:
+                    pct = 40 + int(frac_val * 50)
+                    emit_progress(pct, "Denoising (AI)…")
+                else:
+                    pct = 70 + int(frac_val * 20)
+                    emit_progress(pct, "Encoding…")
 
             export_adjusted_image(
                 self.export_format,
@@ -2428,6 +2443,8 @@ class _AdjustExportWorker(QRunnable):
                 adj=self.adj,
                 embed_xmp_path=embed_xmp,
                 cancel_check=self.cancel_event.is_set,
+                progress_cb=_export_progress if self.use_ai_denoise else None,
+                use_ai_denoise=self.use_ai_denoise,
             )
             emit_progress(100, "Done")
             logger.info("[EXPORT] export_adjusted_image() completed without raising")
@@ -24171,7 +24188,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 3500,
             )
 
-    def _on_adjust_panel_export_requested(self, export_format: str, adj: dict) -> None:
+    def _on_adjust_panel_export_requested(
+        self, export_format: str, adj: dict, use_ai_denoise: bool = False
+    ) -> None:
         logger = logging.getLogger(__name__)
         path = getattr(self, "current_file_path", None)
         if not path:
@@ -24213,17 +24232,18 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 start_dir,
             )
 
+        nn_suffix = " + AI denoise" if use_ai_denoise else ""
         if fmt == EXPORT_FORMAT_JPEG:
             default_name = f"{base}_edited.jpg"
-            dialog_title = "Export JPEG"
+            dialog_title = "Export JPEG" + nn_suffix
             file_filter = "JPEG (*.jpg *.jpeg)"
         elif fmt == EXPORT_FORMAT_WEBP:
             default_name = f"{base}_edited.webp"
-            dialog_title = "Export WebP"
+            dialog_title = "Export WebP" + nn_suffix
             file_filter = "WebP (*.webp)"
         else:
             default_name = f"{base}_edited.tif"
-            dialog_title = "Export 16-bit TIFF"
+            dialog_title = "Export 16-bit TIFF" + nn_suffix
             file_filter = "TIFF (*.tif *.tiff)"
 
         if fmt == EXPORT_FORMAT_JPEG:
@@ -24332,6 +24352,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             raw_fmt,
             pool,
             self._adjust_export_signals,
+            use_ai_denoise=bool(use_ai_denoise),
         )
         logger.info("[EXPORT] Handing off to background worker (format=%s)", raw_fmt)
         # Modal progress dialog: freezes app interaction for the duration

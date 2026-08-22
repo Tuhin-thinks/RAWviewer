@@ -593,7 +593,7 @@ class ImageAdjustPanelWidget(QWidget):
     editing_finished = pyqtSignal(dict)
     preview_changed = pyqtSignal(dict)
     reset_requested = pyqtSignal()
-    export_requested = pyqtSignal(str, dict)  # format id, adjustments
+    export_requested = pyqtSignal(str, dict, bool)  # format id, adjustments, use_ai_denoise
     recovery_baseline_requested = pyqtSignal()
     wb_picker_toggled = pyqtSignal(bool)  # True: arm the WB dropper; False: cancel
     compare_toggled = pyqtSignal(bool)  # True: show compare-with-original split view
@@ -1105,6 +1105,15 @@ class ImageAdjustPanelWidget(QWidget):
                 target_sect = self.sect_detail
             elif spec.key in {"LuminanceNoiseReduction"}:
                 target_sect = self.sect_noise
+            elif spec.key == "DenoiseDetail":
+                try:
+                    from rawviewer_profile import ai_export_enabled
+
+                    if not ai_export_enabled():
+                        continue
+                except Exception:
+                    continue
+                target_sect = self.sect_noise
             elif spec.key in {
                 "CropAngle", "PerspectiveVertical", "PerspectiveHorizontal",
             }:
@@ -1157,6 +1166,11 @@ class ImageAdjustPanelWidget(QWidget):
                 )
             )
             slider.sliderReleased.connect(self._on_slider_released)
+            if spec.key == "DenoiseDetail":
+                slider.setToolTip(
+                    "Export-only: how much original edge detail to restore after AI denoise.\n"
+                    "0 = smoother, 100 = more detail (and more residual noise)."
+                )
             if spec.key in _TRANSFORM_SLIDER_KEYS:
                 # Alignment grid while straightening / correcting perspective:
                 # pressed -> grid on; released -> grid off (host-side).
@@ -1539,6 +1553,33 @@ class ImageAdjustPanelWidget(QWidget):
             "WebP (baked)",
             lambda: self._request_export("webp"),
         )
+        try:
+            from rawviewer_profile import ai_export_enabled
+            from onnx_scunet import scunet_model_path
+
+            denoise_ready = ai_export_enabled() and os.path.exists(scunet_model_path())
+        except Exception:
+            denoise_ready = False
+        if denoise_ready:
+            export_menu.addSeparator()
+            ai_menu = QMenu("AI Denoise", export_menu)
+            ai_menu.setStyleSheet(export_menu.styleSheet())
+            tip = (
+                "Uses AI denoise instead of the Chroma NR method above, "
+                "for this export only. Windows prefers SCUNet; other "
+                "platforms prefer NAFNet."
+            )
+            for label, fmt in (
+                ("16-bit TIFF (baked)", "tiff16"),
+                ("JPEG (baked)", "jpeg"),
+                ("WebP (baked)", "webp"),
+            ):
+                act = ai_menu.addAction(
+                    label,
+                    lambda _checked=False, f=fmt: self._request_export(f, True),
+                )
+                act.setToolTip(tip)
+            export_menu.addMenu(ai_menu)
         export_btn.setMenu(export_menu)
         export_btn.setToolTip("Export baked image (TIFF / JPEG / WebP)")
         layout.addWidget(export_btn)
@@ -3029,8 +3070,8 @@ class ImageAdjustPanelWidget(QWidget):
         finally:
             self._block_emit = False
 
-    def _request_export(self, export_format: str) -> None:
-        self.export_requested.emit(export_format, self.get_adjustments())
+    def _request_export(self, export_format: str, use_ai_denoise: bool = False) -> None:
+        self.export_requested.emit(export_format, self.get_adjustments(), bool(use_ai_denoise))
 
     def _on_slider_value_changed(self, key: str, fmt: Callable[[float], str]) -> None:
         if self._block_emit:

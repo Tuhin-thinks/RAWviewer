@@ -47,6 +47,7 @@ def main() -> int:
             "Temperature": 4800.0, "Tint": 12.0, "Saturation": 5.0,
             "Vibrance": 15.0, "Sharpness": 40.0, "Clarity2012": 8.0,
             "ColorNoiseReduction": 50.0, "DenoiseMethod": 1.0,
+            "DenoiseDetail": 75.0,
             "LensCorrectionEnabled": 1.0,
             TONE_CURVE_SERIAL_KEY: "0,0;64,80;255,255",
             TONE_CURVE_RED_KEY: "0,0;128,150;255,255",
@@ -117,6 +118,21 @@ def main() -> int:
         check(
             "merge round-trip Exposure",
             abs(float(back2.get("Exposure2012", 0)) - 0.5) < 0.01,
+        )
+
+        # DenoiseDetail-only must persist (it is ignored by is_default_adjustments
+        # so the gallery badge stays clean, but the sidecar helper must keep it).
+        detail_only = dict(DEFAULT_ADJUSTMENTS)
+        detail_only[AS_SHOT_TEMP_KEY] = 5500.0
+        detail_only["Temperature"] = 5500.0
+        detail_only["DenoiseDetail"] = 20.0
+        write_xmp_adjustments_for_file(img, detail_only)
+        check("DenoiseDetail-only keeps sidecar", os.path.isfile(resolve_xmp_path(img)))
+        back_detail = load_adjustments_for_file(img)
+        check(
+            "DenoiseDetail-only round-trip",
+            abs(float(back_detail.get("DenoiseDetail", 50.0)) - 20.0) < 0.51,
+            f"loaded {back_detail.get('DenoiseDetail')!r}",
         )
     finally:
         shutil.rmtree(tmpd, ignore_errors=True)

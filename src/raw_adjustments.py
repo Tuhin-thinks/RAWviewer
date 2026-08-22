@@ -58,6 +58,10 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     "Defringe": 0.0,
     "ColorNoiseReduction": 0.0,
     "LuminanceNoiseReduction": 0.0,
+    # AI denoise detail preservation (export-only): 0 = maximum smoothness,
+    # 100 = maximum original fine detail. Drives the half-res AI denoise
+    # edge-weighted high-frequency restore gain in onnx_scunet.process().
+    "DenoiseDetail": 50.0,
     "ParametricShadows": 0.0,
     "ParametricDarks": 0.0,
     "ParametricLights": 0.0,
@@ -266,6 +270,7 @@ SLIDER_SPECS: tuple[SliderSpec, ...] = (
     _slider_linear("Clarity2012", "Clarity", -100, 100, 0.0),
     _slider_linear("Defringe", "Defringe", 0, 100, 0.0),
     _slider_linear("LuminanceNoiseReduction", "Luma NR", 0, 100, 0.0, fmt=lambda x: f"{x:.0f}"),
+    _slider_linear("DenoiseDetail", "AI Detail", 0, 100, 50.0, fmt=lambda x: f"{x:.0f}"),
     # Transform (raw_transform.py). Straighten in 0.1-degree steps; keystone
     # sliders mirror Lightroom's slider-based Transform panel; crop insets as
     # per-edge percentages (stored as fractions).
@@ -972,6 +977,10 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
         # an otherwise-empty sidecar after Reset.
         if key == "DodgeBurnStrength":
             continue
+        # Export-only AI-denoise knob: changes nothing in the pixel pipeline,
+        # so it must not mark the image as edited on its own.
+        if key == "DenoiseDetail":
+            continue
         try:
             av = float(adj.get(key, default) if adj.get(key, default) is not None else default)
         except (TypeError, ValueError):
@@ -983,6 +992,29 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
         elif abs(av - bv) > 1e-4:
             return False
     return True
+
+
+def is_default_adjustments_for_sidecar(adj: Dict[str, float] | None) -> bool:
+    """Like is_default_adjustments, but does NOT ignore DenoiseDetail.
+
+    is_default_adjustments() deliberately skips DenoiseDetail (it's an
+    export-only knob invisible to the always-shown preview, so it
+    shouldn't mark a file "edited" for the gallery badge or skip the
+    pixel-pipeline shortcut). But write_xmp_adjustments reused that SAME
+    check to decide whether to write or clear the sidecar -- so a
+    DenoiseDetail-only change was treated as "no edit" and silently
+    dropped. Callers that persist the sidecar must use this variant.
+    """
+    if not is_default_adjustments(adj):
+        return False
+    if not adj:
+        return True
+    default_detail = DEFAULT_ADJUSTMENTS["DenoiseDetail"]
+    try:
+        detail = float(adj.get("DenoiseDetail", default_detail))
+    except (TypeError, ValueError):
+        return False
+    return abs(detail - default_detail) <= 1e-4
 
 
 def adjustments_equal(a: Dict[str, float], b: Dict[str, float]) -> bool:
@@ -1239,7 +1271,7 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: Dict[str, float]) -> None:
         except Exception:
             root = None
 
-    if is_default_adjustments(merged):
+    if is_default_adjustments_for_sidecar(merged):
         if root is None:
             if existing_rating > 0:
                 _write_xmp_rating_locked(xmp_path, existing_rating)
