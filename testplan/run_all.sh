@@ -39,6 +39,15 @@ run "cache semantics" testplan/auto/t_cache_semantics.py
 run "dodge & burn" testplan/auto/t_dodge_burn.py
 run "gallery closes editor" testplan/auto/t_gallery_closes_editor.py
 run "gallery hover prefetch" testplan/auto/t_gallery_hover_prefetch.py
+run "gallery new file registration" testplan/auto/t_gallery_new_file.py
+run "gallery thumb recovery" testplan/auto/t_gallery_thumb_recovery.py
+run "full-image cache byte budget" testplan/auto/t_full_image_cache_budget.py
+run "viewport load-queue reprioritise" testplan/auto/t_queue_reprioritise.py
+run "worker no QPixmap" testplan/auto/t_worker_no_qpixmap.py
+run "RAW slot accounting" testplan/auto/t_raw_slot_accounting.py
+run "visited-edit gallery bake" testplan/auto/t_visited_edit_bake.py
+run "edit-base max edge cap" testplan/auto/t_edit_base_max_edge.py
+run "memory-tier overlay" testplan/auto/t_memory_tier_overlay.py
 run "editor skip unsupported" testplan/auto/t_editor_skip_unsupported.py
 run "adjust loading overlay" testplan/auto/t_adjust_loading_overlay.py
 run "adjust copy paste shortcuts" testplan/auto/t_adjust_copy_paste_shortcuts.py

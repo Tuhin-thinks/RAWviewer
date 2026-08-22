@@ -64,7 +64,175 @@ _EDIT_BASE_INFLIGHT_LOCK = _ebt.Lock()
 _EDIT_BASE_LRU: OrderedDict = OrderedDict()
 _EDIT_BASE_LRU_LOCK = _ebt.Lock()
 _EDIT_BASE_LRU_MAX = 2
+
+
+def _edit_base_max_edge() -> int:
+    """Optional long-edge cap for the working (non-export) edit base.
+
+    Unset = LibRaw half-size only. RAM-tier overlay sets this on slower
+    machines so settle / Auto Tone do not keep a 12 MP uint16/float working
+    copy. Export still uses ``use_full_resolution=True`` and is never capped
+    here.
+    """
+    raw = os.environ.get("RAWVIEWER_EDIT_BASE_MAX_EDGE", "").strip()
+    if not raw:
+        return 0
+    try:
+        return max(640, min(int(raw), 8000))
+    except ValueError:
+        return 0
+
+
+def _edit_base_lru_max() -> int:
+    raw = os.environ.get("RAWVIEWER_EDIT_BASE_LRU_MAX", "").strip()
+    if raw:
+        try:
+            return max(1, min(int(raw), 4))
+        except ValueError:
+            pass
+    return _EDIT_BASE_LRU_MAX
+
+
+def cap_working_edit_base(img, *, use_full_resolution: bool = False):
+    """Downsample a working edit base to ``RAWVIEWER_EDIT_BASE_MAX_EDGE``.
+
+    Full-resolution export bases are returned unchanged.
+    """
+    if img is None or use_full_resolution or not hasattr(img, "shape"):
+        return img
+    max_edge = _edit_base_max_edge()
+    if max_edge <= 0:
+        return img
+    try:
+        h, w = int(img.shape[0]), int(img.shape[1])
+        m = max(h, w)
+        if m <= max_edge:
+            return img
+        import cv2
+
+        scale = max_edge / float(m)
+        nw, nh = max(1, int(round(w * scale))), max(1, int(round(h * scale)))
+        return cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
+    except Exception:
+        return img
+
+
 _LIBRAW_UNSUPPORTED_MAX = 2048
+
+
+def _on_gui_thread() -> bool:
+    """True when running on Qt's GUI thread.
+
+    QPixmap, and the pixmap cache the GUI thread reads, are only safe there.
+    Returns True if the question cannot be answered (no QApplication yet), so
+    single-process scripts and tests behave as before.
+    """
+    try:
+        from PyQt6.QtCore import QThread
+        from PyQt6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if app is None:
+            return True
+        return QThread.currentThread() is app.thread()
+    except Exception:
+        return True
+
+
+# Full-res sidecar-applied buffers, shared across processor instances -- with
+# the lock and the in-flight map that go WITH them. Hoisting the list alone
+# left concurrent workers mutating one shared list under different locks (lost
+# updates), and gave each worker its own empty in-flight map, so the
+# coalescing that exists to stop two workers both running a ~2s full-res apply
+# for the same file never once coalesced. The state and its guard have to move
+# together.
+_ADJUSTED_FULL_SLOTS: list = []
+_ADJUSTED_FULL_LOCK = _ebt.Lock()
+_ADJUSTED_INFLIGHT: dict = {}
+
+
+def release_adjusted_full_cache() -> int:
+    """Drop the full-res adjusted memo. Returns approximate bytes freed.
+
+    Up to six sensor-resolution buffers; at 45MP that is well over a
+    gigabyte, and it was invisible to the memory-pressure purge -- which
+    cleared every other heavy cache and left this one whole.
+    """
+    freed = 0
+    with _ADJUSTED_FULL_LOCK:
+        for entry in _ADJUSTED_FULL_SLOTS:
+            try:
+                freed += int(getattr(entry[2], "nbytes", 0) or 0)
+            except Exception:
+                pass
+        _ADJUSTED_FULL_SLOTS.clear()
+    return freed
+
+
+# Unpacked-RAW stash. Module-level for the same reason the in-flight registry
+# above is: workers build their own UnifiedImageProcessor, so instance state
+# is thrown away with the worker.
+_UNPACKED_RAW_LOCK = _ebt.Lock()
+_UNPACKED_RAW_SLOTS: OrderedDict = OrderedDict()
+
+
+def release_unpacked_raw_cache() -> int:
+    """Drop the unpacked-mosaic stash. Returns approximate bytes freed."""
+    freed = 0
+    with _UNPACKED_RAW_LOCK:
+        for value in _UNPACKED_RAW_SLOTS.values():
+            try:
+                arr = value[0] if isinstance(value, tuple) else value
+                freed += int(getattr(arr, "nbytes", 0) or 0)
+            except Exception:
+                pass
+        _UNPACKED_RAW_SLOTS.clear()
+    return freed
+
+
+# Serialises the post-decode persist work. Each of these captures the FULL
+# sensor buffer (hundreds of MB) in a closure and may re-apply the sidecar at
+# full resolution, so fast navigation used to overlap several unbounded
+# daemon threads, each holding its own buffer alive. One worker means at most
+# one such buffer is pinned, and the generation checks inside the job still
+# drop work whose file has moved on.
+_PERSIST_POOL = None
+_PERSIST_POOL_LOCK = _ebt.Lock()
+
+
+def _persist_executor():
+    global _PERSIST_POOL
+    with _PERSIST_POOL_LOCK:
+        if _PERSIST_POOL is None:
+            from concurrent.futures import ThreadPoolExecutor
+
+            _PERSIST_POOL = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="rv-persist"
+            )
+        return _PERSIST_POOL
+
+
+def _submit_persist(fn) -> None:
+    """Queue background persist work; never raise into the decode path."""
+    try:
+        _persist_executor().submit(fn)
+    except Exception:
+        try:
+            fn()
+        except Exception:
+            pass
+
+
+# Generation tokens for deferred put_full / preview persist. MODULE-level:
+# ImageLoadWorker builds a fresh UnifiedImageProcessor per task, so a
+# per-instance gen map could never see another worker's newer decode of the
+# same path. Persist jobs check "has the user moved on?" against THIS map;
+# if worker B's decode of path X cannot bump the token worker A's in-flight
+# job is watching, A's late write poisons the cache after B already put a
+# fresher buffer. Same half-hoist failure as lock/list and inflight pairs.
+_ASYNC_CACHE_GEN: OrderedDict = OrderedDict()
+_ASYNC_CACHE_GEN_LOCK = _ebt.Lock()
+_ASYNC_CACHE_GEN_MAX = 4096
 
 
 def _edit_base_file_ident(file_path: str) -> tuple:
@@ -130,11 +298,24 @@ def _mark_libraw_unsupported(path_key: str) -> None:
 
 
 def release_edit_base_cache() -> int:
-    """Drop in-memory half-res edit bases (e.g. after a LibRaw binary swap)."""
+    """Drop the half-size edit-base LRU. Returns bytes freed (approx).
+
+    Called by the image cache's aggressive purge, and after a LibRaw binary
+    swap. This LRU holds up to two float32 half-size bases -- on a 45MP file
+    that is ~135 MB each -- and was the one heavy cache the purge could not
+    see, so a critical-pressure purge cleared everything else and left
+    ~270 MB sitting here.
+    """
+    freed = 0
     with _EDIT_BASE_LRU_LOCK:
-        n = len(_EDIT_BASE_LRU)
+        for value in _EDIT_BASE_LRU.values():
+            try:
+                arr = value[0] if isinstance(value, tuple) else value
+                freed += int(getattr(arr, "nbytes", 0) or 0)
+            except Exception:
+                pass
         _EDIT_BASE_LRU.clear()
-        return n
+    return freed
 
 
 def decode_raw_file(file_path: str, params: Dict[str, Any]) -> np.ndarray:
@@ -165,10 +346,12 @@ class UnifiedImageProcessor:
         # cost). Small LRU (~2 bytes/sensor-pixel per slot) so A↔B revisit
         # and neighbor prefetch do not immediately evict the current file.
         # Consumed by the full decode via _take_unpacked_raw.
-        import threading as _threading
-
-        self._unpacked_raw_lock = _threading.Lock()
-        self._unpacked_raw_slots: OrderedDict = OrderedDict()
+        #
+        # MODULE-level, not per instance. ImageLoadWorker is a one-shot
+        # QRunnable that builds its own UnifiedImageProcessor, so an instance
+        # stash died with the worker and never served a hit across tasks.
+        self._unpacked_raw_lock = _UNPACKED_RAW_LOCK
+        self._unpacked_raw_slots = _UNPACKED_RAW_SLOTS
         # Sidecar-adjusted full-buffer memo: applying XMP adjustments to a
         # sensor-resolution buffer costs ~1.8-2.1s at 45MP even with the
         # row-band threading in raw_edit_pipeline.py, and _apply_sidecar_if_
@@ -181,24 +364,31 @@ class UnifiedImageProcessor:
         # Key_E shortcut, and XMP-saving are all still live in main.py, so
         # that no-op silently hid saved edits from the full-res view while
         # the live panel/preview tier still showed them. Restored.)
-        self._adjusted_full_lock = _threading.Lock()
-        self._adjusted_full_slots: list = []  # [(norm_path, adj_key, np.ndarray)]
+        self._adjusted_full_lock = _ADJUSTED_FULL_LOCK
+        # Module-level, for the same reason the unpack stash and the in-flight
+        # registry are: ImageLoadWorker is a one-shot QRunnable that builds its
+        # own UnifiedImageProcessor, so an instance memo died with the worker
+        # and an A-B-A revisit of an edited file never hit it -- re-paying a
+        # multi-second full-res apply each time, which is the entire reason
+        # this memo exists.
+        self._adjusted_full_slots = _ADJUSTED_FULL_SLOTS
         # In-flight sidecar applies keyed (norm_path, adj_key): a second
         # thread asking for the same apply WAITS for the first instead of
         # recomputing -- overlapping duplicate applies of a 32MP buffer
         # measured as stacked 3.5s+7.2s entries in the same second.
-        self._adjusted_inflight: dict = {}
-        # Generation tokens for deferred put_full / preview persist threads —
-        # a newer decode of the same path bumps the token so a late write
-        # cannot poison the cache after cancel/navigation.
-        self._async_cache_lock = _threading.Lock()
-        self._async_cache_gen: dict = {}
+        self._adjusted_inflight = _ADJUSTED_INFLIGHT
+        # Async-persist gen tokens: module-level (see _ASYNC_CACHE_GEN).
+        self._async_cache_lock = _ASYNC_CACHE_GEN_LOCK
+        self._async_cache_gen = _ASYNC_CACHE_GEN
 
     def _bump_async_cache_gen(self, file_path: str) -> int:
         key = os.path.normcase(os.path.abspath(file_path or ""))
         with self._async_cache_lock:
             gen = int(self._async_cache_gen.get(key, 0)) + 1
             self._async_cache_gen[key] = gen
+            self._async_cache_gen.move_to_end(key)
+            while len(self._async_cache_gen) > _ASYNC_CACHE_GEN_MAX:
+                self._async_cache_gen.popitem(last=False)
             return gen
 
     def _async_cache_gen_current(self, file_path: str) -> int:
@@ -230,6 +420,48 @@ class UnifiedImageProcessor:
         with self._unpacked_raw_lock:
             return self._unpacked_raw_slots.pop(key, None)
 
+    @staticmethod
+    def _adjustment_fingerprint(adj: dict, shape) -> tuple:
+        """Fingerprint for the full-res adjusted memo and its peekers.
+
+        Includes base-buffer shape so a half-size cache entry can never be
+        served for a full-res request. Every non-numeric edit is folded in
+        (hashed): a hand-picked key list lagged behind channel curves / heal /
+        mask layers. Serials (mask alpha as base64 PNG) are hashed, not stored.
+        """
+        import hashlib as _hashlib
+
+        numeric = []
+        strings = _hashlib.sha1()
+        for _k in sorted(adj.keys()):
+            _v = adj[_k]
+            if isinstance(_v, bool):
+                strings.update(f"{_k}={int(_v)}\x00".encode())
+            elif isinstance(_v, (int, float)):
+                numeric.append((_k, round(float(_v), 4)))
+            elif isinstance(_v, str):
+                if _v:
+                    strings.update(f"{_k}={_v}\x00".encode())
+            elif _v is not None:
+                # Live objects (MaskLayerStack under _mask_layers_obj): serialized
+                # twin is already in the dict; identity notices a swap.
+                strings.update(f"{_k}=obj{id(_v)}\x00".encode())
+        return (tuple(numeric), strings.hexdigest(), shape)
+
+    def _peek_adjusted_full(
+        self, file_path: str, adj: dict, shape
+    ) -> Optional[np.ndarray]:
+        """Return a warm full-res adjusted buffer, or None. Non-blocking."""
+        if adj is None or shape is None:
+            return None
+        norm = os.path.normcase(os.path.abspath(file_path or ""))
+        adj_key = self._adjustment_fingerprint(adj, shape)
+        with self._adjusted_full_lock:
+            for n, k, buf in self._adjusted_full_slots:
+                if n == norm and k == adj_key:
+                    return buf
+        return None
+
     def _apply_sidecar_if_needed(
         self,
         file_path: str,
@@ -248,10 +480,10 @@ class UnifiedImageProcessor:
         if rgb_image is None:
             return None
         try:
-            from raw_adjustments import _already_adjusted_ids, _already_adjusted_lock
-            with _already_adjusted_lock:
-                if id(rgb_image) in _already_adjusted_ids:
-                    return rgb_image
+            from raw_adjustments import is_array_already_adjusted
+
+            if is_array_already_adjusted(rgb_image):
+                return rgb_image
         except Exception:
             pass
         if not force:
@@ -290,17 +522,7 @@ class UnifiedImageProcessor:
             if is_default_adjustments(adj):
                 return rgb_image
             norm = os.path.normcase(os.path.abspath(file_path))
-            # Fingerprint includes the base buffer's shape so a half-size
-            # cached result can never be served for a full-res request.
-            from raw_dodge_burn import MASK_KEY as _db_mask_key
-
-            adj_key = (
-                tuple(sorted((k, round(float(v), 4)) for k, v in adj.items()
-                             if isinstance(v, (int, float)))),
-                str(adj.get("_tone_curve_pv2012", "") or ""),
-                str(adj.get(_db_mask_key, "") or ""),
-                rgb_image.shape,
-            )
+            adj_key = self._adjustment_fingerprint(adj, rgb_image.shape)
             import threading as _threading
 
             inflight_key = (norm, adj_key)
@@ -341,9 +563,13 @@ class UnifiedImageProcessor:
                     # to 6 files: the previous 3-slot global list was evicted
                     # wholesale by neighbor prefetch, so revisits re-paid the
                     # full multi-second apply.
-                    self._adjusted_full_slots = [
+                    # In place: rebinding self._adjusted_full_slots would give
+                    # this instance a private list again and unshare the memo.
+                    kept = [
                         e for e in self._adjusted_full_slots if e[0] != norm
-                    ][-5:] + [(norm, adj_key, out)]
+                    ][-5:]
+                    kept.append((norm, adj_key, out))
+                    self._adjusted_full_slots[:] = kept
                 return out
             finally:
                 with self._adjusted_full_lock:
@@ -473,11 +699,13 @@ class UnifiedImageProcessor:
         # Ident includes mtime/size so a replaced file on Windows/macOS
         # invalidates without relying on path alone.
         file_ident = _edit_base_file_ident(file_path)
+        max_edge = 0 if use_full_resolution else _edit_base_max_edge()
         cache_key = (
             skip_key,
             bool(use_full_resolution),
             bool(apply_lens_correction),
             file_ident,
+            int(max_edge),
         )
         if not use_full_resolution:
             with _EDIT_BASE_LRU_LOCK:
@@ -490,7 +718,12 @@ class UnifiedImageProcessor:
         # panel's base request racing a preview worker's, each on its OWN
         # UnifiedImageProcessor instance) share one decode instead of queueing
         # a redundant multi-hundred-ms unpack behind the global rawpy lock.
-        dedup_key = (skip_key, bool(use_full_resolution), bool(apply_lens_correction))
+        dedup_key = (
+            skip_key,
+            bool(use_full_resolution),
+            bool(apply_lens_correction),
+            int(max_edge),
+        )
         import threading as _threading
 
         mine = False
@@ -519,10 +752,11 @@ class UnifiedImageProcessor:
                 apply_lens_correction=apply_lens_correction,
             )
             if result is not None and not use_full_resolution:
+                result = cap_working_edit_base(result)
                 with _EDIT_BASE_LRU_LOCK:
                     _EDIT_BASE_LRU[cache_key] = result
                     _EDIT_BASE_LRU.move_to_end(cache_key)
-                    while len(_EDIT_BASE_LRU) > _EDIT_BASE_LRU_MAX:
+                    while len(_EDIT_BASE_LRU) > _edit_base_lru_max():
                         _EDIT_BASE_LRU.popitem(last=False)
             slot["result"] = result
             return result
@@ -2026,8 +2260,6 @@ class UnifiedImageProcessor:
                     if use_full_resolution:
                         if isinstance(rgb_image, DeviceRgb):
                             # Defer host D2H so CUDA-GL display can paint first.
-                            import threading
-
                             def _cache_device_host(
                                 dev=rgb_image, fp=file_path, expected=cache_gen
                             ):
@@ -2044,9 +2276,7 @@ class UnifiedImageProcessor:
                                 except Exception:
                                     pass
 
-                            threading.Thread(
-                                target=_cache_device_host, daemon=True
-                            ).start()
+                            _submit_persist(_cache_device_host)
                             host = None
                         else:
                             self.cache.put_full_image(
@@ -2084,10 +2314,15 @@ class UnifiedImageProcessor:
                     # visibly shifts when the fresh LibRaw render lands. With
                     # it, revisits paint consistent colors from the first
                     # frame. Workflow toggles already purge these caches, so
-                    # embedded mode is unaffected. Runs on a daemon thread --
-                    # the resize+JPEG encode costs ~110ms and must not delay
-                    # the image-ready callback.
-                    import threading
+                    # embedded mode is unaffected.
+                    #
+                    # Hybrid bake of browse-edits (when enabled):
+                    #   1) Warm full-res adjusted memo -- resize+encode only
+                    #      (UI already paid the multi-second apply).
+                    #   2) Memo miss -- resize FIRST, then apply at preview
+                    #      scale (never a second full-res apply just for a
+                    #      2304px JPEG; spatial tools run at preview scale).
+                    # Default (no browse-edits): persist the unadjusted base.
 
                     def _persist_libraw_preview(
                         rgb=rgb_image, fp=file_path, expected=cache_gen
@@ -2111,26 +2346,62 @@ class UnifiedImageProcessor:
                                 is_default_adjustments,
                                 sidecar_adjustments_enabled,
                             )
-                            # Only bake edits into the persisted preview when
-                            # browse tiers render edits; the default shows
-                            # original pixels outside the Adjust panel.
+
+                            source = rgb
+                            already_preview_sized = False
                             if sidecar_adjustments_enabled():
                                 adj = load_adjustments_for_file(fp)
                                 if adj and not is_default_adjustments(adj):
-                                    rgb = apply_adjustments_to_rgb(rgb, adj)
+                                    memo = self._peek_adjusted_full(
+                                        fp, adj, rgb.shape
+                                    )
+                                    if memo is not None:
+                                        # Path 1: warm memo -- no re-apply.
+                                        source = memo
+                                    else:
+                                        # Path 2: miss -- downscale then apply.
+                                        h0, w0 = rgb.shape[:2]
+                                        cap0 = memory_preview_max_edge()
+                                        if max(h0, w0) > cap0:
+                                            sc0 = cap0 / max(h0, w0)
+                                            small = cv2.resize(
+                                                rgb,
+                                                (
+                                                    max(1, int(w0 * sc0)),
+                                                    max(1, int(h0 * sc0)),
+                                                ),
+                                                interpolation=cv2.INTER_AREA,
+                                            )
+                                        else:
+                                            small = rgb
+                                        if (
+                                            self._async_cache_gen_current(fp)
+                                            != expected
+                                        ):
+                                            return
+                                        source = apply_adjustments_to_rgb(
+                                            small, adj
+                                        )
+                                        already_preview_sized = True
                             if self._async_cache_gen_current(fp) != expected:
                                 return
-                            h, w = rgb.shape[:2]
-                            cap = memory_preview_max_edge()
-                            if max(h, w) > cap:
-                                sc = cap / max(h, w)
-                                prev = cv2.resize(
-                                    rgb,
-                                    (max(1, int(w * sc)), max(1, int(h * sc))),
-                                    interpolation=cv2.INTER_AREA,
-                                )
+                            if already_preview_sized:
+                                prev = source
                             else:
-                                prev = rgb
+                                h, w = source.shape[:2]
+                                cap = memory_preview_max_edge()
+                                if max(h, w) > cap:
+                                    sc = cap / max(h, w)
+                                    prev = cv2.resize(
+                                        source,
+                                        (
+                                            max(1, int(w * sc)),
+                                            max(1, int(h * sc)),
+                                        ),
+                                        interpolation=cv2.INTER_AREA,
+                                    )
+                                else:
+                                    prev = source
                             if self._async_cache_gen_current(fp) != expected:
                                 return
                             ok, buf = cv2.imencode(
@@ -2149,9 +2420,7 @@ class UnifiedImageProcessor:
                         except Exception:
                             pass
 
-                    threading.Thread(
-                        target=_persist_libraw_preview, daemon=True
-                    ).start()
+                    _submit_persist(_persist_libraw_preview)
 
             return rgb_image
                 
@@ -2201,6 +2470,23 @@ class UnifiedImageProcessor:
             from image_cache import memory_preview_max_edge
 
             max_edge = 0 if use_full_resolution else memory_preview_max_edge()
+
+            # QPixmap is GUI-thread-only in Qt. This runs on an ImageLoadWorker
+            # for every non-RAW file, so off the GUI thread it returns a
+            # QImage instead and the conversion happens once the buffer has
+            # been delivered. The pixmap cache is skipped there too: the GUI
+            # thread reads it, and populating it from a worker was the second
+            # half of the same problem.
+            if not _on_gui_thread():
+                from common_image_loader import load_qimage_safe
+
+                qimg = load_qimage_safe(file_path, max_edge=max_edge)
+                if qimg is not None and not qimg.isNull():
+                    return qimg
+                # Nothing safe to return from here; the caller treats None as
+                # "no full-res buffer", which it already handles.
+                return None
+
             pixmap = load_pixmap_safe(file_path, max_edge=max_edge)
             if not pixmap.isNull():
                 self.cache.put_pixmap(file_path, pixmap)

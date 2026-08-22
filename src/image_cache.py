@@ -1809,10 +1809,24 @@ class MemoryMonitor:
         return {
             # Opt-in override for zoomed-culling workflows: retaining more
             # sensor-res buffers makes zoomed A<->B revisits instant, at
-            # ~100-200MB per slot. Default stays conservative for 8GB machines.
+            # ~100-200MB per slot.
+            #
+            # This was min(max_full_images, 8). The 8 was a second, cruder
+            # limit on top of the byte budget that already governs this cache
+            # (_enforce_numpy_cache_byte_budget, 55% of max_memory_mb), and it
+            # only ever bound when the byte budget said there was room:
+            # measured on a 17GB machine, bytes allowed 13 entries at 24MP and
+            # 9 at 33MP while the count cap allowed 8. At 61MP the byte budget
+            # binds first (5) and correctly, which is the case the 8 was meant
+            # to protect and does not need it.
+            #
+            # So the RAM-derived figure stands on its own now, with maximum=32
+            # as a sanity bound rather than the operative one. Memory is still
+            # bounded by bytes; it is simply bounded ONCE, by the limit that
+            # knows how large these buffers actually are.
             'full_images': _env_int(
                 "RAWVIEWER_FULL_IMAGE_CACHE_ITEMS",
-                min(max_full_images, 8),
+                max_full_images,
                 minimum=2,
                 maximum=32,
             ),
@@ -2201,6 +2215,35 @@ class ImageCache(QObject):
             self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
+        # The edit-base LRU lives in unified_image_processor and is the one
+        # heavy cache this purge could not previously reach, so a
+        # critical-pressure purge freed everything except a couple of
+        # hundred MB of float32 bases.
+        try:
+            from unified_image_processor import (
+                release_adjusted_full_cache,
+                release_edit_base_cache,
+                release_unpacked_raw_cache,
+            )
+
+            # All three live in unified_image_processor at module scope so they
+            # survive the one-shot workers that build them. That is what makes
+            # them useful, and also what puts them outside every cache this
+            # class owns -- a critical-pressure purge used to clear everything
+            # it could see and leave these whole.
+            freed = (
+                release_edit_base_cache()
+                + release_adjusted_full_cache()
+                + release_unpacked_raw_cache()
+            )
+            if freed:
+                import logging
+
+                logging.getLogger(__name__).info(
+                    "[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6
+                )
+        except Exception:
+            pass
         
         # Aggressively drop capacities to 3 thread-safely
         self.full_image_cache.shrink_to_size(3)
@@ -3202,6 +3245,35 @@ class ImageCache(QObject):
             self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
+        # The edit-base LRU lives in unified_image_processor and is the one
+        # heavy cache this purge could not previously reach, so a
+        # critical-pressure purge freed everything except a couple of
+        # hundred MB of float32 bases.
+        try:
+            from unified_image_processor import (
+                release_adjusted_full_cache,
+                release_edit_base_cache,
+                release_unpacked_raw_cache,
+            )
+
+            # All three live in unified_image_processor at module scope so they
+            # survive the one-shot workers that build them. That is what makes
+            # them useful, and also what puts them outside every cache this
+            # class owns -- a critical-pressure purge used to clear everything
+            # it could see and leave these whole.
+            freed = (
+                release_edit_base_cache()
+                + release_adjusted_full_cache()
+                + release_unpacked_raw_cache()
+            )
+            if freed:
+                import logging
+
+                logging.getLogger(__name__).info(
+                    "[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6
+                )
+        except Exception:
+            pass
         self.libraw_preview_paths.clear()
         if self._libraw_preview_paths_file and os.path.isfile(self._libraw_preview_paths_file):
             try:
