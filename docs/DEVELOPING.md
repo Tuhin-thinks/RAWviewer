@@ -40,6 +40,14 @@ Build outputs:
 
 Dependencies are in `pixi.toml`. Packaging scripts use a local `rawviewer_env/` venv when building release artifacts.
 
+**LibRaw submodule (required for release packaging):** newer Sony ARWs (e.g. A7 V / ARW6) need LibRaw newer than the stock rawpy wheel. Sources live under `third_party/LibRaw` + `third_party/LibRaw-cmake`:
+
+```bash
+git submodule update --init --recursive
+```
+
+Windows installer builds call `scripts/libraw/build_libraw_windows.ps1` automatically; macOS release builds use `scripts/libraw/build_libraw_openmp.sh` (OpenMP + same pin). See [`scripts/libraw/README.md`](../scripts/libraw/README.md).
+
 ### Build from source (commands)
 
 **Windows**
