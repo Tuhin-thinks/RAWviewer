@@ -58,22 +58,22 @@
 
 Full changelog: [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
-## Unreleased 3.1.0 (stability + performance vs 3.0.2)
+## 3.1.0 (stability + performance vs 3.0.2)
 
-GitHub Releases still ship **3.0.x**. **3.1.0 is a stability and performance patch**, not a feature train, and is **not tagged**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md). Notes: [`RELEASE_NOTES.md`](RELEASE_NOTES.md#version-310).
+**3.1.0 is a stability and performance patch** on `main`, not a feature train. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md). Notes: [`RELEASE_NOTES.md`](RELEASE_NOTES.md#version-310).
 
-What 3.1.0 **claims** vs 3.0.2:
+What 3.1.0 **ships** vs 3.0.2:
 
 - **RAM-tier Adjust cap** — slower / ≤16 GB machines settle on a smaller working base; export stays full-res. No memory-tier picker.
 - **Gallery scroll and load** — viewport-aimed queue, missing tiles return, trackpad sub-pixel, folder change does not wipe thumbs, cancel-once loads.
-- **Caches** — byte-budget full-image cache; no wipe of every tier when Adjust is opened and left unchanged; sidecar parse shared.
-- **Export reliability** — band seams, silent AI-denoise skip on the banded path, OpenMP/BLAS not taking every core.
+- **Caches** — byte-budget full-image cache; no wipe of every tier when Adjust is opened and left unchanged.
+- **Export reliability** — band seams, silent AI-denoise skip on the banded path, encoded-space dither; Plus AI denoise restored with NAFNet / half-res + **AI Detail**.
 - **Crash / thread / cancel** — no `QPixmap` on workers, slot double-free, `id()` registry, CUDA-GL thread, prefetch error storm.
-- **HE/HE\* NEF** — Adjust via embedded JPEG instead of refusing the file; undecodable RAW keeps the embedded preview (not a grey tile).
+- **HE/HE\* NEF and new Sony (ARW6)** — Adjust via LibRaw when possible, otherwise embedded JPEG; undecodable RAW keeps the embedded preview (not a grey tile). Packaged builds use LibRaw master.
 
-*(Uncommitted, targeted for this patch — not in git yet:)* EXIF blob persist for fields that only lived in RAM; scrollbar date bubble without per-tick flash/decode.
+*(Uncommitted — not in this cut:)* EXIF blob persist for fields that only lived in RAM; scrollbar date bubble without per-tick flash/decode; shared sidecar XML parse (still with 3.2 mask XMP on `development`).
 
-Masks, pairing, MCP, Share to AI, and the rest of the working-tree feature train are **not** 3.1.0 shipping — see [Looking ahead](#looking-ahead) (**3.2+**). Generative editing stays shelved.
+Masks, pairing, MCP, Share to AI, and the rest of the feature train stay on **`development` (3.2+)** — see [Looking ahead](#looking-ahead). Generative editing stays shelved.
 
 ---
 
@@ -357,7 +357,7 @@ To clear cache: **`scripts\Launch\windows\clear_cache.bat`** (Windows) · **`scr
 
 ## Looking ahead
 
-**3.1.0** is the [stability / performance patch vs 3.0.2](#unreleased-310-stability--performance-vs-302). The items below are **later trains (3.2+)**. Much of this **already exists in the `development` tree** (some only in the dirty working tree). It is **kept**; it is **not** what 3.1.0 claims to ship.
+**3.1.0** is the [stability / performance patch vs 3.0.2](#310-stability--performance-vs-302) on **`main`**. The items below are **later trains (3.2+)** on **`development`**. They are **kept** there; they are **not** what 3.1.0 ships.
 
 Rule of thumb: **if it can ship in Plus, it counts as feasible** even when Standard must omit it (size / no ML).
 

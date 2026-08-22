@@ -4,7 +4,7 @@ Manual walkthrough for testers. Automated suites stay in [`TEST_PLAN.md`](TEST_P
 
 **3.1.0 is a stability + performance patch, not a feature tour.** Do **not** spend this pass on masks, pairing, MCP, Share to AI, ColorChecker, merges, labels, or export-queue UX. Feature checklists wait for **3.2+**.
 
-**Baseline:** tag **3.0.2**. **This version:** `development` plus optional dirty-tree cache/bubble hardening. Record OS, edition, and whether the tree was dirty.
+**Baseline:** tag **3.0.2**. **This version:** `main` / `release/3.1.0` (not `development`). Record OS and edition. Ignore 3.2+ UI if you accidentally open a development build.
 
 **Locked product rules (fail if violated):**
 
@@ -18,7 +18,7 @@ Manual walkthrough for testers. Automated suites stay in [`TEST_PLAN.md`](TEST_P
 
 **Need:** a 3.0.2 mental baseline (gallery cull, Adjust global tone / D&B / heal / crop, JPEG/WebP/TIFF export, stars 0–5, Plus AI Denoise export). Folders: mixed RAW on a large folder; ≤16 GB machine if you have one; a Nikon HE/HE\* NEF if you have one; geotagged files for Map.
 
-**Launch:** `pixi run start` or the packaged app. Splash / pairing / MCP menus may exist in the dirty tree — **ignore them** for this pass.
+**Launch:** `pixi run start` or the packaged 3.1 app. There must be **no** Masks / MCP / pairing / merge UI on this build.
 
 ---
 

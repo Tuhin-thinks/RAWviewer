@@ -4,15 +4,15 @@
 
 
 ## 🚀 Version 3.1.0
-**Status: not yet released — stability + performance patch vs tagged 3.0.2**
+**Status: on `main` / `release/3.1.0` — stability + performance patch vs tagged 3.0.2**
 
-GitHub Releases still ship **3.0.x**. **3.1.0 is not a feature dump.** It is the next patch for memory, gallery load/scroll, cache, export reliability, and crash/cancel paths relative to **3.0.2**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md).
+**3.1.0 is not a feature dump.** It is the next patch for memory, gallery load/scroll, cache, export reliability, crash/cancel paths, LibRaw for new Sony bodies, and Plus AI denoise speed relative to **3.0.2**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md).
 
 There is **no** user-facing memory-tier picker; RAM caps stay automatic. **Generative editing stays shelved.**
 
-**Honest provenance.** `development` also holds a large **later train** (masks, merges, ColorChecker, pairing, MCP, Share to AI, …). That code is **kept in the tree** for **3.2+**; it is **not** what 3.1.0 claims to ship. Items marked *(uncommitted)* are dirty-tree hardening aimed at this patch and are **not** in git yet.
+**Branch policy.** `main` ships this 3.1.0 line. `development` keeps the **later train** (masks, merges, ColorChecker, pairing, MCP, Share to AI, …) for **3.2+** — that code is **not** in 3.1.0. Items marked *(uncommitted)* are still not in git.
 
-### Memory and RAM tier *(in `development`)*
+### Memory and RAM tier
 
 - **Low-RAM machines keep a usable gallery** without inheriting 24 GB prefetch defaults (idle-preload 120, 12 preload threads, hover full-res). The RAM tier overlays those numbers.
 - **Adjust settle stays light on slower machines.** Live-drag was already 640 px; settle still used a half-sensor frame (often ~12 MP). On ≤16 GB the RAM tier now caps that working base (and the live-drag edge). **Export still decodes at full resolution.**
@@ -20,7 +20,7 @@ There is **no** user-facing memory-tier picker; RAM caps stay automatic. **Gener
 - **Banded export / OpenCV and native math threads no longer take every core.** Caps follow the RAM tier; OpenBLAS / Accelerate follow the same OpenMP limit so decode + preview do not freeze the UI.
 - **Full-image cache is a byte budget**, not a hard count of 8, so smaller files keep more of them.
 
-### Gallery scroll and load *(in `development`; bubble throttle uncommitted)*
+### Gallery scroll and load *(bubble throttle still uncommitted)*
 
 - **The load queue aims at the viewport**, not enqueue order. Jumping no longer waits behind everything you scrolled past. Cancelled off-screen thumbs no longer block visible ones (a stall that needed a folder reload).
 - **A cancelled-at-start load finishes once**, not twice.
@@ -33,7 +33,7 @@ There is **no** user-facing memory-tier picker; RAM caps stay automatic. **Gener
 
 ### EXIF / sidecar cache
 
-- **Sidecar XML is parsed once and shared** while a photo is in use *(in `development`)* — opening an edited file is cheaper and less likely to storm the parser.
+- **Sidecar XML is parsed once and shared** while a photo is in use *(still on `development` for 3.2 mask XMP; not required to open 3.1 Adjust)* — opening an edited file is cheaper and less likely to storm the parser.
 - **EXIF disk cache can persist fields that previously lived only in RAM** *(uncommitted)* so gallery metadata (stars today; later-train labels if present) survives restart instead of vanishing until a rescan. This is a cache-correctness fix, not a new catalog product.
 
 ### Export and Plus AI denoise *(fixes on the 3.0.2 path)*
@@ -43,13 +43,13 @@ There is **no** user-facing memory-tier picker; RAM caps stay automatic. **Gener
 - **Plus AI denoise export still cancels and reports progress** (3.0.2 behaviour) and must not hang or leave a partial file. First-use model download is not timed out as a failed denoise.
 - Faster CPU denoise (NAFNet / half-res + detail restore) and **AI Detail** stay on the existing Plus denoise export — performance of a 3.0.2 feature, not a new export menu.
 
-### Crashes, threads, cancel *(in `development`)*
+### Crashes, threads, cancel
 
 Review rounds on this line fixed: **`QPixmap` built on worker threads**, a **decode-slot double-free** on cancel paths, a registry keyed on **`id()`** that could match a recycled object, **shared caches with per-instance locks** (so they can be purged), and a **CUDA-GL resource released on the wrong thread**. Idle prefetch no longer error-storms on undecodable files.
 
 ### Necessary exception (crash / refuse, not a feature tour)
 
-- **Nikon HE/HE\* NEF:** 3.0 already browsed these; 3.1.0 **stops refusing Adjust** by developing the **embedded JPEG** (8-bit base). LibRaw still cannot demosaic HE. **Undecodable RAW keeps the embedded preview** instead of a permanent grey tile. This is here so those files do not error out — not a new JPEG-develop product (that waits with 3.2+).
+- **Nikon HE/HE\* NEF and other demosaic-failed RAW (including Sony ARW6 / A7 V):** 3.0 already browsed these; 3.1.0 **stops refusing Adjust** by developing the **embedded JPEG** (8-bit base) when LibRaw cannot demosaic. Packaged builds ship **LibRaw master** so ARW6 can demosaic when the decoder knows the body. **Undecodable RAW keeps the embedded preview** instead of a permanent grey tile. This is here so those files do not error out — not a new JPEG-develop product (that waits with 3.2+).
 
 ### What 3.1.0 does **not** claim
 
