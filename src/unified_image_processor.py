@@ -318,6 +318,25 @@ def release_edit_base_cache() -> int:
     return freed
 
 
+def trim_edit_base_lru(max_items: int | None = None) -> int:
+    """Drop oldest edit-base LRU entries down to ``max_items`` (keep the newest).
+
+    Used by memory-pressure backoff. Does not change ``RAWVIEWER_EDIT_BASE_MAX_EDGE``
+    and does not rebuild the in-use working buffer.
+    """
+    cap = max(1, int(max_items if max_items is not None else _edit_base_lru_max()))
+    freed = 0
+    with _EDIT_BASE_LRU_LOCK:
+        while len(_EDIT_BASE_LRU) > cap:
+            _key, value = _EDIT_BASE_LRU.popitem(last=False)
+            try:
+                arr = value[0] if isinstance(value, tuple) else value
+                freed += int(getattr(arr, "nbytes", 0) or 0)
+            except Exception:
+                pass
+    return freed
+
+
 def decode_raw_file(file_path: str, params: Dict[str, Any]) -> np.ndarray:
     """
     Helper function for process pool to decode RAW files.

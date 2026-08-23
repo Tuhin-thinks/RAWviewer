@@ -16,7 +16,12 @@ slider-based -- no corner-drag UI needed):
   CropAngle              degrees, +CCW, straighten
   PerspectiveVertical    +100 tilts the top away (converging verticals fix)
   PerspectiveHorizontal  +100 tilts the right side away
+  Distortion             +100 corrects pincushion, -100 corrects barrel
   CropLeft/Right/Top/Bottom  additional user crop, inset fraction per edge
+  AnamorphicRatio        desqueeze factor (1.0 = none)
+
+Order: distortion first (a capture property), then straighten/keystone,
+then crop insets, then anamorphic desqueeze.
 """
 
 from __future__ import annotations
@@ -31,19 +36,93 @@ TRANSFORM_KEYS = (
     "CropRight",
     "CropTop",
     "CropBottom",
+    "AnamorphicRatio",
+    "Distortion",
 )
 
 # Keystone strength at slider 100: the far edge shrinks by this fraction.
 _KEYSTONE_MAX = 0.35
+
+# Radial k1 at slider +/-100.
+_DISTORTION_MAX = 0.30
 
 
 def has_geometry(adj: dict | None) -> bool:
     if not adj:
         return False
     try:
-        return any(abs(float(adj.get(k, 0.0) or 0.0)) > 1e-4 for k in TRANSFORM_KEYS)
+        if any(
+            abs(float(adj.get(k, 0.0) or 0.0)) > 1e-4
+            for k in (
+                "CropAngle",
+                "PerspectiveVertical",
+                "PerspectiveHorizontal",
+                "CropLeft",
+                "CropRight",
+                "CropTop",
+                "CropBottom",
+            )
+        ):
+            return True
+        if abs(float(adj.get("Distortion", 0.0) or 0.0)) > 1e-4:
+            return True
+        ratio = float(adj.get("AnamorphicRatio", 1.0) or 1.0)
+        return abs(ratio - 1.0) > 1e-4
     except Exception:
         return False
+
+
+def _distortion_valid_scale(k: float) -> float:
+    """Largest centred fraction of the frame that samples only real pixels."""
+    if k <= 0.0:
+        return 1.0
+    lo, hi = 0.0, 1.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if mid * (1.0 + k * mid * mid) < 1.0:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def _apply_distortion(img: np.ndarray, k: float, *, preview: bool) -> np.ndarray:
+    """Radial k1 correction. k>0 pincushion, k<0 barrel. Never invents pixels."""
+    import cv2
+
+    h, w = img.shape[:2]
+    if h < 8 or w < 8:
+        return img
+
+    cx = (w - 1) * 0.5
+    cy = (h - 1) * 0.5
+    norm = float(np.hypot(cx, cy)) or 1.0
+
+    ys, xs = np.indices((h, w), dtype=np.float32)
+    dx = (xs - cx) / norm
+    dy = (ys - cy) / norm
+    r2 = dx * dx + dy * dy
+    factor = 1.0 + k * r2
+
+    map_x = (cx + dx * factor * norm).astype(np.float32)
+    map_y = (cy + dy * factor * norm).astype(np.float32)
+
+    out = cv2.remap(
+        img,
+        map_x,
+        map_y,
+        interpolation=cv2.INTER_NEAREST if preview else cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_REPLICATE,
+    )
+
+    scale = _distortion_valid_scale(k)
+    if scale < 0.999:
+        keep_w = max(8, int(round(w * scale)))
+        keep_h = max(8, int(round(h * scale)))
+        x0 = (w - keep_w) // 2
+        y0 = (h - keep_h) // 2
+        out = out[y0 : y0 + keep_h, x0 : x0 + keep_w]
+    return out
 
 
 def _warped_quad(w: float, h: float, angle_deg: float, pv: float, ph: float) -> np.ndarray:
@@ -151,6 +230,14 @@ def apply_geometry(
         ph = max(-1.0, min(1.0, ph))
 
         out = img
+        # Lens distortion first: it is how the frame was captured, so it
+        # must be undone before straighten/keystone measure against it.
+        dist = float(adj.get("Distortion", 0.0) or 0.0) / 100.0
+        dist = max(-1.0, min(1.0, dist))
+        if abs(dist) > 1e-4:
+            out = _apply_distortion(out, dist * _DISTORTION_MAX, preview=preview)
+            h, w = out.shape[:2]
+
         if abs(angle) > 1e-4 or abs(pv) > 1e-4 or abs(ph) > 1e-4:
             src = np.array(
                 [[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32
@@ -161,7 +248,7 @@ def apply_geometry(
             # and is fine for 640px live-drag / instant overlay feedback.
             flags = cv2.INTER_NEAREST if preview else cv2.INTER_LINEAR
             out = cv2.warpPerspective(
-                img, m, (w, h), flags=flags,
+                out, m, (w, h), flags=flags,
                 borderMode=cv2.BORDER_CONSTANT, borderValue=0,
             )
             iters = 12 if preview else 24
@@ -181,6 +268,17 @@ def apply_geometry(
             y1 = ch - int(ch * bi)
             if x1 - x0 >= 8 and y1 - y0 >= 8:
                 out = out[y0:y1, x0:x1]
+
+        ratio = float(adj.get("AnamorphicRatio", 1.0) or 1.0)
+        if abs(ratio - 1.0) > 1e-4 and ratio > 0.1:
+            ch, cw = out.shape[:2]
+            new_w = max(1, int(round(cw * ratio)))
+            interp = (
+                cv2.INTER_NEAREST
+                if preview
+                else (cv2.INTER_AREA if ratio < 1.0 else cv2.INTER_CUBIC)
+            )
+            out = cv2.resize(out, (new_w, ch), interpolation=interp)
         return np.ascontiguousarray(out)
     except Exception:
         return img

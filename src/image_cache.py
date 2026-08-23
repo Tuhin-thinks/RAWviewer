@@ -174,21 +174,67 @@ def _safe_path_under_root(path: str | None, root: str | None) -> Optional[str]:
     return None
 
 _psutil_vm_fallback_logged = False
+_darwin_total_ram_cached: Optional[int] = None
+
+
+def _darwin_os_proc_available_memory() -> Optional[int]:
+    """Jetsam headroom via os_proc_available_memory (no subprocess)."""
+    if platform.system() != "Darwin":
+        return None
+    try:
+        import ctypes
+
+        lib = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+        lib.os_proc_available_memory.restype = ctypes.c_uint64
+        lib.os_proc_available_memory.argtypes = []
+        n = int(lib.os_proc_available_memory())
+        return n if n > 0 else None
+    except Exception:
+        return None
 
 
 def _sysctl_hw_memsize_bytes() -> Optional[int]:
-    """Physical RAM via sysctl (macOS fallback when psutil virtual_memory fails)."""
+    """Physical RAM via sysctlbyname (cached); subprocess only if ctypes fails."""
+    global _darwin_total_ram_cached
     if platform.system() != "Darwin":
         return None
+    if _darwin_total_ram_cached:
+        return _darwin_total_ram_cached
+    try:
+        import ctypes
+
+        lib = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+        val = ctypes.c_uint64(0)
+        size = ctypes.c_size_t(ctypes.sizeof(val))
+        lib.sysctlbyname.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_size_t),
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+        ]
+        lib.sysctlbyname.restype = ctypes.c_int
+        rc = lib.sysctlbyname(
+            b"hw.memsize", ctypes.byref(val), ctypes.byref(size), None, 0
+        )
+        if rc == 0 and int(val.value) > 0:
+            _darwin_total_ram_cached = int(val.value)
+            return _darwin_total_ram_cached
+    except Exception:
+        pass
     try:
         out = subprocess.check_output(
             ["sysctl", "-n", "hw.memsize"],
             text=True,
             timeout=2,
         ).strip()
-        return int(out)
+        n = int(out)
+        if n > 0:
+            _darwin_total_ram_cached = n
+            return n
     except Exception:
         return None
+    return None
 
 
 def _darwin_page_size_bytes() -> int:
@@ -215,12 +261,22 @@ def _parse_vm_stat_page_count(vm_stat_output: str, label: str) -> int:
 
 
 def _darwin_memory_stats_from_vm_stat() -> Optional[Tuple[int, int, float]]:
-    """Installed RAM, available bytes, and percent used via sysctl + vm_stat."""
+    """Installed RAM + available bytes. Prefer os_proc_available_memory (jetsam).
+
+    Never shells out to the ``memory_pressure`` CLI. ``vm_stat`` is a last
+    resort when jetsam headroom is unavailable.
+    """
     if platform.system() != "Darwin":
         return None
     total = _sysctl_hw_memsize_bytes()
     if not total:
         return None
+    jetsam = _darwin_os_proc_available_memory()
+    if jetsam is not None:
+        available = min(int(total), int(jetsam))
+        used = max(0, int(total) - available)
+        percent = min(100.0, max(0.0, (used / float(total)) * 100.0))
+        return int(total), available, percent
     try:
         vm_out = subprocess.check_output(["vm_stat"], text=True, timeout=2)
     except Exception:
@@ -1939,20 +1995,16 @@ class ImageCache(QObject):
 
         # Memory management
         self.max_memory_mb = cache_sizes['cache_budget_mb']
+        self._tier_max_memory_mb = int(self.max_memory_mb)
         self.memory_check_interval = 5  # seconds
         self.last_memory_check = 0
         self.last_aggressive_purge = 0.0
         self.last_reduce_cache = 0.0
 
-        # Background memory-pressure polling: get_memory_info() spawns a
-        # `vm_stat` subprocess on macOS (see _darwin_memory_stats_from_vm_stat),
-        # tens of ms per call. _check_memory_pressure() used to call it inline
-        # on whatever thread touched the cache -- during gallery scrolling
-        # that's the main/GUI thread, so every memory_check_interval seconds
-        # of active scrolling paid a synchronous subprocess-spawn cost right
-        # in the scroll path. A lazily-started daemon thread now refreshes a
-        # cached snapshot on that same interval; _check_memory_pressure only
-        # ever reads it.
+        # Background memory-pressure polling: macOS prefers ctypes
+        # os_proc_available_memory (jetsam headroom). A lazily-started daemon
+        # thread refreshes a cached snapshot; _check_memory_pressure only
+        # ever reads it — never inline on the gallery scroll path.
         self._mem_poll_lock = threading.Lock()
         self._mem_poll_info: Optional[Dict[str, float]] = None
         self._mem_poll_pressure = 'ok'
@@ -2161,10 +2213,8 @@ class ImageCache(QObject):
         """Check if we're under memory pressure and need to reduce cache sizes.
 
         Reads the snapshot the background poller last collected rather than
-        collecting it inline -- get_memory_info() spawns a `vm_stat`
-        subprocess on macOS, and this is called from cache-read paths
-        (get_grid/get_thumbnail/etc.) that run on whatever thread touches
-        the cache, including the main/GUI thread during gallery scrolling.
+        collecting it inline. Cache-read paths (get_grid/get_thumbnail) run
+        on whatever thread touches the cache, including the GUI thread.
         """
         current_time = time.time()
         if current_time - self.last_memory_check < self.memory_check_interval:
@@ -2919,6 +2969,23 @@ class ImageCache(QObject):
             min_keep=2,
             label="full-image",
         )
+
+    def apply_pressure_budget_scale(self, scale: float, *, min_mb: int = 128) -> int:
+        """Shrink the full-image byte budget for the rest of the session.
+
+        Never raises the budget (session-sticky). Installed-RAM tier is unchanged.
+        """
+        original = int(getattr(self, "_tier_max_memory_mb", self.max_memory_mb) or self.max_memory_mb)
+        self._tier_max_memory_mb = original
+        new_mb = max(int(min_mb), int(original * float(scale)))
+        self.max_memory_mb = min(int(self.max_memory_mb), new_mb)
+        try:
+            new_full = max(2, int(self.full_image_cache.max_size * float(scale)))
+            self.full_image_cache.shrink_to_size(min(self.full_image_cache.max_size, new_full))
+        except Exception:
+            pass
+        self._enforce_full_image_byte_budget()
+        return int(self.max_memory_mb)
 
     def get_pixmap(self, file_path: str) -> Optional[QPixmap]:
         """Get cached QPixmap or return None if not cached."""

@@ -60,20 +60,21 @@ Full changelog: [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
 ## 3.1.0 (stability + performance vs 3.0.2)
 
-**3.1.0 is a stability and performance patch** on `main`, not a feature train. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md). Notes: [`RELEASE_NOTES.md`](RELEASE_NOTES.md#version-310).
+**3.1.0 is a stability and performance patch**, not a feature train. It is **not on `main` yet** (PR **#10** → `release/3.1.0`). GitHub Releases still ship **3.0.2**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md). Notes: [`RELEASE_NOTES.md`](RELEASE_NOTES.md#version-310).
 
 What 3.1.0 **ships** vs 3.0.2:
 
-- **RAM-tier Adjust cap** — slower / ≤16 GB machines settle on a smaller working base; export stays full-res. No memory-tier picker.
-- **Gallery scroll and load** — viewport-aimed queue, missing tiles return, trackpad sub-pixel, folder change does not wipe thumbs, cancel-once loads.
-- **Caches** — byte-budget full-image cache; no wipe of every tier when Adjust is opened and left unchanged.
+- **RAM-tier overlay that actually sticks on ≤16 GB** — idle-preload / hover full-res no longer inherit 24 GB numbers; Adjust settle long-edge cap; gallery thumbnail byte budget. Export stays full-res. No memory-tier picker.
+- **Gallery scroll and load** — viewport-aimed queue, missing tiles return, trackpad sub-pixel, folder change does not wipe thumbs, cancel-once loads; scrollbar date bubble is throttled (cache-hit preview only).
+- **Caches** — byte-budget full-image cache; JSON-only EXIF blobs (no pickle); no wipe of every tier when Adjust is opened and left unchanged.
 - **Export reliability** — band seams, silent AI-denoise skip on the banded path, encoded-space dither; Plus AI denoise restored with NAFNet / half-res + **AI Detail**.
-- **Crash / thread / cancel** — no `QPixmap` on workers, slot double-free, `id()` registry, CUDA-GL thread, prefetch error storm.
+- **Crash / thread / cancel** — no `QPixmap` on workers, slot double-free, `id()` registry, CUDA-GL thread, prefetch error storm; Pillow pixel cap; orientation-verify queue cap.
 - **HE/HE\* NEF and new Sony (ARW6)** — Adjust via LibRaw when possible, otherwise embedded JPEG; undecodable RAW keeps the embedded preview (not a grey tile). Packaged builds use LibRaw master.
+- **Adjust Global UX** — combined Auto Tone; panel docks left/right; LUT thumbs; rearrangeable sections (histogram pinned); Windows display brightness while Adjust is open (macOS already did this); ColorChecker camera profile; anamorphic desqueeze; startup splash.
 
-*(Uncommitted — not in this cut:)* EXIF blob persist for fields that only lived in RAM; scrollbar date bubble without per-tick flash/decode; shared sidecar XML parse (still with 3.2 mask XMP on `development`).
+*(Not in this cut:)* EXIF blob persist for fields that only lived in RAM. Shared sidecar XML parse stays with 3.2 mask XMP on `development`.
 
-Masks, pairing, MCP, Share to AI, and the rest of the feature train stay on **`development` (3.2+)** — see [Looking ahead](#looking-ahead). Generative editing stays shelved.
+Masks, pairing, MCP, Share to AI, RAM-tiered banded-export workers / OpenBLAS caps, and the rest of the feature train stay on **`development` (3.2+)** — see [Looking ahead](#looking-ahead). Generative editing stays shelved.
 
 ---
 
@@ -366,14 +367,13 @@ Rule of thumb: **if it can ship in Plus, it counts as feasible** even when Stand
 | Area | Where | Notes |
 |------|--------|-------|
 | **Masks tab** (brush, luminance, colour, invert, grouping) + Plus AI masks / Depth / Blur background | `development` | Not a 3.1.0 product claim |
-| **Auto Tone** (WB + Light + straighten; no P-bake / VLM look) | `development` | |
 | **Merges** — HDR, panorama, panorama HDR, focus stack | `development` | |
 | **Raster develop** (JPEG / TIFF / WebP / PNG / BMP + XMP) | `development` | HE-NEF *refuse* fix is the 3.1.0 exception |
-| **ColorChecker**, manual distortion, anamorphic desqueeze | `development` | DPReview sample button is dirty-tree |
+| **Manual distortion** | `development` | ColorChecker camera profile, DPReview search (browser URL only), and anamorphic desqueeze ship in **3.1.0** |
 | **Share** WhatsApp / Signal (JPEG for RAW) and AirDrop | `development` | |
 | **AI Upscale 2×** | `development` | Plus denoise *reliability* is 3.1.0 |
 | **Color labels / keywords** | dirty tree | Label **cache persist** is 3.1.0-targeted hardening, not the catalog UI |
-| **RAW+JPEG pairing**, Adjust dock L/R, LUT thumbs, splash | dirty tree | |
+| **RAW+JPEG pairing** | dirty tree | Startup splash, Adjust dock L/R, LUT thumbs, Auto Tone, rearrangeable Global sections, and Windows Adjust brightness ship in **3.1.0** |
 | **Export template / GPS strip / watermark / queue** | dirty tree | Queue must not drop jobs *when that train ships*; watermark uses a **corner patch** (not a full-page overlay) as a memory choice |
 | **Headless MCP**, Share to AI agent | dirty tree | GUI does **not** live-reload MCP sidecars |
 | **In-app UI language** | dirty tree (`i18n/`) | Catalog on disk; UI still English until `QTranslator` |

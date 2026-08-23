@@ -78,6 +78,8 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     "CropAngle": 0.0,
     "PerspectiveVertical": 0.0,
     "PerspectiveHorizontal": 0.0,
+    "Distortion": 0.0,
+    "AnamorphicRatio": 1.0,
     "CropLeft": 0.0,
     "CropRight": 0.0,
     "CropTop": 0.0,
@@ -105,6 +107,15 @@ for _hsl_color in HSL_COLOR_NAMES:
 
 RELEVANT_ADJUSTMENT_KEYS = frozenset(DEFAULT_ADJUSTMENTS.keys())
 AS_SHOT_TEMP_KEY = "AsShotTemperature"
+
+ANAMORPHIC_DESQUEEZE_PRESETS: tuple[tuple[str, float], ...] = (
+    ("Off (1.0x)", 1.0),
+    ("1.33x", 1.33),
+    ("1.5x", 1.5),
+    ("1.6x", 1.6),
+    ("2.0x", 2.0),
+)
+_PROFILE_STALE_WARNED: set[str] = set()
 
 # Common photographic white-balance presets (Kelvin). These are industry-
 # standard illuminant targets (Lightroom-style), not EXIF enums — cameras
@@ -277,6 +288,7 @@ SLIDER_SPECS: tuple[SliderSpec, ...] = (
     _slider_linear("CropAngle", "Straighten", -450, 450, 0.0, scale=0.1, fmt=lambda x: f"{x:+.1f}°"),
     _slider_linear("PerspectiveVertical", "Vertical", -100, 100, 0.0),
     _slider_linear("PerspectiveHorizontal", "Horizontal", -100, 100, 0.0),
+    _slider_linear("Distortion", "Distortion", -100, 100, 0.0),
     # Per-edge crop-inset sliders were removed by request: cropping stays out
     # of the UI until a proper interactive overlay (visible crop rectangle
     # with drag handles) exists. raw_transform.apply_geometry still honors
@@ -897,7 +909,74 @@ def load_adjustments_for_file(image_path: str) -> Dict[str, float]:
         adj.update(parsed)
     if not has_xmp_temp:
         adj["Temperature"] = as_shot
+    if not (xmp_path and os.path.isfile(xmp_path)):
+        try:
+            from color_calibration import camera_identity_for_file, get_camera_profile
+
+            make, model, iso_val = camera_identity_for_file(image_path)
+            if make or model:
+                prof = get_camera_profile(make, model, iso=iso_val)
+                if prof:
+                    _warn_if_profile_decode_stale(
+                        prof, make, model, iso_val, image_path
+                    )
+                    if "temperature_shift" in prof:
+                        adj["Temperature"] = float(
+                            adj.get("Temperature", as_shot)
+                        ) + float(prof["temperature_shift"])
+                    if "tint_shift" in prof:
+                        adj["Tint"] = float(adj.get("Tint", 0.0)) + float(
+                            prof["tint_shift"]
+                        )
+                    from raw_hsl import HSL_COLOR_NAMES
+
+                    for band in HSL_COLOR_NAMES:
+                        for prof_key, adj_prefix in (
+                            ("hsl_hue", "HueAdjustment"),
+                            ("hsl_sat", "SaturationAdjustment"),
+                            ("hsl_lum", "LuminanceAdjustment"),
+                        ):
+                            values = prof.get(prof_key)
+                            if isinstance(values, dict) and band in values:
+                                adj[f"{adj_prefix}{band}"] = float(values[band])
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[CALIB] Could not apply camera profile to %s",
+                image_path,
+                exc_info=True,
+            )
     return adj
+
+
+def _warn_if_profile_decode_stale(
+    prof: dict,
+    make: str,
+    model: str,
+    iso_val,
+    image_path: str,
+) -> None:
+    try:
+        from color_calibration import normalize_camera_key, profile_decode_mismatch
+
+        reason = profile_decode_mismatch(prof, image_path)
+        if not reason:
+            return
+        key = normalize_camera_key(make, model, iso=iso_val)
+        if key in _PROFILE_STALE_WARNED:
+            return
+        _PROFILE_STALE_WARNED.add(key)
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "[CALIB] Camera profile for %s may no longer match this decode: %s "
+            "(still applied)",
+            key,
+            reason,
+        )
+    except Exception:
+        pass
 
 
 def wb_reference_temperature(adj: Dict[str, float] | None) -> float:

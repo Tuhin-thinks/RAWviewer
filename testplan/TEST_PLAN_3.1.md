@@ -4,7 +4,7 @@ Manual walkthrough for testers. Automated suites stay in [`TEST_PLAN.md`](TEST_P
 
 **3.1.0 is a stability + performance patch, not a feature tour.** Do **not** spend this pass on masks, pairing, MCP, Share to AI, ColorChecker, merges, labels, or export-queue UX. Feature checklists wait for **3.2+**.
 
-**Baseline:** tag **3.0.2**. **This version:** `main` / `release/3.1.0` (not `development`). Record OS and edition. Ignore 3.2+ UI if you accidentally open a development build.
+**Baseline:** tag **3.0.2**. **This version:** `release/3.1.0` (PR **#10**, not yet `main`; not `development`). Record OS and edition. Ignore 3.2+ UI if you accidentally open a development build.
 
 **Locked product rules (fail if violated):**
 
@@ -98,6 +98,11 @@ Walk **3.0.2** so 3.1 did not break it. Skip 3.2+ surfaces.
 - [ ] Map (**M**) on geotagged files
 - [ ] Plus search: `sunset on beach`, `has:face`
 - [ ] Adjust global: tone, WB presets, crop, D&B **D/B/X**, Heal **H**, LUTs, presets
+- [ ] Light **AUTO**: WB + tone sliders + straighten; Color/WB Auto WB and Transform Auto straighten still work; Saturation/HSL unchanged
+- [ ] Adjust header dock arrow: panel left then right; side remembered after close/reopen
+- [ ] Looks list LUT thumbs appear after the edit base is ready (as-shot, not live Exposure)
+- [ ] Right-click a Global section header: Move Up / Down / Reset Order; histogram stays first; order survives restart
+- [ ] Windows: entering Adjust raises display brightness; leaving restores (skip if the OS reports no backlight)
 - [ ] **P** / **J** in browse still RAW/DNG-only; **P** is Reconstruct preview, not baked by a visit to Adjust
 - [ ] XMP round-trip with Lightroom: stars + Exposure
 - [ ] No generative editing controls
@@ -107,6 +112,6 @@ Walk **3.0.2** so 3.1 did not break it. Skip 3.2+ surfaces.
 
 ## Out of scope (wait for 3.2+)
 
-Masks tab, AI masks, Auto Tone, HDR/pano/focus stack, ColorChecker, anamorphic, raster develop, RAW+JPEG pairing, labels/keywords, MCP, Share to AI, splash, LUT thumbs, DPReview button, Adjust dock, export queue/template/watermark.
+Masks tab, AI masks, HDR/pano/focus stack, ColorChecker, anamorphic, raster develop, RAW+JPEG pairing, labels/keywords, MCP, Share to AI, splash, DPReview button, export queue/template/watermark. Auto Tone, dock L/R, LUT thumbs, section order, and Windows Adjust brightness are in **this** 3.1 pass (Global only).
 
 Those plans are **not** this file. Do not expand this pass into a 15-area tour.

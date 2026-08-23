@@ -3,19 +3,32 @@
 from __future__ import annotations
 
 import os
+from collections import OrderedDict
 from typing import Callable, Dict
 
-from PyQt6.QtCore import QRectF, Qt, QSettings, QSize, QTimer, pyqtSignal
+from PyQt6.QtCore import (
+    QObject,
+    QRectF,
+    QRunnable,
+    QSettings,
+    QSize,
+    Qt,
+    QThreadPool,
+    QTimer,
+    pyqtSignal,
+)
 from PyQt6.QtGui import (
     QColor,
     QCursor,
     QDragEnterEvent,
     QDropEvent,
     QIcon,
+    QImage,
     QLinearGradient,
     QPainter,
     QPalette,
     QPen,
+    QPixmap,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -31,6 +44,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QSlider,
     QSizePolicy,
+    QSplitter,
     QStyle,
     QStyleOptionSlider,
     QTabWidget,
@@ -70,7 +84,7 @@ _CHANNEL_CURVE_KEYS_BY_NAME = {
 _SHOW_TONE_CURVE_UI = True
 
 _TRANSFORM_SLIDER_KEYS = frozenset(
-    {"CropAngle", "PerspectiveVertical", "PerspectiveHorizontal"}
+    {"CropAngle", "PerspectiveVertical", "PerspectiveHorizontal", "Distortion"}
 )
 
 # Session-wide copy/paste clipboard for edit settings (survives navigation and
@@ -250,11 +264,152 @@ class _LutDropFrame(_FileDropFrame):
         super().__init__((".cube",), parent)
 
 
+
 _LOOKS_NAME_ROLE = int(Qt.ItemDataRole.UserRole) + 1
+_LOOKS_THUMB_PX = 72
+_LUT_THUMB_CACHE_MAX = 160
+_LUT_THUMB_DEBOUNCE_MS = 140
+
+_GLOBAL_SECTION_ORDER_SETTING = "adjust_panel/global_section_order"
+_GLOBAL_SECTION_DEFAULT_ORDER = (
+    "light",
+    "color",
+    "curve",
+    "hsl",
+    "detail",
+    "noise",
+    "effects",
+    "local",
+    "lut",
+    "transform",
+)
+
+ADJUST_DOCK_SETTINGS_KEY = "adjust/dock"
+ADJUST_DOCK_DEFAULT = "right"
+
+
+def _sanitize_section_order(saved) -> list:
+    """A saved order → a usable one, dropping junk and appending what is new."""
+    known = list(_GLOBAL_SECTION_DEFAULT_ORDER)
+    if not isinstance(saved, (list, tuple)):
+        return known
+    seen = set()
+    order = []
+    for key in saved:
+        if isinstance(key, str) and key in known and key not in seen:
+            order.append(key)
+            seen.add(key)
+    order.extend(k for k in known if k not in seen)
+    return order
+
+
+def normalize_adjust_dock(value) -> str:
+    """``left`` or ``right`` (default). Unknown values fall back to right."""
+    side = str(value or "").strip().lower()
+    return "left" if side == "left" else ADJUST_DOCK_DEFAULT
+
+
+def apply_adjust_splitter_dock(splitter: QSplitter, image_widget, panel, side: str) -> str:
+    """Put the Adjust panel on the left or right of a horizontal QSplitter."""
+    side = normalize_adjust_dock(side)
+    if splitter is None or image_widget is None or panel is None:
+        return side
+    if splitter.indexOf(image_widget) < 0 or splitter.indexOf(panel) < 0:
+        return side
+    sizes = splitter.sizes()
+    pan_i = splitter.indexOf(panel)
+    old_panel_w = sizes[pan_i] if 0 <= pan_i < len(sizes) else 0
+    target = 0 if side == "left" else 1
+    if splitter.indexOf(panel) != target:
+        splitter.insertWidget(target, panel)
+    img_i = splitter.indexOf(image_widget)
+    pan_i = splitter.indexOf(panel)
+    splitter.setStretchFactor(img_i, 1)
+    splitter.setStretchFactor(pan_i, 0)
+    if panel.isVisible() and splitter.width() > 1:
+        panel_w = max(
+            int(panel.minimumWidth() or 0),
+            int(getattr(panel, "_PANEL_W", 440) or 440),
+            int(old_panel_w or 0),
+        )
+        image_w = max(120, max(splitter.width(), 1) - panel_w)
+        if side == "left":
+            splitter.setSizes([panel_w, image_w])
+        else:
+            splitter.setSizes([image_w, panel_w])
+    return side
+
+
+class _LutThumbSignals(QObject):
+    finished = pyqtSignal(int, object)  # token, dict[lut_id -> ndarray]|None
+
+
+class _LutThumbWorker(QRunnable):
+    """Apply each .cube to a tiny as-shot display copy. No RAW decode, no user adj."""
+
+    def __init__(
+        self,
+        token: int,
+        display_u8,
+        lut_names: list[str],
+        amount: float,
+        space: str,
+        signals: _LutThumbSignals,
+    ):
+        super().__init__()
+        self.setAutoDelete(True)
+        self.token = int(token)
+        self.display_u8 = display_u8
+        self.lut_names = list(lut_names)
+        self.amount = float(amount)
+        self.space = str(space)
+        self.signals = signals
+
+    def run(self) -> None:
+        out = None
+        try:
+            import numpy as np
+
+            from raw_lut import render_lut_chooser_previews
+
+            base = self.display_u8
+            if base is None:
+                self.signals.finished.emit(self.token, None)
+                return
+            tiny = np.asarray(base)
+            if str(getattr(tiny, "dtype", "")) != "uint8":
+                tiny = np.clip(
+                    np.asarray(tiny, dtype=np.float32) * 255.0 + 0.5, 0, 255
+                ).astype(np.uint8)
+            out = render_lut_chooser_previews(
+                tiny, self.lut_names, amount=self.amount, space=self.space
+            )
+        except Exception:
+            out = None
+        self.signals.finished.emit(self.token, out)
+
+
+def _u8_rgb_to_pixmap(rgb) -> QPixmap | None:
+    """GUI-thread QPixmap from contiguous uint8 HxWx3."""
+    try:
+        import numpy as np
+
+        if rgb is None or getattr(rgb, "ndim", 0) != 3:
+            return None
+        arr = np.ascontiguousarray(rgb)
+        if arr.dtype != np.uint8:
+            arr = np.clip(arr, 0, 255).astype(np.uint8)
+        h, w = int(arr.shape[0]), int(arr.shape[1])
+        if h < 1 or w < 1 or int(arr.shape[2]) < 3:
+            return None
+        img = QImage(arr.data, w, h, int(arr.strides[0]), QImage.Format.Format_RGB888)
+        return QPixmap.fromImage(img.copy())
+    except Exception:
+        return None
 
 
 class _LooksRowWidget(QWidget):
-    """One Looks list row: name + type badge + remove (×)."""
+    """One Looks list row: optional LUT thumb + name + type badge + remove (×)."""
 
     remove_clicked = pyqtSignal()
 
@@ -264,6 +419,15 @@ class _LooksRowWidget(QWidget):
         row = QHBoxLayout(self)
         row.setContentsMargins(4, 2, 2, 2)
         row.setSpacing(6)
+
+        self._preview = QLabel()
+        self._preview.setFixedSize(_LOOKS_THUMB_PX, _LOOKS_THUMB_PX)
+        self._preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._preview.setStyleSheet(
+            f"background: {theme.VOID}; border-radius: 3px; border: 1px solid {theme.LINE};"
+        )
+        self._preview.hide()
+        row.addWidget(self._preview)
 
         title = QLabel(name)
         title.setStyleSheet(f"color: {theme.INK}; font-size: 11px; background: transparent;")
@@ -299,6 +463,36 @@ class _LooksRowWidget(QWidget):
         )
         rem.clicked.connect(self._on_remove_clicked)
         row.addWidget(rem)
+
+    def set_preview(self, pixmap: QPixmap | None) -> None:
+        """Show a LUT thumb; hide when there is no current image."""
+        if pixmap is None or pixmap.isNull():
+            self._preview.hide()
+            self._preview.clear()
+            self._sync_list_item_size()
+            return
+        scaled = pixmap.scaled(
+            _LOOKS_THUMB_PX,
+            _LOOKS_THUMB_PX,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self._preview.setPixmap(scaled)
+        self._preview.show()
+        self._sync_list_item_size()
+
+    def _sync_list_item_size(self) -> None:
+        parent = self.parent()
+        while parent is not None and not isinstance(parent, QListWidget):
+            parent = parent.parent()
+        if parent is None:
+            return
+        hint = QSize(0, max(28, self.sizeHint().height()))
+        for i in range(parent.count()):
+            item = parent.item(i)
+            if parent.itemWidget(item) is self:
+                item.setSizeHint(hint)
+                break
 
     def _on_remove_clicked(self) -> None:
         self._suppress_item_click = True
@@ -367,8 +561,9 @@ class CollapsibleSection(QWidget):
         """)
         header_layout.addWidget(self.title_lbl, 1)
         
-        # Enable clicking on header
+        # Enable clicking on header (left toggles; right-click is section order)
         self.header.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.header.mousePressEvent = self._on_header_pressed
         
         main_layout.addWidget(self.header)
@@ -407,6 +602,9 @@ class CollapsibleSection(QWidget):
     def _on_header_pressed(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.set_expanded(not self._expanded)
+            event.accept()
+            return
+        QWidget.mousePressEvent(self.header, event)
 
     def set_expanded(self, expanded: bool) -> None:
         self._expanded = bool(expanded)
@@ -609,6 +807,8 @@ class ImageAdjustPanelWidget(QWidget):
     # from the edit base and writes the result back through the sliders.
     auto_wb_requested = pyqtSignal()
     auto_straighten_requested = pyqtSignal()
+    auto_tone_requested = pyqtSignal()
+    dock_side_requested = pyqtSignal(str)
     dodge_burn_mode_changed = pyqtSignal(object)
     dodge_burn_clear_requested = pyqtSignal()
     spot_heal_clear_requested = pyqtSignal()
@@ -625,6 +825,8 @@ class ImageAdjustPanelWidget(QWidget):
     crop_apply_requested = pyqtSignal()
     crop_cancel_requested = pyqtSignal()
     crop_reset_requested = pyqtSignal()
+    calibrate_requested = pyqtSignal()
+    camera_profile_removed = pyqtSignal()
 
     def __init__(self, parent=None, histogram_widget=None):
         super().__init__(parent)
@@ -645,6 +847,20 @@ class ImageAdjustPanelWidget(QWidget):
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
         self._preview_timer.timeout.connect(self._emit_live_preview)
+        self._dock_side = ADJUST_DOCK_DEFAULT
+        self._anamorphic_ratio = 1.0
+        self._camera_profile_identity = ("", "", None)
+        self._lut_thumb_cache: OrderedDict = OrderedDict()
+        self._lut_thumb_rows: dict = {}
+        self._lut_thumb_token = 0
+        self._lut_thumb_display_u8 = None
+        self._lut_thumb_path = ""
+        self._lut_thumb_source_gen = 0
+        self._lut_thumb_signals = _LutThumbSignals()
+        self._lut_thumb_signals.finished.connect(self._on_lut_thumbs_ready)
+        self._lut_thumb_timer = QTimer(self)
+        self._lut_thumb_timer.setSingleShot(True)
+        self._lut_thumb_timer.timeout.connect(self._start_lut_thumb_worker)
 
         self.setMinimumWidth(self._PANEL_W)
         self.setMaximumWidth(560)
@@ -867,6 +1083,7 @@ class ImageAdjustPanelWidget(QWidget):
         header.addWidget(title)
         header.addStretch(1)
         self._build_compare_button(header)
+        self._build_header_dock_button(header)
         copy_btn = QPushButton("Copy")
         copy_btn.setObjectName("adjust_reset_btn")  # share Reset's compact style
         copy_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -904,6 +1121,7 @@ class ImageAdjustPanelWidget(QWidget):
             "• Brush Flow changes how opaque the brush preview looks"
         )
         layout.addWidget(hint)
+        self._build_camera_profile_banner(layout)
 
         self._tone_curve_row = None
 
@@ -950,6 +1168,25 @@ class ImageAdjustPanelWidget(QWidget):
         layout.addWidget(self.sect_local)
         layout.addWidget(self.sect_lut)
         layout.addWidget(self.sect_transform)
+
+        self._global_layout = layout
+        self._global_sections = {
+            "light": self.sect_light,
+            "color": self.sect_color,
+            "curve": self.sect_curve,
+            "hsl": self.sect_hsl,
+            "detail": self.sect_detail,
+            "noise": self.sect_noise,
+            "effects": self.sect_effects,
+            "local": self.sect_local,
+            "lut": self.sect_lut,
+            "transform": self.sect_transform,
+        }
+        self._section_order = _sanitize_section_order(self._load_section_order())
+        for key, sect in self._global_sections.items():
+            sect.header.customContextMenuRequested.connect(
+                lambda _pos, k=key: self._on_section_context_menu(k)
+            )
 
         # Build tone curve editor row inside the curve section first
         if _SHOW_TONE_CURVE_UI:
@@ -1084,6 +1321,8 @@ class ImageAdjustPanelWidget(QWidget):
 
         # WB situation presets (Daylight/Cloudy/…) sit above Temp/Tint.
         self._build_wb_preset_row(self.sect_color)
+        self._build_calibrate_button(self.sect_color)
+        self._build_auto_tone_row(self.sect_light)
 
         # Loop through sliders and assign to sections
         for spec in SLIDER_SPECS:
@@ -1116,6 +1355,7 @@ class ImageAdjustPanelWidget(QWidget):
                 target_sect = self.sect_noise
             elif spec.key in {
                 "CropAngle", "PerspectiveVertical", "PerspectiveHorizontal",
+                "Distortion",
             }:
                 target_sect = self.sect_transform
             elif spec.key in {
@@ -1170,6 +1410,11 @@ class ImageAdjustPanelWidget(QWidget):
                 slider.setToolTip(
                     "Export-only: how much original edge detail to restore after AI denoise.\n"
                     "0 = smoother, 100 = more detail (and more residual noise)."
+                )
+            if spec.key == "Distortion":
+                slider.setToolTip(
+                    "Manual lens distortion: + pincushion, − barrel "
+                    "(use when no matched lens profile exists)"
                 )
             if spec.key in _TRANSFORM_SLIDER_KEYS:
                 # Alignment grid while straightening / correcting perspective:
@@ -1296,6 +1541,7 @@ class ImageAdjustPanelWidget(QWidget):
         self._lens_correction_row_widget.setLayout(self._lens_correction_row)
         self._lens_correction_row_widget.hide()  # shown only once a profile match is confirmed
         self.sect_transform.add_widget(self._lens_correction_row_widget)
+        self._build_anamorphic_row(self.sect_transform)
 
         # Recovery-look button removed (2026-07): the editor's default
         # display transform now matches the browse render exactly (dcraw
@@ -1586,6 +1832,7 @@ class ImageAdjustPanelWidget(QWidget):
         self._export_btn = export_btn
 
         layout.addStretch(1)
+        self._apply_section_order()
         self.set_adjustments(dict(DEFAULT_ADJUSTMENTS))
 
     def _build_compare_button(self, row: QHBoxLayout) -> None:
@@ -1980,7 +2227,7 @@ class ImageAdjustPanelWidget(QWidget):
         self._looks_list = QListWidget()
         self._lut_list = self._looks_list  # legacy alias used by LUT helpers
         self._looks_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self._looks_list.setMaximumHeight(130)
+        self._looks_list.setMaximumHeight(220)
         self._looks_list.setSpacing(1)
         self._looks_list.setStyleSheet(
             f"""
@@ -2093,6 +2340,7 @@ class ImageAdjustPanelWidget(QWidget):
                 entries.append((name, "xmp"))
             entries.sort(key=lambda t: t[0].lower())
             select_item = None
+            self._lut_thumb_rows = {}
             for name, kind in entries:
                 item = QListWidgetItem()
                 item.setData(Qt.ItemDataRole.UserRole, kind)
@@ -2110,6 +2358,8 @@ class ImageAdjustPanelWidget(QWidget):
                 item.setSizeHint(QSize(0, max(28, row.sizeHint().height())))
                 lw.addItem(item)
                 lw.setItemWidget(item, row)
+                if kind == "cube":
+                    self._lut_thumb_rows[name] = row
                 # Prefer the just-applied .xmp highlight over an embedded .cube
                 # so click-to-apply feedback stays on the preset row.
                 if kind == "xmp" and wanted_xmp and name == wanted_xmp:
@@ -2128,6 +2378,8 @@ class ImageAdjustPanelWidget(QWidget):
                 lw.clearSelection()
         finally:
             lw.blockSignals(False)
+        self._apply_cached_lut_thumbs()
+        self._schedule_lut_thumbs()
 
     def _refresh_lut_list(self, select_name: str | None = None) -> None:
         """Back-compat for set_adjustments — refresh shared Looks list."""
@@ -2273,6 +2525,7 @@ class ImageAdjustPanelWidget(QWidget):
     def _on_lut_space_changed(self, _index: int = 0) -> None:
         if self._block_emit:
             return
+        self._schedule_lut_thumbs()
         self._emit_preview_and_save()
 
     def _apply_xmp_preset_named(self, name: str) -> None:
@@ -2522,6 +2775,8 @@ class ImageAdjustPanelWidget(QWidget):
                 float(merged.get("CropTop", 0.0) or 0.0),
                 float(merged.get("CropBottom", 0.0) or 0.0),
             )
+            self._anamorphic_ratio = float(merged.get("AnamorphicRatio", 1.0) or 1.0)
+            self._sync_anamorphic_buttons(self._anamorphic_ratio)
             from raw_lut import (
                 LUT_AMOUNT_KEY,
                 LUT_NAME_KEY,
@@ -2694,6 +2949,7 @@ class ImageAdjustPanelWidget(QWidget):
         out["CropRight"] = float(r)
         out["CropTop"] = float(t)
         out["CropBottom"] = float(b)
+        out["AnamorphicRatio"] = float(getattr(self, "_anamorphic_ratio", 1.0) or 1.0)
         from raw_lut import LUT_AMOUNT_KEY, LUT_NAME_KEY, LUT_SPACE_KEY, LUT_SPACE_REC709
 
         name = str(getattr(self, "_lut_active_name", "") or "").strip()
@@ -3207,5 +3463,429 @@ class ImageAdjustPanelWidget(QWidget):
         if btn is not None:
             btn.setEnabled(bool(enabled))
 
+    def _build_header_dock_button(self, row: QHBoxLayout) -> None:
+        """Move the panel to the other splitter edge (left ↔ right)."""
+        btn = QPushButton()
+        btn.setObjectName("adjust_compare_btn")
+        btn.setFixedSize(22, 22)
+        btn.setIconSize(QSize(13, 13))
+        btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn.clicked.connect(self._on_dock_button_clicked)
+        row.addWidget(btn)
+        self._header_dock_btn = btn
+        self.set_dock_side(self._dock_side)
 
+    def dock_side(self) -> str:
+        return normalize_adjust_dock(self._dock_side)
+
+    def set_dock_side(self, side: str) -> None:
+        """Update the header affordance; does not persist or relayout."""
+        self._dock_side = normalize_adjust_dock(side)
+        btn = getattr(self, "_header_dock_btn", None)
+        if btn is None:
+            return
+        if self._dock_side == "left":
+            btn.setToolTip("Move Adjust panel to the right")
+            icon = _qta_icon_safe("fa5s.arrow-right", color=theme.INK_MUTED)
+            fallback = "→"
+        else:
+            btn.setToolTip("Move Adjust panel to the left")
+            icon = _qta_icon_safe("fa5s.arrow-left", color=theme.INK_MUTED)
+            fallback = "←"
+        btn.setText("")
+        if icon is not None and not icon.isNull():
+            btn.setIcon(icon)
+        else:
+            btn.setText(fallback)
+
+    def _on_dock_button_clicked(self) -> None:
+        target = "left" if self.dock_side() == "right" else "right"
+        self.dock_side_requested.emit(target)
+
+    def _build_calibrate_button(self, sect: CollapsibleSection) -> None:
+        btn = QPushButton("Calibrate from ColorChecker…")
+        btn.setObjectName("adjust_nr_btn")
+        btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn.setToolTip(
+            "Shoot or load a 24-patch ColorChecker and save a camera colour profile.\n"
+            "Applied automatically to later photos from this body that have no XMP."
+        )
+        btn.clicked.connect(self.calibrate_requested.emit)
+        sect.add_widget(btn)
+        self._calibrate_btn = btn
+
+    def _build_camera_profile_banner(self, parent_layout) -> None:
+        row = QWidget()
+        row.setVisible(False)
+        h = QHBoxLayout(row)
+        h.setContentsMargins(0, 2, 0, 2)
+        h.setSpacing(6)
+        lbl = QLabel("")
+        lbl.setWordWrap(True)
+        lbl.setStyleSheet(f"color: {theme.EMBER}; font-size: 11px;")
+        h.addWidget(lbl, 1)
+        remove = QPushButton("Remove")
+        remove.setObjectName("adjust_reset_btn")
+        remove.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        remove.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        remove.setToolTip("Delete this camera's saved ColorChecker profile")
+        remove.clicked.connect(self._on_camera_profile_remove_clicked)
+        h.addWidget(remove)
+        parent_layout.addWidget(row)
+        self._camera_profile_row = row
+        self._camera_profile_lbl = lbl
+
+    def set_camera_profile_active(
+        self, label: str = "", make: str = "", model: str = "", iso: int | None = None
+    ) -> None:
+        self._camera_profile_identity = (make, model, iso)
+        row = getattr(self, "_camera_profile_row", None)
+        lbl = getattr(self, "_camera_profile_lbl", None)
+        if lbl is not None:
+            lbl.setText(f"Camera profile applied — {label}" if label else "")
+        if row is not None:
+            row.setVisible(bool(label))
+
+    def _on_camera_profile_remove_clicked(self) -> None:
+        make, model, iso = getattr(self, "_camera_profile_identity", ("", "", None))
+        if not (make or model):
+            return
+        from PyQt6.QtWidgets import QDialog
+
+        try:
+            from rawviewer_app.widgets import CustomConfirmDialog
+        except ModuleNotFoundError:
+            from widgets import CustomConfirmDialog
+
+        iso_bit = f" (ISO {iso})" if iso else ""
+        dlg = CustomConfirmDialog(
+            self,
+            title="Remove Camera Profile",
+            message=f"Remove the saved calibration profile for {make} {model}{iso_bit}?",
+            informative_text=(
+                "Photos from this camera will return to the LibRaw baseline "
+                "colour. Edits already saved in an XMP sidecar are unchanged."
+            ),
+            confirm_label="Remove",
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        try:
+            from color_calibration import delete_camera_profile
+
+            removed = delete_camera_profile(make, model, iso=iso)
+            if not removed and iso is not None:
+                removed = delete_camera_profile(make, model, iso=None)
+        except Exception:
+            removed = False
+        if removed:
+            self.set_camera_profile_active("")
+            self.camera_profile_removed.emit()
+
+    def _build_anamorphic_row(self, sect: CollapsibleSection) -> None:
+        from raw_adjustments import ANAMORPHIC_DESQUEEZE_PRESETS
+
+        wrap = QWidget()
+        col = QVBoxLayout(wrap)
+        col.setContentsMargins(0, 4, 0, 0)
+        col.setSpacing(4)
+        lbl = QLabel("Anamorphic desqueeze")
+        lbl.setStyleSheet(f"color: {theme.INK}; font-size: 11px;")
+        col.addWidget(lbl)
+        row = QHBoxLayout()
+        row.setSpacing(4)
+        self._anamorphic_btns: list[QPushButton] = []
+        for label, value in ANAMORPHIC_DESQUEEZE_PRESETS:
+            text = "1.0x" if abs(value - 1.0) < 1e-6 else label
+            btn = QPushButton(text)
+            btn.setObjectName("adjust_nr_btn")
+            btn.setCheckable(True)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setToolTip(
+                "No desqueeze (native capture proportions)"
+                if abs(value - 1.0) < 1e-6
+                else f"Desqueeze {text} — stretch width to restore natural proportions"
+            )
+            btn.setProperty("anamorphic_ratio", float(value))
+            btn.clicked.connect(
+                lambda _checked=False, v=float(value): self._on_anamorphic_chosen(v)
+            )
+            row.addWidget(btn, 1)
+            self._anamorphic_btns.append(btn)
+        col.addLayout(row)
+        hint = QLabel("Only for footage shot through an anamorphic adapter.")
+        hint.setStyleSheet(f"color: {theme.INK_FAINT}; font-size: 10px;")
+        hint.setWordWrap(True)
+        col.addWidget(hint)
+        sect.add_widget(wrap)
+        self._sync_anamorphic_buttons(1.0)
+
+    def _sync_anamorphic_buttons(self, ratio: float) -> None:
+        buttons = getattr(self, "_anamorphic_btns", None)
+        if not buttons:
+            return
+        for btn in buttons:
+            value = float(btn.property("anamorphic_ratio") or 1.0)
+            btn.setChecked(abs(value - float(ratio)) < 1e-3)
+
+    def _on_anamorphic_chosen(self, ratio: float) -> None:
+        self._sync_anamorphic_buttons(ratio)
+        if self._block_emit:
+            return
+        self._anamorphic_ratio = float(ratio)
+        self._emit_preview_and_save()
+
+    def _build_auto_tone_row(self, sect: CollapsibleSection) -> None:
+        """One-press Auto: white balance, Light sliders, and straighten."""
+        row = QHBoxLayout()
+        row.setSpacing(6)
+        lbl = QLabel("Auto")
+        lbl.setStyleSheet(f"color: {theme.INK}; font-size: 11px;")
+        lbl.setFixedWidth(82)
+        row.addWidget(lbl)
+        btn = QPushButton("AUTO")
+        btn.setObjectName("adjust_auto_btn")
+        btn.setFixedHeight(20)
+        btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn.setToolTip(
+            "Auto — white balance, Exposure / Contrast / Highlights / Shadows "
+            "/ Whites / Blacks, and straighten from the unedited photo.\n\n"
+            "Does not move Saturation, Vibrance, or HSL — grade colour there "
+            "after Auto, or with the WB dropper.\n\n"
+            "Not the P-key recovery preview. Ctrl+Z undoes the lot."
+        )
+        btn.clicked.connect(lambda: self.auto_tone_requested.emit())
+        row.addWidget(btn, 1)
+        sect.add_layout(row)
+        self._auto_tone_btn = btn
+
+    def apply_auto_tone(self, values: dict) -> None:
+        """Overwrite Auto keys (WB, Light sliders, CropAngle) and save."""
+        current = self.get_adjustments()
+        for key, value in values.items():
+            current[key] = float(value)
+        self.set_adjustments(current)
+        self._emit_preview_and_save()
+
+    def _settings(self) -> QSettings:
+        return QSettings("RAWviewer", "RAWviewer")
+
+    def _load_section_order(self) -> list:
+        import json
+
+        try:
+            raw = self._settings().value(_GLOBAL_SECTION_ORDER_SETTING, "")
+            if not raw:
+                return []
+            if isinstance(raw, (bytes, bytearray)):
+                raw = raw.decode("utf-8", errors="ignore")
+            if isinstance(raw, (list, tuple)):
+                return list(raw)
+            return json.loads(raw)
+        except Exception:
+            return []
+
+    def _save_section_order(self) -> None:
+        import json
+
+        try:
+            self._settings().setValue(
+                _GLOBAL_SECTION_ORDER_SETTING, json.dumps(list(self._section_order))
+            )
+        except Exception:
+            pass
+
+    def _apply_section_order(self) -> None:
+        """Lay Global sections out in ``self._section_order``; Export stays last."""
+        layout = getattr(self, "_global_layout", None)
+        if layout is None:
+            return
+        stretch_item = None
+        for i in range(layout.count() - 1, -1, -1):
+            item = layout.itemAt(i)
+            if item is not None and item.spacerItem() is not None:
+                stretch_item = layout.takeAt(i)
+                break
+        for key in self._section_order:
+            sect = self._global_sections.get(key)
+            if sect is None:
+                continue
+            layout.removeWidget(sect)
+            layout.addWidget(sect)
+        export_btn = getattr(self, "_export_btn", None)
+        if export_btn is not None and layout.indexOf(export_btn) != -1:
+            layout.removeWidget(export_btn)
+            layout.addWidget(export_btn)
+        if stretch_item is not None:
+            layout.addItem(stretch_item)
+        layout.activate()
+
+    def _visible_section_order(self) -> list:
+        return [
+            k
+            for k in self._section_order
+            if (s := self._global_sections.get(k)) is not None and not s.isHidden()
+        ]
+
+    def _set_visible_section_order(self, visible: list) -> None:
+        slots = [i for i, k in enumerate(self._section_order) if k in visible]
+        for slot, k in zip(slots, visible):
+            self._section_order[slot] = k
+
+    def _nudge_section(self, key: str, delta: int) -> None:
+        visible = self._visible_section_order()
+        if key not in visible:
+            return
+        pos = visible.index(key)
+        target = pos + int(delta)
+        if target < 0 or target >= len(visible):
+            return
+        visible.insert(target, visible.pop(pos))
+        self._set_visible_section_order(visible)
+        self._apply_section_order()
+        self._save_section_order()
+
+    def _reset_section_order(self) -> None:
+        self._section_order = list(_GLOBAL_SECTION_DEFAULT_ORDER)
+        self._apply_section_order()
+        self._save_section_order()
+
+    def _on_section_context_menu(self, key: str) -> None:
+        visible = self._visible_section_order()
+        if key not in visible:
+            return
+        pos = visible.index(key)
+        menu = QMenu(self)
+        up = menu.addAction("Move Up")
+        up.setEnabled(pos > 0)
+        up.triggered.connect(lambda: self._nudge_section(key, -1))
+        down = menu.addAction("Move Down")
+        down.setEnabled(pos < len(visible) - 1)
+        down.triggered.connect(lambda: self._nudge_section(key, 1))
+        menu.addSeparator()
+        reset = menu.addAction("Reset Order")
+        reset.setEnabled(list(self._section_order) != list(_GLOBAL_SECTION_DEFAULT_ORDER))
+        reset.triggered.connect(self._reset_section_order)
+        menu.exec(QCursor.pos())
+
+    def _lut_thumb_image_token(self) -> str:
+        path = str(getattr(self, "_lut_thumb_path", "") or "")
+        return f"{path}#as_shot"
+
+    def _lut_thumb_space(self) -> str:
+        from raw_lut import LUT_SPACE_DEFAULT
+
+        combo = getattr(self, "_lut_space_combo", None)
+        if combo is None:
+            return LUT_SPACE_DEFAULT
+        data = combo.currentData()
+        return str(data or LUT_SPACE_DEFAULT)
+
+    def clear_lut_preview_source(self) -> None:
+        """Names-only until an as-shot LUT base for this photo arrives."""
+        self._lut_thumb_token = int(getattr(self, "_lut_thumb_token", 0)) + 1
+        self._lut_thumb_display_u8 = None
+        self._lut_thumb_path = ""
+        self._lut_thumb_source_gen = 0
+        timer = getattr(self, "_lut_thumb_timer", None)
+        if timer is not None:
+            timer.stop()
+        for row in (getattr(self, "_lut_thumb_rows", {}) or {}).values():
+            row.set_preview(None)
+
+    def set_lut_preview_source(
+        self,
+        display_u8,
+        path: str,
+        generation: int = 0,
+        **_unused,
+    ) -> None:
+        """Debounced LUT thumbs from a tiny as-shot display of this photo."""
+        self._lut_thumb_display_u8 = display_u8
+        self._lut_thumb_path = str(path or "")
+        self._lut_thumb_source_gen = int(generation)
+        self._apply_cached_lut_thumbs()
+        self._schedule_lut_thumbs()
+
+    def _schedule_lut_thumbs(self) -> None:
+        timer = getattr(self, "_lut_thumb_timer", None)
+        if timer is None:
+            return
+        if getattr(self, "_lut_thumb_display_u8", None) is None:
+            return
+        timer.start(_LUT_THUMB_DEBOUNCE_MS)
+
+    def _apply_cached_lut_thumbs(self) -> bool:
+        from raw_lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
+
+        cache = getattr(self, "_lut_thumb_cache", None)
+        rows = getattr(self, "_lut_thumb_rows", None) or {}
+        if not cache or not rows:
+            return False
+        if getattr(self, "_lut_thumb_display_u8", None) is None:
+            for row in rows.values():
+                row.set_preview(None)
+            return False
+        token = self._lut_thumb_image_token()
+        amount = LUT_PREVIEW_AMOUNT
+        space = self._lut_thumb_space()
+        all_hit = True
+        for lut_id, row in rows.items():
+            key = lut_preview_cache_key(token, lut_id, amount, space)
+            pm = cache.get(key)
+            if pm is None:
+                all_hit = False
+                continue
+            cache.move_to_end(key)
+            row.set_preview(pm)
+        return all_hit
+
+    def _start_lut_thumb_worker(self) -> None:
+        from raw_lut import LUT_PREVIEW_AMOUNT, list_managed_luts
+
+        display = getattr(self, "_lut_thumb_display_u8", None)
+        if display is None:
+            return
+        if self._apply_cached_lut_thumbs():
+            return
+        self._lut_thumb_token = int(getattr(self, "_lut_thumb_token", 0)) + 1
+        token = self._lut_thumb_token
+        worker = _LutThumbWorker(
+            token,
+            display,
+            list_managed_luts(),
+            LUT_PREVIEW_AMOUNT,
+            self._lut_thumb_space(),
+            self._lut_thumb_signals,
+        )
+        QThreadPool.globalInstance().start(worker)
+
+    def _on_lut_thumbs_ready(self, token: int, previews) -> None:
+        from raw_lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
+
+        if int(token) != int(getattr(self, "_lut_thumb_token", 0)):
+            return
+        if not previews:
+            return
+        token_s = self._lut_thumb_image_token()
+        amount = LUT_PREVIEW_AMOUNT
+        space = self._lut_thumb_space()
+        cache = self._lut_thumb_cache
+        rows = getattr(self, "_lut_thumb_rows", {}) or {}
+        for lut_id, arr in previews.items():
+            pm = _u8_rgb_to_pixmap(arr)
+            if pm is None:
+                continue
+            key = lut_preview_cache_key(token_s, lut_id, amount, space)
+            cache[key] = pm
+            cache.move_to_end(key)
+            row = rows.get(lut_id)
+            if row is not None:
+                row.set_preview(pm)
+        while len(cache) > _LUT_THUMB_CACHE_MAX:
+            cache.popitem(last=False)
 

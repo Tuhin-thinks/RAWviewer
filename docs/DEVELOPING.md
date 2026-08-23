@@ -114,6 +114,7 @@ Semantic batch/chunk size for AI indexing is **auto-tuned separately** on first 
 |----------|--------|
 | `RAWVIEWER_MEMORY_TIER_AUTO=1` | **Default.** Tune workers, cache, and prefetch from installed RAM at startup |
 | `RAWVIEWER_MEMORY_TIER_AUTO=0` | Disable RAM-tier defaults; only explicit env vars apply |
+| `RAWVIEWER_MEMORY_PRESSURE_BACKOFF=0` | Disable session-sticky OS-pressure backoff (installed-RAM tier still applies) |
 | `RAWVIEWER_MOBILECLIP_VARIANT` | Windows ONNX model: `b` (default), `s0`, `s2`, `l14` |
 | `RAWVIEWER_GPU_VIEW=1` | GPU single-image viewport (OpenGL zoom/pan; on by default in release builds) |
 | `RAWVIEWER_GPU_VIEW=0` | Force legacy scroll-area single-image view |
@@ -126,7 +127,6 @@ Semantic batch/chunk size for AI indexing is **auto-tuned separately** on first 
 | `RAWVIEWER_SHARE_SHOW_AIRDROP=0` | Hide AirDrop from the Qt share menu (default is shown) |
 | `RAWVIEWER_AIRDROP_PERFORM=0` | After osascript fails, skip in-process AirDrop and go straight to Finder |
 | `RAWVIEWER_EDIT_BASE_MAX_EDGE` | Cap working Adjust decode long edge (RAM tier sets this on ≤16 GB; export uncapped) |
-| `RAWVIEWER_BANDED_WORKERS` | Max row-band threads for export/uncached edit (default min(4, OMP); RAM tier 2 on ≤12 GB) |
 | `RAWVIEWER_INDEX_DEFER_FACE_SCAN=1` | Defer face scan until after semantic index (default) |
 | `RAWVIEWER_SEMANTIC_PREP_WORKERS` | Parallel CPU workers before AI encode (RAM tier may set this) |
 | `RAWVIEWER_SEMANTIC_BATCH_AUTO=1` | Auto-tune AI batch/chunk size on index (default) |

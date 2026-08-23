@@ -18,6 +18,7 @@ from raw_adjustments import (
     is_default_adjustments,
     uses_recovery_tone_map,
 )
+from raw_transform import TRANSFORM_KEYS as _TRANSFORM_KEYS
 from raw_chroma_denoise import apply_chroma_denoise, apply_luma_denoise, chroma_denoise_enabled
 from raw_dodge_burn import DEFAULT_STRENGTH as _DB_DEFAULT_STRENGTH
 from raw_dodge_burn import MASK_KEY as _DB_MASK_KEY
@@ -258,6 +259,8 @@ def _process_linear_edit_tail(
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
+    row_offset: int = 0,
+    full_height: int | None = None,
 ) -> np.ndarray:
     """WB -> exposure -> dodge/burn -> denoise -> PV2012 tone on a (possibly banded) buffer."""
     img = _apply_wb_tint(img, merged)
@@ -283,7 +286,9 @@ def _process_linear_edit_tail(
     if heal_mask is not None:
         from raw_spot_heal import apply_spot_heal
 
-        img = apply_spot_heal(img, heal_mask)
+        img = apply_spot_heal(
+            img, heal_mask, row_offset=row_offset, full_height=full_height
+        )
 
     do_denoise = chroma_denoise if chroma_denoise is not None else chroma_denoise_enabled()
     nr_amount = float(merged.get("ColorNoiseReduction", 0.0))
@@ -394,7 +399,8 @@ def _process_linear_edit_buffer_banded(
     from raw_adjustments import band_ranges, banded_executor
 
     # 16px overlap pad handles bilateral / guided filter radii (up to r=12) and spot heal
-    bands = band_ranges(img.shape[0], n_workers, pad_px=16)
+    full_h = int(img.shape[0])
+    bands = band_ranges(full_h, n_workers, pad_px=16)
 
     def _process_band(band):
         y0, y1, pad_top, pad_bot = band
@@ -405,7 +411,12 @@ def _process_linear_edit_buffer_banded(
         # visible seam lines ~10px into each band's kept region.
         src = img[y0 - pad_top : y1 + pad_bot].copy()
         out = _process_linear_edit_tail(
-            src, merged, preview=preview, chroma_denoise=chroma_denoise
+            src,
+            merged,
+            preview=preview,
+            chroma_denoise=chroma_denoise,
+            row_offset=y0 - pad_top,
+            full_height=full_h,
         )
         return out[pad_top : pad_top + (y1 - y0)]
 
@@ -441,15 +452,9 @@ class PreviewStageCache:
         self.stage_out: dict[str, np.ndarray] = {}
 
 
-_TRANSFORM_KEYS = (
-    "CropAngle",
-    "PerspectiveVertical",
-    "PerspectiveHorizontal",
-    "CropLeft",
-    "CropRight",
-    "CropTop",
-    "CropBottom",
-)
+# TRANSFORM_KEYS is imported from raw_transform so Distortion / AnamorphicRatio
+# cannot drift out of the preview cache (a hand-maintained copy missed them
+# on development and the controls looked dead).
 
 _PRE_TONE_KEYS = (
     "Temperature",
