@@ -1,6 +1,6 @@
 [workspace]
 name = "rawviewer"
-version = "3.0.2"
+version = "3.1.0"
 description = "RAWviewer - Professional RAW Image Viewer with Semantic Search"
 authors = ["Mark Yip"]
 channels = ["conda-forge"]
@@ -46,7 +46,7 @@ exifread = ">=3.0.0"
 psutil = ">=5.9.0"
 qtawesome = ">=1.2.0"
 pycountry = "*"
-opencv-python-headless = "*"
+opencv-python-headless = ">=4.8,<5"
 lensfunpy = ">=1.14.0"
 huggingface_hub = "*"
 requests = "*"

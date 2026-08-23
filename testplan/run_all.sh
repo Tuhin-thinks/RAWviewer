@@ -29,19 +29,42 @@ run "compile check" -m py_compile \
   src/raw_pv2012.py src/raw_adjustments.py src/raw_edit_pipeline.py \
   src/image_cache.py src/image_load_manager.py src/gpu_raw_processor.py \
   src/perf_metrics.py src/enhanced_raw_processor.py src/common_image_loader.py src/torch_bootstrap.py \
-  src/raw_detail_enhance.py src/raw_tone_recovery.py
+  src/raw_detail_enhance.py src/raw_tone_recovery.py src/raw_auto_adjust.py src/raw_lut.py \
+  src/display_brightness.py src/memory_pressure.py src/rawviewer_ui/adjust_panel.py \
+  src/startup_splash.py src/color_calibration.py src/dpreview_samples.py \
+  src/rawviewer_ui/color_calibration_dialog.py src/rawviewer_ui/color_checker_overlay.py
 
 run "tone engine invariants" testplan/auto/t_tone_engine.py
 run "xmp round-trip" testplan/auto/t_xmp_roundtrip.py
 run "slider specs" testplan/auto/t_slider_specs.py
+run "AI denoise gating" testplan/auto/t_ai_denoise_gating.py
 run "cache semantics" testplan/auto/t_cache_semantics.py
 run "dodge & burn" testplan/auto/t_dodge_burn.py
 run "gallery closes editor" testplan/auto/t_gallery_closes_editor.py
 run "gallery hover prefetch" testplan/auto/t_gallery_hover_prefetch.py
+run "gallery new file registration" testplan/auto/t_gallery_new_file.py
+run "gallery thumb recovery" testplan/auto/t_gallery_thumb_recovery.py
+run "gallery scroll date bubble" testplan/auto/t_gallery_scroll_date_bubble.py
+run "full-image cache byte budget" testplan/auto/t_full_image_cache_budget.py
+run "viewport load-queue reprioritise" testplan/auto/t_queue_reprioritise.py
+run "worker no QPixmap" testplan/auto/t_worker_no_qpixmap.py
+run "RAW slot accounting" testplan/auto/t_raw_slot_accounting.py
+run "visited-edit gallery bake" testplan/auto/t_visited_edit_bake.py
+run "edit-base max edge cap" testplan/auto/t_edit_base_max_edge.py
+run "memory-tier overlay" testplan/auto/t_memory_tier_overlay.py
+run "memory-pressure backoff" testplan/auto/t_memory_pressure_backoff.py
 run "editor skip unsupported" testplan/auto/t_editor_skip_unsupported.py
 run "adjust loading overlay" testplan/auto/t_adjust_loading_overlay.py
 run "adjust copy paste shortcuts" testplan/auto/t_adjust_copy_paste_shortcuts.py
 run "adjust workflow restore" testplan/auto/t_adjust_workflow_restore.py
+run "adjust panel dock" testplan/auto/t_adjust_panel_dock.py
+run "adjust section order" testplan/auto/t_adjust_section_order.py
+run "auto tone" testplan/auto/t_auto_tone.py
+run "creative LUT" testplan/auto/t_lut_cube.py
+run "display brightness" testplan/auto/t_display_brightness.py
+run "startup splash copy" testplan/auto/t_splash_copy.py
+run "color calibration" testplan/auto/t_color_calibration.py
+run "dpreview samples" testplan/auto/t_dpreview_samples.py
 run "dodge & burn reset" testplan/auto/t_dodge_burn_reset.py
 run "dodge & burn undo" testplan/auto/t_dodge_burn_undo.py
 run "spot heal" testplan/auto/t_spot_heal.py
@@ -58,7 +81,7 @@ run "detail enhance (sharpness/clarity/defringe) perf" testplan/auto/t_detail_en
 run "CR3 preview extraction perf" testplan/auto/t_cr3_preview_perf.py
 run "EXIF cache read concurrency" testplan/auto/t_exif_cache_concurrency.py
 run "NEF HE/HE* detection" testplan/auto/t_nef_he_detection.py
-run "NEF HE/HE* editing & export" testplan/auto/t_nef_he_editing_export.py
+run "NEF HE/HE* editing & export" testplan/auto/t_nef_he_editing_export.py t_he_nef_thumbnail.py
 run "full-res decode dedup" testplan/auto/t_full_decode_dedup.py
 run "redundant full re-display" testplan/auto/t_redundant_full_redisplay.py
 run "capture-time-only sort" testplan/auto/t_capture_time_only_sort.py

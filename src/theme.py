@@ -62,3 +62,65 @@ def rgba(rgb: tuple[int, int, int], alpha: int) -> str:
     """QSS/QColor-style rgba() string from one of the *_RGB tuples above."""
     r, g, b = rgb
     return f"rgba({r}, {g}, {b}, {alpha})"
+
+
+def ui_font(size_px: int, weight=None):
+    """QFont for dialogs that cannot inherit the app font (pixel size only)."""
+    from PyQt6.QtGui import QFont
+
+    f = QFont()
+    f.setPixelSize(int(size_px))
+    if weight is not None:
+        f.setWeight(weight)
+    return f
+
+
+def form_secondary_button_stylesheet() -> str:
+    """Cancel / Browse — same padding and radius as calibrate actions."""
+    return f"""
+        QPushButton {{
+            background-color: {SURFACE};
+            color: {INK};
+            border: 1px solid {LINE};
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0px 16px;
+        }}
+        QPushButton:hover {{
+            background-color: {RAISED};
+            border-color: {INK_FAINT};
+        }}
+        QPushButton:pressed {{
+            background-color: {RAISED_HI};
+        }}
+        QPushButton:disabled {{
+            color: {INK_FAINT};
+            border-color: {LINE_SOFT};
+        }}
+    """
+
+
+def form_primary_button_stylesheet() -> str:
+    """Confirm / Calibrate — EMBER fill."""
+    return f"""
+        QPushButton {{
+            background-color: {EMBER};
+            color: {INK};
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0px 16px;
+        }}
+        QPushButton:hover {{
+            background-color: {rgba(EMBER_RGB, 220)};
+        }}
+        QPushButton:pressed {{
+            background-color: {rgba(EMBER_RGB, 180)};
+        }}
+        QPushButton:disabled {{
+            background-color: {SURFACE};
+            color: {INK_FAINT};
+        }}
+    """

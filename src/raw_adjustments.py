@@ -58,6 +58,10 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     "Defringe": 0.0,
     "ColorNoiseReduction": 0.0,
     "LuminanceNoiseReduction": 0.0,
+    # AI denoise detail preservation (export-only): 0 = maximum smoothness,
+    # 100 = maximum original fine detail. Drives the half-res AI denoise
+    # edge-weighted high-frequency restore gain in onnx_scunet.process().
+    "DenoiseDetail": 50.0,
     "ParametricShadows": 0.0,
     "ParametricDarks": 0.0,
     "ParametricLights": 0.0,
@@ -74,6 +78,8 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     "CropAngle": 0.0,
     "PerspectiveVertical": 0.0,
     "PerspectiveHorizontal": 0.0,
+    "Distortion": 0.0,
+    "AnamorphicRatio": 1.0,
     "CropLeft": 0.0,
     "CropRight": 0.0,
     "CropTop": 0.0,
@@ -101,6 +107,15 @@ for _hsl_color in HSL_COLOR_NAMES:
 
 RELEVANT_ADJUSTMENT_KEYS = frozenset(DEFAULT_ADJUSTMENTS.keys())
 AS_SHOT_TEMP_KEY = "AsShotTemperature"
+
+ANAMORPHIC_DESQUEEZE_PRESETS: tuple[tuple[str, float], ...] = (
+    ("Off (1.0x)", 1.0),
+    ("1.33x", 1.33),
+    ("1.5x", 1.5),
+    ("1.6x", 1.6),
+    ("2.0x", 2.0),
+)
+_PROFILE_STALE_WARNED: set[str] = set()
 
 # Common photographic white-balance presets (Kelvin). These are industry-
 # standard illuminant targets (Lightroom-style), not EXIF enums — cameras
@@ -266,12 +281,14 @@ SLIDER_SPECS: tuple[SliderSpec, ...] = (
     _slider_linear("Clarity2012", "Clarity", -100, 100, 0.0),
     _slider_linear("Defringe", "Defringe", 0, 100, 0.0),
     _slider_linear("LuminanceNoiseReduction", "Luma NR", 0, 100, 0.0, fmt=lambda x: f"{x:.0f}"),
+    _slider_linear("DenoiseDetail", "AI Detail", 0, 100, 50.0, fmt=lambda x: f"{x:.0f}"),
     # Transform (raw_transform.py). Straighten in 0.1-degree steps; keystone
     # sliders mirror Lightroom's slider-based Transform panel; crop insets as
     # per-edge percentages (stored as fractions).
     _slider_linear("CropAngle", "Straighten", -450, 450, 0.0, scale=0.1, fmt=lambda x: f"{x:+.1f}°"),
     _slider_linear("PerspectiveVertical", "Vertical", -100, 100, 0.0),
     _slider_linear("PerspectiveHorizontal", "Horizontal", -100, 100, 0.0),
+    _slider_linear("Distortion", "Distortion", -100, 100, 0.0),
     # Per-edge crop-inset sliders were removed by request: cropping stays out
     # of the UI until a proper interactive overlay (visible crop rectangle
     # with drag handles) exists. raw_transform.apply_geometry still honors
@@ -393,25 +410,55 @@ def _decode_srgb_uint8_to_linear(arr: np.ndarray) -> np.ndarray:
 
 
 import threading
-_already_adjusted_ids = set()
+import weakref
+
+# id(arr) -> weakref to that exact array.
+#
+# This was a bare set of id()s, which was wrong in BOTH directions. numpy
+# hands the same address back for the next same-shaped allocation, so a fresh
+# preview at a recycled address was read as "already adjusted" and skipped its
+# XMP edits. And the overflow guard called set.pop(), which removes an
+# ARBITRARY element -- often a live, still-in-flight buffer -- so that one got
+# adjusted a second time.
+#
+# The weakref settles identity (a recycled address cannot match, because the
+# referent is dead or different) and the finalizer keeps the map from growing,
+# which removes the need to evict live entries at all.
+_already_adjusted_ids: "dict[int, weakref.ref]" = {}
 _already_adjusted_lock = threading.Lock()
+
 
 def mark_array_as_already_adjusted(arr):
     if arr is None:
         return
+    key = id(arr)
+
+    def _drop(_ref, _key=key):
+        with _already_adjusted_lock:
+            _already_adjusted_ids.pop(_key, None)
+
+    try:
+        ref = weakref.ref(arr, _drop)
+    except TypeError:
+        # Not weak-referenceable: better to re-apply than to record a mark
+        # that can never be validated.
+        return
     with _already_adjusted_lock:
-        _already_adjusted_ids.add(id(arr))
-        if len(_already_adjusted_ids) > 10000:
-            # Pop some elements to prevent memory accumulation
-            for _ in range(2000):
-                if _already_adjusted_ids:
-                    _already_adjusted_ids.pop()
+        _already_adjusted_ids[key] = ref
+
+
+def is_array_already_adjusted(arr) -> bool:
+    """Whether THIS array object was marked -- not merely its address."""
+    if arr is None:
+        return False
+    with _already_adjusted_lock:
+        ref = _already_adjusted_ids.get(id(arr))
+    return ref is not None and ref() is arr
 
 def apply_saved_edits_for_display(file_path: str, arr):
     """Apply saved XMP edits to a display-bound uint8 RGB ndarray."""
-    with _already_adjusted_lock:
-        if id(arr) in _already_adjusted_ids:
-            return arr
+    if is_array_already_adjusted(arr):
+        return arr
     """Apply saved XMP edits to a display-bound uint8 RGB ndarray.
 
     Returns the input unchanged when previews-with-edits is disabled, the
@@ -862,7 +909,74 @@ def load_adjustments_for_file(image_path: str) -> Dict[str, float]:
         adj.update(parsed)
     if not has_xmp_temp:
         adj["Temperature"] = as_shot
+    if not (xmp_path and os.path.isfile(xmp_path)):
+        try:
+            from color_calibration import camera_identity_for_file, get_camera_profile
+
+            make, model, iso_val = camera_identity_for_file(image_path)
+            if make or model:
+                prof = get_camera_profile(make, model, iso=iso_val)
+                if prof:
+                    _warn_if_profile_decode_stale(
+                        prof, make, model, iso_val, image_path
+                    )
+                    if "temperature_shift" in prof:
+                        adj["Temperature"] = float(
+                            adj.get("Temperature", as_shot)
+                        ) + float(prof["temperature_shift"])
+                    if "tint_shift" in prof:
+                        adj["Tint"] = float(adj.get("Tint", 0.0)) + float(
+                            prof["tint_shift"]
+                        )
+                    from raw_hsl import HSL_COLOR_NAMES
+
+                    for band in HSL_COLOR_NAMES:
+                        for prof_key, adj_prefix in (
+                            ("hsl_hue", "HueAdjustment"),
+                            ("hsl_sat", "SaturationAdjustment"),
+                            ("hsl_lum", "LuminanceAdjustment"),
+                        ):
+                            values = prof.get(prof_key)
+                            if isinstance(values, dict) and band in values:
+                                adj[f"{adj_prefix}{band}"] = float(values[band])
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[CALIB] Could not apply camera profile to %s",
+                image_path,
+                exc_info=True,
+            )
     return adj
+
+
+def _warn_if_profile_decode_stale(
+    prof: dict,
+    make: str,
+    model: str,
+    iso_val,
+    image_path: str,
+) -> None:
+    try:
+        from color_calibration import normalize_camera_key, profile_decode_mismatch
+
+        reason = profile_decode_mismatch(prof, image_path)
+        if not reason:
+            return
+        key = normalize_camera_key(make, model, iso=iso_val)
+        if key in _PROFILE_STALE_WARNED:
+            return
+        _PROFILE_STALE_WARNED.add(key)
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "[CALIB] Camera profile for %s may no longer match this decode: %s "
+            "(still applied)",
+            key,
+            reason,
+        )
+    except Exception:
+        pass
 
 
 def wb_reference_temperature(adj: Dict[str, float] | None) -> float:
@@ -972,6 +1086,10 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
         # an otherwise-empty sidecar after Reset.
         if key == "DodgeBurnStrength":
             continue
+        # Export-only AI-denoise knob: changes nothing in the pixel pipeline,
+        # so it must not mark the image as edited on its own.
+        if key == "DenoiseDetail":
+            continue
         try:
             av = float(adj.get(key, default) if adj.get(key, default) is not None else default)
         except (TypeError, ValueError):
@@ -983,6 +1101,29 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
         elif abs(av - bv) > 1e-4:
             return False
     return True
+
+
+def is_default_adjustments_for_sidecar(adj: Dict[str, float] | None) -> bool:
+    """Like is_default_adjustments, but does NOT ignore DenoiseDetail.
+
+    is_default_adjustments() deliberately skips DenoiseDetail (it's an
+    export-only knob invisible to the always-shown preview, so it
+    shouldn't mark a file "edited" for the gallery badge or skip the
+    pixel-pipeline shortcut). But write_xmp_adjustments reused that SAME
+    check to decide whether to write or clear the sidecar -- so a
+    DenoiseDetail-only change was treated as "no edit" and silently
+    dropped. Callers that persist the sidecar must use this variant.
+    """
+    if not is_default_adjustments(adj):
+        return False
+    if not adj:
+        return True
+    default_detail = DEFAULT_ADJUSTMENTS["DenoiseDetail"]
+    try:
+        detail = float(adj.get("DenoiseDetail", default_detail))
+    except (TypeError, ValueError):
+        return False
+    return abs(detail - default_detail) <= 1e-4
 
 
 def adjustments_equal(a: Dict[str, float], b: Dict[str, float]) -> bool:
@@ -1239,7 +1380,7 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: Dict[str, float]) -> None:
         except Exception:
             root = None
 
-    if is_default_adjustments(merged):
+    if is_default_adjustments_for_sidecar(merged):
         if root is None:
             if existing_rating > 0:
                 _write_xmp_rating_locked(xmp_path, existing_rating)

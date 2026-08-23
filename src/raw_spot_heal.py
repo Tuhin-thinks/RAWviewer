@@ -6,10 +6,13 @@ Design:
       (same framing as dodge/burn). Positive coverage = region to remove.
     - Painting stamps a soft circular brush (reuses dodge/burn falloff).
     - Applied in the scene-linear pipeline after dodge/burn: encode to
-      8-bit gamma, ``cv2.inpaint`` (Telea), decode, soft-composite with
-      the coverage mask so feathered brush edges blend cleanly.
+      8-bit gamma, ``cv2.inpaint`` (Telea, or NS+Telea for larger holes),
+      decode, soft-composite with the coverage mask so feathered brush
+      edges blend cleanly.
     - Inpaint result is cached on the mask instance keyed by
-      (version, H, W, radius) so slider ticks do not re-run OpenCV.
+      (version, H, W, radius, method, source identity) so slider ticks
+      do not re-run OpenCV. Geometry is memoised separately so a cache
+      hit skips the full-frame prelude.
     - Persisted in XMP as a private base64 PNG (``SpotHealMask``), same
       pattern as DodgeBurnMask — not a Lightroom-compatible schema.
 """
@@ -17,15 +20,48 @@ Design:
 from __future__ import annotations
 
 import base64
+import inspect
 import threading
 from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
 
+try:
+    from raw_dodge_burn import DEFAULT_BRUSH_FEATHER
+except ImportError:
+    DEFAULT_BRUSH_FEATHER = 0.70
+
 MASK_KEY = "_spot_heal_mask_v1"
 MASK_OBJ_KEY = "_spot_heal_mask_obj"  # live HealMask; never write to XMP
 INPAINT_RADIUS = 5  # OpenCV inpaint neighborhood radius (pixels at buffer res)
+# Area (pixels) above which Navier-Stokes tends to keep edges better than Telea.
+_INPAINT_NS_AREA = 900
+
+_FALLOFF_HAS_FEATHER: Optional[bool] = None
+
+
+def _heal_brush_falloff(
+    y0: int,
+    y1: int,
+    x0: int,
+    x1: int,
+    cx: float,
+    cy: float,
+    r: float,
+    feather: float,
+) -> np.ndarray:
+    """Call dodge/burn falloff; pass ``feather`` only when that API exists."""
+    from raw_dodge_burn import circular_brush_falloff
+
+    global _FALLOFF_HAS_FEATHER
+    if _FALLOFF_HAS_FEATHER is None:
+        _FALLOFF_HAS_FEATHER = "feather" in inspect.signature(
+            circular_brush_falloff
+        ).parameters
+    if _FALLOFF_HAS_FEATHER:
+        return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r, feather)
+    return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
 
 def mask_stage_fingerprint(mask: "HealMask") -> str:
@@ -55,6 +91,10 @@ class HealMask:
     version: int = 0
     _inpaint_cache: object = field(default=None, repr=False, compare=False)
     _empty_cache: object = field(default=None, repr=False, compare=False)
+    # Mask-derived geometry (area, adaptive radius, method, bbox). Depends on
+    # the MASK only, never on the image, so it survives every slider tick and
+    # lets a cache hit skip the full-frame prelude -- see apply_spot_heal.
+    _geom_cache: object = field(default=None, repr=False, compare=False)
 
     @classmethod
     def empty(cls, h: int, w: int) -> "HealMask":
@@ -73,6 +113,7 @@ class HealMask:
         self.version = int(self.version) + 1
         self._inpaint_cache = None
         self._empty_cache = None
+        self._geom_cache = None
 
 
 def stamp_heal_brush(
@@ -81,10 +122,9 @@ def stamp_heal_brush(
     cy: float,
     radius: float,
     strength: float,
+    feather: float = DEFAULT_BRUSH_FEATHER,
 ) -> tuple[int, int, int, int]:
     """Accumulate soft coverage into ``mask`` (max-blend). Returns bbox."""
-    from raw_dodge_burn import circular_brush_falloff
-
     h, w = mask.data.shape
     r = max(1.0, float(radius))
     x0 = max(0, int(cx - r - 1))
@@ -94,7 +134,7 @@ def stamp_heal_brush(
     if x1 <= x0 or y1 <= y0:
         return (x0, y0, x1, y1)
 
-    falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
+    falloff = _heal_brush_falloff(y0, y1, x0, x1, cx, cy, r, feather)
     # Heal stamps need a strong single-click presence; max-blend with a
     # boosted center so a short dab covers the defect for Telea.
     amt = falloff * min(1.0, float(strength) * 1.35)
@@ -111,10 +151,9 @@ def erase_heal_brush(
     cy: float,
     radius: float,
     strength: float,
+    feather: float = DEFAULT_BRUSH_FEATHER,
 ) -> tuple[int, int, int, int]:
     """Pull heal coverage toward zero under a soft brush."""
-    from raw_dodge_burn import circular_brush_falloff
-
     h, w = mask.data.shape
     r = max(1.0, float(radius))
     x0 = max(0, int(cx - r - 1))
@@ -124,7 +163,7 @@ def erase_heal_brush(
     if x1 <= x0 or y1 <= y0:
         return (x0, y0, x1, y1)
 
-    falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
+    falloff = _heal_brush_falloff(y0, y1, x0, x1, cx, cy, r, feather)
     region = mask.data[y0:y1, x0:x1]
     region *= np.clip(1.0 - falloff * float(strength), 0.0, 1.0)
     mask.touch()
@@ -147,6 +186,8 @@ def apply_spot_heal(
     mask: Optional[HealMask],
     *,
     inpaint_radius: int = INPAINT_RADIUS,
+    row_offset: int = 0,
+    full_height: int | None = None,
 ) -> np.ndarray:
     """Inpaint covered pixels; soft-composite back onto ``img``.
 
@@ -157,45 +198,125 @@ def apply_spot_heal(
     Work is limited to the painted bounding box (+ pad) so a small heal
     stroke does not Telea-process a full sensor frame (which looked like
     a hang / no-op on large RAW bases).
+
+    ``row_offset`` / ``full_height`` support the banded settle path: resize
+    coverage to the full frame, then slice the band so heal stays aligned
+    with the painted region (same squash bug mask layers / D&B had).
     """
     if mask is None or mask.is_empty or img is None:
         return img
     h, w = img.shape[:2]
+    fh = int(full_height) if full_height is not None else h
+    ro = int(row_offset) if row_offset else 0
+    if fh < h:
+        fh, ro = h, 0
     radius = max(1, int(inpaint_radius))
     # Must include the source buffer identity — caching only by mask
     # version returned a stale healed frame after Exposure/WB changes.
-    cache_key = (mask.version, h, w, radius, id(img))
-    cached = mask._inpaint_cache
-    if cached is not None and cached[0] == cache_key:
-        return cached[1]
-
+    #
+    # id() alone is NOT enough. numpy hands the same address back for the
+    # next same-shaped allocation essentially every time, so a freed base
+    # buffer replaced by a different one of identical shape collides on
+    # (version, h, w, radius, id) and serves the previous heal. A weakref
+    # settles it: if the array the key was built from is gone, or is not
+    # this array, the entry cannot match.
+    import weakref as _weakref
     import cv2
 
-    coverage = resize_mask_to(mask, h, w)
-    bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
-    if not np.any(bin_mask):
+    # Everything the cache key needs is derived from the MASK, not the image,
+    # so memoise it and let a cache hit cost one dict lookup.
+    #
+    # This prelude -- a full-frame resize, a full-frame threshold, and a
+    # full-frame np.where that allocates two index arrays -- used to run
+    # BEFORE the cache check, so a hit still paid ~60-120 ms on a 24 MP base.
+    # That is exactly the cost the cache exists to remove: dragging Exposure
+    # with a heal stroke present re-derived the same mask geometry on every
+    # tick and then threw it away.
+    geom_key = (mask.version, h, w, ro, fh, radius)
+    geom = mask._geom_cache
+    coverage = None
+    bin_mask = None
+    if geom is not None and geom[0] == geom_key:
+        _, area, adaptive_radius, method_key, bounds = geom
+    else:
+        coverage_full = resize_mask_to(mask, fh, w)
+        if ro != 0 or fh != h:
+            coverage = coverage_full[ro : ro + h]
+        else:
+            coverage = coverage_full
+        bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
+        if not np.any(bin_mask):
+            mask._geom_cache = (geom_key, 0, radius, "telea", None)
+            return img
+
+        ys, xs = np.where(bin_mask > 0)
+        area = int(ys.size)
+        # Scale the FMM neighborhood with the hole: dust stays small-radius
+        # Telea; larger strokes need more context or they leave a soft blotch.
+        adaptive_radius = radius
+        method_key = "telea"
+        if area >= _INPAINT_NS_AREA:
+            adaptive_radius = max(radius, min(24, int(round(np.sqrt(area) * 0.35))))
+            method_key = "ns+telea"
+        bounds = (int(ys.min()), int(ys.max()), int(xs.min()), int(xs.max()))
+        mask._geom_cache = (geom_key, area, adaptive_radius, method_key, bounds)
+
+    if not area or bounds is None:
         return img
 
-    ys, xs = np.where(bin_mask > 0)
-    pad = max(radius * 3, 12)
-    y0 = max(0, int(ys.min()) - pad)
-    y1 = min(h, int(ys.max()) + pad + 1)
-    x0 = max(0, int(xs.min()) - pad)
-    x1 = min(w, int(xs.max()) + pad + 1)
+    cache_key = (mask.version, h, w, adaptive_radius, method_key, id(img), ro, fh)
+    cached = mask._inpaint_cache
+    if cached is not None and cached[0] == cache_key:
+        _ref = cached[2] if len(cached) > 2 else None
+        if _ref is not None and _ref() is img:
+            return cached[1]
+
+    # Missed the inpaint cache, so the coverage buffers are needed after all.
+    if coverage is None:
+        coverage_full = resize_mask_to(mask, fh, w)
+        coverage = (
+            coverage_full[ro : ro + h] if (ro != 0 or fh != h) else coverage_full
+        )
+        bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
+
+    ys_min, ys_max, xs_min, xs_max = bounds
+    pad = max(adaptive_radius * 3, 12)
+    y0 = max(0, ys_min - pad)
+    y1 = min(h, ys_max + pad + 1)
+    x0 = max(0, xs_min - pad)
+    x1 = min(w, xs_max + pad + 1)
     if y1 <= y0 or x1 <= x0:
         return img
 
     roi = img[y0:y1, x0:x1]
     cov_roi = coverage[y0:y1, x0:x1]
     bin_roi = bin_mask[y0:y1, x0:x1]
-    # Dilate inside the ROI so Telea has a clean border of source pixels.
-    bin_roi = cv2.dilate(bin_roi, np.ones((3, 3), np.uint8), iterations=1)
+    # Dilate inside the ROI so inpaint has a clean border of source pixels.
+    # Slightly wider for large holes so NS/Telea don't sample the hole rim.
+    dilate_iters = 2 if area >= _INPAINT_NS_AREA else 1
+    bin_roi = cv2.dilate(bin_roi, np.ones((3, 3), np.uint8), iterations=dilate_iters)
 
-    peak = float(np.percentile(img, 99.8))
+    # Normalise against the ROI, not the whole frame. Everything else here
+    # already works on the ROI, and the full-frame version cost ~675 ms per
+    # stroke on a 24 MP buffer -- a complete sort of the image to scale a
+    # patch a hundred pixels across. It was wrong in a quieter way too: a
+    # specular highlight anywhere in the photo set the exposure the heal was
+    # encoded at, so the same blemish healed differently depending on
+    # something at the far edge of the frame.
+    peak = float(np.percentile(roi, 99.8))
     peak = max(peak, 1e-4)
     norm = np.clip(roi / peak, 0.0, 1.0)
     u8 = np.clip(np.power(norm, 1.0 / 2.2) * 255.0 + 0.5, 0, 255).astype(np.uint8)
-    healed_u8 = cv2.inpaint(u8, bin_roi, float(radius), cv2.INPAINT_TELEA)
+    # Small dust: Telea (fast FMM). Larger structured holes: NS first for
+    # edge continuity, then a light Telea pass to clean residual speckles.
+    # LaMa ONNX remains the longer-term swap for this seam (FEATURE_FEASIBILITY).
+    if method_key == "ns+telea":
+        healed_u8 = cv2.inpaint(u8, bin_roi, float(adaptive_radius), cv2.INPAINT_NS)
+        healed_u8 = cv2.inpaint(
+            healed_u8, bin_roi, float(max(2, radius)), cv2.INPAINT_TELEA
+        )
+    else:
+        healed_u8 = cv2.inpaint(u8, bin_roi, float(adaptive_radius), cv2.INPAINT_TELEA)
     healed = np.power(healed_u8.astype(np.float32) / 255.0, 2.2) * peak
 
     alpha = np.clip(cov_roi, 0.0, 1.0).astype(np.float32)
@@ -206,7 +327,12 @@ def apply_spot_heal(
     patched = roi * (1.0 - alpha) + healed * alpha
     out = np.array(img, dtype=np.float32, copy=True)
     out[y0:y1, x0:x1] = patched
-    mask._inpaint_cache = (cache_key, out)
+    try:
+        mask._inpaint_cache = (cache_key, out, _weakref.ref(img))
+    except TypeError:
+        # Not weak-referenceable (a view or a non-array): skip the cache
+        # rather than store an entry that cannot be validated.
+        mask._inpaint_cache = None
     return out
 
 

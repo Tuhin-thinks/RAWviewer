@@ -29,7 +29,8 @@ from datetime import datetime
 from typing import List, Optional, Tuple, Any, cast, Set
 
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = None
+# Finite decompression-bomb cap (~200 MP). None disables Pillow's check.
+Image.MAX_IMAGE_PIXELS = 200_000_000
 
 
 def _is_multiprocessing_worker_process() -> bool:
@@ -110,8 +111,9 @@ def _branded_icon_resource_path() -> str | None:
 # Stable ID for taskbar grouping / pinning. Must be set once before windows appear;
 # do not change it later (versioned IDs break the branded icon).
 _WINDOWS_APP_USER_MODEL_ID = "markyip.rawviewer.app.1"
-# Compact splash — full-res appicon.png is 2k+ and looks huge as QSplashScreen.
-_SPLASH_DISPLAY_MAX_PX = 280
+
+from startup_splash import make_splash_pixmap as _make_splash_pixmap
+from startup_splash import splash_show_status
 
 
 def _set_windows_app_user_model_id() -> None:
@@ -199,51 +201,6 @@ def _apply_windows_native_window_icon(widget, ico_path: str | None = None) -> No
             user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big)
     except Exception:
         pass
-
-
-def _make_splash_pixmap():
-    """Build a compact splash pixmap from the branded icon (or a text fallback)."""
-    from PyQt6.QtGui import QPixmap, QColor, QPainter, QPen, QIcon
-    from PyQt6.QtCore import Qt
-
-    max_edge = _SPLASH_DISPLAY_MAX_PX
-    icon_path = _splash_icon_resource_path()
-    pixmap = QPixmap()
-    if icon_path:
-        if icon_path.lower().endswith(".png"):
-            pixmap = QPixmap(icon_path)
-        else:
-            pixmap = QIcon(icon_path).pixmap(max_edge, max_edge)
-            if pixmap.isNull():
-                pixmap = QPixmap(icon_path)
-    if pixmap.isNull():
-        pixmap = QPixmap(max_edge, max_edge)
-        pixmap.fill(QColor(*theme.VOID_RGB))
-        painter = QPainter(pixmap)
-        painter.setPen(QPen(QColor(*theme.INK_RGB), 3))
-        font = painter.font()
-        font.setPointSize(28)
-        font.setBold(True)
-        painter.setFont(font)
-        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "RAW")
-        painter.end()
-        return pixmap
-    if pixmap.width() > max_edge or pixmap.height() > max_edge:
-        pixmap = pixmap.scaled(
-            max_edge,
-            max_edge,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-    return pixmap
-
-
-def _splash_icon_resource_path() -> str | None:
-    """Prefer hi-res PNG for startup splash; fall back to platform icon."""
-    png = resource_path(os.path.join("icons", "appicon.png"))
-    if os.path.exists(png):
-        return png
-    return _branded_icon_resource_path()
 
 
 def _is_windows_installed_app() -> bool:
@@ -371,12 +328,8 @@ if _IS_GUI_MAIN_PROCESS:
                 _splash_flags |= Qt.WindowType.WindowStaysOnTopHint
             _startup_splash = QSplashScreen(_splash_pixmap, _splash_flags)
             _startup_splash.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
-            _startup_splash.showMessage(
-                "Starting RAWviewer...",
-                Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter,
-                Qt.GlobalColor.white,
-            )
             _startup_splash.show()
+            splash_show_status(_startup_splash, "Starting…")
             _temp_app.processEvents()
         else:
             _startup_splash = None
@@ -1094,10 +1047,17 @@ _macos_completion_guarded_edits: "weakref.WeakSet" = weakref.WeakSet()
 _shared_bg_pool = None
 def _get_bg_thread_pool():
     global _shared_bg_pool
+    n = max(2, (os.cpu_count() or 4) // 2)
+    cap = os.environ.get("RAWVIEWER_BG_POOL_THREADS", "").strip()
+    if cap:
+        try:
+            n = max(1, min(int(cap), 16))
+        except ValueError:
+            pass
     if _shared_bg_pool is None:
         from PyQt6.QtCore import QThreadPool
         _shared_bg_pool = QThreadPool()
-        _shared_bg_pool.setMaxThreadCount(max(2, (os.cpu_count() or 4) // 2))
+    _shared_bg_pool.setMaxThreadCount(n)
     return _shared_bg_pool
 def _macos_apply_ns_text_completion_off(node) -> None:
     """Turn off AppKit completion/spellcheck hooks on one NSView/NSTextField."""
@@ -1252,7 +1212,7 @@ def _macos_install_line_edit_completion_guard(line_edit) -> None:
         app.applicationStateChanged.connect(_reapply_on_app_active)
 
 
-def _dismiss_startup_splash(app, main_window=None, splash=None) -> None:
+def _force_hide_startup_splash(app, main_window=None, splash=None) -> None:
     """Force-hide startup splash. macOS often keeps stay-on-top splash visible after finish()."""
     global _startup_splash
     close_native_splash()
@@ -1321,22 +1281,27 @@ def _dismiss_startup_splash(app, main_window=None, splash=None) -> None:
             pass
 
 
+def _dismiss_startup_splash(app, main_window=None, splash=None) -> None:
+    """Alias used by fatal-error paths; same force-hide as the scheduled retries."""
+    _force_hide_startup_splash(app, main_window, splash)
+
+
 def _schedule_startup_splash_dismiss(app, main_window, splash) -> None:
     """Dismiss splash after the main window has been shown/painted."""
-    _dismiss_startup_splash(app, main_window, splash)
+    _force_hide_startup_splash(app, main_window, splash)
     if sys.platform == "darwin":
         # macOS can lag QSplashScreen.finish(); retry a few times.
-        for delay_ms in (0, 50, 150, 400):
+        for delay_ms in (0, 50, 150, 400, 800):
             QTimer.singleShot(
                 delay_ms,
-                lambda mw=main_window, a=app: _dismiss_startup_splash(a, mw, None),
+                lambda mw=main_window, a=app: _force_hide_startup_splash(a, mw, None),
             )
     else:
         # One deferred sweep only — enough to catch a stuck splash without
         # repeatedly poking Z-order (which flashes on Windows).
         QTimer.singleShot(
             120,
-            lambda mw=main_window, a=app: _dismiss_startup_splash(a, mw, None),
+            lambda mw=main_window, a=app: _force_hide_startup_splash(a, mw, None),
         )
 
 
@@ -1357,9 +1322,7 @@ def _lazy_import_heavy_modules(splash=None):
            ImageAdjustPanelWidget
     
     def _update_splash(msg):
-        if splash:
-            splash.showMessage(msg, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter, Qt.GlobalColor.white)
-            QApplication.instance().processEvents()
+        splash_show_status(splash, msg)
 
     _update_splash("Loading RAW processor...")
     import rawpy as _rawpy
@@ -2220,9 +2183,24 @@ class _AdjustCompareOriginalWorker(QRunnable):
 
 # Live-drag max edge. Was 1000 (~55ms Contrast tick at half-res base); 640
 # cuts pixel count ~2.4x so upstream PV2012 ticks stay nearer the 80ms
-# throttle. Settle uses the full edit base; Compare drag uses lite too
-# (overlay scales original to match).
+# throttle. Settle uses the (possibly RAM-tier-capped) edit base; Compare
+# drag uses lite too (overlay scales original to match). Low-RAM overlay
+# may set RAWVIEWER_ADJUST_FAST_PREVIEW_MAX_EDGE smaller (e.g. 480).
 _ADJUST_FAST_PREVIEW_MAX_EDGE = 640
+
+
+def _adjust_fast_preview_max_edge() -> int:
+    return max(
+        320,
+        min(
+            _env_int(
+                "RAWVIEWER_ADJUST_FAST_PREVIEW_MAX_EDGE",
+                _ADJUST_FAST_PREVIEW_MAX_EDGE,
+                minimum=320,
+            ),
+            2000,
+        ),
+    )
 
 
 def _make_fast_preview_base(base: Any) -> Any:
@@ -2242,9 +2220,10 @@ def _make_fast_preview_base(base: Any) -> Any:
 
         h, w = int(base.shape[0]), int(base.shape[1])
         max_dim = max(h, w)
-        if max_dim <= _ADJUST_FAST_PREVIEW_MAX_EDGE:
+        target = _adjust_fast_preview_max_edge()
+        if max_dim <= target:
             return base
-        scale = _ADJUST_FAST_PREVIEW_MAX_EDGE / max_dim
+        scale = target / max_dim
         nw, nh = max(1, int(round(w * scale))), max(1, int(round(h * scale)))
         return cv2.resize(base, (nw, nh), interpolation=cv2.INTER_AREA)
     except Exception:
@@ -2312,6 +2291,7 @@ class _AdjustExportWorker(QRunnable):
         export_format: str,
         process_pool: Any,
         signals: _AdjustExportSignals,
+        use_ai_denoise: bool = False,
     ):
         super().__init__()
         self.file_path = file_path
@@ -2320,6 +2300,8 @@ class _AdjustExportWorker(QRunnable):
         self.export_format = export_format
         self.process_pool = process_pool
         self.signals = signals
+        # Export-only, not persisted to the XMP sidecar.
+        self.use_ai_denoise = bool(use_ai_denoise)
         # Set from the export progress dialog's Cancel button (main thread);
         # polled between export stages and between NN-denoise tiles.
         import threading as _threading
@@ -2400,8 +2382,8 @@ class _AdjustExportWorker(QRunnable):
                 try:
                     if processor.is_libraw_unsupported(self.file_path):
                         detail_bits.append(
-                            "LibRaw marked this file unsupported (e.g. Nikon HE/HE* NEF, "
-                            "composite DNG, or unrecognized RAW)."
+                            "LibRaw cannot demosaic this file and no usable "
+                            "embedded JPEG was found."
                         )
                 except Exception:
                     pass
@@ -2409,17 +2391,29 @@ class _AdjustExportWorker(QRunnable):
                     detail_bits.append(str(last_decode_err))
                 detail = (" " + " ".join(detail_bits)) if detail_bits else ""
                 raise RuntimeError(
-                    "Full-resolution RAW decode failed — cannot export."
+                    "Full-resolution decode failed — cannot export."
                     f"{detail} "
-                    "Adjust preview can still work from half-size or embedded JPEG; "
-                    "export needs a demosaicable RAW. "
+                    "Neither a LibRaw demosaic nor a usable embedded preview "
+                    "was available at export resolution. "
                     "If the app vanished mid-export, the Mac may have run out of memory "
                     "on a large full-res demosaic."
                 )
             # Remaining work (tonemap + encode) is one opaque call, so the bar
             # steps to a "working" milestone rather than faking granularity
-            # nothing backs.
-            emit_progress(70, "Encoding…")
+            # nothing backs. AI denoise has a real tile loop we can track.
+            emit_progress(
+                40 if self.use_ai_denoise else 70,
+                "Denoising (AI)…" if self.use_ai_denoise else "Encoding…",
+            )
+
+            def _export_progress(frac: float, stage: str = "denoise") -> None:
+                frac_val = max(0.0, min(1.0, float(frac)))
+                if self.use_ai_denoise:
+                    pct = 40 + int(frac_val * 50)
+                    emit_progress(pct, "Denoising (AI)…")
+                else:
+                    pct = 70 + int(frac_val * 20)
+                    emit_progress(pct, "Encoding…")
 
             export_adjusted_image(
                 self.export_format,
@@ -2428,6 +2422,8 @@ class _AdjustExportWorker(QRunnable):
                 adj=self.adj,
                 embed_xmp_path=embed_xmp,
                 cancel_check=self.cancel_event.is_set,
+                progress_cb=_export_progress if self.use_ai_denoise else None,
+                use_ai_denoise=self.use_ai_denoise,
             )
             emit_progress(100, "Done")
             logger.info("[EXPORT] export_adjusted_image() completed without raising")
@@ -2786,6 +2782,10 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._idle_display_prefetch_timer.setSingleShot(True)
         self._idle_display_prefetch_timer.timeout.connect(self._idle_display_prefetch_tick)
         self._idle_display_prefetch_cursor = 0
+        self._memory_pressure_timer = QTimer(self)
+        self._memory_pressure_timer.setInterval(4000)
+        self._memory_pressure_timer.timeout.connect(self._on_memory_pressure_tick)
+        QTimer.singleShot(5000, self._start_memory_pressure_monitor)
         self._metadata_index_run_done = False
         self._metadata_index_prep_complete = False
         self._metadata_index_extract_pending_count = 0
@@ -5095,6 +5095,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self.image_manager.image_ready.connect(self.on_manager_image_ready)
         # QPixmap 就緒（非 RAW 文件）
         self.image_manager.pixmap_ready.connect(self.on_manager_pixmap_ready)
+        self.image_manager.qimage_ready.connect(self.on_manager_qimage_ready)
         # EXIF 數據就緒
         self.image_manager.exif_data_ready.connect(self.on_manager_exif_ready)
         # 錯誤處理
@@ -5393,6 +5394,86 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         except Exception:
             capture_times = {}
         return capture_times or {}
+
+    def _gallery_capture_date(self, path: str):
+        """Capture datetime for one photo, for the gallery's scroll date bubble.
+
+        Called once per scrollbar tick while the thumb is dragged, so it reads
+        a per-folder dict built once rather than hitting the EXIF cache per
+        call. A path it does not know simply has no date, and the bubble stays
+        hidden for it rather than blocking the drag to go and find one.
+
+        The map is rebuilt on a folder change, and re-attempted when it came
+        back empty or when an unknown path turns up -- both of which happen
+        normally and neither of which may be cached as "no dates here".
+        """
+        import datetime
+
+        if not path:
+            return None
+        folder = getattr(self, "current_folder", None)
+        if getattr(self, "_gallery_capture_date_missing_folder", None) != folder:
+            # Misses are per-folder; carrying them across would suppress the
+            # retry for a path that a different folder happened to lack, and
+            # would grow without bound over a session.
+            self._gallery_capture_date_missing = set()
+            self._gallery_capture_date_missing_folder = folder
+        cached_folder = getattr(self, "_gallery_capture_date_folder", None)
+        if cached_folder != folder or not hasattr(self, "_gallery_capture_date_map"):
+            raw = {}
+            try:
+                if folder:
+                    raw = self.image_cache.get_capture_times_for_folder_sort(folder) or {}
+                if not raw:
+                    raw = self._capture_times_for_paths(
+                        list(getattr(self, "image_files", []) or [])[:4096]
+                    )
+            except Exception:
+                raw = {}
+            parsed = {}
+            for p, value in (raw or {}).items():
+                when = None
+                try:
+                    if isinstance(value, (int, float)):
+                        when = datetime.datetime.fromtimestamp(float(value))
+                    elif isinstance(value, str) and value:
+                        # Stored ISO, but older rows used "YYYY:MM:DD hh:mm:ss".
+                        try:
+                            when = datetime.datetime.fromisoformat(value)
+                        except ValueError:
+                            when = datetime.datetime.strptime(
+                                value, "%Y:%m:%d %H:%M:%S"
+                            )
+                except Exception:
+                    when = None
+                if when is not None:
+                    parsed[_norm_path(p)] = when
+            if not parsed:
+                # Do NOT cache an empty result. The first call can land before
+                # EXIF indexing has written any rows, and caching {} against
+                # this folder would retire the date bubble for the rest of the
+                # session -- it would never appear again even once every date
+                # was known. Retrying costs one cache read per drag.
+                self._gallery_capture_date_map = {}
+                self._gallery_capture_date_folder = None
+                return None
+            self._gallery_capture_date_map = parsed
+            self._gallery_capture_date_folder = folder
+        key = _norm_path(path)
+        cached = self._gallery_capture_date_map.get(key)
+        if cached is None:
+            # Either a photo written into the open folder after the map was
+            # built (HDR merge, panorama, export all appear in the gallery
+            # immediately) or one that genuinely carries no capture date.
+            #
+            # Retry ONCE per unseen path, remembering the misses. Invalidating
+            # on every miss instead would rebuild the whole folder map on each
+            # scroll tick for any dateless photo -- during a drag, per tick.
+            missed = self._gallery_capture_date_missing
+            if key not in missed:
+                missed.add(key)
+                self._gallery_capture_date_folder = None
+        return cached
 
     def _rebuild_burst_groups(self) -> None:
         if not self._is_burst_grouping_enabled():
@@ -7971,6 +8052,46 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self.schedule_save_session_state()
         self._start_preloading()
 
+    def on_manager_qimage_ready(self, file_path: str, image):
+        """A worker produced a QImage because it could not legally build a
+        QPixmap. This slot runs on the GUI thread, so convert here and hand it
+        to the existing pixmap path -- including the pixmap cache, which the
+        worker deliberately does not touch.
+        """
+        try:
+            from PyQt6.QtGui import QPixmap as _QPixmap
+
+            if image is None or image.isNull():
+                return
+            # Check staleness BEFORE converting. on_manager_pixmap_ready ends
+            # in a path-match guard, so a buffer for a photo the user has
+            # already left was converted and then dropped -- and the
+            # conversion is 18 ms on the GUI thread for a 33 MP frame, plus a
+            # full-size QPixmap allocated only to be freed. The cheap checks
+            # are cheap; do them first.
+            if getattr(self, "view_mode", "single") not in ("single", "compare"):
+                return
+            if _norm_path(file_path) != _norm_path(
+                getattr(self, "current_file_path", None)
+            ) and getattr(self, "view_mode", "single") != "compare":
+                return
+            pixmap = _QPixmap.fromImage(image)
+            if pixmap.isNull():
+                return
+            try:
+                self.image_cache.put_pixmap(file_path, pixmap)
+            except Exception:
+                pass
+            self.on_manager_pixmap_ready(file_path, pixmap)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[LOAD] QImage -> QPixmap failed for %s",
+                os.path.basename(file_path or ""),
+                exc_info=True,
+            )
+
     def on_manager_pixmap_ready(self, file_path: str, pixmap):
         """處理 ImageLoadManager 的 QPixmap 就緒信號（非 RAW 文件）"""
         import logging
@@ -8214,7 +8335,23 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             
         import logging
         logger = logging.getLogger(__name__)
-        
+
+        # Remember the failure for the prefetch failure-memo (see
+        # _needs_display_buffer_prefetch) regardless of which file is current.
+        try:
+            import time as _time
+
+            memo = getattr(self, "_prefetch_failure_ts", None)
+            if memo is None:
+                memo = self._prefetch_failure_ts = {}
+            memo[os.path.normcase(os.path.abspath(file_path))] = _time.monotonic()
+            if len(memo) > 256:  # bound it; entries are tiny
+                oldest = sorted(memo, key=memo.get)[: len(memo) - 256]
+                for k in oldest:
+                    del memo[k]
+        except Exception:
+            pass
+
         # Only handle current file's error (normalize for Windows path format differences)
         if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", None)):
             logger.debug(f"[MANAGER] Error for different file: {os.path.basename(file_path)}")
@@ -8834,6 +8971,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self.single_image_adjust_panel.auto_straighten_requested.connect(
                 self._on_auto_straighten_requested
             )
+            if hasattr(self.single_image_adjust_panel, "auto_tone_requested"):
+                self.single_image_adjust_panel.auto_tone_requested.connect(
+                    self._on_auto_tone_requested
+                )
+            if hasattr(self.single_image_adjust_panel, "dock_side_requested"):
+                self.single_image_adjust_panel.dock_side_requested.connect(
+                    self._on_adjust_panel_dock_requested
+                )
             self.single_image_adjust_panel.export_requested.connect(
                 self._on_adjust_panel_export_requested
             )
@@ -8887,6 +9032,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
             self.single_image_adjust_panel.reset_requested.connect(
                 self._on_adjust_panel_reset
+            )
+            self.single_image_adjust_panel.calibrate_requested.connect(
+                self._on_calibrate_camera_requested
+            )
+            self.single_image_adjust_panel.camera_profile_removed.connect(
+                self._on_camera_profile_removed
             )
             self._adjust_edit_base_signals = _AdjustEditBaseSignals()
             self._adjust_edit_base_signals.finished.connect(self._on_adjust_edit_base_ready)
@@ -8980,7 +9131,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # Give most space to the image viewer, but allow the panel to expand/shrink within its limits.
         self.single_view_splitter.setStretchFactor(0, 1)
         self.single_view_splitter.setStretchFactor(1, 0)
-        
+        if self.single_image_adjust_panel is not None:
+            self._apply_adjust_panel_dock(self._adjust_panel_dock_side())
+
         main_layout.addWidget(self.single_view_splitter)
         self._init_compare_view(main_layout)
         QTimer.singleShot(800, self._show_edr_startup_status)
@@ -14422,6 +14575,13 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         except Exception:
             pass
 
+        # Capture dates for the scrollbar-drag date bubble. Injected because
+        # the times live in this window's image cache, not in the gallery.
+        try:
+            justified_gallery.set_capture_date_provider(self._gallery_capture_date)
+        except Exception:
+            pass
+
         justified_gallery.installEventFilter(self)
         gallery_scroll.setWidget(justified_gallery)
         gallery_layout.addWidget(gallery_scroll)
@@ -14612,6 +14772,117 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         end = min(len(files), start + limit)
         start = max(0, end - limit)
         return files[start:end]
+
+    def register_new_file(self, path: str, *, select: bool = False) -> bool:
+        """Bring a file this app just wrote into the open folder, live.
+
+        Exports land beside the originals, but nothing told the gallery: there
+        is no filesystem watcher anywhere in the app, and image_files is only
+        ever built by a folder scan. So a new file stayed invisible until the
+        folder was reopened.
+
+        Insertion rather than a rescan: the app knows exactly what it wrote,
+        so re-listing the directory would be strictly more work for strictly
+        less certainty. Files written by other applications are still not
+        noticed; that would need a watcher, which costs a descriptor per
+        directory and behaves badly on network volumes.
+
+        Returns whether the file was added.
+        """
+        try:
+            if not path or not os.path.isfile(path):
+                return False
+            norm = _norm_path(path)
+            files = list(getattr(self, "image_files", []) or [])
+            if any(_norm_path(p) == norm for p in files):
+                return False
+            folder = os.path.dirname(os.path.abspath(path))
+            current_folder = getattr(self, "current_folder", "") or ""
+            if current_folder and os.path.abspath(current_folder) != folder:
+                # Written somewhere else; nothing on screen to update.
+                return False
+
+            # Place it where the current sort would have put it, so the tile
+            # does not jump on the next real scan.
+            insert_at = self._sorted_insert_index(files, path)
+            files.insert(insert_at, path)
+            self.image_files = files
+            current = getattr(self, "current_file_path", None)
+            if current:
+                try:
+                    self.current_file_index = self.image_files.index(current)
+                except ValueError:
+                    pass
+
+            gj = getattr(self, "gallery_justified", None)
+            if gj is not None and hasattr(gj, "set_images"):
+                gj.set_images(list(self.image_files), force_rebuild=True)
+            self._sync_filmstrip_files()
+            if select:
+                self._show_created_file(path)
+            return True
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[GALLERY] could not register new file %s", path, exc_info=True
+            )
+            return False
+
+    def _show_created_file(self, path: str) -> None:
+        """Open a file this app just created, in single view."""
+        try:
+            self.load_folder_images(
+                os.path.dirname(os.path.abspath(path)),
+                start_file=os.path.basename(path),
+                start_view="single",
+            )
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[GALLERY] could not open %s", path, exc_info=True
+            )
+
+    def _sorted_insert_index(self, files: list, path: str) -> int:
+        """Where ``path`` belongs in ``files`` under the active sort.
+
+        Falls back to the end rather than guessing when the order in use is
+        not one this can reproduce -- an appended tile is mildly out of place;
+        a wrongly-placed one looks like corruption.
+        """
+        try:
+            newest_first = bool(getattr(self, "sort_newest_first", False))
+            key = os.path.getmtime(path)
+            times = []
+            for p in files:
+                try:
+                    times.append(os.path.getmtime(p))
+                except OSError:
+                    times.append(None)
+            if any(t is None for t in times):
+                return len(files)
+            ordered = times == sorted(times, reverse=newest_first)
+            if not ordered:
+                return len(files)
+            for i, t in enumerate(times):
+                if (key > t) if newest_first else (key < t):
+                    return i
+            return len(files)
+        except Exception:
+            return len(files)
+
+    def _sync_filmstrip_files(self) -> None:
+        """Push the current image_files into the filmstrip, if one is up."""
+        try:
+            bar = self._filmstrip_bar()
+            if bar is not None and hasattr(bar, "set_files"):
+                bar.set_files(
+                    list(getattr(self, "image_files", []) or []),
+                    select_index=getattr(self, "current_file_index", None),
+                )
+        except Exception:
+            pass
 
     def _update_gallery_view(self):
             """Update gallery view - using JustifiedGallery"""
@@ -17318,9 +17589,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
         capture_time_only: read ONLY the capture_time column (via
         get_capture_times_for_sort) instead of the full per-file EXIF blob.
-        Sorting needs nothing else, and get_multiple_exif() does a pickle.loads
-        of a ~97-tag EXIF dict per file -- on a background sort worker that
-        pickle.loads burst holds the GIL and starves the on-screen image's
+        Sorting needs nothing else, and get_multiple_exif() JSON-decodes
+        a ~97-tag EXIF dict per file -- on a background sort worker that
+        burst holds the GIL and starves the on-screen image's
         decode/paint (measured stalling session-restore first-image display).
         In this mode bulk_metadata is returned EMPTY: the full per-file EXIF
         (gallery tile geometry) is fetched lazily when the gallery is actually
@@ -20225,6 +20496,27 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         """Handle memory warning events."""
         safe_print(f"⚠️ Memory usage high: {memory_percent:.1f}%")
 
+    def _start_memory_pressure_monitor(self) -> None:
+        """Idle QTimer (every few seconds). Not on thumbnail paint."""
+        try:
+            from memory_pressure import backoff_enabled
+
+            if not backoff_enabled():
+                return
+        except Exception:
+            return
+        timer = getattr(self, "_memory_pressure_timer", None)
+        if timer is not None and not timer.isActive():
+            timer.start()
+
+    def _on_memory_pressure_tick(self) -> None:
+        try:
+            from memory_pressure import poll_and_apply
+
+            poll_and_apply(viewer=self)
+        except Exception:
+            logging.getLogger(__name__).debug("memory-pressure poll failed", exc_info=True)
+
     def _suppress_jpeg_interim(self, file_path: str | None = None) -> bool:
         """True when embedded-JPEG interim tiers must not be painted (RAW workflow).
 
@@ -21248,12 +21540,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self._clear_location_map()
             # Give the adjust panel its preferred width so slider values
             # aren't clipped (panel min-width alone isn't enough under QSplitter).
-            splitter = getattr(self, "single_view_splitter", None)
-            if splitter is not None and splitter.count() >= 2:
-                total = max(splitter.width(), 1)
-                panel_w = max(panel.minimumWidth(), getattr(panel, "_PANEL_W", 440))
-                image_w = max(120, total - panel_w)
-                splitter.setSizes([image_w, panel_w])
+            self._apply_adjust_panel_dock(self._adjust_panel_dock_side())
             self._sync_adjust_panel_for_current_file()
             path = getattr(self, "current_file_path", None)
             if path:
@@ -21307,6 +21594,25 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self._adjust_preview_base_rgb_fast = None
                 self._adjust_edit_base_path = None
                 self._reset_adjust_compare_state()
+                for attr in ("_adjust_preview_stage_cache", "_adjust_preview_stage_cache_fast"):
+                    cache = getattr(self, attr, None)
+                    if cache is not None and hasattr(cache, "reset"):
+                        try:
+                            cache.reset()
+                        except Exception:
+                            pass
+                try:
+                    from unified_image_processor import release_edit_base_cache
+
+                    release_edit_base_cache()
+                except Exception:
+                    pass
+                try:
+                    from onnx_scunet import release_scunet_sessions
+
+                    release_scunet_sessions()
+                except Exception:
+                    pass
             if bar is not None:
                 bar.setEnabled(True)
                 if getattr(self, "_filmstrip_hidden_for_adjust", False):
@@ -21338,6 +21644,62 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         except Exception:
             return True
 
+    def _display_brightness_hwnd(self) -> int | None:
+        """HWND of this window so Windows can raise the nearest monitor."""
+        try:
+            wid = int(self.effectiveWinId())
+            return wid if wid else None
+        except Exception:
+            return None
+
+    def _adjust_panel_dock_side(self) -> str:
+        """Persisted Adjust panel edge: ``left`` or ``right`` (default)."""
+        try:
+            from rawviewer_ui.adjust_panel import (
+                ADJUST_DOCK_DEFAULT,
+                ADJUST_DOCK_SETTINGS_KEY,
+                normalize_adjust_dock,
+            )
+        except Exception:
+            return "right"
+        try:
+            return normalize_adjust_dock(
+                self.get_settings().value(ADJUST_DOCK_SETTINGS_KEY, ADJUST_DOCK_DEFAULT)
+            )
+        except Exception:
+            return "right"
+
+    def _apply_adjust_panel_dock(self, side: str) -> None:
+        panel = getattr(self, "single_image_adjust_panel", None)
+        splitter = getattr(self, "single_view_splitter", None)
+        container = getattr(self, "single_view_container", None)
+        if panel is None or splitter is None or container is None:
+            return
+        try:
+            from rawviewer_ui.adjust_panel import apply_adjust_splitter_dock
+        except Exception:
+            return
+        applied = apply_adjust_splitter_dock(splitter, container, panel, side)
+        if hasattr(panel, "set_dock_side"):
+            panel.set_dock_side(applied)
+        if container is not None and hasattr(container, "relayout_adjust"):
+            container.relayout_adjust()
+
+    def _on_adjust_panel_dock_requested(self, side: str) -> None:
+        try:
+            from rawviewer_ui.adjust_panel import (
+                ADJUST_DOCK_SETTINGS_KEY,
+                normalize_adjust_dock,
+            )
+        except Exception:
+            return
+        side = normalize_adjust_dock(side)
+        try:
+            self.get_settings().setValue(ADJUST_DOCK_SETTINGS_KEY, side)
+        except Exception:
+            pass
+        self._apply_adjust_panel_dock(side)
+
     def _maybe_maximize_brightness_for_adjust(self, entering: bool) -> None:
         """Raise built-in display brightness while editing; restore on exit."""
         if not self._adjust_maximize_brightness_enabled():
@@ -21350,14 +21712,15 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             try:
                 from display_brightness import get_brightness, set_brightness
 
-                current = get_brightness()
+                hwnd = self._display_brightness_hwnd()
+                current = get_brightness(hwnd=hwnd)
                 if current is None:
                     return
                 # Already near max — nothing to do / restore.
                 if current >= 0.98:
                     self._adjust_brightness_saved = current
                     return
-                if set_brightness(1.0):
+                if set_brightness(1.0, hwnd=hwnd):
                     self._adjust_brightness_saved = current
             except Exception:
                 self._adjust_brightness_saved = None
@@ -21372,7 +21735,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         try:
             from display_brightness import set_brightness
 
-            set_brightness(float(saved))
+            set_brightness(float(saved), hwnd=self._display_brightness_hwnd())
         except Exception:
             pass
 
@@ -21456,12 +21819,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         return not already
 
     def _editing_supported_for_file(self, file_path: str | None) -> bool:
-        """Whether the Adjust panel can produce a true RAW demosaic edit base.
+        """Whether the Adjust panel can open for this file.
 
-        Unsupported: non-RAW (JPEG/HEIC/TIFF/…), animated images, and RAW that
-        LibRaw cannot demosaic (HE/HE* NEF, X-Trans fallbacks, linear / composite
-        DNG panoramas, …). Embedded-JPEG substitutes are browse-only — the
-        editor requires scene-linear demosaic, not a camera JPEG.
+        Supported: RAW files that either demosaic via LibRaw or can fall back
+        to an embedded-JPEG edit base (HE/HE* NEF, ARW6 before the packaging
+        pin, …). Unsupported: non-RAW rasters, animated images, and DNGs that
+        prefer a composite/embedded preview with no usable demosaic path.
         """
         if not file_path:
             return False
@@ -21474,15 +21837,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             if not is_raw_file(file_path):
                 return False
             from common_image_loader import dng_prefers_embedded_preview_first
-            from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
 
+            # Composite/HDR DNGs: browse-only (no demosaic edit base).
             if dng_prefers_embedded_preview_first(file_path):
                 return False
-            if self._nef_he_compressed(file_path):
-                return False
-            key = os.path.normcase(os.path.abspath(file_path))
-            if key in _LIBRAW_UNSUPPORTED_PATHS:
-                return False
+            # HE/HE* and other demosaic-failed RAWs stay editable: decode falls
+            # back to the embedded-JPEG edit base (see decode_raw_edit_base).
         except Exception:
             return False
         return True
@@ -21600,8 +21960,8 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._show_auto_dismiss_notice(
                 "Editing not available for this file",
                 detail=(
-                    "Adjust needs a demosaiced RAW base. "
-                    "JPEG/HEIC and unsupported RAW (e.g. Nikon HE/HE*) are browse-only."
+                    "This file has neither a demosaicable RAW base nor a "
+                    "usable embedded preview to edit."
                 ),
                 duration_ms=2000,
             )
@@ -21639,6 +21999,15 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if path:
             # Load sidecar on the reencode worker — never on the UI thread.
             self._reencode_persisted_preview_for_sidecar(path, None)
+            # Opening an already-edited photo and closing without touching
+            # anything used to leave the gallery tile as the embedded JPEG:
+            # the tile is only refreshed by the save-time bake, which needs an
+            # actual edit, and every other refresh path is gated on
+            # SIDECAR_ADJUST (off by default). So a photo edited in an earlier
+            # session showed unedited in the grid no matter how often you
+            # opened it. Bake on close instead, when there is a settled render
+            # to bake from.
+            self._bake_browse_caches_for_visited_edit(path)
         if getattr(self, "_adjust_forced_raw_workflow", False):
             self._adjust_forced_raw_workflow = False
             settings = self.get_settings()
@@ -22182,21 +22551,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         panel = getattr(self, "single_image_adjust_panel", None)
         if panel is not None:
             panel.set_lens_correction_available(has_lens_profile, lens_profile_name)
+            self._refresh_camera_profile_banner(panel, norm)
         if base is None or not hasattr(base, "shape"):
             # Silent handling: an edit-base decode failure used to just show
-            # a 5s error and leave the editor stuck on the broken file (no
-            # image, no way forward except manually navigating away).
-            # _editing_supported_for_file/_advance_index_past_unsupported_
-            # for_editing already skip files known unsupported BEFORE a
-            # decode is attempted (animated images, DNGs preferring the
-            # embedded preview, RAWs already in _LIBRAW_UNSUPPORTED_PATHS);
-            # this covers the remaining case -- a RAW variant that only
-            # reveals it can't be edited once LibRaw actually tries and
-            # fails for a reason decode_raw_edit_base's own "unsupported"/
-            # "not recognized" substring match didn't catch (corrupt file,
-            # decode timeout, ...). Mark it unsupported here too, then move
-            # on to the next editable image exactly like the pre-emptive
-            # skip does, instead of leaving the editor stuck.
+            # a 5s error and leave the editor stuck on the broken file.
+            # decode_raw_edit_base already tried LibRaw then the embedded-JPEG
+            # fallback; None means both failed (corrupt file, no embed, …).
+            # Mark it so browse skips a doomed LibRaw retry, then move on
+            # instead of leaving the editor stuck.
             try:
                 from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
 
@@ -22251,6 +22613,33 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self.status_bar.showMessage(
                     f"Linear RAW edit base ready ({w}×{h})", 2500
                 )
+        self._push_lut_chooser_previews()
+
+    def _push_lut_chooser_previews(self) -> None:
+        """Feed Looks-list LUT thumbs from a tiny as-shot display of this photo."""
+        panel = getattr(self, "single_image_adjust_panel", None)
+        path = getattr(self, "current_file_path", None)
+        if panel is None or not path or not hasattr(panel, "set_lut_preview_source"):
+            return
+        if (
+            str(getattr(panel, "_lut_thumb_path", "") or "") == str(path)
+            and getattr(panel, "_lut_thumb_display_u8", None) is not None
+        ):
+            return
+        try:
+            from raw_lut import lut_chooser_as_shot_display_u8
+
+            base = getattr(self, "_adjust_preview_base_rgb_fast", None)
+            if base is None:
+                base = getattr(self, "_adjust_preview_base_rgb", None)
+            if base is None:
+                return
+            tiny = lut_chooser_as_shot_display_u8(base, None)
+            if tiny is None:
+                return
+            panel.set_lut_preview_source(tiny, path, 0)
+        except Exception:
+            pass
 
     def _capture_adjust_preview_base(self, file_path: str | None) -> None:
         """Edit base comes from LibRaw decode when the adjust panel opens."""
@@ -22747,6 +23136,140 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             if had_heal and hasattr(panel, "set_spot_heal_mask_present"):
                 panel.set_spot_heal_mask_present(False)
         self._sync_dodge_burn_mask_overlay()
+
+    def _camera_identity_for_file(self, path: str) -> tuple[str, str, int | None]:
+        """(make, model, iso) from EXIF, or ("", "", None) if unreadable.
+
+        Delegates to color_calibration so the profile lookup and this
+        banner/dialog path can never disagree about a camera's identity.
+        """
+        from color_calibration import camera_identity_for_file
+
+        return camera_identity_for_file(path)
+
+    def _refresh_camera_profile_banner(self, panel: Any, path: str) -> None:
+        """Show the panel banner when a saved profile is auto-applied to this file.
+
+        Mirrors load_adjustments_for_file: the profile is only applied when
+        the image has no XMP sidecar, so a file the user has already edited
+        must not claim a profile is in effect.
+        """
+        try:
+            from color_calibration import describe_camera_profile
+            from raw_adjustments import resolve_xmp_path
+
+            xmp = resolve_xmp_path(path)
+            if xmp and os.path.isfile(xmp):
+                panel.set_camera_profile_active("")
+                return
+            make, model, iso_val = self._camera_identity_for_file(path)
+            if not (make or model):
+                panel.set_camera_profile_active("")
+                return
+            label = describe_camera_profile(make, model, iso=iso_val, file_path=path)
+            panel.set_camera_profile_active(
+                label or "", make=make, model=model, iso=iso_val
+            )
+        except Exception:
+            try:
+                panel.set_camera_profile_active("")
+            except Exception:
+                pass
+
+    def _on_camera_profile_removed(self) -> None:
+        """Re-decode defaults after a saved camera profile was deleted."""
+        path = getattr(self, "current_file_path", None)
+        if not path:
+            return
+        panel = getattr(self, "single_image_adjust_panel", None)
+        if panel is None:
+            return
+        try:
+            from raw_adjustments import load_adjustments_for_file
+
+            panel.set_adjustments(load_adjustments_for_file(path))
+        except Exception:
+            pass
+        self._apply_adjust_panel_preview(full_quality=True)
+        if hasattr(self, "status_bar") and self.status_bar:
+            self.status_bar.showMessage("Camera profile removed", 3000)
+
+    def _on_calibrate_camera_requested(self) -> None:
+        """Launch interactive camera color calibration dialog for ColorChecker targets."""
+        # current_file_path is the viewer's attribute; self.file_path only
+        # exists on worker classes, so the old getattr always returned None and
+        # this menu entry could never open.
+        # The dialog always offers "Use my own file" plus a DPReview browser
+        # search — do not require a ColorChecker to already be the current photo.
+        target_path = getattr(self, "current_file_path", None)
+        make, model, iso_val = "", "", None
+        img = None
+        factory = None
+        source_file = None
+
+        try:
+            from unified_image_processor import UnifiedImageProcessor
+            from rawviewer_ui.color_calibration_dialog import ColorCalibrationDialog
+            from PyQt6.QtWidgets import QDialog
+
+            if target_path and os.path.isfile(target_path):
+                make, model, iso_val = self._camera_identity_for_file(target_path)
+                source_file = target_path
+                img = getattr(self, "_adjust_preview_base_rgb", None)
+                if img is None:
+                    img = self._ensure_adjust_preview_base(target_path)
+                if img is None:
+                    proc = UnifiedImageProcessor()
+                    img = proc.decode_raw_edit_base(target_path, use_full_resolution=False)
+                if img is not None and not hasattr(img, "shape"):
+                    img = None
+                try:
+                    from color_calibration import has_factory_color_profile
+
+                    factory = has_factory_color_profile(target_path)
+                except Exception:
+                    factory = None
+            elif hasattr(self, "status_bar") and self.status_bar:
+                self.status_bar.showMessage(
+                    "Choose a ColorChecker file, or find a DPReview sample.", 4000
+                )
+
+            dlg = ColorCalibrationDialog(
+                img, make, model, iso=iso_val, parent=self,
+                has_factory_profile=factory,
+                source_file=source_file,
+            )
+            if dlg.exec() == QDialog.DialogCode.Accepted and dlg.calibrated_profile:
+                profile = dlg.calibrated_profile
+                panel = getattr(self, "single_image_adjust_panel", None)
+                if panel is not None:
+                    if "temperature_shift" in profile:
+                        cur_temp = panel._sliders.get("Temperature")
+                        if cur_temp:
+                            cur_temp.setValue(cur_temp.value() + int(profile["temperature_shift"]))
+                    if "tint_shift" in profile:
+                        cur_tint = panel._sliders.get("Tint")
+                        if cur_tint:
+                            cur_tint.setValue(cur_tint.value() + int(profile["tint_shift"]))
+
+                    # Surface the just-saved profile immediately, so the banner
+                    # and its Remove button are available without a reload.
+                    # Banner follows the photo in the viewer, not a DPReview
+                    # sample the user picked only as a ColorChecker reference.
+                    if target_path and os.path.isfile(target_path):
+                        self._refresh_camera_profile_banner(panel, target_path)
+
+                camera_name = f"{dlg.make} {dlg.model}".strip() or "Camera"
+                iso_label = f" (ISO {dlg.iso})" if dlg.iso else ""
+                if hasattr(self, "status_bar") and self.status_bar:
+                    self.status_bar.showMessage(
+                        f"Calibrated profile saved for {camera_name}{iso_label}", 4000
+                    )
+
+        except Exception as exc:
+            QMessageBox.warning(
+                self, "Calibration Error", f"Failed to launch calibration dialog: {exc}"
+            )
 
     def _on_dodge_burn_clear_requested(self) -> None:
         if getattr(self, "_dodge_burn_mask", None) is None:
@@ -23610,6 +24133,28 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             panel.set_spot_heal_mask_present(mask is not None)
         self._sync_dodge_burn_mask_overlay()
 
+    @staticmethod
+    def _adjustments_match(a: dict, b: dict) -> bool:
+        """Whether two adjustment dicts describe the same edit.
+
+        Live objects (keys ending in ``_obj``) are excluded: they are rebuilt
+        on every panel bind, so comparing them by identity would report a
+        change every time and defeat the point. Their serialized twins are in
+        the dict and are compared.
+        """
+        def _clean(d):
+            out = {}
+            for k, v in (d or {}).items():
+                if k.endswith("_obj"):
+                    continue
+                if isinstance(v, float):
+                    out[k] = round(v, 6)
+                else:
+                    out[k] = v
+            return out
+
+        return _clean(a) == _clean(b)
+
     def _on_adjust_panel_editing_finished(self, adj: dict) -> None:
         path = getattr(self, "current_file_path", None)
         if not path:
@@ -23634,10 +24179,13 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
             from raw_spot_heal import serialize_mask as serialize_heal_mask
 
+            # Loaded unconditionally: the no-change check below needs it, and
+            # it used to be bound only inside the undo branch -- so with undo
+            # tracking disabled the comparison would have raised NameError.
+            old_adj = load_adjustments_for_file(path)
             if not getattr(self, "_disable_undo_tracking", False):
                 if not hasattr(self, "_undo_stack"):
                     self._undo_stack = {}
-                old_adj = load_adjustments_for_file(path)
                 history = self._undo_stack.setdefault(path, [])
                 if not history or history[-1] != old_adj:
                     history.append(old_adj)
@@ -23662,7 +24210,19 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             else:
                 adj.pop(HEAL_MASK_KEY, None)
 
-            write_xmp_adjustments_for_file(path, adj)
+            # Nothing actually changed? Then do not write, and above all do
+            # not invalidate. editing_finished fires on opening and closing
+            # the panel, not only on an edit, and the invalidate below drops
+            # EVERY tier for this file including the full image -- so simply
+            # visiting the editor and going back forced a fresh 33MP decode.
+            # Measured on a real session: 24 full-image misses, every one of
+            # them "invalidated", none from eviction, with the cache sitting
+            # at 0/8.
+            if self._adjustments_match(adj, old_adj):
+                self._skip_editing_finished_side_effects = True
+            else:
+                self._skip_editing_finished_side_effects = False
+                write_xmp_adjustments_for_file(path, adj)
         except Exception as exc:
             if hasattr(self, "status_bar"):
                 self.status_bar.showMessage(
@@ -23691,12 +24251,13 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # the gallery grid and on the FIRST click into single view -- both
         # read a pre-edit cached render until something else happened to
         # evict it.
-        try:
-            from image_cache import get_image_cache
+        if not getattr(self, "_skip_editing_finished_side_effects", False):
+            try:
+                from image_cache import get_image_cache
 
-            get_image_cache().invalidate_file(path)
-        except Exception:
-            pass
+                get_image_cache().invalidate_file(path)
+            except Exception:
+                pass
         # Bake editor-aligned browse thumbs AFTER invalidate so gallery /
         # single-view match the Adjust panel without re-running the linear
         # pipeline on the embedded JPEG (which diverges from the demosaic
@@ -23743,6 +24304,50 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             except Exception:
                 pass
         QTimer.singleShot(0, self._restore_keyboard_focus)
+
+    def _bake_browse_caches_for_visited_edit(self, path: str) -> None:
+        """Refresh browse tiles after merely VIEWING an edited photo.
+
+        _persist_editor_aligned_browse_caches only runs from editing_finished,
+        so it needs a change to save. This covers the other case: a photo
+        carrying edits from a previous session, opened and closed untouched.
+
+        Deliberately narrow. It bakes only when a full-quality render for this
+        exact file is already in hand -- no decoding, no pipeline pass, just
+        the resize and encode that the save path performs -- and only when the
+        sidecar actually holds non-default edits, so an unedited photo never
+        rewrites its own cache.
+        """
+        try:
+            from common_image_loader import is_raw_file
+
+            if not path or not is_raw_file(path):
+                return
+            last = getattr(self, "_adjust_last_render", None)
+            if not last or not isinstance(last, tuple) or last[0] is None:
+                return
+            if _norm_path(getattr(self, "_adjust_last_render_norm", "") or "") != _norm_path(path):
+                return
+            array = last[0]
+            # Same floor the save-time bake uses: a small interim render must
+            # not be written into browse caches as if it were the real thing.
+            if getattr(array, "ndim", 0) != 3 or max(array.shape[0], array.shape[1]) < 1200:
+                return
+
+            from raw_adjustments import is_default_adjustments, load_adjustments_for_file
+
+            if is_default_adjustments(load_adjustments_for_file(path)):
+                return
+            self._persist_editor_aligned_browse_caches(path)
+            gj = getattr(self, "gallery_justified", None)
+            if gj is not None and hasattr(gj, "invalidate_thumbnails_for_path"):
+                gj.invalidate_thumbnails_for_path(path)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).debug(
+                "[BAKE] visited-edit bake skipped for %s", path, exc_info=True
+            )
 
     def _persist_editor_aligned_browse_caches(self, path: str) -> None:
         """Downscale the just-rendered Adjust frame into thumbnail/preview cache.
@@ -24085,6 +24690,93 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
         QTimer.singleShot(0, self._restore_keyboard_focus)
 
+    def _on_auto_tone_requested(self) -> None:
+        """One Auto: WB + Light sliders + straighten, one undo, no colour grade.
+
+        Saturation / Vibrance / HSL stay put so colour is edited by hand after
+        Auto (Color / WB section and HSL mixer).
+        """
+        panel = getattr(self, "single_image_adjust_panel", None)
+        base = getattr(self, "_adjust_preview_base_rgb", None)
+        if panel is None or base is None or not hasattr(base, "shape"):
+            if hasattr(self, "status_bar"):
+                self.status_bar.showMessage(
+                    "Auto needs a decoded edit base — try again in a moment",
+                    3000,
+                )
+            return
+        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
+        from raw_auto_adjust import estimate_auto_tone, estimate_neutral_rgb, estimate_straighten_angle
+        from raw_edit_pipeline import _linear_float_from_buffer, linear_to_display_uint8
+
+        fast = _make_fast_preview_base(base)
+        lin = _linear_float_from_buffer(fast)
+        updates: dict[str, float] = {}
+        parts: list[str] = []
+        skipped: list[str] = []
+
+        est = estimate_neutral_rgb(lin)
+        if est is None:
+            skipped.append("WB")
+        else:
+            r, g, b = est
+            ref_temp = wb_reference_temperature(panel.get_adjustments())
+            temperature, tint = solve_white_balance_from_sample(r, g, b, ref_temp)
+            updates["Temperature"] = float(temperature)
+            updates["Tint"] = float(tint)
+            parts.append(f"WB {int(round(temperature))}K")
+
+        tone = estimate_auto_tone(lin)
+        if tone is None:
+            skipped.append("tone")
+        else:
+            for key, value in tone.items():
+                updates[key] = float(value)
+            ev = float(tone.get("Exposure2012", 0.0))
+            parts.append(f"tone {ev:+.2f} EV")
+
+        rgb = None
+        try:
+            adj0 = dict(panel.get_adjustments())
+            adj0.update(updates)
+            adj0["CropAngle"] = 0.0
+            adj0["PerspectiveVertical"] = 0.0
+            adj0["PerspectiveHorizontal"] = 0.0
+            rgb = linear_to_display_uint8(fast, adj0)
+        except Exception:
+            rgb = None
+        if rgb is None:
+            last = getattr(self, "_adjust_last_render", None)
+            if last is not None and last[0] is not None:
+                rgb = last[0]
+        if rgb is None:
+            skipped.append("straighten")
+        else:
+            angle = estimate_straighten_angle(rgb)
+            if angle is None:
+                skipped.append("straighten")
+            else:
+                import numpy as np
+
+                new_angle = float(np.clip(angle, -45.0, 45.0))
+                updates["CropAngle"] = new_angle
+                parts.append(f"straighten {new_angle:+.1f}°")
+
+        if not updates:
+            if hasattr(self, "status_bar"):
+                self.status_bar.showMessage(
+                    "Auto: already balanced — colour is in Color / WB and HSL",
+                    3500,
+                )
+            return
+        panel.apply_auto_tone(updates)
+        msg = "Auto: " + ", ".join(parts)
+        if skipped:
+            msg += f" (skipped {', '.join(skipped)})"
+        msg += " — grade colour in Color / WB · Ctrl+Z undoes"
+        if hasattr(self, "status_bar"):
+            self.status_bar.showMessage(msg, 5000)
+
     def _on_auto_wb_requested(self) -> None:
         """Auto WB: robust gray-world estimate on the edit base, solved through
         the same Temperature/Tint inverse the WB dropper uses."""
@@ -24166,7 +24858,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 3500,
             )
 
-    def _on_adjust_panel_export_requested(self, export_format: str, adj: dict) -> None:
+    def _on_adjust_panel_export_requested(
+        self, export_format: str, adj: dict, use_ai_denoise: bool = False
+    ) -> None:
         logger = logging.getLogger(__name__)
         path = getattr(self, "current_file_path", None)
         if not path:
@@ -24181,7 +24875,10 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 os.path.basename(path),
             )
             return
-        logger.info("[EXPORT] Requested format=%s for %s", export_format, os.path.basename(path))
+        logger.info(
+            "[EXPORT] Requested format=%s for %s (ai_denoise=%s)",
+            export_format, os.path.basename(path), use_ai_denoise,
+        )
         from PyQt6.QtWidgets import QFileDialog
 
         from raw_edit_pipeline import (
@@ -24205,17 +24902,18 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 start_dir,
             )
 
+        nn_suffix = " + AI denoise" if use_ai_denoise else ""
         if fmt == EXPORT_FORMAT_JPEG:
             default_name = f"{base}_edited.jpg"
-            dialog_title = "Export JPEG"
+            dialog_title = "Export JPEG" + nn_suffix
             file_filter = "JPEG (*.jpg *.jpeg)"
         elif fmt == EXPORT_FORMAT_WEBP:
             default_name = f"{base}_edited.webp"
-            dialog_title = "Export WebP"
+            dialog_title = "Export WebP" + nn_suffix
             file_filter = "WebP (*.webp)"
         else:
             default_name = f"{base}_edited.tif"
-            dialog_title = "Export 16-bit TIFF"
+            dialog_title = "Export 16-bit TIFF" + nn_suffix
             file_filter = "TIFF (*.tif *.tiff)"
 
         if fmt == EXPORT_FORMAT_JPEG:
@@ -24324,6 +25022,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             raw_fmt,
             pool,
             self._adjust_export_signals,
+            use_ai_denoise=bool(use_ai_denoise),
         )
         logger.info("[EXPORT] Handing off to background worker (format=%s)", raw_fmt)
         # Modal progress dialog: freezes app interaction for the duration
@@ -24433,6 +25132,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                         " (while viewing another image)",
                         7000,
                     )
+                    self.register_new_file(output_path)
             return
         if err is not None:
             if type(err).__name__ == "ExportCancelled":
@@ -24482,6 +25182,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self.status_bar.showMessage(
                     f"Exported {label}: {os.path.basename(output_path)}", 5000
                 )
+        # Show it now if it landed in the folder being browsed, rather than
+        # leaving it invisible until the folder is reopened.
+        self.register_new_file(output_path)
 
     def _sync_adjust_panel(self) -> None:
         panel = getattr(self, "single_image_adjust_panel", None)
@@ -27385,6 +28088,16 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         return _env_int("RAWVIEWER_NAV_PRELOAD_NEAR", default, minimum=1)
 
     def _needs_display_buffer_prefetch(self, file_path: str, *, zoomed: bool) -> bool:
+        # Failure memo: a file whose load keeps failing (e.g. undecodable NEF)
+        # is never cached, so without this the idle prefetch loop re-requests
+        # it every tick (~450ms) and each failure spams an error signal.
+        fail_ts = getattr(self, "_prefetch_failure_ts", None)
+        if fail_ts is not None:
+            import time as _time
+
+            ts = fail_ts.get(os.path.normcase(os.path.abspath(file_path)))
+            if ts is not None and (_time.monotonic() - ts) < 300.0:
+                return False
         min_dim = 2800 if zoomed else self._single_view_cache_min_dim(for_navigation=False)
         if self._display_quality_buffer_cached(file_path, min_dim=min_dim):
             return False
@@ -28618,6 +29331,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         zoomed = not getattr(self, "fit_to_window", True)
         near = self._nav_preload_display_near_count()
         next_count = min(self._PRELOAD_NEXT_COUNT, len(self.image_files) - 1)
+        try:
+            from memory_pressure import adjacent_preload_cap
+
+            _cap = adjacent_preload_cap()
+            if _cap is not None:
+                next_count = min(next_count, _cap)
+        except Exception:
+            pass
         for i in range(1, next_count + 1):
             next_index = (self.current_file_index + i) % len(self.image_files)
             next_file = self.image_files[next_index]
@@ -28643,6 +29364,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 )
 
         prev_count = min(self._PRELOAD_PREV_COUNT, len(self.image_files) - 1)
+        try:
+            from memory_pressure import adjacent_preload_cap
+
+            _cap = adjacent_preload_cap()
+            if _cap is not None:
+                prev_count = min(prev_count, 1 if _cap <= 1 else max(1, _cap - 1))
+        except Exception:
+            pass
         for i in range(1, prev_count + 1):
             prev_index = (self.current_file_index - i) % len(self.image_files)
             prev_file = self.image_files[prev_index]
@@ -33245,7 +33974,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                     # Refinement only reorders image_files; it does not need the
                     # full per-file EXIF blob (the gallery fetches that lazily on
                     # first open). Reading capture_time-only keeps this background
-                    # sort worker from stealing the GIL via a pickle.loads-per-file
+                    # sort worker from stealing the GIL via a JSON-decode-per-file
                     # burst while the current image is decoding/painting.
                     sorted_files, bulk_metadata = viewer.sort_files_by_capture_time(
                         paths,
@@ -34071,8 +34800,7 @@ def main():
 
             # 2. Update existing splash if present
             if splash:
-                splash.showMessage("Initializing core components...", Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter, Qt.GlobalColor.white)
-                app.processEvents()
+                splash_show_status(splash, "Starting…")
                 safe_print("Splash screen updated", flush=True)
             elif _should_show_startup_splash():
                 # Fallback splash if top-level creation failed (frozen or Windows installed).
@@ -34093,13 +34821,8 @@ def main():
                     ),
                 )
                 splash.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
-                splash.showMessage(
-                    "Starting RAWviewer...",
-                    Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter,
-                    Qt.GlobalColor.white,
-                )
                 splash.show()
-                app.processEvents()
+                splash_show_status(splash, "Starting…")
                 safe_print("Fallback splash screen displayed", flush=True)
             else:
                 splash = None
