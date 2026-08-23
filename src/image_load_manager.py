@@ -791,6 +791,7 @@ class ImageLoadManager(QObject):
         # Tasks currently holding a heavy RAW slot. Source of truth for
         # _active_raw_tasks; see _claim_raw_slot_locked.
         self._raw_slot_holders: set = set()
+        self._demosaic_in_flight: set = set()
         self._running_tasks_lock = threading.Lock()
         
         self._stopped = False  # Flag to stop scheduling new tasks
@@ -1971,6 +1972,9 @@ class ImageLoadManager(QObject):
             # Pairs with the claim through the holder set, so a task cancelled
             # while still running cannot decrement a second time.
             self._release_raw_slot_locked(task)
+            inflight = getattr(self, "_demosaic_in_flight", None)
+            if inflight is not None:
+                inflight.discard(task)
         if not emit:
             return
         self.task_completed.emit(task.file_path)
@@ -2381,7 +2385,10 @@ class ImageLoadManager(QObject):
                             # heavy_limit=1 this becomes 0 so PRELOAD/BACKGROUND
                             # full cannot start until CURRENT's demosaic begins.
                             heavy_limit = max(0, int(heavy_limit) - 1)
-                    if is_heavy and provisional_raw >= heavy_limit:
+                    if is_heavy and (
+                        provisional_raw >= heavy_limit
+                        or len(self._demosaic_in_flight) >= max(1, int(heavy_limit) or 1)
+                    ):
                         deferred_put.append(task)
                         continue
 
@@ -2424,6 +2431,9 @@ class ImageLoadManager(QObject):
                         self._release_raw_slot_locked(task)
                 requeue.append(task)
                 continue
+            if is_heavy:
+                with self._queue_lock:
+                    self._demosaic_in_flight.add(task)
 
         if requeue:
             with self._queue_lock:

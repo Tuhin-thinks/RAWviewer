@@ -312,8 +312,10 @@ class JustifiedGallery(QWidget):
         # briefly; async production clears the entry on thumbnail_ready.
         self._base_fetch_miss_ts: Dict[str, float] = {}
         self._metadata_cache = {}
-        # Thumbnail cache: base + per-bucket scaled
+        # Thumbnail cache: base + per-bucket scaled. Count-capped via LRUCache
+        # and additionally byte-capped by _enforce_thumbnail_cache_budget().
         self._thumbnail_cache = LRUCache(10000)
+        self._thumb_cache_puts_since_check = 0
         self._thumb_base_key = "__base__"
         self._row_height_buckets = list(range(100, 400, 20)) # updated max to 400
         self._width_bucket_px = 64  # quantize widths to avoid mismatched cached pixmaps
@@ -1671,6 +1673,7 @@ class JustifiedGallery(QWidget):
         fitted = self._fit_rotated_thumbnail(file_path, base, physical_size, fast=fast)
         fitted.setDevicePixelRatio(dpr)
         self._thumbnail_cache.put(self._scaled_cache_key(file_path, physical_size, fast=fast), fitted)
+        self._enforce_thumbnail_cache_budget()
         return fitted
 
     def _get_rotation_degrees_for_path(self, file_path: str) -> int:
@@ -1827,12 +1830,55 @@ class JustifiedGallery(QWidget):
             )
         return apply_container_orientation_to_pixmap(pixmap, m)
 
+    def _thumb_cache_byte_budget(self) -> int:
+        """RAM-tiered QPixmap budget (128–768 MiB)."""
+        cached = getattr(self, "_thumb_cache_byte_budget_cached", None)
+        if cached is not None:
+            return int(cached)
+        try:
+            from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+
+            tier = classify_memory_tier(system_total_ram_gb())
+        except Exception:
+            tier = "balanced"
+        mb = {
+            "low": 128,
+            "medium": 256,
+            "balanced": 384,
+            "high": 512,
+            "ultra": 768,
+        }.get(tier, 384)
+        self._thumb_cache_byte_budget_cached = int(mb) * 1024 * 1024
+        return self._thumb_cache_byte_budget_cached
+
+    def _enforce_thumbnail_cache_budget(self) -> None:
+        """Evict LRU thumbnails until the cache is under the byte budget."""
+        self._thumb_cache_puts_since_check = getattr(self, "_thumb_cache_puts_since_check", 0) + 1
+        if self._thumb_cache_puts_since_check < 64:
+            return
+        self._thumb_cache_puts_since_check = 0
+        cache = self._thumbnail_cache
+        with cache.lock:
+            total = 0
+            sizes = {}
+            for k, pm in cache.cache.items():
+                try:
+                    b = int(pm.width()) * int(pm.height()) * 4
+                except Exception:
+                    b = 4096
+                sizes[k] = b
+                total += b
+            while total > self._thumb_cache_byte_budget() and cache.cache:
+                k, _pm = cache.cache.popitem(last=False)
+                total -= sizes.get(k, 0)
+
     def _store_oriented_base_pixmap(self, file_path: str, pixmap: QPixmap) -> QPixmap:
         """Orient, cache base thumbnail, and drop stale scaled variants."""
         oriented = self._orient_gallery_base_pixmap(file_path, pixmap)
         if oriented is None or oriented.isNull():
             return pixmap
         self._thumbnail_cache.put((file_path, self._thumb_base_key), oriented)
+        self._enforce_thumbnail_cache_budget()
         self._invalidate_scaled_thumbnails_for_path(file_path)
         return oriented
 

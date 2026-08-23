@@ -15,7 +15,6 @@ import time
 import threading
 import sqlite3
 import hashlib
-import pickle
 import shutil
 import numpy as np
 from collections import OrderedDict
@@ -139,7 +138,13 @@ def _encode_exif_blob(data: Dict[str, Any] | None) -> bytes:
 
 
 def _decode_exif_blob(blob) -> Dict[str, Any]:
-    """Deserialize EXIF blob: prefer JSON, fall back to legacy pickle rows."""
+    """Deserialize EXIF blob as JSON.
+
+    Legacy pickle rows are intentionally NOT decoded: unpickling data from an
+    on-disk cache file would be arbitrary code execution for anyone with
+    write access to the cache directory. Non-JSON rows are treated as a cache
+    miss (empty dict); the caller re-extracts and rewrites the row as JSON.
+    """
     if not blob:
         return {}
     try:
@@ -152,11 +157,7 @@ def _decode_exif_blob(blob) -> Dict[str, Any]:
             return out if isinstance(out, dict) else {}
     except Exception:
         pass
-    try:
-        out = pickle.loads(blob)
-        return out if isinstance(out, dict) else {}
-    except Exception:
-        return {}
+    return {}
 
 
 def _safe_path_under_root(path: str | None, root: str | None) -> Optional[str]:
@@ -440,7 +441,12 @@ class LRUCache:
         with self.lock:
             self.max_size = new_max_size
             while len(self.cache) > self.max_size:
-                self.cache.popitem(last=False)
+                evicted_key, _ = self.cache.popitem(last=False)
+                if self.on_evict is not None:
+                    try:
+                        self.on_evict(evicted_key)
+                    except Exception:
+                        pass
 
     def __contains__(self, key: str) -> bool:
         with self.lock:
@@ -1865,8 +1871,12 @@ class ImageCache(QObject):
         # Initialize caches
         self.thumbnail_cache = LRUCache(max_size=cache_sizes['thumbnails'])
         self.grid_cache = LRUCache(max_size=cache_sizes['thumbnails'] // 2)
+        def _note_preview_evicted(key):
+            self.libraw_preview_paths.discard(key)
+
         self.preview_cache = LRUCache(
-            max_size=cache_sizes['preview_images']
+            max_size=cache_sizes['preview_images'],
+            on_evict=_note_preview_evicted,
         )  # High-res preview working set (RAM-adaptive)
         # Why a full image is no longer cached. A repeated full decode of the
         # same file is expensive (a 33MP embedded JPEG, seconds of work) and
@@ -1964,6 +1974,7 @@ class ImageCache(QObject):
         # enhanced_raw_processor._embedded_scan_miss_cache.
         self._orient_verify_attempted_max = 4096
         self._orient_verify_queue: list = []
+        self._orient_verify_queue_max = 256
         self._orient_verify_thread: Optional[threading.Thread] = None
         self._closing = False
 
@@ -2695,16 +2706,23 @@ class ImageCache(QObject):
         jpeg_data: bytes = None,
         *,
         libraw_rendered: bool = False,
+        copy: bool = True,
     ) -> None:
         """Cache a preview image (memory); optional disk JPEG clamped to disk_preview_max_edge().
 
         ``libraw_rendered`` marks the preview as LibRaw-pipeline pixels (vs
         embedded-JPEG-derived) so the RAW workflow can refuse to paint
         camera-JPEG interim tiers (session-scoped provenance).
+
+        ``copy=False`` transfers ownership of a freshly allocated buffer the
+        caller will not mutate, matching ``put_full_image``.
         """
         if preview is not None:
             key = self._path_key(file_path)
-            self.preview_cache.put(key, preview.copy())
+            stored = (
+                np.ascontiguousarray(preview) if not copy else preview.copy()
+            )
+            self.preview_cache.put(key, stored)
             if libraw_rendered:
                 self.libraw_preview_paths.add(key)
                 self._prune_libraw_preview_paths()
@@ -2873,9 +2891,14 @@ class ImageCache(QObject):
                     return
                 evicted = 0
                 while total > budget_bytes and len(cache) > max(1, min_keep):
-                    _, oldest = cache.popitem(last=False)
+                    evicted_key, oldest = cache.popitem(last=False)
                     total -= self._estimate_entry_bytes(oldest)
                     evicted += 1
+                    if lru.on_evict is not None:
+                        try:
+                            lru.on_evict(evicted_key)
+                        except Exception:
+                            pass
             if evicted:
                 logger.info(
                     "%s cache: evicted %d oldest (budget ~%.0fMB, now ~%.0fMB, %d left)",
@@ -3057,10 +3080,12 @@ class ImageCache(QObject):
                 return
             if file_path in self._orient_verify_attempted:
                 return
+            if len(self._orient_verify_queue) >= self._orient_verify_queue_max:
+                return
             if len(self._orient_verify_attempted) >= self._orient_verify_attempted_max:
                 self._orient_verify_attempted.clear()
             self._orient_verify_attempted.add(file_path)
-            self._orient_verify_queue.append((file_path, dict(exif_data)))
+            self._orient_verify_queue.append(file_path)
             if (
                 self._orient_verify_thread is None
                 or not self._orient_verify_thread.is_alive()
@@ -3078,12 +3103,19 @@ class ImageCache(QObject):
                 if not self._orient_verify_queue or getattr(self, "_closing", False):
                     self._orient_verify_thread = None
                     return
-                path, cached = self._orient_verify_queue.pop(0)
+                path = self._orient_verify_queue.pop(0)
             try:
                 from enhanced_raw_processor import (
                     cached_raw_exif_orientation_trustworthy,
                 )
 
+                cached = self.exif_memory_cache.peek(path)
+                if not cached:
+                    getter = getattr(self.exif_cache, "get", None)
+                    cached = getter(path) if callable(getter) else None
+                if not cached:
+                    continue
+                cached = dict(cached)
                 if cached_raw_exif_orientation_trustworthy(path, cached):
                     cached["verified_orientation"] = True
                     if not getattr(self, "_closing", False):
@@ -3377,7 +3409,9 @@ class ImageCache(QObject):
             if self._libraw_preview_paths_file and os.path.isfile(self._libraw_preview_paths_file):
                 import json
                 with open(self._libraw_preview_paths_file, "r", encoding="utf-8") as f:
-                    self.libraw_preview_paths = set(json.load(f))
+                    loaded = json.load(f)
+                self.libraw_preview_paths = set(loaded) if isinstance(loaded, list) else set()
+                self._prune_libraw_preview_paths()
         except Exception:
             self.libraw_preview_paths = set()
 

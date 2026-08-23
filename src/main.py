@@ -29,7 +29,8 @@ from datetime import datetime
 from typing import List, Optional, Tuple, Any, cast, Set
 
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = None
+# Finite decompression-bomb cap (~200 MP). None disables Pillow's check.
+Image.MAX_IMAGE_PIXELS = 200_000_000
 
 
 def _is_multiprocessing_worker_process() -> bool:
@@ -17526,9 +17527,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
         capture_time_only: read ONLY the capture_time column (via
         get_capture_times_for_sort) instead of the full per-file EXIF blob.
-        Sorting needs nothing else, and get_multiple_exif() does a pickle.loads
-        of a ~97-tag EXIF dict per file -- on a background sort worker that
-        pickle.loads burst holds the GIL and starves the on-screen image's
+        Sorting needs nothing else, and get_multiple_exif() JSON-decodes
+        a ~97-tag EXIF dict per file -- on a background sort worker that
+        burst holds the GIL and starves the on-screen image's
         decode/paint (measured stalling session-restore first-image display).
         In this mode bulk_metadata is returned EMPTY: the full per-file EXIF
         (gallery tile geometry) is fetched lazily when the gallery is actually
@@ -21515,6 +21516,25 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self._adjust_preview_base_rgb_fast = None
                 self._adjust_edit_base_path = None
                 self._reset_adjust_compare_state()
+                for attr in ("_adjust_preview_stage_cache", "_adjust_preview_stage_cache_fast"):
+                    cache = getattr(self, attr, None)
+                    if cache is not None and hasattr(cache, "reset"):
+                        try:
+                            cache.reset()
+                        except Exception:
+                            pass
+                try:
+                    from unified_image_processor import release_edit_base_cache
+
+                    release_edit_base_cache()
+                except Exception:
+                    pass
+                try:
+                    from onnx_scunet import release_scunet_sessions
+
+                    release_scunet_sessions()
+                except Exception:
+                    pass
             if bar is not None:
                 bar.setEnabled(True)
                 if getattr(self, "_filmstrip_hidden_for_adjust", False):
@@ -33554,7 +33574,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                     # Refinement only reorders image_files; it does not need the
                     # full per-file EXIF blob (the gallery fetches that lazily on
                     # first open). Reading capture_time-only keeps this background
-                    # sort worker from stealing the GIL via a pickle.loads-per-file
+                    # sort worker from stealing the GIL via a JSON-decode-per-file
                     # burst while the current image is decoding/painting.
                     sorted_files, bulk_metadata = viewer.sort_files_by_capture_time(
                         paths,
