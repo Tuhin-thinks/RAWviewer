@@ -11,6 +11,19 @@ pixi install
 pixi run start          # full profile (default)
 ```
 
+### Build with uv instead of pip
+
+`build.py` uses **uv** automatically when `uv` is on `PATH` and falls back to
+`pip` otherwise. Venv creation follows the same choice (`uv venv --seed` vs
+`python -m venv`).
+
+```powershell
+python build.py --uv       # require uv (fail fast if missing)
+python build.py --pip      # force pip
+$env:RAWVIEWER_USE_UV=1; python build.py   # same as --uv
+$env:RAWVIEWER_USE_UV=0; python build.py   # same as --pip
+```
+
 **Windows**
 
 | Task | Script |

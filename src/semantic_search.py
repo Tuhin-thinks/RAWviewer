@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import platform
 import re
+import shutil
 import sqlite3
 import time
 import hashlib
@@ -70,6 +71,32 @@ class IndexAborted(Exception):
 ProgressCallback = Optional[Callable[[int, int, str], None]]
 
 MetadataRow: TypeAlias = sqlite3.Row | Dict[str, object]
+
+
+def _materialize_cached_file(src: str, dst: str) -> None:
+    """Expose a file downloaded into the shared Hugging Face cache at *dst*.
+
+    ``hf_hub_download`` is called without ``local_dir`` so files are stored once
+    in ``HF_HUB_CACHE`` (``~/.cache/huggingface/hub`` by default). Repeated runs
+    are then served from that cache instead of being downloaded again. Hard-link
+    when possible to avoid duplicating multi-hundred-MB weights; fall back to a
+    copy when the cache and destination live on different volumes.
+    """
+    parent = os.path.dirname(dst)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    if os.path.exists(dst):
+        if os.path.samefile(src, dst):
+            return
+        os.remove(dst)
+    try:
+        os.link(src, dst)
+        return
+    except OSError:
+        pass
+    tmp = f"{dst}.tmp"
+    shutil.copyfile(src, tmp)
+    os.replace(tmp, dst)
 
 
 def _coerce_int(value: object, default: int = 0) -> int:
@@ -1546,23 +1573,25 @@ class MobileCLIPCoreMLBackend:
 
         for remote_path, stage_start, stage_end in weight_files:
             tqdm_class = make_byte_progress_tqdm(stage_start, stage_end, _report)
-            hf_hub_download(
+            cached_path = hf_hub_download(
                 repo_id=self.HUB_REPO_ID,
                 filename=remote_path,
                 revision=self.HUB_REVISION,
-                local_dir=self.model_dir,
-                local_dir_use_symlinks=False,
                 tqdm_class=tqdm_class,
+            )
+            _materialize_cached_file(
+                str(cached_path), os.path.join(self.model_dir, remote_path)
             )
             _report(stage_end)
 
         for idx, remote_path in enumerate(small_files):
-            hf_hub_download(
+            cached_path = hf_hub_download(
                 repo_id=self.HUB_REPO_ID,
                 filename=remote_path,
                 revision=self.HUB_REVISION,
-                local_dir=self.model_dir,
-                local_dir_use_symlinks=False,
+            )
+            _materialize_cached_file(
+                str(cached_path), os.path.join(self.model_dir, remote_path)
             )
             pct = 85 + int((idx + 1) * 8 / max(1, len(small_files)))
             _report(min(93, pct))
@@ -2080,22 +2109,15 @@ class MobileCLIPONNXBackend:
 
         for remote_path, local_name, stage_start, stage_end in files_to_download:
             tqdm_class = make_byte_progress_tqdm(stage_start, stage_end, _report)
-            hf_hub_download(
+            cached_path = hf_hub_download(
                 repo_id=self.HUB_REPO_ID,
                 filename=remote_path,
                 revision=self.HUB_REVISION,
-                local_dir=self.model_dir,
-                local_dir_use_symlinks=False,
                 tqdm_class=tqdm_class,
             )
 
-            downloaded_path = os.path.join(self.model_dir, remote_path)
             target_path = os.path.join(self.model_dir, local_name)
-
-            if os.path.exists(downloaded_path):
-                if os.path.exists(target_path):
-                    os.remove(target_path)
-                os.rename(downloaded_path, target_path)
+            _materialize_cached_file(str(cached_path), target_path)
             if not os.path.exists(target_path):
                 raise RuntimeError(f"MobileCLIP ONNX download missing: {local_name}")
             expected = (self.ONNX_SHA256.get(self.variant) or (None, None))[
@@ -2116,10 +2138,10 @@ class MobileCLIPONNXBackend:
                     )
             _report(stage_end)
 
+        # Remove the layout left by older versions that downloaded with
+        # ``local_dir`` (files are now served from the shared HF cache).
         onnx_dir = os.path.join(self.model_dir, "onnx")
         if os.path.exists(onnx_dir):
-            import shutil
-
             shutil.rmtree(onnx_dir)
 
         if not os.path.exists(self.tokenizer_path):

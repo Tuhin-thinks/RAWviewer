@@ -602,6 +602,28 @@ def _norm_path(p: object) -> str:
         return str(p) if p else ""
 
 
+def _is_in_folder_scope(path: str, root: str) -> bool:
+    """True when *path* (a dir) is at or inside *root* (dir); no symlink resolution."""
+    try:
+        p = os.path.normcase(os.path.normpath(os.path.abspath(path)))
+        r = os.path.normcase(os.path.normpath(os.path.abspath(root)))
+    except Exception:
+        return False
+    if not r or r == p:
+        return True
+    try:
+        return os.path.commonpath((p, r)) == r
+    except ValueError:
+        # Mixed drives etc. cannot share a common ancestor.
+        return False
+
+
+# Parent-fallback folder scan (see RAWImageViewer._scan_folder_image_paths):
+# when a folder holds no images directly, one level of subfolders is scanned.
+_SUBFOLDER_FALLBACK_MAX_DIRS = 64
+_SUBFOLDER_FALLBACK_SKIP = frozenset({"discard"})
+
+
 def _find_file_index_in_list(files, file_path, *, default: int = -1) -> int:
     """Return index of *file_path* in *files* (normcase/abspath/basename), or *default*."""
     if not files or not file_path:
@@ -14798,7 +14820,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 return False
             folder = os.path.dirname(os.path.abspath(path))
             current_folder = getattr(self, "current_folder", "") or ""
-            if current_folder and os.path.abspath(current_folder) != folder:
+            # Parent-fallback scopes (card layouts) keep child-folder paths, so
+            # accept anything still inside the open folder, not only siblings.
+            if current_folder and not _is_in_folder_scope(folder, current_folder):
                 # Written somewhere else; nothing on screen to update.
                 return False
 
@@ -14832,11 +14856,20 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     def _show_created_file(self, path: str) -> None:
         """Open a file this app just created, in single view."""
         try:
-            self.load_folder_images(
-                os.path.dirname(os.path.abspath(path)),
-                start_file=os.path.basename(path),
-                start_view="single",
-            )
+            parent = getattr(self, "current_folder", None) or ""
+            if parent and _is_in_folder_scope(
+                os.path.dirname(os.path.abspath(path)), parent
+            ):
+                # Parent-fallback scope: the file may sit one level down; keep
+                # the opened folder as the session scope instead of flipping to
+                # the file's own directory.
+                self.load_folder_images(parent, start_file=path, start_view="single")
+            else:
+                self.load_folder_images(
+                    os.path.dirname(os.path.abspath(path)),
+                    start_file=os.path.basename(path),
+                    start_view="single",
+                )
         except Exception:
             import logging
 
@@ -19380,20 +19413,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             file_path = url.toLocalFile()
             
             if os.path.isdir(file_path):
-                # Check if the folder contains any supported images
-                has_supported_images = False
-                try:
-                    with os.scandir(file_path) as it:
-                        for entry in it:
-                            if entry.name.startswith('.'):
-                                continue
-                            if entry.is_file(follow_symlinks=False):
-                                ext = os.path.splitext(entry.name)[1].lower()
-                                if ext in exts:
-                                    has_supported_images = True
-                                    break
-                except Exception:
-                    pass
+                # One shared check (incl. the subfolder fallback) so this can
+                # never disagree with the scan load_folder_images will run.
+                has_supported_images = self._folder_has_supported_images(file_path)
 
                 if has_supported_images:
                     self.load_folder_images(file_path)
@@ -32145,22 +32167,22 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # Get the folder path
             folder_path = os.path.abspath(os.path.dirname(file_path))
             prev_folder = getattr(self, "current_folder", None)
+            # Already on screen -> just point at it. This also covers the
+            # parent-fallback scope (files live one level down, so
+            # dirname(file) != current_folder): never re-derive the folder
+            # identity from a file path that is already loaded.
+            target = _norm_path(file_path)
+            if getattr(self, "image_files", None):
+                for i, img_file in enumerate(self.image_files):
+                    if _norm_path(img_file) == target:
+                        self.current_file_index = i
+                        self.current_file_path = img_file
+                        return
             if (
                 prev_folder is not None
                 and _norm_path(prev_folder) == _norm_path(folder_path)
-                and getattr(self, "image_files", None)
             ):
-                # Folder already loaded via load_folder_images — avoid UI-thread rescan/resort
-                # on every image display (was O(n) per navigation and fought background sort).
-                try:
-                    target = _norm_path(file_path)
-                    for i, img_file in enumerate(self.image_files):
-                        if _norm_path(img_file) == target:
-                            self.current_file_index = i
-                            self.current_file_path = img_file
-                            break
-                except Exception:
-                    pass
+                # Unknown file in the same folder: nothing to update (no rescan).
                 return
             if prev_folder is not None and _norm_path(prev_folder) != _norm_path(folder_path):
                 self._reset_semantic_search_for_new_folder()
@@ -32178,30 +32200,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # Get supported extensions
             supported_extensions = self.get_supported_extensions()
 
-            # Top-level only: do not recurse into subfolders (Desktop / large trees stay fast).
+            # Shared scanner: direct files, else one level of subfolders.
             image_files = []
 
             try:
-                with os.scandir(folder_path) as it:
-                    for entry in it:
-                        if entry.name.startswith("."):
-                            continue
-                        try:
-                            if not entry.is_file(follow_symlinks=False):
-                                continue
-                            file_ext = os.path.splitext(entry.name)[1].lower()
-                            if file_ext not in supported_extensions:
-                                continue
-                            if file_ext == ".dng":
-                                from common_image_loader import dng_prefers_embedded_preview_first
-                                if dng_prefers_embedded_preview_first(entry.path):
-                                    continue
-                            stat = entry.stat()
-                            if stat.st_size <= 0:
-                                continue
-                            image_files.append(os.path.abspath(entry.path))
-                        except (OSError, PermissionError):
-                            continue
+                for ap, _stat in self._scan_folder_image_paths(folder_path):
+                    image_files.append(ap)
             except OSError as e:
                 error_msg = f"Cannot read folder contents:\n{str(e)}"
                 logger.error(f"Error reading folder {folder_path}: {e}")
@@ -33599,9 +33603,8 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._restore_start_scroll_y = None
         self.handle_post_deletion_navigation()
 
-    def _scan_folder_generator(self, folder_path, extensions, discard_folder='Discard'):
-        """Yield (path, stat) for supported images in folder_path only (no subfolders)."""
-        _ = discard_folder  # unused: subfolders are not scanned (kept for API compatibility)
+    def _scan_folder_generator(self, folder_path, extensions):
+        """Yield (path, stat) for supported images directly in folder_path (no subfolders)."""
         try:
             with os.scandir(folder_path) as it:
                 for entry in it:
@@ -33676,16 +33679,65 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             sort_keys[fp] = (primary_ts, stem, raw_rank, ext, base_name)
         return sorted(image_files, key=lambda fp: sort_keys[fp])
 
+    def _scan_subfolder_dirs(self, folder_path: str) -> list[str]:
+        """Immediate child directories eligible for the parent fallback.
+
+        Depth 1 only: skip hidden dirs and ``Discard`` (rejected shots must not
+        resurrect), never follow symlinks, sort deterministically, and cap the
+        count so opening a drive root or a large tree stays fast.
+        """
+        try:
+            with os.scandir(folder_path) as it:
+                children = [
+                    entry.path
+                    for entry in it
+                    if not entry.name.startswith(".")
+                    and os.path.normcase(entry.name) not in _SUBFOLDER_FALLBACK_SKIP
+                    and entry.is_dir(follow_symlinks=False)
+                ]
+        except (OSError, PermissionError):
+            return []
+        children.sort(key=os.path.normcase)
+        return children[:_SUBFOLDER_FALLBACK_MAX_DIRS]
+
+    def _folder_has_supported_images(self, folder_path: str) -> bool:
+        """Cheap first-hit check mirroring ``_scan_folder_image_paths`` (incl. fallback).
+
+        Used by the drop handler so "folder has images" and the later scan can
+        never disagree (they must consult the same scanner).
+        """
+        extensions = set(self.get_supported_extensions())
+        if next(self._scan_folder_generator(folder_path, extensions), None) is not None:
+            return True
+        for child in self._scan_subfolder_dirs(folder_path):
+            if next(self._scan_folder_generator(child, extensions), None) is not None:
+                return True
+        return False
+
     def _scan_folder_image_paths(self, folder_path: str):
-        """Yield absolute paths and file stats for supported images (top level only)."""
+        """Yield absolute paths and file stats for supported images.
+
+        Reads folder_path's direct files; when it has none, falls back one level
+        to its immediate subfolders (Sony/card layout: DCIM/100MSDCF/*.ARW). The
+        fallback is all-or-nothing - child files are never merged into a
+        non-empty top level. Never deeper than one level.
+        """
         extensions = set(self.get_supported_extensions())
         seen_paths = set()
-        for full_path, stat_info in self._scan_folder_generator(folder_path, extensions):
-            ap = os.path.abspath(full_path)
-            if ap in seen_paths:
-                continue
-            seen_paths.add(ap)
-            yield ap, stat_info
+
+        def _collect(path):
+            for full_path, stat_info in self._scan_folder_generator(path, extensions):
+                ap = os.path.abspath(full_path)
+                if ap in seen_paths:
+                    continue
+                seen_paths.add(ap)
+                yield ap, stat_info
+
+        yield from _collect(folder_path)
+        if seen_paths or _env_true("RAWVIEWER_NO_SUBFOLDER_FALLBACK"):
+            return
+        for child in self._scan_subfolder_dirs(folder_path):
+            yield from _collect(child)
 
     def _build_quick_folder_image_list(self, folder_path: str, start_path: str | None = None):
         """Scandir + mtime sort only. Returns (image_files, file_stats, start_index)."""
@@ -34233,6 +34285,19 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self.current_folder = folder_path
             self._sync_burst_rejected_for_current_folder()
             self.image_files = image_files
+            # Parent-fallback scope is all-or-nothing (worker yields child files
+            # only when the opened folder has none): surface that to the user.
+            if _norm_path(os.path.dirname(image_files[0])) != _norm_path(folder_path):
+                logger.info(
+                    "[FOLDER] Parent fallback: %d files from subfolders of %s",
+                    len(image_files), folder_path,
+                )
+                if hasattr(self, "status_bar"):
+                    self.status_bar.showMessage(
+                        f"Showing {len(image_files)} photos from subfolders of "
+                        f"{os.path.basename(folder_path)}",
+                        5000,
+                    )
             self._reconcile_burst_rejected_paths_with_folder()
             self._reconcile_gallery_bookmarks_with_folder()
             self._semantic_search_corpus_files = list(image_files)
