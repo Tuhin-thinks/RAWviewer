@@ -62,6 +62,10 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     # 100 = maximum original fine detail. Drives the half-res AI denoise
     # edge-weighted high-frequency restore gain in onnx_scunet.process().
     "DenoiseDetail": 50.0,
+    # AI denoise amount (export-only): 0 = original untouched, 100 = full
+    # model output. Blends the model result with the input in
+    # onnx_scunet.process(strength=...), like Lightroom's Denoise Amount.
+    "AIDenoiseAmount": 100.0,
     "ParametricShadows": 0.0,
     "ParametricDarks": 0.0,
     "ParametricLights": 0.0,
@@ -106,6 +110,10 @@ for _hsl_color in HSL_COLOR_NAMES:
     DEFAULT_ADJUSTMENTS[f"LuminanceAdjustment{_hsl_color}"] = 0.0
 
 RELEVANT_ADJUSTMENT_KEYS = frozenset(DEFAULT_ADJUSTMENTS.keys())
+# Export-only denoise knobs: they change the exported pixels but are invisible
+# in the always-shown preview, so they must not mark a file "edited" -- yet a
+# change to any of them must still be persisted to the sidecar.
+_EXPORT_ONLY_DENOISE_KEYS = frozenset({"DenoiseDetail", "AIDenoiseAmount"})
 AS_SHOT_TEMP_KEY = "AsShotTemperature"
 
 ANAMORPHIC_DESQUEEZE_PRESETS: tuple[tuple[str, float], ...] = (
@@ -281,6 +289,7 @@ SLIDER_SPECS: tuple[SliderSpec, ...] = (
     _slider_linear("Clarity2012", "Clarity", -100, 100, 0.0),
     _slider_linear("Defringe", "Defringe", 0, 100, 0.0),
     _slider_linear("LuminanceNoiseReduction", "Luma NR", 0, 100, 0.0, fmt=lambda x: f"{x:.0f}"),
+    _slider_linear("AIDenoiseAmount", "AI Amount", 0, 100, 100.0, fmt=lambda x: f"{x:.0f}"),
     _slider_linear("DenoiseDetail", "AI Detail", 0, 100, 50.0, fmt=lambda x: f"{x:.0f}"),
     # Transform (raw_transform.py). Straighten in 0.1-degree steps; keystone
     # sliders mirror Lightroom's slider-based Transform panel; crop insets as
@@ -1086,9 +1095,9 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
         # an otherwise-empty sidecar after Reset.
         if key == "DodgeBurnStrength":
             continue
-        # Export-only AI-denoise knob: changes nothing in the pixel pipeline,
-        # so it must not mark the image as edited on its own.
-        if key == "DenoiseDetail":
+        # Export-only AI-denoise knobs: changes nothing in the always-shown
+        # preview, so they must not mark the image as edited on their own.
+        if key in _EXPORT_ONLY_DENOISE_KEYS:
             continue
         try:
             av = float(adj.get(key, default) if adj.get(key, default) is not None else default)
@@ -1104,26 +1113,29 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
 
 
 def is_default_adjustments_for_sidecar(adj: Dict[str, float] | None) -> bool:
-    """Like is_default_adjustments, but does NOT ignore DenoiseDetail.
+    """Like is_default_adjustments, but does NOT ignore export-only denoise knobs.
 
-    is_default_adjustments() deliberately skips DenoiseDetail (it's an
-    export-only knob invisible to the always-shown preview, so it
+    is_default_adjustments() deliberately skips DenoiseDetail / AIDenoiseAmount
+    (they are export-only knobs invisible to the always-shown preview, so they
     shouldn't mark a file "edited" for the gallery badge or skip the
     pixel-pipeline shortcut). But write_xmp_adjustments reused that SAME
     check to decide whether to write or clear the sidecar -- so a
-    DenoiseDetail-only change was treated as "no edit" and silently
+    denoise-setting-only change was treated as "no edit" and silently
     dropped. Callers that persist the sidecar must use this variant.
     """
     if not is_default_adjustments(adj):
         return False
     if not adj:
         return True
-    default_detail = DEFAULT_ADJUSTMENTS["DenoiseDetail"]
-    try:
-        detail = float(adj.get("DenoiseDetail", default_detail))
-    except (TypeError, ValueError):
-        return False
-    return abs(detail - default_detail) <= 1e-4
+    for key in _EXPORT_ONLY_DENOISE_KEYS:
+        default = DEFAULT_ADJUSTMENTS[key]
+        try:
+            value = float(adj.get(key, default))
+        except (TypeError, ValueError):
+            return False
+        if abs(value - default) > 1e-4:
+            return False
+    return True
 
 
 def adjustments_equal(a: Dict[str, float], b: Dict[str, float]) -> bool:
