@@ -2334,7 +2334,7 @@ class _AdjustExportWorker(QRunnable):
         self.done_event = _threading.Event()
 
     def run(self) -> None:
-        from batch_ops import export_one_file
+        from rawviewer_app.batch_ops import export_one_file
 
         def emit_progress(percent: int, stage: str = "") -> None:
             try:
