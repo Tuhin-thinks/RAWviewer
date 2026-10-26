@@ -30,6 +30,37 @@ def unique_destination(dest_dir: str, filename: str, reserved: set) -> str:
     return candidate
 
 
+# Export format → source file extensions that need no re-encode if the
+# source is already in that format and carries no real edits.
+_BYPASS_EXT = {
+    "jpeg": frozenset({".jpg", ".jpeg"}),
+    "webp": frozenset({".webp"}),
+    "tiff16": frozenset({".tif", ".tiff"}),
+}
+
+
+def _should_skip_reencode(
+    source_path: str,
+    export_format: str,
+    adj: dict | None,
+    use_ai_denoise: bool,
+) -> bool:
+    """True when the source can be copied verbatim instead of decoded + re-encoded.
+
+    Conditions: source extension already matches the target format, no AI
+    denoise requested, and adjustments are effectively default (no real edits).
+    Re-encoding a JPEG/WebP would generational-loss degrade it for no reason.
+    """
+    if use_ai_denoise:
+        return False
+    ext = os.path.splitext(source_path)[1].lower()
+    if ext not in _BYPASS_EXT.get(export_format, frozenset()):
+        return False
+    from raw_adjustments import is_default_adjustments
+
+    return is_default_adjustments(adj)
+
+
 def copy_one_file(
     src: str,
     dest_dir: str,
@@ -164,6 +195,7 @@ def export_one_file(
     cancel_event: threading.Event | None = None,
     progress_cb: Optional[Callable] = None,  # (percent:int, stage:str)
     use_ai_denoise: bool = False,
+    ai_amount: Optional[float] = None,
 ) -> Tuple[Optional[Exception], Optional[Exception]]:
     """Full-res single-file export.
 
@@ -180,6 +212,19 @@ def export_one_file(
         os.path.basename(file_path),
         output_path,
     )
+    # Skip decode + re-encode when the source is already in the target format
+    # and carries no real edits -- copy it verbatim to avoid generational loss.
+    if _should_skip_reencode(file_path, export_format, adj, use_ai_denoise):
+        try:
+            shutil.copy2(file_path, output_path)
+            logger.info(
+                "[EXPORT] copied without re-encode (already %s, no edits): %s",
+                export_format,
+                os.path.basename(file_path),
+            )
+        except Exception as exc:
+            return exc, None
+        return None, None
     err = None
     xmp_warning = None
     cancelled = cancel_event if cancel_event is not None else threading.Event()
@@ -202,6 +247,12 @@ def export_one_file(
         else:
             xmp_path = resolve_xmp_path(file_path)
             embed_xmp = xmp_path if xmp_path and os.path.isfile(xmp_path) else None
+
+        # If the batch export requested a specific AI amount, override each
+        # photo's stored AIDenoiseAmount so the whole batch uses one strength.
+        # Applied after the XMP write so the source sidecar keeps its own value.
+        if ai_amount is not None:
+            adj["AIDenoiseAmount"] = float(ai_amount)
 
         if cancelled.is_set():
             raise ExportCancelled()
@@ -311,6 +362,7 @@ class BatchExportWorker(QRunnable):
         cancel_event: threading.Event | None = None,
         name_suffix: str = "_edited",
         use_ai_denoise: bool = False,
+        ai_amount: Optional[float] = None,
     ):
         super().__init__()
         self.paths = list(paths)
@@ -321,6 +373,7 @@ class BatchExportWorker(QRunnable):
         self.cancel_event = cancel_event or threading.Event()
         self.name_suffix = name_suffix
         self.use_ai_denoise = bool(use_ai_denoise)
+        self.ai_amount = ai_amount
         self.done_event = threading.Event()
 
     _EXT_BY_FORMAT = {
@@ -368,6 +421,7 @@ class BatchExportWorker(QRunnable):
                     self.process_pool,
                     cancel_event=self.cancel_event,
                     use_ai_denoise=self.use_ai_denoise,
+                    ai_amount=self.ai_amount,
                 )
                 if err is None:
                     ok += 1
