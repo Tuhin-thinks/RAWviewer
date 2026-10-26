@@ -1113,7 +1113,7 @@ class BatchExportDialog(CustomConfirmDialog):
             confirm_action="Export",
         )
 
-        from PyQt6.QtWidgets import QCheckBox, QLineEdit, QRadioButton
+        from PyQt6.QtWidgets import QButtonGroup, QCheckBox, QLineEdit, QRadioButton
 
         self._source_dir_keys = set(source_dir_keys or {})
         self._writable_check = writable_check
@@ -1149,6 +1149,15 @@ class BatchExportDialog(CustomConfirmDialog):
         body_layout.addWidget(self.mode_copy_btn)
         body_layout.addWidget(self.mode_edited_btn)
 
+        # QRadioButton auto-exclusive only groups siblings, and these buttons
+        # all live under the same body widget -- without two explicit groups
+        # picking a format would silently uncheck "Export edited copies"
+        # (export then fell back to copy-originals mode).
+        self._mode_group = QButtonGroup(self)
+        self._mode_group.setExclusive(True)
+        self._mode_group.addButton(self.mode_copy_btn)
+        self._mode_group.addButton(self.mode_edited_btn)
+
         format_row = QHBoxLayout()
         format_row.setContentsMargins(24, 0, 0, 0)
         format_row.setSpacing(14)
@@ -1159,6 +1168,11 @@ class BatchExportDialog(CustomConfirmDialog):
             btn.setStyleSheet(_radio_style)
             format_row.addWidget(btn)
         body_layout.addLayout(format_row)
+
+        self._format_group = QButtonGroup(self)
+        self._format_group.setExclusive(True)
+        for btn in (self.format_jpeg_btn, self.format_tiff_btn, self.format_webp_btn):
+            self._format_group.addButton(btn)
 
         self.destination_edit = QLineEdit()
         self.destination_edit.setPlaceholderText("Choose a destination folder…")
