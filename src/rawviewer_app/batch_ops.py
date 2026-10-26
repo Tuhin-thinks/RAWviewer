@@ -30,6 +30,37 @@ def unique_destination(dest_dir: str, filename: str, reserved: set) -> str:
     return candidate
 
 
+# Export format → source file extensions that need no re-encode if the
+# source is already in that format and carries no real edits.
+_BYPASS_EXT = {
+    "jpeg": frozenset({".jpg", ".jpeg"}),
+    "webp": frozenset({".webp"}),
+    "tiff16": frozenset({".tif", ".tiff"}),
+}
+
+
+def _should_skip_reencode(
+    source_path: str,
+    export_format: str,
+    adj: dict | None,
+    use_ai_denoise: bool,
+) -> bool:
+    """True when the source can be copied verbatim instead of decoded + re-encoded.
+
+    Conditions: source extension already matches the target format, no AI
+    denoise requested, and adjustments are effectively default (no real edits).
+    Re-encoding a JPEG/WebP would generational-loss degrade it for no reason.
+    """
+    if use_ai_denoise:
+        return False
+    ext = os.path.splitext(source_path)[1].lower()
+    if ext not in _BYPASS_EXT.get(export_format, frozenset()):
+        return False
+    from raw_adjustments import is_default_adjustments
+
+    return is_default_adjustments(adj)
+
+
 def copy_one_file(
     src: str,
     dest_dir: str,
@@ -180,6 +211,19 @@ def export_one_file(
         os.path.basename(file_path),
         output_path,
     )
+    # Skip decode + re-encode when the source is already in the target format
+    # and carries no real edits -- copy it verbatim to avoid generational loss.
+    if _should_skip_reencode(file_path, export_format, adj, use_ai_denoise):
+        try:
+            shutil.copy2(file_path, output_path)
+            logger.info(
+                "[EXPORT] copied without re-encode (already %s, no edits): %s",
+                export_format,
+                os.path.basename(file_path),
+            )
+        except Exception as exc:
+            return exc, None
+        return None, None
     err = None
     xmp_warning = None
     cancelled = cancel_event if cancel_event is not None else threading.Event()
