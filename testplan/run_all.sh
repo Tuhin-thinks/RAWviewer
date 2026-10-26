@@ -38,12 +38,14 @@ run "tone engine invariants" testplan/auto/t_tone_engine.py
 run "xmp round-trip" testplan/auto/t_xmp_roundtrip.py
 run "slider specs" testplan/auto/t_slider_specs.py
 run "AI denoise gating" testplan/auto/t_ai_denoise_gating.py
+run "AI denoise amount" testplan/auto/t_ai_denoise_amount.py
 run "cache semantics" testplan/auto/t_cache_semantics.py
 run "dodge & burn" testplan/auto/t_dodge_burn.py
 run "gallery closes editor" testplan/auto/t_gallery_closes_editor.py
 run "gallery hover prefetch" testplan/auto/t_gallery_hover_prefetch.py
 run "gallery new file registration" testplan/auto/t_gallery_new_file.py
 run "folder parent fallback" testplan/auto/t_folder_fallback.py
+run "gallery batch selection" testplan/auto/t_gallery_batch_selection.py
 run "gallery thumb recovery" testplan/auto/t_gallery_thumb_recovery.py
 run "gallery scroll date bubble" testplan/auto/t_gallery_scroll_date_bubble.py
 run "full-image cache byte budget" testplan/auto/t_full_image_cache_budget.py

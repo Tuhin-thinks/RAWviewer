@@ -3671,6 +3671,18 @@ class JustifiedGallery(QWidget):
                             target_path = getattr(_w, "file_path", None)
                             pv = self.parent_viewer
                             if target_path and pv is not None:
+                                # Check-circle click toggles selection without
+                                # opening or starting a drag; remember it so the
+                                # release handler skips the mirrored click path.
+                                if _w.hits_selection_check(e.position().toPoint()):
+                                    _w._press_on_check = True
+                                    _w._drag_start_pos = None
+                                    if hasattr(pv, "_gallery_toggle_check_path"):
+                                        pv._gallery_toggle_check_path(target_path)
+                                    elif hasattr(pv, "_gallery_toggle_path_selection"):
+                                        pv._gallery_toggle_path_selection(target_path)
+                                    return
+                                _w._press_on_check = False
                                 mods = (
                                     pv._gallery_event_modifiers(e)
                                     if hasattr(pv, "_gallery_event_modifiers")
@@ -3700,6 +3712,14 @@ class JustifiedGallery(QWidget):
                         pass
 
                 def _on_thumb_release(e, _w=w):
+                    if getattr(_w, "_press_on_check", False):
+                        # Press handled the check toggle; swallow the release so
+                        # the plain-click path (open image / re-toggle) never runs.
+                        _w._press_on_check = False
+                        _w._drag_start_pos = None
+                        _w._drag_started = False
+                        e.accept()
+                        return
                     if e.button() != Qt.MouseButton.LeftButton:
                         ThumbnailLabel.mouseReleaseEvent(_w, e)
                         return
@@ -3880,11 +3900,14 @@ class JustifiedGallery(QWidget):
                     w.setText("")
 
             w.show()
+            pv = self.parent_viewer
+            # Selection state applies on every bind (cheap bool + repaint);
+            # skipping it while scrolling left stale/missing checks after fast
+            # scroll-settles. Badges are QSS-heavy widgets, keep their guard.
+            if pv is not None and hasattr(pv, "_is_gallery_path_selected"):
+                if hasattr(w, "set_gallery_selected"):
+                    w.set_gallery_selected(pv._is_gallery_path_selected(path))
             if not actively_scrolling:
-                pv = self.parent_viewer
-                if pv is not None and hasattr(pv, "_is_gallery_path_selected"):
-                    if hasattr(w, "set_gallery_selected"):
-                        w.set_gallery_selected(pv._is_gallery_path_selected(path))
                 if pv is not None and hasattr(pv, "_burst_stack_count_for_path"):
                     if hasattr(w, "set_burst_stack_count"):
                         w.set_burst_stack_count(pv._burst_stack_count_for_path(path))

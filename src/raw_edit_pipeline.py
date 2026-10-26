@@ -334,11 +334,14 @@ def _process_linear_edit_tail(
         # RAWVIEWER_AI_DENOISE_FULLRES=1 to force full-resolution inference.
         downscale = 1 if os.environ.get("RAWVIEWER_AI_DENOISE_FULLRES", "0") == "1" else 2
         detail_gain = float(merged.get("DenoiseDetail", 50.0)) / 100.0
+        ai_amount = float(merged.get("AIDenoiseAmount", 100.0)) / 100.0
+        ai_amount = max(0.0, min(1.0, ai_amount))
         logger.info(
-            "[DENOISE] Using AI denoise (model=%s, %s, detail=%.0f%%) for this export",
+            "[DENOISE] Using AI denoise (model=%s, %s, detail=%.0f%%, amount=%.0f%%) for this export",
             os.path.basename(model_path),
             "full-res" if downscale == 1 else "half-res+detail-restore",
             detail_gain * 100.0,
+            ai_amount * 100.0,
         )
         scunet = SCUNetONNX(model_path)
 
@@ -346,13 +349,19 @@ def _process_linear_edit_tail(
             if progress_cb is not None:
                 progress_cb(frac)
 
-        img = scunet.process(
-            img,
-            cancel_check=cancel_check,
-            progress_callback=_denoise_progress,
-            downscale=downscale,
-            detail_gain=detail_gain,
-        )
+        if ai_amount > 1e-4:
+            img = scunet.process(
+                img,
+                cancel_check=cancel_check,
+                progress_callback=_denoise_progress,
+                downscale=downscale,
+                detail_gain=detail_gain,
+                strength=ai_amount,
+            )
+        else:
+            logger.info(
+                "[DENOISE] AI denoise amount is 0%% -- exporting without AI denoise"
+            )
 
         # Legacy luma NR still applies on top if the user set it explicitly.
         luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))

@@ -191,6 +191,7 @@ class SCUNetONNX:
         cancel_check=None,
         downscale: int = 1,
         detail_gain: float = 0.5,
+        strength: float = 1.0,
     ) -> np.ndarray:
         """Process a full-resolution RGB image using overlapping tiles.
 
@@ -203,7 +204,15 @@ class SCUNetONNX:
         detail_gain: 0.0 = pure denoised surface (maximum smoothness),
         1.0 = full original high-frequency detail at edges (maximum detail,
         noise included). 0.5 measured to match full-res output metrics.
+        strength: overall denoise amount, 0.0 = original untouched,
+        1.0 = full model output. Lightroom-style blend between input and
+        denoised result, applied after the detail restore.
         """
+        s = max(0.0, min(1.0, float(strength)))
+        if s <= 0.0:
+            # Amount 0 = no denoise: skip session init and inference entirely.
+            return rgb_linear
+
         if self._session is None:
             self._init_session()
 
@@ -226,9 +235,20 @@ class SCUNetONNX:
             grad = np.sqrt(gx * gx + gy * gy)
             w = (grad / (grad + 0.08))[..., None]  # soft edge weight (0 flat -> 1 edge)
             gain = max(0.0, min(1.0, float(detail_gain)))
-            return np.clip(up + hf * w * gain, 0.0, None)
+            result = up + hf * w * gain
+        else:
+            result = self._process_tiles(
+                rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check
+            )
 
-        return self._process_tiles(rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check)
+        if s < 1.0:
+            # Blend toward the input: s=1 is byte-identical to the old path.
+            # In-place on the fresh result buffer keeps peak memory at one
+            # full-res copy instead of two temporaries.
+            result -= rgb_linear
+            result *= s
+            result += rgb_linear
+        return np.clip(result, 0.0, None)
 
     def _process_tiles(
         self,
