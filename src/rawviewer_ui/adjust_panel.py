@@ -32,6 +32,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFrame,
@@ -792,6 +793,8 @@ class ImageAdjustPanelWidget(QWidget):
     preview_changed = pyqtSignal(dict)
     reset_requested = pyqtSignal()
     export_requested = pyqtSignal(str, dict, bool)  # format id, adjustments, use_ai_denoise
+    ai_denoise_toggled = pyqtSignal(bool)
+    ai_preview_requested = pyqtSignal()
     recovery_baseline_requested = pyqtSignal()
     wb_picker_toggled = pyqtSignal(bool)  # True: arm the WB dropper; False: cancel
     compare_toggled = pyqtSignal(bool)  # True: show compare-with-original split view
@@ -1408,14 +1411,14 @@ class ImageAdjustPanelWidget(QWidget):
             slider.sliderReleased.connect(self._on_slider_released)
             if spec.key == "DenoiseDetail":
                 slider.setToolTip(
-                    "Export-only: how much original edge detail to restore after AI denoise.\n"
+                    "How much original detail to keep after AI denoise.\n"
                     "0 = smoother, 100 = more detail (and more residual noise)."
                 )
             if spec.key == "AIDenoiseAmount":
                 slider.setToolTip(
-                    "Export-only AI denoise amount (like Lightroom's Denoise Amount).\n"
-                    "0 = original untouched, 100 = full AI denoise; "
-                    "10-30 for subtle cleanup."
+                    "How strongly AI removes noise.\n"
+                    "0 = no AI denoise, 100 = full; 10-30 for gentle cleanup. "
+                    "Works with the 'AI denoise' toggle above."
                 )
             if spec.key == "Distortion":
                 slider.setToolTip(
@@ -1510,6 +1513,40 @@ class ImageAdjustPanelWidget(QWidget):
         self._chroma_nr_amount_row.setLayout(chroma_amt_row)
         self._chroma_nr_amount_row.setVisible(False)
         self.sect_noise.add_widget(self._chroma_nr_amount_row)
+
+        # AI denoise: the checkbox turns it on for export; "Preview AI" renders
+        # the AI look at full quality on demand (slow, so never on slider moves).
+        ai_row = QHBoxLayout()
+        ai_row.setSpacing(6)
+        self._ai_denoise_check = QCheckBox("AI denoise")
+        self._ai_denoise_check.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._ai_denoise_check.setStyleSheet(f"QCheckBox {{ color: {theme.INK}; font-size: 12px; }}")
+        self._ai_denoise_check.toggled.connect(self._on_ai_denoise_toggled)
+        ai_row.addWidget(self._ai_denoise_check, 1)
+        self._ai_preview_btn = QPushButton("Preview AI")
+        self._ai_preview_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._ai_preview_btn.setToolTip(
+            "Show the AI denoise result at full quality. Takes a while on large files; "
+            "slider changes show the normal preview again."
+        )
+        self._ai_preview_btn.clicked.connect(self.ai_preview_requested.emit)
+        ai_row.addWidget(self._ai_preview_btn)
+        ai_widget = QWidget()
+        ai_widget.setLayout(ai_row)
+        self.sect_noise.add_widget(ai_widget)
+        self._ai_denoise_row = ai_widget
+        try:
+            from rawviewer_profile import ai_export_enabled
+            from onnx_scunet import scunet_model_path
+
+            ai_ok = bool(ai_export_enabled() and os.path.exists(scunet_model_path()))
+        except Exception:
+            ai_ok = False
+        self._ai_denoise_check.setEnabled(ai_ok)
+        ai_widget.setVisible(ai_ok)
+        if not ai_ok:
+            self._ai_denoise_check.setToolTip("AI denoise model is not installed.")
+        self._sync_ai_preview_btn()
 
         # Lens correction (optics — lives with Transform / crop geometry)
         self._lens_correction_row = QHBoxLayout()
@@ -1793,47 +1830,30 @@ class ImageAdjustPanelWidget(QWidget):
             }}
             """
         )
+        # Plain-language export options. AI denoise is controlled by the
+        # "AI denoise" toggle in the Noise section (strength from AI Amount);
+        # these buttons just pick the output file type.
         export_menu.addAction(
-            "16-bit TIFF (baked)",
-            lambda: self._request_export("tiff16"),
-        )
-        export_menu.addAction(
-            "JPEG (baked)",
+            "JPEG — smaller files, easy to share",
             lambda: self._request_export("jpeg"),
         )
         export_menu.addAction(
-            "WebP (baked)",
+            "TIFF 16-bit — best quality, very large files",
+            lambda: self._request_export("tiff16"),
+        )
+        export_menu.addAction(
+            "WebP — small files, good for the web",
             lambda: self._request_export("webp"),
         )
-        try:
-            from rawviewer_profile import ai_export_enabled
-            from onnx_scunet import scunet_model_path
-
-            denoise_ready = ai_export_enabled() and os.path.exists(scunet_model_path())
-        except Exception:
-            denoise_ready = False
-        if denoise_ready:
-            export_menu.addSeparator()
-            ai_menu = QMenu("AI Denoise", export_menu)
-            ai_menu.setStyleSheet(export_menu.styleSheet())
-            tip = (
-                "Uses AI denoise instead of the Chroma NR method above, "
-                "for this export only. Windows prefers SCUNet; other "
-                "platforms prefer NAFNet. Strength: Noise Reduction > AI Amount."
-            )
-            for label, fmt in (
-                ("16-bit TIFF (baked)", "tiff16"),
-                ("JPEG (baked)", "jpeg"),
-                ("WebP (baked)", "webp"),
-            ):
-                act = ai_menu.addAction(
-                    label,
-                    lambda _checked=False, f=fmt: self._request_export(f, True),
-                )
-                act.setToolTip(tip)
-            export_menu.addMenu(ai_menu)
         export_btn.setMenu(export_menu)
-        export_btn.setToolTip("Export baked image (TIFF / JPEG / WebP)")
+        tt = "Export the edited image."
+        if self._ai_denoise_check.isEnabled():
+            tt += (
+                "\n\nAI denoise: use the 'AI denoise' toggle in the Noise "
+                "section (strength from the AI Amount slider) to remove "
+                "high-ISO grain before saving."
+            )
+        export_btn.setToolTip(tt)
         layout.addWidget(export_btn)
         self._export_btn = export_btn
 
@@ -3332,8 +3352,30 @@ class ImageAdjustPanelWidget(QWidget):
         finally:
             self._block_emit = False
 
-    def _request_export(self, export_format: str, use_ai_denoise: bool = False) -> None:
-        self.export_requested.emit(export_format, self.get_adjustments(), bool(use_ai_denoise))
+    def ai_denoise_enabled(self) -> bool:
+        """Used by main.py to decide whether AI denoise preview is active."""
+        btn = getattr(self, "_ai_denoise_check", None)
+        return bool(btn is not None and btn.isEnabled() and btn.isChecked())
+
+    def set_ai_denoise_enabled(self, enabled: bool) -> None:
+        """Mirror an external setting (e.g. after load / restore) to the toggle."""
+        btn = getattr(self, "_ai_denoise_check", None)
+        if btn is not None and btn.isChecked() != bool(enabled):
+            btn.setChecked(bool(enabled))
+
+    def _sync_ai_preview_btn(self) -> None:
+        self._ai_preview_btn.setEnabled(self.ai_denoise_enabled())
+
+    def _on_ai_denoise_toggled(self, checked: bool) -> None:
+        self._sync_ai_preview_btn()
+        self.ai_denoise_toggled.emit(bool(checked))
+        # Show the regular look again; "Preview AI" renders the AI result.
+        self._emit_preview_and_save()
+
+    def _request_export(self, export_format: str) -> None:
+        self.export_requested.emit(
+            export_format, self.get_adjustments(), self.ai_denoise_enabled()
+        )
 
     def _on_slider_value_changed(self, key: str, fmt: Callable[[float], str]) -> None:
         if self._block_emit:

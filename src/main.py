@@ -2070,6 +2070,7 @@ class _AdjustPreviewWorker(QRunnable):
         *,
         preview_lite: bool = False,
         settle_fast: bool = False,
+        ai_denoise: bool = False,
     ):
         super().__init__()
         self.generation = int(generation)
@@ -2080,6 +2081,10 @@ class _AdjustPreviewWorker(QRunnable):
         self.stage_cache = stage_cache
         self.preview_lite = bool(preview_lite)
         self.settle_fast = bool(settle_fast)
+        # Live AI-denoise preview (settle passes only): same full-resolution
+        # pipeline as export, so the preview matches the saved file. Bypasses
+        # the staged cache, which has no denoise stage.
+        self.ai_denoise = bool(ai_denoise)
 
     def run(self) -> None:
         out = None
@@ -2089,7 +2094,18 @@ class _AdjustPreviewWorker(QRunnable):
 
             t0 = _time.perf_counter()
             dtype_name = str(getattr(self.base_rgb, "dtype", ""))
-            if dtype_name in ("uint16", "float32") and self.stage_cache is not None:
+            if self.ai_denoise and dtype_name in ("uint16", "float32"):
+                from raw_edit_pipeline import (
+                    linear_to_display_uint8, process_linear_edit_buffer,
+                )
+
+                linear = process_linear_edit_buffer(
+                    self.base_rgb,
+                    self.adj,
+                    use_ai_denoise=True,
+                )
+                out = linear_to_display_uint8(linear, self.adj)
+            elif dtype_name in ("uint16", "float32") and self.stage_cache is not None:
                 # Staged/cached recompute: reuses cached intermediate buffers
                 # across ticks when only later-stage slider keys changed
                 # since the last call (see PreviewStageCache in
@@ -8940,6 +8956,15 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
             self.single_image_adjust_panel.looks_drop_rejected.connect(
                 self._on_looks_drop_rejected
+            )
+            self.single_image_adjust_panel.ai_denoise_toggled.connect(
+                self._on_adjust_ai_denoise_toggled
+            )
+            self.single_image_adjust_panel.ai_preview_requested.connect(
+                self._on_adjust_ai_preview_requested
+            )
+            self.single_image_adjust_panel.set_ai_denoise_enabled(
+                bool(self.get_settings().value("ai_denoise_enabled", False) in (True, "1", "true"))
             )
             self.single_image_adjust_panel.crop_mode_changed.connect(
                 self._on_crop_mode_changed
@@ -23184,6 +23209,16 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 panel.set_spot_heal_mask_present(False)
         self._sync_dodge_burn_mask_overlay()
 
+    def _on_adjust_ai_preview_requested(self) -> None:
+        self._apply_adjust_panel_preview(full_quality=True, ai_preview=True)
+
+    def _on_adjust_ai_denoise_toggled(self, enabled: bool) -> None:
+        try:
+            settings = self.get_settings()
+            settings.setValue("ai_denoise_enabled", "1" if enabled else "0")
+        except Exception:
+            pass
+
     def _on_looks_drop_rejected(self, message: str) -> None:
         msg = (message or "").strip() or (
             "Only .cube and .xmp files can be added to Looks"
@@ -24076,13 +24111,15 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._adjust_preview_busy = False
         dirty_full_quality = bool(getattr(self, "_adjust_preview_dirty_full_quality", False))
         self._adjust_preview_dirty_full_quality = False
+        dirty_ai = bool(getattr(self, "_adjust_preview_dirty_ai", False))
+        self._adjust_preview_dirty_ai = False
         if int(generation) != int(getattr(self, "_adjust_preview_gen", 0)):
             if getattr(self, "_adjust_preview_dirty", False):
-                self._apply_adjust_panel_preview(full_quality=dirty_full_quality)
+                self._apply_adjust_panel_preview(full_quality=dirty_full_quality, ai_preview=dirty_ai)
             return
         if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", "") or ""):
             if getattr(self, "_adjust_preview_dirty", False):
-                self._apply_adjust_panel_preview(full_quality=dirty_full_quality)
+                self._apply_adjust_panel_preview(full_quality=dirty_full_quality, ai_preview=dirty_ai)
             return
         if array is not None:
             try:
@@ -24094,7 +24131,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # generation (was flashing the previous slider values, then settling).
             if dirty_now:
                 if getattr(self, "_adjust_preview_dirty", False):
-                    self._apply_adjust_panel_preview(full_quality=dirty_full_quality)
+                    self._apply_adjust_panel_preview(full_quality=dirty_full_quality, ai_preview=dirty_ai)
                 return
             if pixmap is not None and not pixmap.isNull():
                 deferred = self._should_defer_adjust_preview_paint(pixmap)
@@ -24168,7 +24205,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             ):
                 self._set_edit_loading_overlay(None)
         if getattr(self, "_adjust_preview_dirty", False):
-            self._apply_adjust_panel_preview(full_quality=dirty_full_quality)
+            self._apply_adjust_panel_preview(full_quality=dirty_full_quality, ai_preview=dirty_ai)
 
     def _dodge_burn_overlay_adj(self, adj: dict) -> dict:
         """Fold main.py's local-mask state into an adjustments dict.
@@ -24216,7 +24253,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 adj.pop(HEAL_MASK_OBJ_KEY, None)
         return adj
 
-    def _apply_adjust_panel_preview(self, *, full_quality: bool = False) -> None:
+    def _apply_adjust_panel_preview(self, *, full_quality: bool = False, ai_preview: bool = False) -> None:
         panel = getattr(self, "single_image_adjust_panel", None)
         path = getattr(self, "current_file_path", None)
         if not path:
@@ -24242,20 +24279,33 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return
         if getattr(self, "_adjust_preview_busy", False):
             self._adjust_preview_dirty = True
-            # A pending full_quality request must not be downgraded by a
+            # A pending full_quality/AI request must not be downgraded by a
             # subsequent fast one arriving while still queued -- OR-combine.
             self._adjust_preview_dirty_full_quality = (
                 full_quality or getattr(self, "_adjust_preview_dirty_full_quality", False)
             )
+            self._adjust_preview_dirty_ai = (
+                ai_preview or getattr(self, "_adjust_preview_dirty_ai", False)
+            )
             return
         self._adjust_preview_dirty = False
         self._adjust_preview_dirty_full_quality = False
+        self._adjust_preview_dirty_ai = False
         self._adjust_preview_busy = True
         self._adjust_preview_gen = int(getattr(self, "_adjust_preview_gen", 0)) + 1
         gen = self._adjust_preview_gen
         base_fast = getattr(self, "_adjust_preview_base_rgb_fast", None)
+        # AI denoise preview is on-demand (the panel's "Preview AI" button)
+        # and runs at full resolution, the same base as export, so it shows
+        # the real result. Slider changes never run AI.
+        ai_preview = bool(
+            ai_preview and base_full is not None and self._ai_denoise_preview_ready()
+        )
         use_fast = not full_quality and base_fast is not None
-        if use_fast:
+        if ai_preview:
+            base = base_full
+            stage_cache = None
+        elif use_fast:
             base = base_fast
             stage_cache = getattr(self, "_adjust_preview_stage_cache_fast", None)
         else:
@@ -24282,8 +24332,26 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             preview_lite=use_fast,
             # Settle on half-res base: keep y0 guided filter, skip chroma-damp.
             settle_fast=bool(full_quality) and not use_fast,
+            ai_denoise=ai_preview,
         )
         _get_bg_thread_pool().start(worker)
+
+    def _ai_denoise_preview_ready(self) -> bool:
+        """Panel AI toggle on AND the ONNX denoise model is actually present."""
+        panel = getattr(self, "single_image_adjust_panel", None)
+        if panel is None or not hasattr(panel, "ai_denoise_enabled"):
+            return False
+        try:
+            if not panel.ai_denoise_enabled():
+                return False
+        except Exception:
+            return False
+        try:
+            from onnx_scunet import scunet_model_path
+
+            return bool(scunet_model_path()) and os.path.exists(scunet_model_path())
+        except Exception:
+            return False
 
     def _reencode_persisted_preview_for_sidecar(self, path: str, adj: dict | None = None) -> None:
         """Re-encode the persisted LibRaw preview tier with just-saved sidecar adjustments.

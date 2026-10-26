@@ -236,7 +236,8 @@ def process_linear_edit_buffer(
     if n_workers > 1:
         return _process_linear_edit_buffer_banded(
             img, merged, n_workers, preview=preview, chroma_denoise=chroma_denoise,
-            use_ai_denoise=use_ai_denoise, cancel_check=cancel_check, progress_cb=progress_cb,
+            use_ai_denoise=use_ai_denoise,
+            cancel_check=cancel_check, progress_cb=progress_cb,
         )
 
     return _process_linear_edit_tail(
@@ -296,7 +297,7 @@ def _process_linear_edit_tail(
 
     use_scunet = False
     model_path = ""
-    if not preview and use_ai_denoise:
+    if use_ai_denoise:
         from onnx_scunet import SCUNetONNX, scunet_model_path
 
         model_path = scunet_model_path()
@@ -396,14 +397,15 @@ def _process_linear_edit_buffer_banded(
     progress_cb=None,
 ) -> np.ndarray:
     """Row-band parallel version of process_linear_edit_buffer's WB/exposure/denoise/tone tail."""
-    if use_ai_denoise and not preview:
+    if use_ai_denoise:
         # AI (SCUNet) denoise is not row-independent and one ONNX session per
         # band would multiply memory by n_workers -- run the tail single-pass.
         # (Previously the flag was silently DROPPED here, so AI-denoise
         # exports through the banded full-res path never denoised at all.)
         return _process_linear_edit_tail(
             img, merged, preview=preview, chroma_denoise=chroma_denoise,
-            use_ai_denoise=use_ai_denoise, cancel_check=cancel_check, progress_cb=progress_cb,
+            use_ai_denoise=use_ai_denoise,
+            cancel_check=cancel_check, progress_cb=progress_cb,
         )
     from raw_adjustments import band_ranges, banded_executor
 
