@@ -461,6 +461,7 @@ class CustomConfirmDialog(QDialog):
         confirm_action: str = "Delete",
         confirm_label: str | None = None,
         cancel_label: str | None = None,
+        body_widget=None,
     ):
         super().__init__(parent)
         flags = Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint
@@ -499,6 +500,7 @@ class CustomConfirmDialog(QDialog):
             self._CONTENT_MARGIN_V,
         )
         content_layout.setSpacing(10)
+        self._content_layout = content_layout
 
         self._message_label = QLabel(message)
         self._message_label.setWordWrap(True)
@@ -541,12 +543,18 @@ class CustomConfirmDialog(QDialog):
             """)
             content_layout.addWidget(self._info_label)
 
+        # Optional extra UI (options, inputs) between the text and the buttons;
+        # subclasses like BatchExportDialog build their whole body this way.
+        if body_widget is not None:
+            content_layout.addWidget(body_widget)
+
         content_layout.addSpacing(6)
 
         button_layout = QHBoxLayout()
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(12)
         button_layout.addStretch(1)
+        self._buttons_layout = button_layout
 
         self.cancel_btn = _ConfirmDialogButton(cancel_label or "Cancel")
         self.cancel_btn.setObjectName("confirmCancelBtn")
@@ -681,6 +689,19 @@ class CustomConfirmDialog(QDialog):
 
         self.result_value = False
 
+    def insert_body_widget(self, body_widget) -> None:
+        """Insert an extra widget between the text and the button row.
+
+        Used after construction (BatchExportDialog builds its body once the
+        base dialog exists); the body_widget= init argument covers the
+        pre-construction case.
+        """
+        lay = getattr(self, "_content_layout", None)
+        holder = getattr(self, "_buttons_layout", None)
+        if lay is not None:
+            lay.insertWidget(max(0, lay.indexOf(holder)) if holder is not None else 0, body_widget)
+            self._apply_dialog_size()
+
     def _apply_dialog_size(self) -> None:
         """Size from text/button metrics — QLabel sizeHint alone is too narrow when wrapped."""
         margin_h = self._CONTENT_MARGIN_H * 2
@@ -813,10 +834,11 @@ class CustomConfirmDialog(QDialog):
         super().mouseReleaseEvent(event)
 
 
-class ExportProgressDialog(QDialog):
-    """Frameless MD3-styled modal progress dialog, matching CustomConfirmDialog's
-    chrome (see that class) instead of the stock QProgressDialog's native
-    title bar / OS-themed marquee bar."""
+class TaskProgressDialog(QDialog):
+    """Frameless MD3-styled modal progress dialog with a Cancel button, used for
+    long batch operations (single export, batch copy/delete/export). Chrome
+    matches CustomConfirmDialog (stock QProgressDialog had a native title bar
+    and a marquee bar with no real percentage)."""
 
     _DIALOG_WIDTH = 420
     _CONTENT_MARGIN_H = 24
@@ -1033,6 +1055,204 @@ class ExportProgressDialog(QDialog):
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
+
+class BatchExportDialog(CustomConfirmDialog):
+    """Pre-export options dialog (workflow mirrors the delete confirmation).
+
+    Image source (copy originals / export edited + format), destination folder
+    with inline validation, and an optional reveal toggle. Accepting the dialog
+    IS the confirmation — no second confirm step. The validation error appears
+    inline below the body and the dialog stays open.
+    """
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        count: int = 0,
+        start_dir: str = "",
+        source_dir_keys: set | None = None,
+        writable_check=None,
+    ):
+        noun = "photo" if count == 1 else "photos"
+        super().__init__(
+            parent=parent,
+            title="Export",
+            message=f"Export {count} {noun}",
+            informative_text=(
+                "Existing files are kept — new files get _1, _2 suffixes. "
+                "Nothing is deleted or moved."
+            ),
+            confirm_action="Export",
+        )
+
+        from PyQt6.QtWidgets import QCheckBox, QLineEdit, QRadioButton
+
+        self._source_dir_keys = set(source_dir_keys or {})
+        self._writable_check = writable_check
+
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(8)
+
+        _radio_style = f"""
+            QRadioButton {{ color: {theme.INK}; font-size: 14px; background: transparent; }}
+            QRadioButton::indicator {{ width: 16px; height: 16px; }}
+            QRadioButton:disabled {{ color: {theme.INK_FAINT}; }}
+        """
+        self.mode_copy_btn = QRadioButton("Copy originals (untouched + XMP sidecars)")
+        self.mode_copy_btn.setStyleSheet(_radio_style)
+        self.mode_edited_btn = QRadioButton("Export edited copies")
+        self.mode_edited_btn.setStyleSheet(_radio_style)
+        body_layout.addWidget(self.mode_copy_btn)
+        body_layout.addWidget(self.mode_edited_btn)
+
+        format_row = QHBoxLayout()
+        format_row.setContentsMargins(24, 0, 0, 0)
+        format_row.setSpacing(14)
+        self.format_jpeg_btn = QRadioButton("JPEG")
+        self.format_tiff_btn = QRadioButton("TIFF 16-bit")
+        self.format_webp_btn = QRadioButton("WebP")
+        for btn in (self.format_jpeg_btn, self.format_tiff_btn, self.format_webp_btn):
+            btn.setStyleSheet(_radio_style)
+            format_row.addWidget(btn)
+        body_layout.addLayout(format_row)
+
+        self.destination_edit = QLineEdit()
+        self.destination_edit.setPlaceholderText("Choose a destination folder…")
+        self.destination_edit.setStyleSheet(f"""
+            QLineEdit {{
+                color: {theme.INK}; background: {theme.SURFACE};
+                border: 1px solid {theme.LINE}; border-radius: 6px;
+                padding: 5px 8px; font-size: 13px;
+            }}
+            QLineEdit:focus {{ border-color: {theme.EMBER}; }}
+        """)
+
+        self.choose_btn = QToolButton()
+        self.choose_btn.setText("Choose…")
+        self.choose_btn.setStyleSheet(f"""
+            QToolButton {{
+                color: {theme.INK}; background: transparent;
+                border: 1px solid {theme.LINE}; border-radius: 6px;
+                padding: 5px 12px; font-size: 13px;
+            }}
+            QToolButton:hover {{ background: rgba(255, 255, 255, 0.05); }}
+        """)
+        dest_row = QHBoxLayout()
+        dest_row.setSpacing(8)
+        dest_row.addWidget(self.destination_edit, 1)
+        dest_row.addWidget(self.choose_btn)
+        body_layout.addLayout(dest_row)
+
+        self.reveal_check = QCheckBox("Open destination when finished")
+        self.reveal_check.setStyleSheet(f"QCheckBox {{ color: {theme.INK_MUTED}; font-size: 13px; }}")
+        body_layout.addWidget(self.reveal_check)
+
+        self.error_label = QLabel("")
+        self.error_label.setWordWrap(True)
+        self.error_label.setStyleSheet("QLabel { color: #FF8A80; font-size: 13px; }")
+        self.error_label.hide()
+        body_layout.addWidget(self.error_label)
+
+        self.insert_body_widget(body)
+
+        self.mode_copy_btn.toggled.connect(self._sync_mode_ui)
+        self.destination_edit.textChanged.connect(lambda *_: self._show_error(None))
+        self.choose_btn.clicked.connect(self._on_choose_clicked)
+        self.result_config: dict | None = None
+
+        # Restore previously remembered choices.
+        try:
+            settings = parent.get_settings() if parent is not None else None
+            if settings is not None:
+                mode = (settings.value("batch_export_mode", "copy") or "copy").strip()
+                fmt = (settings.value("batch_export_format", "jpeg") or "jpeg").strip()
+                start = settings.value("last_batch_export_dir", "") or ""
+                self.reveal_check.setChecked(
+                    settings.value("batch_export_reveal", "0") in ("1", True, "true")
+                )
+            else:
+                mode, fmt, start = "copy", "jpeg", ""
+        except Exception:
+            mode, fmt, start = "copy", "jpeg", ""
+        start_dir = start_dir or start
+        if start_dir and os.path.isdir(start_dir):
+            self.destination_edit.setText(start_dir)
+        (self.mode_edited_btn if mode == "edited" else self.mode_copy_btn).setChecked(True)
+        {  # format restore; default JPEG
+            "jpeg": self.format_jpeg_btn,
+            "tiff16": self.format_tiff_btn,
+            "webp": self.format_webp_btn,
+        }.get(fmt, self.format_jpeg_btn).setChecked(True)
+
+    def _sync_mode_ui(self, *_args) -> None:
+        edited = self.mode_edited_btn.isChecked()
+        for btn in (self.format_jpeg_btn, self.format_tiff_btn, self.format_webp_btn):
+            btn.setEnabled(edited)
+        self._show_error(None)
+
+    def _on_choose_clicked(self) -> None:
+        pick = getattr(self, "pick_directory", None)
+        picked = pick() if callable(pick) else ""
+        if picked and os.path.isdir(picked):
+            self.destination_edit.setText(picked)
+
+    def _show_error(self, text: str | None) -> None:
+        if text:
+            self.error_label.setText(text)
+            self.error_label.show()
+            h = max(120, self.container.sizeHint().height())
+            self.container.setFixedHeight(h)
+            self.setFixedSize(self.container.width(), h)
+        else:
+            self.error_label.hide()
+
+    def validate(self) -> str | None:
+        dest = self.destination_edit.text().strip()
+        if not dest:
+            return "Choose a destination folder."
+        if not os.path.isdir(dest):
+            return "Destination folder does not exist."
+        if self._writable_check is not None and not self._writable_check(dest):
+            return (
+                "Destination folder is not writable (SD card / read-only volume). "
+                "Choose Desktop, Pictures, or Downloads."
+            )
+        if (
+            self.mode_copy_btn.isChecked()
+            and _norm_dir_key(dest) in self._source_dir_keys
+        ):
+            return (
+                "Destination is the same folder as the originals — choose a "
+                "different folder (or use Export edited copies)."
+            )
+        return None
+
+    def accept(self) -> None:
+        err = self.validate()
+        if err:
+            self._show_error(err)
+            return
+        self.result_config = {
+            "mode": "edited" if self.mode_edited_btn.isChecked() else "copy",
+            "format": (
+                "tiff16" if self.format_tiff_btn.isChecked()
+                else "webp" if self.format_webp_btn.isChecked()
+                else "jpeg"
+            ),
+            "destination": os.path.normpath(self.destination_edit.text().strip()),
+            "reveal": self.reveal_check.isChecked(),
+        }
+        self.result_value = True
+        super().accept()
+
+
+def _norm_dir_key(path: str) -> str:
+    return os.path.normpath(os.path.abspath(path or "")).lower().rstrip("\\/")
 
 
 class CustomWarningDialog(QDialog):
