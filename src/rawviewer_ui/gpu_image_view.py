@@ -598,6 +598,9 @@ class GpuImageView(QGraphicsView):
         self._fit_mode = True
         self._wheel_navigate_in_fit = True
         self._zoom_intent_100 = False
+        # (fx, fy) image-fraction under the pointer and (dx, dy) its viewport offset
+        # from the viewport centre, recorded by the last pointer-anchored zoom.
+        self._zoom_anchor = None
         self._zoom_locked = False
         self._has_pixmap = False
         self._img_w = 0
@@ -1124,6 +1127,7 @@ class GpuImageView(QGraphicsView):
             self._item.setPixmap(QPixmap())
             self._has_pixmap = False
             self._img_w = self._img_h = 0
+            self._zoom_anchor = None
             self.clear_overlay()
             self.clear_clipping_overlay()
             self.set_compare_mode(False)
@@ -1146,6 +1150,7 @@ class GpuImageView(QGraphicsView):
 
         capture = preserve_view and had_pixmap and old_w > 0 and old_h > 0
         s_old = fx = fy = None
+        anchor_dx = anchor_dy = 0.0
         was_fit_scale = False
         if capture:
             s_old = self.current_scale()
@@ -1159,6 +1164,10 @@ class GpuImageView(QGraphicsView):
             center_scene = self.mapToScene(self.viewport().rect().center())
             fx = center_scene.x() / old_w
             fy = center_scene.y() / old_h
+            anchor = self._zoom_anchor
+            if anchor is not None:
+                fx, fy, anchor_dx, anchor_dy = anchor
+                self._zoom_anchor = None
 
         self._item.setPixmap(pixmap)
         self._item.setOffset(0, 0)
@@ -1225,7 +1234,12 @@ class GpuImageView(QGraphicsView):
                 s_new = min(self.MAX_SCALE, s_new)
         self.resetTransform()
         self.scale(s_new, s_new)
-        self.centerOn(QPointF(fx * new_w, fy * new_h))
+        # The anchor's screen offset from the viewport centre is kept fixed, so the
+        # point under the pointer does not move when the sharper buffer swaps in.
+        self.centerOn(QPointF(
+            fx * new_w - anchor_dx / s_new,
+            fy * new_h - anchor_dy / s_new,
+        ))
         self._log_framing("preserve/pixmap")
         self._sync_fit_mode_flag()
         self.zoomChanged.emit(self.current_scale())
@@ -1579,6 +1593,7 @@ class GpuImageView(QGraphicsView):
     def fit_to_window(self) -> None:
         self._fit_mode = True
         self._zoom_intent_100 = False
+        self._zoom_anchor = None
         if not self._has_pixmap:
             return
         self.resetTransform()
@@ -1637,6 +1652,7 @@ class GpuImageView(QGraphicsView):
             return
         self._fit_mode = False
         self._zoom_intent_100 = True
+        self._zoom_anchor = None
         x = max(0.0, min(float(scene_x), max(0, self._img_w - 1)))
         y = max(0.0, min(float(scene_y), max(0, self._img_h - 1)))
         self.resetTransform()
@@ -1690,6 +1706,7 @@ class GpuImageView(QGraphicsView):
         self._fit_mode = False
         intent_100 = float(scale) >= 1.0 - 1e-4
         self._zoom_intent_100 = intent_100
+        self._zoom_anchor = None
         self._grid_item.set_grid(new_w, new_h, self._grid_mode)
         self._update_placeholder()
         fit = self.fit_scale()
@@ -1749,7 +1766,12 @@ class GpuImageView(QGraphicsView):
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(self.current_scale())
 
-    def zoom_by(self, factor: float) -> None:
+    def zoom_by(self, factor: float, view_pos: QPoint | None = None) -> None:
+        """Zoom by ``factor``, keeping the image point under ``view_pos`` fixed.
+
+        ``view_pos`` is in viewport coordinates (pointer position for wheel and
+        pinch). Without it the zoom is about the viewport centre.
+        """
         if not self._has_pixmap or factor <= 0:
             return
         fit = self.fit_scale()
@@ -1763,8 +1785,29 @@ class GpuImageView(QGraphicsView):
         new = max(fit, min(self.MAX_SCALE, new))
         if abs(new - cur) < 1e-9:
             return
+        if view_pos is None:
+            view_pos = self.viewport().rect().center()
+        vc = self.viewport().rect().center()
+        under_pointer = self.mapToScene(view_pos)
         self.scale(new / cur, new / cur)
         self._fit_mode = False
+        QApplication.sendPostedEvents(self, 0)
+        # Re-centre so the scene point under the pointer maps back to the same
+        # viewport pixel. This replaces Qt's AnchorUnderMouse, which depends on a
+        # mouse position the view may not have seen for this wheel event.
+        dx = view_pos.x() - vc.x()
+        dy = view_pos.y() - vc.y()
+        self.centerOn(QPointF(
+            under_pointer.x() - dx / new,
+            under_pointer.y() - dy / new,
+        ))
+        iw, ih = max(1, self._img_w), max(1, self._img_h)
+        self._zoom_anchor = (
+            under_pointer.x() / iw,
+            under_pointer.y() / ih,
+            float(dx),
+            float(dy),
+        )
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(self.current_scale())
 
@@ -2070,6 +2113,8 @@ class GpuImageView(QGraphicsView):
 
     # ------------------------------------------------------------------ events
     def mousePressEvent(self, event) -> None:
+        # A drag-pan moves the view, so a stored wheel-zoom anchor is stale.
+        self._zoom_anchor = None
         if event.button() == Qt.MouseButton.LeftButton and self._dodge_burn_mode:
             if self._has_pixmap:
                 view_pos = event.position().toPoint()
@@ -2244,7 +2289,8 @@ class GpuImageView(QGraphicsView):
             if self._zoom_in_blocked():
                 event.accept()
                 return True
-            self.zoom_by(1.0 + event.value() * 0.5)
+            pointer = self.viewport().mapFromGlobal(event.globalPosition().toPoint())
+            self.zoom_by(1.0 + event.value() * 0.5, pointer)
             event.accept()
             return True
         if gtype == Qt.NativeGestureType.SmartZoomNativeGesture:
@@ -2336,8 +2382,8 @@ class GpuImageView(QGraphicsView):
             if self._zoom_in_blocked():
                 event.accept()
                 return
-            # Control + Scroll: Zoom smoothly
-            self.zoom_by(1.25 if delta > 0 else 0.8)
+            # Control + Scroll: zoom about the pointer
+            self.zoom_by(1.25 if delta > 0 else 0.8, event.position().toPoint())
             event.accept()
             return
 
