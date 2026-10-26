@@ -128,24 +128,6 @@ class SessionMixin:
                     self_inner.start_view = start_view
                     self_inner.signals = signals
 
-                def _scan_top_level_only(self_inner, path):
-                    """List image files in path only; do not descend into subfolders."""
-                    with os.scandir(path) as it:
-                        for entry in it:
-                            if entry.name.startswith('.'):
-                                continue
-                            try:
-                                if not entry.is_file(follow_symlinks=False):
-                                    continue
-                                ext = os.path.splitext(entry.name)[1].lower()
-                                if ext not in self_inner.extensions:
-                                    continue
-                                stat = entry.stat()
-                                if stat.st_size > 0:
-                                    yield entry.path, stat
-                            except (OSError, PermissionError):
-                                continue
-
                 def run(self_inner):
                     import time
                     from datetime import datetime
@@ -411,11 +393,10 @@ class SessionMixin:
                     return False
                 
                 # Try to list files in the folder
-                # Lazy import natsort to avoid import delays
-                from natsort import natsorted
+                # listdir doubles as the accessibility probe: a vanished drive
+                # raises and clears the session below.
                 try:
-                    files = [f for f in natsorted(os.listdir(folder))
-                             if os.path.splitext(f)[1].lower() in self.get_supported_extensions()]
+                    os.listdir(folder)
                 except (PermissionError, OSError) as e:
                     # Handle cases where drive/folder is not accessible (e.g., disconnected network drive, USB drive)
                     logger.warning(f"[SESSION] Cannot access last session folder '{folder}': {e}")
@@ -423,8 +404,15 @@ class SessionMixin:
                     settings.remove("last_session_folder")
                     settings.remove("last_session_file")
                     return False
-                
-                if file in files:
+
+                # Member set from the shared scanner: parent-fallback scopes
+                # (card layouts) store the last file one level down.
+                file_names = {
+                    os.path.normcase(os.path.basename(p))
+                    for p, _ in self._scan_folder_image_paths(folder)
+                }
+
+                if os.path.normcase(file) in file_names:
                     try:
                         # Restore view mode before loading folder
                         # If last view mode was 'gallery', open in 'single' mode instead
