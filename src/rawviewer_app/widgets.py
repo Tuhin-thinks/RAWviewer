@@ -1218,6 +1218,20 @@ class BatchExportDialog(CustomConfirmDialog):
         """)
         body_layout.addWidget(self.reveal_check)
 
+        self.ai_denoise_check = QCheckBox("Apply AI denoise (uses each photo's AI Amount; slower)")
+        self.ai_denoise_check.setStyleSheet(f"""
+            QCheckBox {{ color: {theme.INK_MUTED}; font-size: 13px; spacing: 8px; }}
+            QCheckBox::indicator {{
+                width: 13px; height: 13px; border-radius: 4px;
+                border: 1px solid {theme.INK_MUTED}; background: transparent;
+            }}
+            QCheckBox::indicator:hover {{ border-color: {theme.INK}; }}
+            QCheckBox::indicator:checked {{ border: 1px solid {theme.EMBER}; background: {theme.EMBER}; }}
+        """)
+        self.ai_denoise_check.hide()  # only meaningful for "Export edited copies"
+        self.ai_denoise_check.toggled.connect(lambda *_: self._show_error(None))
+        body_layout.addWidget(self.ai_denoise_check)
+
         self.error_label = QLabel("")
         self.error_label.setWordWrap(True)
         self.error_label.setStyleSheet("QLabel { color: #FF8A80; font-size: 13px; }")
@@ -1234,17 +1248,25 @@ class BatchExportDialog(CustomConfirmDialog):
         # Restore previously remembered choices.
         try:
             settings = parent.get_settings() if parent is not None else None
-            if settings is not None:
-                mode = (settings.value("batch_export_mode", "copy") or "copy").strip()
-                fmt = (settings.value("batch_export_format", "jpeg") or "jpeg").strip()
-                start = settings.value("last_batch_export_dir", "") or ""
-                self.reveal_check.setChecked(
-                    settings.value("batch_export_reveal", "0") in ("1", True, "true")
-                )
-            else:
-                mode, fmt, start = "copy", "jpeg", ""
         except Exception:
-            mode, fmt, start = "copy", "jpeg", ""
+            settings = None
+        if settings is not None:
+            mode = (settings.value("batch_export_mode", "copy") or "copy").strip()
+            fmt = (settings.value("batch_export_format", "jpeg") or "jpeg").strip()
+            start = settings.value("last_batch_export_dir", "") or ""
+            ai = settings.value("batch_export_ai_denoise", "0") in ("1", True, "true")
+            self.reveal_check.setChecked(
+                settings.value("batch_export_reveal", "0") in ("1", True, "true")
+            )
+        else:
+            mode, fmt, start, ai = "copy", "jpeg", "", False
+        ai_ready = self._ai_denoise_available()
+        self.ai_denoise_check.setEnabled(ai_ready)
+        if not ai_ready:
+            self.ai_denoise_check.setToolTip(
+                "AI denoise is not available: the AI model is not installed."
+            )
+        self.ai_denoise_check.setChecked(bool(ai and ai_ready))
         start_dir = start_dir or start
         if start_dir and os.path.isdir(start_dir):
             self.destination_edit.setText(start_dir)
@@ -1259,10 +1281,24 @@ class BatchExportDialog(CustomConfirmDialog):
         # explicitly (also sizes the dialog for the real body content).
         self._sync_mode_ui()
 
+    @staticmethod
+    def _ai_denoise_available() -> bool:
+        """AI denoise needs both the feature flag and the installed model file."""
+        try:
+            from rawviewer_profile import ai_export_enabled
+            from onnx_scunet import scunet_model_path
+
+            return bool(ai_export_enabled() and os.path.exists(scunet_model_path()))
+        except Exception:
+            return False
+
     def _sync_mode_ui(self, *_args) -> None:
         edited = self.mode_edited_btn.isChecked()
         for btn in (self.format_jpeg_btn, self.format_tiff_btn, self.format_webp_btn):
             btn.setEnabled(edited)
+        self.ai_denoise_check.setVisible(edited)
+        if not edited:
+            self.ai_denoise_check.setChecked(False)
         self._show_error(None)
 
     def _on_choose_clicked(self) -> None:
@@ -1315,6 +1351,7 @@ class BatchExportDialog(CustomConfirmDialog):
             ),
             "destination": os.path.normpath(self.destination_edit.text().strip()),
             "reveal": self.reveal_check.isChecked(),
+            "ai_denoise": self.mode_edited_btn.isChecked() and self.ai_denoise_check.isChecked(),
         }
         self.result_value = True
         super().accept()

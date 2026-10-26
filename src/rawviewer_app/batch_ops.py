@@ -310,6 +310,7 @@ class BatchExportWorker(QRunnable):
         signals: BatchFileOpSignals | None = None,
         cancel_event: threading.Event | None = None,
         name_suffix: str = "_edited",
+        use_ai_denoise: bool = False,
     ):
         super().__init__()
         self.paths = list(paths)
@@ -319,6 +320,7 @@ class BatchExportWorker(QRunnable):
         self.signals = signals or BatchFileOpSignals()
         self.cancel_event = cancel_event or threading.Event()
         self.name_suffix = name_suffix
+        self.use_ai_denoise = bool(use_ai_denoise)
         self.done_event = threading.Event()
 
     _EXT_BY_FORMAT = {
@@ -365,6 +367,7 @@ class BatchExportWorker(QRunnable):
                     self.export_format,
                     self.process_pool,
                     cancel_event=self.cancel_event,
+                    use_ai_denoise=self.use_ai_denoise,
                 )
                 if err is None:
                     ok += 1
