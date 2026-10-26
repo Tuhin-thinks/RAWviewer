@@ -1,7 +1,11 @@
 import os
 from PyQt6.QtWidgets import QLabel, QApplication, QSlider
-from PyQt6.QtCore import pyqtSignal, Qt, QObject, QPoint, QUrl, QMimeData, QPointF
-from PyQt6.QtGui import QPixmap, QDrag, QPainter, QColor, QPolygonF
+from PyQt6.QtCore import (
+    pyqtSignal, Qt, QObject, QPoint, QUrl, QMimeData, QPointF, QRect,
+)
+from PyQt6.QtGui import (
+    QPixmap, QDrag, QPainter, QColor, QPolygonF, QPen,
+)
 
 import theme
 
@@ -30,14 +34,15 @@ class ThumbnailLabel(QLabel):
     clicked = pyqtSignal(str, object)  # file_path, QMouseEvent
 
     _STYLE_DEFAULT = "ThumbnailLabel { background: transparent; }"
-    _STYLE_SELECTED = (
-        f"ThumbnailLabel {{ background: transparent; border: 3px solid {theme.EMBER}; }}"
-    )
+    _CHECK_MARGIN = 6
+    _CHECK_SIZE = 20
 
     def __init__(self, parent=None, pixmap=None):
         super().__init__(parent)
         self.original_pixmap = None
         self._gallery_selected = False
+        self._check_hover = False
+        self.setMouseTracking(True)  # hover updates for the selection ring
         self._gallery_edited = False
         self._gallery_rating = 0
         self._burst_stack_count = 0
@@ -60,18 +65,6 @@ class ThumbnailLabel(QLabel):
             event.accept()
         else:
             super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if not (event.buttons() & Qt.MouseButton.LeftButton) or not self.file_path:
-            super().mouseMoveEvent(event)
-            return
-
-        if self._drag_start_pos is not None and not self._drag_started:
-            dist = (event.position().toPoint() - self._drag_start_pos).manhattanLength()
-            if dist >= QApplication.startDragDistance():
-                self._drag_started = True
-                self._start_drag()
-        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -132,19 +125,96 @@ class ThumbnailLabel(QLabel):
         """Get the original pixmap"""
         return self.original_pixmap
 
+    def selection_check_rect(self) -> QRect:
+        """Top-left circle where the selection check is drawn / clicked."""
+        return QRect(
+            self._CHECK_MARGIN, self._CHECK_MARGIN, self._CHECK_SIZE, self._CHECK_SIZE
+        )
+
+    def hits_selection_check(self, pos) -> bool:
+        """True when *pos* (local QPoint) is over the selection check circle."""
+        rect = self.selection_check_rect()
+        cx = rect.center()
+        dx = pos.x() - cx.x()
+        dy = pos.y() - cx.y()
+        # Slightly larger hit target than the drawn circle (fingers/tracks).
+        radius = rect.width() / 2 + 4
+        return dx * dx + dy * dy <= radius * radius
+
     def set_gallery_selected(self, selected: bool) -> None:
         selected = bool(selected)
-        # setStyleSheet forces a full style re-polish/repaint -- one of the
-        # more expensive Qt calls. refresh_gallery_selection_visuals() used
-        # to call this unconditionally on every visible tile per click, so
-        # a single shift/ctrl-click on a dense gallery view repainted tiles
-        # whose selection state hadn't even changed. Skip the no-op case.
+        # Painted selection (paintEvent) instead of setStyleSheet: a style
+        # re-polish per tile was one of the most expensive calls on the
+        # selection path; a bool + repaint only touches visible tiles.
         if selected == self._gallery_selected:
             return
         self._gallery_selected = selected
-        self.setStyleSheet(
-            self._STYLE_SELECTED if self._gallery_selected else self._STYLE_DEFAULT
-        )
+        self.update()
+
+    def _set_check_hover(self, hovered: bool) -> None:
+        if hovered != self._check_hover:
+            self._check_hover = hovered
+            self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        rect = self.selection_check_rect()
+        x, y, s = rect.x(), rect.y(), rect.width()
+        if self._gallery_selected:
+            # Translucent backing keeps the filled circle readable over
+            # bright thumbnails.
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(0, 0, 0, 110))
+            painter.drawEllipse(rect)
+            painter.setBrush(QColor(theme.EMBER))
+            painter.drawEllipse(rect.adjusted(1, 1, -1, -1))
+            painter.setPen(QPen(QColor("#ffffff"), 2.2))
+            painter.drawPolyline(
+                QPolygonF(
+                    [
+                        QPointF(x + s * 0.28, y + s * 0.54),
+                        QPointF(x + s * 0.45, y + s * 0.71),
+                        QPointF(x + s * 0.74, y + s * 0.32),
+                    ]
+                )
+            )
+        else:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(0, 0, 0, 90))
+            painter.drawEllipse(rect)
+            ring = QColor(theme.INK if self._check_hover else theme.INK_FAINT)
+            painter.setPen(QPen(ring, 1.6))
+            painter.setBrush(QColor(0, 0, 0, 0))
+            painter.drawEllipse(rect.adjusted(1, 1, -1, -1))
+
+    def mouseMoveEvent(self, event):
+        try:
+            self._set_check_hover(self.hits_selection_check(event.position().toPoint()))
+        except Exception:
+            pass
+        if not (event.buttons() & Qt.MouseButton.LeftButton) or not self.file_path:
+            super().mouseMoveEvent(event)
+            return
+
+        if self._drag_start_pos is not None and not self._drag_started:
+            dist = (event.position().toPoint() - self._drag_start_pos).manhattanLength()
+            if dist >= QApplication.startDragDistance():
+                self._drag_started = True
+                self._start_drag()
+        super().mouseMoveEvent(event)
+
+    def enterEvent(self, event):
+        try:
+            self._set_check_hover(self.hits_selection_check(event.position().toPoint()))
+        except Exception:
+            pass
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._set_check_hover(False)
+        super().leaveEvent(event)
 
     def set_gallery_edited(self, edited: bool) -> None:
         self._gallery_edited = bool(edited)
@@ -228,7 +298,9 @@ class ThumbnailLabel(QLabel):
             return
         badge.adjustSize()
         margin = 4
-        badge.move(max(0, margin), max(0, margin))
+        # Sit beside the selection check circle (top-left) instead of under it.
+        x = self._CHECK_MARGIN + self._CHECK_SIZE + 4
+        badge.move(max(0, x), max(0, margin))
         badge.raise_()
 
     def _update_edited_badge(self) -> None:
