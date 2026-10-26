@@ -17128,7 +17128,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return
         self._stop_slideshow()
 
-        from rawviewer_app.widgets import BatchExportDialog
+        from rawviewer_app.widgets import BatchExportDialog, _norm_dir_key
 
         source_dir_keys = {
             _norm_dir_key(os.path.dirname(os.path.abspath(p))) for p in paths
