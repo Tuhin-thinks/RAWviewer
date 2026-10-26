@@ -2329,6 +2329,9 @@ class _AdjustExportWorker(QRunnable):
         import threading as _threading
 
         self.cancel_event = _threading.Event()
+        # Set in run()'s finally so the UI can tell the worker is done without
+        # depending on the queued `finished` signal being delivered.
+        self.done_event = _threading.Event()
 
     def run(self) -> None:
         from batch_ops import export_one_file
@@ -2339,16 +2342,22 @@ class _AdjustExportWorker(QRunnable):
             except Exception:
                 pass
 
-        err, xmp_warning = export_one_file(
-            self.file_path,
-            self.output_path,
-            self.adj,
-            self.export_format,
-            self.process_pool,
-            cancel_event=self.cancel_event,
-            progress_cb=emit_progress,
-            use_ai_denoise=self.use_ai_denoise,
-        )
+        err, xmp_warning = None, None
+        try:
+            err, xmp_warning = export_one_file(
+                self.file_path,
+                self.output_path,
+                self.adj,
+                self.export_format,
+                self.process_pool,
+                cancel_event=self.cancel_event,
+                progress_cb=emit_progress,
+                use_ai_denoise=self.use_ai_denoise,
+            )
+        except Exception as exc:  # never lose the completion signal
+            err = exc
+        finally:
+            self.done_event.set()
         self.signals.finished.emit(
             self.file_path, self.output_path, self.export_format, err, xmp_warning
         )
@@ -17109,9 +17118,40 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     # ------------------------- batch operations ------------------------------
 
     def _any_batch_op_in_progress(self) -> bool:
+        self._clear_finished_worker_flags()
         return bool(getattr(self, "_batch_op_in_progress", False)) or bool(
             getattr(self, "_adjust_export_in_progress", False)
         )
+
+    def _clear_finished_worker_flags(self) -> None:
+        """Un-wedge the export gates when a worker finished unobserved.
+
+        Both gates used to be cleared only by the worker's queued Qt
+        ``finished`` signal. If that emission was ever lost (worker raised
+        before emitting, or its per-op signal object died with the runnable
+        the thread pool owns), the flag stayed True forever and every later
+        Export click returned early -- the pre-export dialog then silently
+        never appeared again. Workers now set a plain threading.Event in a
+        ``finally``; the UI thread can read that without waiting on signal
+        delivery, so a stale gate heals on the next click.
+        """
+        batch_worker = getattr(self, "_batch_op_worker", None)
+        if (
+            batch_worker is not None
+            and getattr(batch_worker, "done_event", None) is not None
+            and batch_worker.done_event.is_set()
+        ):
+            self._batch_op_worker = None
+            self._batch_op_in_progress = False
+            self._close_batch_progress_dialog()
+        export_worker = getattr(self, "_adjust_export_worker", None)
+        if (
+            export_worker is not None
+            and getattr(export_worker, "done_event", None) is not None
+            and export_worker.done_event.is_set()
+        ):
+            self._adjust_export_worker = None
+            self._adjust_export_in_progress = False
 
     def _batch_export_selected(self) -> None:
         """Top-bar Export…: pre-export dialog, then a serial off-thread batch run."""
@@ -17181,7 +17221,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         )
         from rawviewer_app.widgets import TaskProgressDialog
 
-        self._batch_op_in_progress = True
+        self._batch_op_worker = None
         signals = BatchFileOpSignals()
         signals.progress.connect(self._on_batch_op_progress)
         signals.finished.connect(
@@ -17202,18 +17242,29 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 "discard": "Moving to Discard",
             }.get(kind, "Batch Operation")
 
-        dlg = TaskProgressDialog(self, title=title)
-        dlg.canceled.connect(worker.cancel_event.set)
-        self._batch_op_in_progress_dialog: Optional[TaskProgressDialog] = dlg
+        self._batch_op_in_progress = True
+        try:
+            dlg = TaskProgressDialog(self, title=title)
+            dlg.canceled.connect(worker.cancel_event.set)
+            self._batch_op_in_progress_dialog: Optional[TaskProgressDialog] = dlg
 
-        def _show_dialog_if_current(d=dlg) -> None:
-            # Skip the flash for fast batches (mirror of the single-export dialog).
-            current = self._batch_op_in_progress_dialog
-            if current is not None and current is d:
-                current.show()
+            def _show_dialog_if_current(d=dlg) -> None:
+                # Skip the flash for fast batches (mirror of the single-export dialog).
+                current = self._batch_op_in_progress_dialog
+                if current is not None and current is d:
+                    current.show()
 
-        QTimer.singleShot(300, _show_dialog_if_current)
-        _get_bg_thread_pool().start(worker)
+            QTimer.singleShot(300, _show_dialog_if_current)
+            # Hold a reference so the worker (and its signals object) cannot be
+            # collected mid-run, and so the gate can check done_event.
+            self._batch_op_worker = worker
+            _get_bg_thread_pool().start(worker)
+        except Exception:
+            # A launcher failure must never leave the Export gate latched.
+            self._batch_op_in_progress = False
+            self._batch_op_worker = None
+            self._close_batch_progress_dialog()
+            raise
 
     def _on_batch_op_progress(self, done: int, total: int, basename: str) -> None:
         dlg = getattr(self, "_batch_op_in_progress_dialog", None)
@@ -17250,6 +17301,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         reveal: bool,
     ) -> None:
         self._batch_op_in_progress = False
+        self._batch_op_worker = None
         self._close_batch_progress_dialog()
         verb = {
             "copy": "Copied", "trash": "Deleted", "discard": "Discarded",
@@ -25248,6 +25300,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             use_ai_denoise=bool(use_ai_denoise),
         )
         logger.info("[EXPORT] Handing off to background worker (format=%s)", raw_fmt)
+        self._adjust_export_worker = worker
         # Modal progress dialog: freezes app interaction for the duration
         # (window-modal), offers Cancel (polled between export stages and
         # between AI-denoise tiles, so it lands within ~2s), and is dismissed
@@ -25305,6 +25358,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             err,
         )
         self._adjust_export_in_progress = False
+        self._adjust_export_worker = None
         dlg = getattr(self, "_adjust_export_dialog", None)
         if dlg is not None:
             self._adjust_export_dialog = None

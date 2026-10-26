@@ -105,6 +105,9 @@ class BatchFileOpWorker(QRunnable):
         self.signals = signals or BatchFileOpSignals()
         self.mode = mode
         self.cancel_event = cancel_event or threading.Event()
+        # Completion flag readable from the UI thread; set in run()'s finally
+        # so a lost `finished` signal can never wedge the caller's gate.
+        self.done_event = threading.Event()
 
     def run(self) -> None:
         from send2trash import send2trash
@@ -112,34 +115,43 @@ class BatchFileOpWorker(QRunnable):
         total = len(self.paths)
         ok = 0
         failed = 0
+        want_cancel = False
         detail: List[Tuple[str, Optional[str], Optional[str]]] = []
         reserved: set = set()
-        for i, src in enumerate(self.paths):
-            if self.cancel_event.is_set():
-                break
-            name = os.path.basename(src)
-            try:
-                self.signals.progress.emit(i, total, name)
-                if self.mode == "copy":
-                    dest = copy_one_file(src, self.dest_dir, reserved)
-                    detail.append((src, None, dest))
-                elif self.mode == "trash":
-                    send2trash(os.path.normpath(src))
-                    detail.append((src, None, None))
-                elif self.mode == "discard":
-                    dest = discard_one_file(src)
-                    detail.append((src, None, dest))
-                else:  # pragma: no cover - programming error
-                    raise ValueError(f"unknown mode {self.mode!r}")
-                ok += 1
-            except Exception as exc:  # keep going; per-file failure only
-                failed += 1
-                logger.error("[BATCH] %s failed on %s: %s", self.mode, src, exc)
-                detail.append((src, str(exc) or repr(exc), None))
-            # note: progress of the *next* item is emitted at loop start
-            self.signals.progress.emit(i + 1, total, name)
-        want_cancel = self.cancel_event.is_set()
-        self.signals.finished.emit(ok, failed, want_cancel, list(detail))
+        try:
+            for i, src in enumerate(self.paths):
+                if self.cancel_event.is_set():
+                    break
+                name = os.path.basename(src)
+                try:
+                    self.signals.progress.emit(i, total, name)
+                    if self.mode == "copy":
+                        dest = copy_one_file(src, self.dest_dir, reserved)
+                        detail.append((src, None, dest))
+                    elif self.mode == "trash":
+                        send2trash(os.path.normpath(src))
+                        detail.append((src, None, None))
+                    elif self.mode == "discard":
+                        dest = discard_one_file(src)
+                        detail.append((src, None, dest))
+                    else:  # pragma: no cover - programming error
+                        raise ValueError(f"unknown mode {self.mode!r}")
+                    ok += 1
+                except Exception as exc:  # keep going; per-file failure only
+                    failed += 1
+                    logger.error("[BATCH] %s failed on %s: %s", self.mode, src, exc)
+                    detail.append((src, str(exc) or repr(exc), None))
+                # note: progress of the *next* item is emitted at loop start
+                self.signals.progress.emit(i + 1, total, name)
+            want_cancel = self.cancel_event.is_set()
+        except Exception as exc:  # worker-level failure (e.g. progress emit)
+            logger.error("[BATCH] %s worker crashed: %s", self.mode, exc, exc_info=True)
+            failed += 1
+            want_cancel = True
+            detail.append(("", f"worker crashed: {exc}", None))
+        finally:
+            self.done_event.set()
+            self.signals.finished.emit(ok, failed, want_cancel, list(detail))
 
 
 def export_one_file(
@@ -307,6 +319,7 @@ class BatchExportWorker(QRunnable):
         self.signals = signals or BatchFileOpSignals()
         self.cancel_event = cancel_event or threading.Event()
         self.name_suffix = name_suffix
+        self.done_event = threading.Event()
 
     _EXT_BY_FORMAT = {
         "tiff16": ".tif",
@@ -320,45 +333,54 @@ class BatchExportWorker(QRunnable):
         total = len(self.paths)
         ok = 0
         failed = 0
+        want_cancel = False
         detail: List[Tuple[str, Optional[str], Optional[str]]] = []
         reserved: set = set()
-        for i, src in enumerate(self.paths):
-            if self.cancel_event.is_set():
-                break
-            name = os.path.basename(src)
-            self.signals.progress.emit(i, total, name)
-            base, _ = os.path.splitext(name)
-            ext = self._EXT_BY_FORMAT.get(
-                (self.export_format or "").strip().lower(), ".jpg"
-            )
-            output_path = unique_destination(
-                self.dest_dir, f"{base}{self.name_suffix}{ext}", reserved
-            )
-            adj = {}
-            try:
-                adj = dict(load_adjustments_for_file(src) or {})
-            except Exception as adj_exc:
-                logger.warning(
-                    "[BATCH] Adjustments load failed for %s (defaults): %s",
-                    name,
-                    adj_exc,
+        try:
+            for i, src in enumerate(self.paths):
+                if self.cancel_event.is_set():
+                    break
+                name = os.path.basename(src)
+                self.signals.progress.emit(i, total, name)
+                base, _ = os.path.splitext(name)
+                ext = self._EXT_BY_FORMAT.get(
+                    (self.export_format or "").strip().lower(), ".jpg"
                 )
-            err, _xmp_warning = export_one_file(
-                src,
-                output_path,
-                adj,
-                self.export_format,
-                self.process_pool,
-                cancel_event=self.cancel_event,
-            )
-            if err is None:
-                ok += 1
-                detail.append((src, None, output_path))
-            else:
-                failed += 1
-                detail.append(
-                    (src, type(err).__name__ + ": " + (str(err) or repr(err)), None)
+                output_path = unique_destination(
+                    self.dest_dir, f"{base}{self.name_suffix}{ext}", reserved
                 )
-            self.signals.progress.emit(i + 1, total, name)
-        want_cancel = self.cancel_event.is_set()
-        self.signals.finished.emit(ok, failed, want_cancel, list(detail))
+                adj = {}
+                try:
+                    adj = dict(load_adjustments_for_file(src) or {})
+                except Exception as adj_exc:
+                    logger.warning(
+                        "[BATCH] Adjustments load failed for %s (defaults): %s",
+                        name,
+                        adj_exc,
+                    )
+                err, _xmp_warning = export_one_file(
+                    src,
+                    output_path,
+                    adj,
+                    self.export_format,
+                    self.process_pool,
+                    cancel_event=self.cancel_event,
+                )
+                if err is None:
+                    ok += 1
+                    detail.append((src, None, output_path))
+                else:
+                    failed += 1
+                    detail.append(
+                        (src, type(err).__name__ + ": " + (str(err) or repr(err)), None)
+                    )
+                self.signals.progress.emit(i + 1, total, name)
+            want_cancel = self.cancel_event.is_set()
+        except Exception as exc:  # worker-level failure (never lose completion)
+            logger.error("[BATCH] export worker crashed: %s", exc, exc_info=True)
+            failed += 1
+            want_cancel = True
+            detail.append(("", f"worker crashed: {exc}", None))
+        finally:
+            self.done_event.set()
+            self.signals.finished.emit(ok, failed, want_cancel, list(detail))
