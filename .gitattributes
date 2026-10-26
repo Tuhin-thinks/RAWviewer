@@ -6,3 +6,4 @@
 models/nafnet.onnx filter=lfs diff=lfs merge=lfs -text
 models/scunet.onnx filter=lfs diff=lfs merge=lfs -text
 models/realesrgan_x2.onnx filter=lfs diff=lfs merge=lfs -text
+models/rawrefinery_deep_128.onnx filter=lfs diff=lfs merge=lfs -text

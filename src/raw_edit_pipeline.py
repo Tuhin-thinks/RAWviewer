@@ -251,7 +251,30 @@ def process_linear_edit_buffer(
     )
 
 
-def _process_linear_edit_tail(
+def run_edit_pipeline(
+    rgb_image: np.ndarray,
+    adj: dict[str, float],
+    *,
+    target: str,
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
+) -> np.ndarray:
+    """Single entry for preview and export. ``target`` labels the caller only;
+    the stage list and arithmetic are identical for both."""
+    if target not in ("preview", "export"):
+        raise ValueError(f"unknown pipeline target: {target!r}")
+    return process_linear_edit_buffer(
+        rgb_image,
+        adj,
+        preview=False,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
+
+
+def _process_linear_edit_pre_ai(
     img: np.ndarray,
     merged: dict[str, float],
     *,
@@ -263,7 +286,7 @@ def _process_linear_edit_tail(
     row_offset: int = 0,
     full_height: int | None = None,
 ) -> np.ndarray:
-    """WB -> exposure -> dodge/burn -> denoise -> PV2012 tone on a (possibly banded) buffer."""
+    """WB -> exposure -> dodge/burn -> spot heal -> legacy chroma NR (non-AI only). Row-local, safe to band."""
     img = _apply_wb_tint(img, merged)
 
     exp_val = float(merged.get("Exposure2012", 0.0))
@@ -291,9 +314,76 @@ def _process_linear_edit_tail(
             img, heal_mask, row_offset=row_offset, full_height=full_height
         )
 
+    if not use_ai_denoise:
+        img = _apply_legacy_chroma_denoise(
+            img, merged, chroma_denoise=chroma_denoise, preview=preview
+        )
+    return img
+
+
+def _apply_legacy_chroma_denoise(
+    img: np.ndarray,
+    merged: dict[str, float],
+    *,
+    chroma_denoise: Optional[bool],
+    preview: bool,
+) -> np.ndarray:
     do_denoise = chroma_denoise if chroma_denoise is not None else chroma_denoise_enabled()
     nr_amount = float(merged.get("ColorNoiseReduction", 0.0))
     method = int(float(merged.get("DenoiseMethod", 0.0)))
+    if nr_amount > 1e-4:
+        return apply_chroma_denoise(
+            img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview
+        )
+    if do_denoise and not preview:
+        return apply_chroma_denoise(img, method=method, preview=False)
+    return img
+
+
+def ai_backend_name() -> str:
+    """Active AI denoise backend: "rawrefinery" (default) or "scunet" (dormant fallback)."""
+    name = os.environ.get("RAWVIEWER_AI_BACKEND", "rawrefinery").strip().lower()
+    return "scunet" if name == "scunet" else "rawrefinery"
+
+
+def _rawrefinery_available() -> bool:
+    from rawrefinery_denoise import model_available
+
+    return model_available()
+
+
+def ai_denoise_model_present() -> bool:
+    """True when the active AI denoise backend has its model file on disk."""
+    if ai_backend_name() == "rawrefinery":
+        return _rawrefinery_available()
+    from onnx_scunet import scunet_model_path
+
+    path = scunet_model_path()
+    return bool(path) and os.path.exists(path)
+
+
+def _apply_ai_denoise_stage(
+    img: np.ndarray,
+    merged: dict[str, float],
+    *,
+    use_ai_denoise: bool,
+    preview: bool,
+    cancel_check=None,
+    progress_cb=None,
+) -> np.ndarray:
+    """AI barrier: runs on the whole image, never on bands."""
+    if use_ai_denoise and ai_backend_name() == "rawrefinery" and _rawrefinery_available():
+        from rawrefinery_denoise import denoise as rawrefinery_denoise
+
+        ai_amount = max(0.0, min(1.0, float(merged.get("AIDenoiseAmount", 100.0)) / 100.0))
+        if ai_amount <= 1e-4:
+            return img
+        return rawrefinery_denoise(
+            img,
+            strength=ai_amount,
+            cancel_check=cancel_check,
+            progress_callback=progress_cb,
+        )
 
     use_scunet = False
     model_path = ""
@@ -330,10 +420,8 @@ def _process_linear_edit_tail(
         # The AI Denoise export submenu is explicit user intent: run the model
         # unconditionally. (Previously gated on nr_amount/do_denoise, which
         # silently exported a non-denoised file when the NR sliders were 0.)
-        # Default: half-res denoise + edge-weighted detail restore (~5x faster,
-        # measured to match full-res on noise/detail metrics). Set
-        # RAWVIEWER_AI_DENOISE_FULLRES=1 to force full-resolution inference.
-        downscale = 1 if os.environ.get("RAWVIEWER_AI_DENOISE_FULLRES", "0") == "1" else 2
+        # Full resolution for preview and export alike (no half-res default).
+        downscale = 1
         detail_gain = float(merged.get("DenoiseDetail", 50.0)) / 100.0
         ai_amount = float(merged.get("AIDenoiseAmount", 100.0)) / 100.0
         ai_amount = max(0.0, min(1.0, ai_amount))
@@ -363,22 +451,22 @@ def _process_linear_edit_tail(
             logger.info(
                 "[DENOISE] AI denoise amount is 0%% -- exporting without AI denoise"
             )
+    return img
 
-        # Legacy luma NR still applies on top if the user set it explicitly.
-        luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
-        if luma_nr_amount > 1e-4:
-            img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
-    else:
-        if nr_amount > 1e-4:
-            img = apply_chroma_denoise(
-                img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview
-            )
-        elif do_denoise and not preview:
-            img = apply_chroma_denoise(img, method=method, preview=False)
 
-        luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
-        if luma_nr_amount > 1e-4:
-            img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
+def _process_linear_edit_post_ai(
+    img: np.ndarray,
+    merged: dict[str, float],
+    *,
+    preview: bool,
+    row_offset: int = 0,
+    full_height: int | None = None,
+) -> np.ndarray:
+    """Luma NR -> PV2012 tone on a (possibly banded) buffer. Row-local except luma filter pad."""
+    method = int(float(merged.get("DenoiseMethod", 0.0)))
+    luma_nr_amount = float(merged.get("LuminanceNoiseReduction", 0.0))
+    if luma_nr_amount > 1e-4:
+        img = apply_luma_denoise(img, strength=luma_nr_amount / 100.0, method=method, preview=preview)
 
     if not uses_recovery_tone_map(merged):
         img = apply_pv2012_tone_rgb(img, merged)
@@ -396,43 +484,93 @@ def _process_linear_edit_buffer_banded(
     cancel_check=None,
     progress_cb=None,
 ) -> np.ndarray:
-    """Row-band parallel version of process_linear_edit_buffer's WB/exposure/denoise/tone tail."""
-    if use_ai_denoise:
-        # AI (SCUNet) denoise is not row-independent and one ONNX session per
-        # band would multiply memory by n_workers -- run the tail single-pass.
-        # (Previously the flag was silently DROPPED here, so AI-denoise
-        # exports through the banded full-res path never denoised at all.)
-        return _process_linear_edit_tail(
-            img, merged, preview=preview, chroma_denoise=chroma_denoise,
-            use_ai_denoise=use_ai_denoise,
-            cancel_check=cancel_check, progress_cb=progress_cb,
-        )
+    """Row-band parallel pipeline: banded pre-AI, whole-image AI barrier, banded post-AI."""
     from raw_adjustments import band_ranges, banded_executor
 
     # 16px overlap pad handles bilateral / guided filter radii (up to r=12) and spot heal
     full_h = int(img.shape[0])
     bands = band_ranges(full_h, n_workers, pad_px=16)
 
-    def _process_band(band):
-        y0, y1, pad_top, pad_bot = band
-        # Copy, not view: _apply_wb_tint multiplies in place, and bands'
-        # 16px pad regions overlap -- on a shared view, overlapping rows get
-        # WB applied twice (and raced on by concurrent bands), and the
-        # denoise/guided stages then read the corrupted pad rows, bleeding
-        # visible seam lines ~10px into each band's kept region.
-        src = img[y0 - pad_top : y1 + pad_bot].copy()
-        out = _process_linear_edit_tail(
-            src,
-            merged,
-            preview=preview,
-            chroma_denoise=chroma_denoise,
-            row_offset=y0 - pad_top,
-            full_height=full_h,
-        )
-        return out[pad_top : pad_top + (y1 - y0)]
+    def _run_banded(stage, buf, **kwargs):
+        def _process_band(band):
+            y0, y1, pad_top, pad_bot = band
+            # Copy, not view: _apply_wb_tint multiplies in place, and bands'
+            # 16px pad regions overlap -- on a shared view, overlapping rows get
+            # WB applied twice (and raced on by concurrent bands).
+            src = buf[y0 - pad_top : y1 + pad_bot].copy()
+            out = stage(
+                src,
+                merged,
+                row_offset=y0 - pad_top,
+                full_height=full_h,
+                **kwargs,
+            )
+            return out[pad_top : pad_top + (y1 - y0)]
 
-    results = list(banded_executor().map(_process_band, bands))
-    return np.concatenate(results, axis=0)
+        return np.concatenate(list(banded_executor().map(_process_band, bands)), axis=0)
+
+    img = _run_banded(
+        _process_linear_edit_pre_ai,
+        img,
+        preview=preview,
+        chroma_denoise=chroma_denoise,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+    )
+    if use_ai_denoise:
+        # AI is not row-independent: one session over the whole image, never per band.
+        img = _apply_ai_denoise_stage(
+            img,
+            merged,
+            use_ai_denoise=True,
+            preview=preview,
+            cancel_check=cancel_check,
+            progress_cb=progress_cb,
+        )
+    return _run_banded(_process_linear_edit_post_ai, img, preview=preview)
+
+
+def _process_linear_edit_tail(
+    img: np.ndarray,
+    merged: dict[str, float],
+    *,
+    preview: bool,
+    chroma_denoise: Optional[bool],
+    use_ai_denoise: bool = False,
+    cancel_check=None,
+    progress_cb=None,
+    row_offset: int = 0,
+    full_height: int | None = None,
+) -> np.ndarray:
+    """Single-pass pipeline: pre-AI -> AI barrier -> post-AI."""
+    img = _process_linear_edit_pre_ai(
+        img,
+        merged,
+        preview=preview,
+        chroma_denoise=chroma_denoise,
+        use_ai_denoise=use_ai_denoise,
+        cancel_check=cancel_check,
+        progress_cb=progress_cb,
+        row_offset=row_offset,
+        full_height=full_height,
+    )
+    if use_ai_denoise:
+        img = _apply_ai_denoise_stage(
+            img,
+            merged,
+            use_ai_denoise=True,
+            preview=preview,
+            cancel_check=cancel_check,
+            progress_cb=progress_cb,
+        )
+    return _process_linear_edit_post_ai(
+        img,
+        merged,
+        preview=preview,
+        row_offset=row_offset,
+        full_height=full_height,
+    )
 
 
 class PreviewStageCache:

@@ -2054,6 +2054,7 @@ class _AdjustMaskLoadWorker(QRunnable):
 
 class _AdjustPreviewSignals(QObject):
     finished = pyqtSignal(int, str, object)  # generation, file_path, ndarray|None
+    ai_progress = pyqtSignal(int, float)  # generation, AI denoise fraction 0..1
 
 
 class _AdjustPreviewWorker(QRunnable):
@@ -2095,14 +2096,19 @@ class _AdjustPreviewWorker(QRunnable):
             t0 = _time.perf_counter()
             dtype_name = str(getattr(self.base_rgb, "dtype", ""))
             if self.ai_denoise and dtype_name in ("uint16", "float32"):
-                from raw_edit_pipeline import (
-                    linear_to_display_uint8, process_linear_edit_buffer,
-                )
+                from raw_edit_pipeline import linear_to_display_uint8, run_edit_pipeline
 
-                linear = process_linear_edit_buffer(
+                gen = self.generation
+
+                def _ai_progress(frac: float) -> None:
+                    self.signals.ai_progress.emit(gen, float(frac))
+
+                linear = run_edit_pipeline(
                     self.base_rgb,
                     self.adj,
+                    target="preview",
                     use_ai_denoise=True,
+                    progress_cb=_ai_progress,
                 )
                 out = linear_to_display_uint8(linear, self.adj)
             elif dtype_name in ("uint16", "float32") and self.stage_cache is not None:
@@ -9001,6 +9007,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._adjust_preview_dirty_full_quality = False
             self._adjust_preview_signals = _AdjustPreviewSignals()
             self._adjust_preview_signals.finished.connect(self._on_adjust_preview_ready)
+            self._adjust_preview_signals.ai_progress.connect(self._on_adjust_ai_progress)
             from raw_edit_pipeline import PreviewStageCache
 
             self._adjust_preview_stage_cache = PreviewStageCache()
@@ -24111,7 +24118,24 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._dodge_burn_stroke_dirty = None
             self._dodge_burn_stroke_perf = None
 
+    def _on_adjust_ai_progress(self, generation: int, frac: float) -> None:
+        if int(generation) != getattr(self, "_ai_preview_gen", None):
+            return
+        panel = getattr(self, "single_image_adjust_panel", None)
+        if panel is not None and hasattr(panel, "set_ai_busy"):
+            panel.set_ai_busy(True, frac)
+
+    def _set_ai_preview_busy(self, busy: bool) -> None:
+        panel = getattr(self, "single_image_adjust_panel", None)
+        if panel is not None and hasattr(panel, "set_ai_busy"):
+            panel.set_ai_busy(busy, 0.0)
+
     def _on_adjust_preview_ready(self, generation: int, file_path: str, array) -> None:
+        # Clear the AI busy state for the AI generation even when it is stale or
+        # errored (array is None): the button must never stay stuck disabled.
+        if getattr(self, "_ai_preview_gen", None) == int(generation):
+            self._ai_preview_gen = None
+            self._set_ai_preview_busy(False)
         self._adjust_preview_busy = False
         dirty_full_quality = bool(getattr(self, "_adjust_preview_dirty_full_quality", False))
         self._adjust_preview_dirty_full_quality = False
@@ -24326,6 +24350,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         submitted[gen] = dict(adj)
         for stale in [g for g in submitted if g < gen - 4]:
             del submitted[stale]
+        if ai_preview:
+            self._ai_preview_gen = gen
+            self._set_ai_preview_busy(True)
         worker = _AdjustPreviewWorker(
             gen,
             path,
@@ -24351,9 +24378,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         except Exception:
             return False
         try:
-            from onnx_scunet import scunet_model_path
+            from raw_edit_pipeline import ai_denoise_model_present
 
-            return bool(scunet_model_path()) and os.path.exists(scunet_model_path())
+            return ai_denoise_model_present()
         except Exception:
             return False
 

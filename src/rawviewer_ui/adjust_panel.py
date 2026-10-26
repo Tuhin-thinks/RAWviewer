@@ -1530,6 +1530,11 @@ class ImageAdjustPanelWidget(QWidget):
             "slider changes show the normal preview again."
         )
         self._ai_preview_btn.clicked.connect(self.ai_preview_requested.emit)
+        self._ai_preview_btn.setStyleSheet(
+            f"QPushButton[aiBusy=\"true\"] {{ background: {theme.EMBER}; color: {theme.VOID}; "
+            f"font-weight: 600; }}"
+        )
+        self._ai_busy = False
         ai_row.addWidget(self._ai_preview_btn)
         ai_widget = QWidget()
         ai_widget.setLayout(ai_row)
@@ -1537,9 +1542,9 @@ class ImageAdjustPanelWidget(QWidget):
         self._ai_denoise_row = ai_widget
         try:
             from rawviewer_profile import ai_export_enabled
-            from onnx_scunet import scunet_model_path
+            from raw_edit_pipeline import ai_denoise_model_present
 
-            ai_ok = bool(ai_export_enabled() and os.path.exists(scunet_model_path()))
+            ai_ok = bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:
             ai_ok = False
         self._ai_denoise_check.setEnabled(ai_ok)
@@ -3364,7 +3369,33 @@ class ImageAdjustPanelWidget(QWidget):
             btn.setChecked(bool(enabled))
 
     def _sync_ai_preview_btn(self) -> None:
+        if self._ai_busy:
+            return
         self._ai_preview_btn.setEnabled(self.ai_denoise_enabled())
+
+    def set_ai_busy(self, busy: bool, progress: float | None = None) -> None:
+        """Show or clear the AI denoise running state on the Preview AI button."""
+        btn = self._ai_preview_btn
+        self._ai_busy = bool(busy)
+        if busy:
+            pct = int(round(max(0.0, min(1.0, progress or 0.0)) * 100))
+            btn.setText(f"Denoising… {pct}%")
+            btn.setToolTip("AI denoise is running at full resolution. The button returns when it finishes.")
+            btn.setEnabled(False)
+        else:
+            btn.setText("Preview AI")
+            btn.setToolTip(
+                "Show the AI denoise result at full quality. Takes a while on large files; "
+                "slider changes show the normal preview again."
+            )
+            self._sync_ai_preview_btn()
+        btn.setProperty("aiBusy", "true" if busy else "false")
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
+        # Export shares the AI model session with this preview: hold it until done.
+        export_btn = getattr(self, "_export_btn", None)
+        if export_btn is not None:
+            export_btn.setEnabled(not busy)
 
     def _on_ai_denoise_toggled(self, checked: bool) -> None:
         self._sync_ai_preview_btn()

@@ -1286,9 +1286,9 @@ class BatchExportDialog(CustomConfirmDialog):
         """AI denoise needs both the feature flag and the installed model file."""
         try:
             from rawviewer_profile import ai_export_enabled
-            from onnx_scunet import scunet_model_path
+            from raw_edit_pipeline import ai_denoise_model_present
 
-            return bool(ai_export_enabled() and os.path.exists(scunet_model_path()))
+            return bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:
             return False
 

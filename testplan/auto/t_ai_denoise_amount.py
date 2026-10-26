@@ -20,6 +20,7 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
+    os.environ["RAWVIEWER_AI_BACKEND"] = "scunet"
     from onnx_scunet import SCUNetONNX
     from raw_adjustments import (
         DEFAULT_ADJUSTMENTS,
