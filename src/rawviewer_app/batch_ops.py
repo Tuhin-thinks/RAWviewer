@@ -195,6 +195,7 @@ def export_one_file(
     cancel_event: threading.Event | None = None,
     progress_cb: Optional[Callable] = None,  # (percent:int, stage:str)
     use_ai_denoise: bool = False,
+    ai_amount: Optional[float] = None,
 ) -> Tuple[Optional[Exception], Optional[Exception]]:
     """Full-res single-file export.
 
@@ -246,6 +247,12 @@ def export_one_file(
         else:
             xmp_path = resolve_xmp_path(file_path)
             embed_xmp = xmp_path if xmp_path and os.path.isfile(xmp_path) else None
+
+        # If the batch export requested a specific AI amount, override each
+        # photo's stored AIDenoiseAmount so the whole batch uses one strength.
+        # Applied after the XMP write so the source sidecar keeps its own value.
+        if ai_amount is not None:
+            adj["AIDenoiseAmount"] = float(ai_amount)
 
         if cancelled.is_set():
             raise ExportCancelled()
@@ -355,6 +362,7 @@ class BatchExportWorker(QRunnable):
         cancel_event: threading.Event | None = None,
         name_suffix: str = "_edited",
         use_ai_denoise: bool = False,
+        ai_amount: Optional[float] = None,
     ):
         super().__init__()
         self.paths = list(paths)
@@ -365,6 +373,7 @@ class BatchExportWorker(QRunnable):
         self.cancel_event = cancel_event or threading.Event()
         self.name_suffix = name_suffix
         self.use_ai_denoise = bool(use_ai_denoise)
+        self.ai_amount = ai_amount
         self.done_event = threading.Event()
 
     _EXT_BY_FORMAT = {
@@ -412,6 +421,7 @@ class BatchExportWorker(QRunnable):
                     self.process_pool,
                     cancel_event=self.cancel_event,
                     use_ai_denoise=self.use_ai_denoise,
+                    ai_amount=self.ai_amount,
                 )
                 if err is None:
                     ok += 1

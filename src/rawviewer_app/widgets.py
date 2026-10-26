@@ -10,7 +10,7 @@ from PyQt6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen, QCursor
 from PyQt6.QtWidgets import (
     QDialog, QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QVBoxLayout, QWidget,
     QMainWindow, QScrollArea, QApplication, QGridLayout, QToolButton, QSizePolicy,
-    QGraphicsOpacityEffect,
+    QGraphicsOpacityEffect, QSlider,
 )
 import theme
 from rawviewer_app.env import safe_print, _env_true
@@ -1218,7 +1218,7 @@ class BatchExportDialog(CustomConfirmDialog):
         """)
         body_layout.addWidget(self.reveal_check)
 
-        self.ai_denoise_check = QCheckBox("Apply AI denoise (uses each photo's AI Amount; slower)")
+        self.ai_denoise_check = QCheckBox("Apply AI denoise (slower)")
         self.ai_denoise_check.setStyleSheet(f"""
             QCheckBox {{ color: {theme.INK_MUTED}; font-size: 13px; spacing: 8px; }}
             QCheckBox::indicator {{
@@ -1229,8 +1229,41 @@ class BatchExportDialog(CustomConfirmDialog):
             QCheckBox::indicator:checked {{ border: 1px solid {theme.EMBER}; background: {theme.EMBER}; }}
         """)
         self.ai_denoise_check.hide()  # only meaningful for "Export edited copies"
-        self.ai_denoise_check.toggled.connect(lambda *_: self._show_error(None))
+        self.ai_denoise_check.toggled.connect(lambda *_: self._sync_ai_denoise_row())
         body_layout.addWidget(self.ai_denoise_check)
+
+        # AI denoise strength slider (0–100). Visible only when the checkbox is
+        # checked; overrides each photo's stored AI Amount for the batch.
+        ai_row = QWidget()
+        ai_row.setStyleSheet("background: transparent;")
+        ai_row_layout = QHBoxLayout(ai_row)
+        ai_row_layout.setContentsMargins(24, 0, 0, 0)
+        ai_row_layout.setSpacing(8)
+        self.ai_amount_label = QLabel("AI Amount: 100%")
+        self.ai_amount_label.setStyleSheet(f"color: {theme.INK_MUTED}; font-size: 13px;")
+        ai_row_layout.addWidget(self.ai_amount_label)
+        self.ai_denoise_slider = QSlider(Qt.Orientation.Horizontal)
+        self.ai_denoise_slider.setRange(0, 100)
+        self.ai_denoise_slider.setValue(100)
+        self.ai_denoise_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                height: 4px; background: {theme.LINE}; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                width: 14px; height: 14px; margin: -5px 0;
+                border-radius: 7px; background: {theme.EMBER};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {theme.EMBER}; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal:disabled {{ background: {theme.INK_FAINT}; }}
+            QSlider::sub-page:horizontal:disabled {{ background: {theme.INK_FAINT}; }}
+        """)
+        self.ai_denoise_slider.valueChanged.connect(self._on_ai_amount_changed)
+        ai_row_layout.addWidget(self.ai_denoise_slider, 1)
+        self.ai_denoise_row = ai_row
+        self.ai_denoise_row.hide()
+        body_layout.addWidget(self.ai_denoise_row)
 
         self.error_label = QLabel("")
         self.error_label.setWordWrap(True)
@@ -1255,11 +1288,16 @@ class BatchExportDialog(CustomConfirmDialog):
             fmt = (settings.value("batch_export_format", "jpeg") or "jpeg").strip()
             start = settings.value("last_batch_export_dir", "") or ""
             ai = settings.value("batch_export_ai_denoise", "0") in ("1", True, "true")
+            ai_amount_raw = settings.value("batch_export_ai_amount", "100")
+            try:
+                ai_amount = max(0, min(100, int(ai_amount_raw)))
+            except (TypeError, ValueError):
+                ai_amount = 100
             self.reveal_check.setChecked(
                 settings.value("batch_export_reveal", "0") in ("1", True, "true")
             )
         else:
-            mode, fmt, start, ai = "copy", "jpeg", "", False
+            mode, fmt, start, ai, ai_amount = "copy", "jpeg", "", False, 100
         ai_ready = self._ai_denoise_available()
         self.ai_denoise_check.setEnabled(ai_ready)
         if not ai_ready:
@@ -1267,6 +1305,8 @@ class BatchExportDialog(CustomConfirmDialog):
                 "AI denoise is not available: the AI model is not installed."
             )
         self.ai_denoise_check.setChecked(bool(ai and ai_ready))
+        self.ai_denoise_slider.setValue(ai_amount)
+        self.ai_amount_label.setText(f"AI Amount: {ai_amount}%")
         start_dir = start_dir or start
         if start_dir and os.path.isdir(start_dir):
             self.destination_edit.setText(start_dir)
@@ -1299,7 +1339,18 @@ class BatchExportDialog(CustomConfirmDialog):
         self.ai_denoise_check.setVisible(edited)
         if not edited:
             self.ai_denoise_check.setChecked(False)
+        self._sync_ai_denoise_row()
         self._show_error(None)
+
+    def _sync_ai_denoise_row(self) -> None:
+        """Show the AI Amount slider only when denoise is enabled."""
+        show = self.ai_denoise_check.isVisible() and self.ai_denoise_check.isChecked()
+        self.ai_denoise_row.setVisible(show)
+        self.ai_denoise_slider.setEnabled(self.ai_denoise_check.isChecked())
+        self._show_error(None)
+
+    def _on_ai_amount_changed(self, value: int) -> None:
+        self.ai_amount_label.setText(f"AI Amount: {value}%")
 
     def _on_choose_clicked(self) -> None:
         pick = getattr(self, "pick_directory", None)
@@ -1352,6 +1403,7 @@ class BatchExportDialog(CustomConfirmDialog):
             "destination": os.path.normpath(self.destination_edit.text().strip()),
             "reveal": self.reveal_check.isChecked(),
             "ai_denoise": self.mode_edited_btn.isChecked() and self.ai_denoise_check.isChecked(),
+            "ai_amount": int(self.ai_denoise_slider.value()),
         }
         self.result_value = True
         super().accept()

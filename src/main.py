@@ -17225,6 +17225,11 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         settings.setValue("last_batch_export_dir", cfg["destination"])
         settings.setValue("batch_export_reveal", "1" if cfg["reveal"] else "0")
         settings.setValue("batch_export_ai_denoise", "1" if cfg.get("ai_denoise") else "0")
+        try:
+            ai_amount = max(0, min(100, int(cfg.get("ai_amount", 100))))
+        except (TypeError, ValueError):
+            ai_amount = 100
+        settings.setValue("batch_export_ai_amount", str(ai_amount))
 
         if cfg["mode"] == "copy":
             self._start_batch_op("copy", paths, cfg["destination"], cfg["reveal"])
@@ -17233,6 +17238,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 "edited", paths, cfg["destination"], cfg["reveal"],
                 export_format=cfg["format"],
                 use_ai_denoise=bool(cfg.get("ai_denoise")),
+                ai_amount=ai_amount,
             )
 
     def _start_batch_op(
@@ -17243,6 +17249,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         reveal: bool,
         export_format: str = "",
         use_ai_denoise: bool = False,
+        ai_amount: Optional[float] = None,
     ) -> None:
         """Shared launcher: modal TaskProgressDialog + serial off-thread worker.
 
@@ -17268,6 +17275,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             worker = BatchExportWorker(
                 paths, dest_dir, export_format, pool, signals=signals,
                 use_ai_denoise=use_ai_denoise,
+                ai_amount=ai_amount,
             )
             title = f"Export ({export_format.upper() if export_format else 'Edited'})"
         else:
