@@ -545,6 +545,7 @@ class CustomConfirmDialog(QDialog):
 
         # Optional extra UI (options, inputs) between the text and the buttons;
         # subclasses like BatchExportDialog build their whole body this way.
+        self._body_widget = body_widget
         if body_widget is not None:
             content_layout.addWidget(body_widget)
 
@@ -700,10 +701,17 @@ class CustomConfirmDialog(QDialog):
         holder = getattr(self, "_buttons_layout", None)
         if lay is not None:
             lay.insertWidget(max(0, lay.indexOf(holder)) if holder is not None else 0, body_widget)
+            self._body_widget = body_widget
             self._apply_dialog_size()
 
     def _apply_dialog_size(self) -> None:
-        """Size from text/button metrics — QLabel sizeHint alone is too narrow when wrapped."""
+        """Size from the actual laid-out content.
+
+        QLabel sizeHint alone is too narrow when wrapped, and reading the
+        container hint before its layout ran returned a stale height -- which
+        clipped everything a subclass inserted after construction (the export
+        dialog's radio/format options ended up invisible).
+        """
         margin_h = self._CONTENT_MARGIN_H * 2
         inner_min = self._DIALOG_MIN_WIDTH - margin_h
 
@@ -730,9 +738,24 @@ class CustomConfirmDialog(QDialog):
         if self._info_label is not None:
             self._info_label.setMinimumWidth(inner_w)
             self._info_label.setMaximumWidth(inner_w)
+        body = getattr(self, "_body_widget", None)
+        if body is not None:
+            body.setMinimumWidth(inner_w)
+            body.setMaximumWidth(inner_w)
 
         self.container.setMinimumWidth(dialog_w)
         self.container.setMaximumWidth(dialog_w)
+
+        # Activate every layout before measuring: sizeHint() stays stale until
+        # the layout has actually run (that is what clipped the options body).
+        outer = self.container.layout()
+        content = None
+        if outer is not None and outer.count():
+            content = outer.itemAt(0).widget()
+        if content is not None and content.layout() is not None:
+            content.layout().activate()
+        if outer is not None:
+            outer.activate()
         self.container.adjustSize()
         dialog_h = max(160, self.container.sizeHint().height())
         self.container.setFixedSize(dialog_w, dialog_h)
@@ -740,6 +763,9 @@ class CustomConfirmDialog(QDialog):
 
     def showEvent(self, event):
         super().showEvent(event)
+        # Re-fit after the real font/layout pass; bodies added after
+        # construction must never stay clipped inside a stale fixed size.
+        self._apply_dialog_size()
         _activate_macos_foreground_app()
         self.raise_()
         self.activateWindow()
@@ -1099,9 +1125,22 @@ class BatchExportDialog(CustomConfirmDialog):
         body_layout.setSpacing(8)
 
         _radio_style = f"""
-            QRadioButton {{ color: {theme.INK}; font-size: 14px; background: transparent; }}
-            QRadioButton::indicator {{ width: 16px; height: 16px; }}
+            QRadioButton {{
+                color: {theme.INK}; font-size: 14px; background: transparent;
+                spacing: 8px;
+            }}
+            QRadioButton::indicator {{
+                width: 14px; height: 14px; border-radius: 8px;
+                border: 1px solid {theme.INK_MUTED}; background: transparent;
+            }}
+            QRadioButton::indicator:hover {{ border-color: {theme.INK}; }}
+            QRadioButton::indicator:checked {{
+                border: 1px solid {theme.EMBER}; background: {theme.EMBER};
+            }}
             QRadioButton:disabled {{ color: {theme.INK_FAINT}; }}
+            QRadioButton::indicator:disabled {{
+                border-color: {theme.LINE}; background: transparent;
+            }}
         """
         self.mode_copy_btn = QRadioButton("Copy originals (untouched + XMP sidecars)")
         self.mode_copy_btn.setStyleSheet(_radio_style)
@@ -1149,7 +1188,20 @@ class BatchExportDialog(CustomConfirmDialog):
         body_layout.addLayout(dest_row)
 
         self.reveal_check = QCheckBox("Open destination when finished")
-        self.reveal_check.setStyleSheet(f"QCheckBox {{ color: {theme.INK_MUTED}; font-size: 13px; }}")
+        self.reveal_check.setStyleSheet(f"""
+            QCheckBox {{
+                color: {theme.INK_MUTED}; font-size: 13px;
+                spacing: 8px; background: transparent;
+            }}
+            QCheckBox::indicator {{
+                width: 13px; height: 13px; border-radius: 4px;
+                border: 1px solid {theme.INK_MUTED}; background: transparent;
+            }}
+            QCheckBox::indicator:hover {{ border-color: {theme.INK}; }}
+            QCheckBox::indicator:checked {{
+                border: 1px solid {theme.EMBER}; background: {theme.EMBER};
+            }}
+        """)
         body_layout.addWidget(self.reveal_check)
 
         self.error_label = QLabel("")
@@ -1188,6 +1240,10 @@ class BatchExportDialog(CustomConfirmDialog):
             "tiff16": self.format_tiff_btn,
             "webp": self.format_webp_btn,
         }.get(fmt, self.format_jpeg_btn).setChecked(True)
+        # The restore may set the copy button while it is already checked, so
+        # toggled() never fires and the format row would stay enabled; sync
+        # explicitly (also sizes the dialog for the real body content).
+        self._sync_mode_ui()
 
     def _sync_mode_ui(self, *_args) -> None:
         edited = self.mode_edited_btn.isChecked()
@@ -1205,9 +1261,8 @@ class BatchExportDialog(CustomConfirmDialog):
         if text:
             self.error_label.setText(text)
             self.error_label.show()
-            h = max(120, self.container.sizeHint().height())
-            self.container.setFixedHeight(h)
-            self.setFixedSize(self.container.width(), h)
+            # Re-fit so the inline error is never clipped by the fixed size.
+            self._apply_dialog_size()
         else:
             self.error_label.hide()
 
