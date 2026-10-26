@@ -25126,6 +25126,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
 
         nn_suffix = " + AI denoise" if use_ai_denoise else ""
+        if use_ai_denoise:
+            try:
+                nn_suffix = (
+                    " + AI denoise "
+                    f"{int(round(float(adj.get('AIDenoiseAmount', 100.0))))}%"
+                )
+            except (TypeError, ValueError, AttributeError):
+                pass
         if fmt == EXPORT_FORMAT_JPEG:
             default_name = f"{base}_edited.jpg"
             dialog_title = "Export JPEG" + nn_suffix

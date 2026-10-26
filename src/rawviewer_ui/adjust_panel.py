@@ -1344,7 +1344,7 @@ class ImageAdjustPanelWidget(QWidget):
                 target_sect = self.sect_detail
             elif spec.key in {"LuminanceNoiseReduction"}:
                 target_sect = self.sect_noise
-            elif spec.key == "DenoiseDetail":
+            elif spec.key in {"DenoiseDetail", "AIDenoiseAmount"}:
                 try:
                     from rawviewer_profile import ai_export_enabled
 
@@ -1410,6 +1410,12 @@ class ImageAdjustPanelWidget(QWidget):
                 slider.setToolTip(
                     "Export-only: how much original edge detail to restore after AI denoise.\n"
                     "0 = smoother, 100 = more detail (and more residual noise)."
+                )
+            if spec.key == "AIDenoiseAmount":
+                slider.setToolTip(
+                    "Export-only AI denoise amount (like Lightroom's Denoise Amount).\n"
+                    "0 = original untouched, 100 = full AI denoise; "
+                    "10-30 for subtle cleanup."
                 )
             if spec.key == "Distortion":
                 slider.setToolTip(
@@ -1813,7 +1819,7 @@ class ImageAdjustPanelWidget(QWidget):
             tip = (
                 "Uses AI denoise instead of the Chroma NR method above, "
                 "for this export only. Windows prefers SCUNet; other "
-                "platforms prefer NAFNet."
+                "platforms prefer NAFNet. Strength: Noise Reduction > AI Amount."
             )
             for label, fmt in (
                 ("16-bit TIFF (baked)", "tiff16"),
