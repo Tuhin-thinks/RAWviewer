@@ -2331,140 +2331,23 @@ class _AdjustExportWorker(QRunnable):
         self.cancel_event = _threading.Event()
 
     def run(self) -> None:
-        logger = logging.getLogger(__name__)
-        logger.info(
-            "[EXPORT] Worker started: format=%s source=%s output=%s",
-            self.export_format,
-            os.path.basename(self.file_path),
+        from batch_ops import export_one_file
+
+        def emit_progress(percent: int, stage: str = "") -> None:
+            try:
+                self.signals.progress.emit(self.file_path, percent, stage)
+            except Exception:
+                pass
+
+        err, xmp_warning = export_one_file(
+            self.file_path,
             self.output_path,
-        )
-        err = None
-        xmp_warning = None
-        try:
-            from raw_adjustments import resolve_xmp_path, write_xmp_adjustments_for_file
-            from raw_edit_pipeline import export_adjusted_image
-            from unified_image_processor import UnifiedImageProcessor
-
-            # Best-effort: keep the source file's sidecar in sync with what's
-            # being baked/copied. This must NOT block the export itself -- the
-            # destination the user picked (output_path) can be perfectly
-            # writable even when the source isn't (e.g. browsing a read-only
-            # volume or SD card). If the write fails, don't embed a sidecar
-            # that may now be stale relative to this export.
-            embed_xmp = None
-            try:
-                write_xmp_adjustments_for_file(self.file_path, self.adj)
-            except Exception as xmp_exc:
-                xmp_warning = xmp_exc
-                logger.warning(
-                    "[EXPORT] Source XMP sidecar update failed (export continues): %s",
-                    xmp_exc,
-                )
-            else:
-                xmp_path = resolve_xmp_path(self.file_path)
-                embed_xmp = (
-                    xmp_path if xmp_path and os.path.isfile(xmp_path) else None
-                )
-
-            from raw_edit_pipeline import ExportCancelled
-
-            def emit_progress(percent: int, stage: str) -> None:
-                try:
-                    self.signals.progress.emit(self.file_path, percent, stage)
-                except Exception:
-                    pass
-
-            if self.cancel_event.is_set():
-                raise ExportCancelled()
-            emit_progress(5, "Decoding…")
-            logger.info("[EXPORT] Decoding full-resolution edit base…")
-            processor = UnifiedImageProcessor()
-            last_decode_err: Exception | None = None
-            try:
-                base = processor.decode_raw_edit_base(
-                    self.file_path,
-                    executor=self.process_pool,
-                    use_full_resolution=True,
-                    apply_lens_correction=float(self.adj.get("LensCorrectionEnabled", 0.0) or 0.0) > 0.5,
-                )
-            except Exception as decode_exc:
-                last_decode_err = decode_exc
-                base = None
-                logger.error(
-                    "[EXPORT] Full-resolution decode raised for %s",
-                    os.path.basename(self.file_path),
-                    exc_info=True,
-                )
-            logger.info(
-                "[EXPORT] Full-resolution decode %s",
-                "OK, shape=%s" % (base.shape,) if base is not None else "FAILED (returned None)",
-            )
-            if base is None:
-                detail_bits = []
-                try:
-                    if processor.is_libraw_unsupported(self.file_path):
-                        detail_bits.append(
-                            "LibRaw cannot demosaic this file and no usable "
-                            "embedded JPEG was found."
-                        )
-                except Exception:
-                    pass
-                if last_decode_err is not None:
-                    detail_bits.append(str(last_decode_err))
-                detail = (" " + " ".join(detail_bits)) if detail_bits else ""
-                raise RuntimeError(
-                    "Full-resolution decode failed — cannot export."
-                    f"{detail} "
-                    "Neither a LibRaw demosaic nor a usable embedded preview "
-                    "was available at export resolution. "
-                    "If the app vanished mid-export, the Mac may have run out of memory "
-                    "on a large full-res demosaic."
-                )
-            # Remaining work (tonemap + encode) is one opaque call, so the bar
-            # steps to a "working" milestone rather than faking granularity
-            # nothing backs. AI denoise has a real tile loop we can track.
-            emit_progress(
-                40 if self.use_ai_denoise else 70,
-                "Denoising (AI)…" if self.use_ai_denoise else "Encoding…",
-            )
-
-            def _export_progress(frac: float, stage: str = "denoise") -> None:
-                frac_val = max(0.0, min(1.0, float(frac)))
-                if self.use_ai_denoise:
-                    pct = 40 + int(frac_val * 50)
-                    emit_progress(pct, "Denoising (AI)…")
-                else:
-                    pct = 70 + int(frac_val * 20)
-                    emit_progress(pct, "Encoding…")
-
-            export_adjusted_image(
-                self.export_format,
-                output_path=self.output_path,
-                rgb_linear=base,
-                adj=self.adj,
-                embed_xmp_path=embed_xmp,
-                cancel_check=self.cancel_event.is_set,
-                progress_cb=_export_progress if self.use_ai_denoise else None,
-                use_ai_denoise=self.use_ai_denoise,
-            )
-            emit_progress(100, "Done")
-            logger.info("[EXPORT] export_adjusted_image() completed without raising")
-        except Exception as exc:
-            err = exc
-            if type(exc).__name__ == "ExportCancelled":
-                logger.info("[EXPORT] Worker cancelled by user")
-                # Never leave a partial file behind for a cancelled export.
-                try:
-                    if os.path.isfile(self.output_path):
-                        os.remove(self.output_path)
-                except Exception:
-                    pass
-            else:
-                logger.error("[EXPORT] Worker failed", exc_info=True)
-        logger.info(
-            "[EXPORT] Worker finished: err=%s xmp_warning=%s — emitting finished signal",
-            err,
-            xmp_warning,
+            self.adj,
+            self.export_format,
+            self.process_pool,
+            cancel_event=self.cancel_event,
+            progress_cb=emit_progress,
+            use_ai_denoise=self.use_ai_denoise,
         )
         self.signals.finished.emit(
             self.file_path, self.output_path, self.export_format, err, xmp_warning
@@ -5709,13 +5592,24 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     def _compare_entry_available(self) -> bool:
         if getattr(self, "view_mode", "") != "gallery":
             return False
-        return self._compare_session_plan() is not None
+        # Cheap gate: no plan/sort work unless at least two keys are picked.
+        raw = getattr(self, "_gallery_selected_paths", None) or set()
+        if len(raw) < 2:
+            return False
+        return len(self._gallery_selected_expanded_norm_keys()) >= 2
+
+    def _gallery_norm_path_map(self) -> dict:
+        """One norm-key → path dict for the current folder list (O(1) lookups)."""
+        return {
+            _norm_path(p): p for p in (getattr(self, "image_files", None) or [])
+        }
 
     def _gallery_path_for_norm_key(self, key: str) -> Optional[str]:
-        for p in self.image_files or []:
-            if _norm_path(p) == key:
-                return p
-        return None
+        m = getattr(self, "_gallery_norm_map_cache", None)
+        if m is None or m[0] is not self.image_files:
+            m = (self.image_files, self._gallery_norm_path_map())
+            self._gallery_norm_map_cache = m
+        return m[1].get(key)
 
     def _gallery_selection_keys_for_tile(self, file_path: str) -> set:
         """Norm keys toggled when selecting a collapsed stack cover or single tile."""
@@ -5742,10 +5636,11 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return set()
         if getattr(self, "_burst_group_view_active", False) or not self._is_burst_grouping_enabled():
             return raw
+        norm_map = self._gallery_norm_path_map()
         expanded: set = set()
         processed_groups: set = set()
         for key in sorted(raw):
-            path = self._gallery_path_for_norm_key(key)
+            path = norm_map.get(key)
             if path is None:
                 expanded.add(key)
                 continue
@@ -14529,7 +14424,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         """Create the gallery view widget - based on JustifiedGallery reference code"""
         if getattr(self, "gallery_widget", None) is not None:
             return
-        from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea
+        from PyQt6.QtWidgets import (
+            QWidget, QVBoxLayout, QScrollArea, QPushButton, QLabel,
+        )
 
         # Create gallery widget container
         gallery_container = QWidget()
@@ -14543,6 +14440,74 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         gallery_layout = QVBoxLayout(gallery_container)
         gallery_layout.setContentsMargins(0, 0, 0, 0)
         gallery_layout.setSpacing(0)
+
+        # Batch-selection top bar (Select all · count · Clear · Delete · Discard).
+        gallery_selection_bar = QWidget()
+        gallery_selection_bar.setObjectName("gallery_selection_bar")
+        gallery_selection_bar.setFixedHeight(34)
+        bar_layout = QHBoxLayout(gallery_selection_bar)
+        bar_layout.setContentsMargins(10, 4, 10, 4)
+        bar_layout.setSpacing(8)
+        _bar_btn_style = f"""
+            QPushButton {{
+                color: {theme.INK_MUTED}; background: transparent;
+                border: 1px solid transparent; border-radius: 4px;
+                padding: 2px 10px; font-size: 12px;
+            }}
+            QPushButton:hover {{ color: {theme.INK}; background: rgba(255, 255, 255, 0.05); }}
+            QPushButton:pressed {{ color: {theme.INK}; background: rgba(255, 255, 255, 0.08); }}
+            QPushButton:disabled {{ color: {theme.INK_FAINT}; }}
+        """
+        _bar_label_style = f"color: {theme.INK_MUTED}; font-size: 12px; background: transparent;"
+
+        self.gallery_select_all_btn = QPushButton("Select all")
+        self.gallery_select_all_btn.setStyleSheet(_bar_btn_style)
+        self.gallery_select_all_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.gallery_select_all_btn.setToolTip("Select every image currently shown (Ctrl+A)")
+        bar_layout.addWidget(self.gallery_select_all_btn)
+
+        self.gallery_selection_count_label = QLabel("", gallery_selection_bar)
+        self.gallery_selection_count_label.setStyleSheet(_bar_label_style)
+        bar_layout.addWidget(self.gallery_selection_count_label)
+
+        self.gallery_clear_selection_btn = QPushButton("Clear")
+        self.gallery_clear_selection_btn.setStyleSheet(_bar_btn_style)
+        self.gallery_clear_selection_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.gallery_clear_selection_btn.setToolTip("Clear selection (Esc)")
+        bar_layout.addWidget(self.gallery_clear_selection_btn)
+
+        bar_layout.addStretch(1)
+
+        self.gallery_export_selection_btn = QPushButton("Export…")
+        self.gallery_export_selection_btn.setStyleSheet(_bar_btn_style)
+        self.gallery_export_selection_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.gallery_export_selection_btn.setToolTip(
+            "Copy originals or export edited copies to a chosen folder"
+        )
+        bar_layout.addWidget(self.gallery_export_selection_btn)
+
+        self.gallery_delete_selection_btn = QPushButton("Delete")
+        self.gallery_delete_selection_btn.setStyleSheet(_bar_btn_style)
+        self.gallery_delete_selection_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.gallery_delete_selection_btn.setToolTip("Move selected images to the Recycle Bin (Del)")
+        bar_layout.addWidget(self.gallery_delete_selection_btn)
+
+        self.gallery_discard_selection_btn = QPushButton("Discard")
+        self.gallery_discard_selection_btn.setStyleSheet(_bar_btn_style)
+        self.gallery_discard_selection_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.gallery_discard_selection_btn.setToolTip("Move selected images into a Discard folder")
+        bar_layout.addWidget(self.gallery_discard_selection_btn)
+
+        for _btn in (
+            self.gallery_select_all_btn,
+            self.gallery_clear_selection_btn,
+            self.gallery_export_selection_btn,
+            self.gallery_delete_selection_btn,
+            self.gallery_discard_selection_btn,
+        ):
+            _btn.setEnabled(False)
+
+        gallery_layout.addWidget(gallery_selection_bar)
 
         # Create scroll area for gallery
         gallery_scroll = QScrollArea()
@@ -14641,6 +14606,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         cast(Any, main_layout).insertWidget(scroll_index + 1, gallery_container)
 
         self.gallery_widget = gallery_container
+        self.gallery_selection_bar = gallery_selection_bar
+        self.gallery_select_all_btn.clicked.connect(self._gallery_select_all_displayed)
+        self.gallery_clear_selection_btn.clicked.connect(self._clear_gallery_selection)
+        self.gallery_export_selection_btn.clicked.connect(self._batch_export_selected)
+        self.gallery_delete_selection_btn.clicked.connect(self.delete_gallery_selection)
+        self.gallery_discard_selection_btn.clicked.connect(self.discard_gallery_selection)
         self.gallery_scroll = gallery_scroll
         self.gallery_frame_gutter = gallery_grip
         self.gallery_justified = justified_gallery
@@ -14934,6 +14905,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             start_time = time.time()
             logger.info("[GALLERY] ========== _update_gallery_view() STARTED ==========")
             self._update_gallery_counter()
+            self._sync_gallery_selection_chrome()
             
             if not self.gallery_widget or not self.gallery_justified:
                 logger.info("[GALLERY] Gallery widget not available, returning")
@@ -14995,6 +14967,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self._maybe_clear_empty_rating_filter()
                 self._rebuild_burst_groups()
                 display_files = self._gallery_files_for_display()
+                self._prune_gallery_selection_to_displayed(display_files)
                 filter_active = bool(
                     getattr(self, "_gallery_bookmark_filter_active", False)
                 ) or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
@@ -16268,32 +16241,68 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         """Bottom action opens selected image(s) in another app on desktop platforms."""
         return sys.platform in ("darwin", "win32")
 
+    def _gallery_select_all_displayed(self) -> None:
+        """Select every image currently displayed (filters/search/burst view respected)."""
+        if getattr(self, "view_mode", "") != "gallery":
+            return
+        files = self._gallery_files_for_display()
+        self._gallery_set_selection_keys({_norm_path(p) for p in files if p})
+        self._gallery_selection_anchor = None
+        self._gallery_last_select_action = None
+
+    def _prune_gallery_selection_to_displayed(self, display_files=None) -> None:
+        """Drop selected keys that are not in the currently displayed set.
+
+        Batch actions must never touch an image the user can no longer see:
+        rating filters, semantic-search results and folder reloads can all
+        narrow the displayed list while old keys linger in the selection set.
+        """
+        if display_files is None:
+            if getattr(self, "view_mode", "") != "gallery":
+                return
+            display_files = self._gallery_files_for_display()
+        display_keys = {_norm_path(p) for p in display_files if p}
+        selected = getattr(self, "_gallery_selected_paths", None)
+        if not selected:
+            return
+        if selected - display_keys:
+            self._gallery_selected_paths = selected & display_keys
+            self._gallery_refresh_selection_ui()
+
+    def _sync_gallery_selection_bar(self, n: int, shown: int) -> None:
+        bar = getattr(self, "gallery_selection_bar", None)
+        if bar is None:
+            return
+        bar.setVisible(
+            getattr(self, "view_mode", "single") == "gallery" and shown > 0
+        )
+        if not bar.isVisible():
+            return
+        label = getattr(self, "gallery_selection_count_label", None)
+        select_all = getattr(self, "gallery_select_all_btn", None)
+        clear_btn = getattr(self, "gallery_clear_selection_btn", None)
+        delete_btn = getattr(self, "gallery_delete_selection_btn", None)
+        discard_btn = getattr(self, "gallery_discard_selection_btn", None)
+        export_btn = getattr(self, "gallery_export_selection_btn", None)
+        if label is not None:
+            label.setText(f"{n} selected" if n else "")
+        for btn in (select_all, clear_btn):
+            if btn is not None:
+                btn.setEnabled(shown > 0)
+        for btn in (delete_btn, discard_btn, export_btn):
+            if btn is not None:
+                btn.setEnabled(n > 0)
+
     def _sync_gallery_selection_chrome(self) -> None:
-        """Status text when multi-select is active."""
+        """Update the gallery selection top bar; status text elsewhere."""
+        vm = getattr(self, "view_mode", "single")
         n = len(self._gallery_selected_expanded_norm_keys())
-        if n <= 0:
+        shown = len(self._gallery_files_for_display()) if vm == "gallery" else 0
+        self._sync_gallery_selection_bar(n, shown)
+        if n <= 0 or vm == "gallery":
             return
         if hasattr(self, "status_bar") and self.status_bar:
-            vm = getattr(self, "view_mode", "single")
-            if vm == "gallery":
-                if getattr(self, "_burst_group_view_active", False):
-                    if self._burst_group_compare_plan() is not None:
-                        hint = (
-                            "Compare burst group (C) · Rate 0–5 · "
-                            "Share; Ctrl/Cmd+click or Shift+click to select"
-                        )
-                    else:
-                        hint = "Share · Rate 0–5; Ctrl/Cmd+click or Shift+click to select"
-                else:
-                    from comparison_mode import CompareEntry
-
-                    plan = self._compare_session_plan()
-                    if plan is not None and plan[1] == CompareEntry.BURST_GROUP:
-                        hint = "Compare burst group (C) · Share · Delete/Down"
-                    else:
-                        hint = "Compare selection (C) · Share · Delete/Down"
-            else:
-                hint = "Share — open in editor, Delete/Down bulk actions"
+            hint = "Share — open in editor, Delete/Down bulk actions"
             self.status_bar.showMessage(
                 f"{n} image{'s' if n != 1 else ''} selected — {hint}",
                 5000,
@@ -17072,36 +17081,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._stop_slideshow()
         if not self._confirm_bulk_deletion(len(paths), discard=False):
             return
-        anchor = self._surviving_anchor_after_removal(paths)
-        from send2trash import send2trash
-
-        from image_cache import get_image_cache
-
-        cache = get_image_cache()
-        removed = 0
-        errors = 0
-        for file_path in list(paths):
-            if not os.path.exists(file_path):
-                self._remove_files_from_active_image_list([file_path])
-                self._drop_discarded_from_semantic_corpus(file_path)
-                removed += 1
-                continue
-            try:
-                self._cancel_load_and_preload_for_path(file_path)
-                cache.invalidate_file(file_path)
-                send2trash(os.path.normpath(file_path))
-                self._drop_discarded_from_semantic_corpus(file_path)
-                self._remove_files_from_active_image_list([file_path])
-                removed += 1
-            except Exception:
-                errors += 1
-        if removed:
-            self.status_bar.showMessage(
-                f"Deleted {removed} image{'s' if removed != 1 else ''}"
-                + (f" ({errors} failed)" if errors else ""),
-            )
-            self._after_gallery_bulk_file_removal(anchor_path=anchor)
-            self.schedule_save_session_state()
+        self._start_batch_removal("trash", paths)
 
     def discard_gallery_selection(self) -> None:
         paths = self._gallery_selected_canonical_paths()
@@ -17111,47 +17091,262 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._stop_slideshow()
         if not self._confirm_bulk_deletion(len(paths), discard=True):
             return
+        self._start_batch_removal("discard", paths)
+
+    def _start_batch_removal(self, kind: str, paths: List[str]) -> None:
+        """Trash/discard a selection via the serial off-thread worker.
+
+        Pre-cancels in-flight loads (UI thread), snapshots the surviving scroll
+        anchor, then hands the immutable path list to BatchFileOpWorker. The
+        UI-only post-pass (cache invalidation, list/corpus updates, gallery
+        resync) happens once in _on_batch_op_finished.
+        """
+        self._batch_removal_anchor = self._surviving_anchor_after_removal(paths)
+        for file_path in paths:
+            self._cancel_load_and_preload_for_path(file_path)
+        self._start_batch_op(kind, paths, dest_dir="", reveal=False)
+
+    # ------------------------- batch operations ------------------------------
+
+    def _any_batch_op_in_progress(self) -> bool:
+        return bool(getattr(self, "_batch_op_in_progress", False)) or bool(
+            getattr(self, "_adjust_export_in_progress", False)
+        )
+
+    def _batch_export_selected(self) -> None:
+        """Top-bar Export…: pre-export dialog, then a serial off-thread batch run."""
+        if self._any_batch_op_in_progress():
+            if hasattr(self, "status_bar"):
+                self.status_bar.showMessage(
+                    "A batch operation is already running", 3500
+                )
+            return
+        paths = self._gallery_selected_canonical_paths()
+        if not paths:
+            if hasattr(self, "status_bar"):
+                self.status_bar.showMessage("No images selected in gallery", 2500)
+            return
+        self._stop_slideshow()
+
+        from rawviewer_app.widgets import BatchExportDialog
+
+        source_dir_keys = {
+            _norm_dir_key(os.path.dirname(os.path.abspath(p))) for p in paths
+        }
+        dlg = BatchExportDialog(
+            parent=self,
+            count=len(paths),
+            source_dir_keys=source_dir_keys,
+            writable_check=self._directory_looks_writable,
+        )
+        dlg.pick_directory = (
+            lambda title="Choose Destination Folder", start=dlg.destination_edit.text():
+            self._pick_directory_dialog(title, start)
+        )
+        dlg.exec()
+        if not dlg.result_value or not dlg.result_config:
+            return
+        cfg = dlg.result_config
+        settings = self.get_settings()
+        settings.setValue("batch_export_mode", cfg["mode"])
+        settings.setValue("batch_export_format", cfg["format"])
+        settings.setValue("last_batch_export_dir", cfg["destination"])
+        settings.setValue("batch_export_reveal", "1" if cfg["reveal"] else "0")
+
+        if cfg["mode"] == "copy":
+            self._start_batch_op("copy", paths, cfg["destination"], cfg["reveal"])
+        else:
+            self._start_batch_op(
+                "edited", paths, cfg["destination"], cfg["reveal"],
+                export_format=cfg["format"],
+            )
+
+    def _start_batch_op(
+        self,
+        kind: str,
+        paths: List[str],
+        dest_dir: str,
+        reveal: bool,
+        export_format: str = "",
+    ) -> None:
+        """Shared launcher: modal TaskProgressDialog + serial off-thread worker.
+
+        kind 'copy'      → BatchFileOpWorker(mode='copy')
+        kind 'trash'     → BatchFileOpWorker(mode='trash')   (used by Phase 3)
+        kind 'discard'   → BatchFileOpWorker(mode='discard') (used by Phase 3)
+        kind 'edited'    → BatchExportWorker
+        """
+        from rawviewer_app.batch_ops import (
+            BatchExportWorker, BatchFileOpSignals, BatchFileOpWorker,
+        )
+        from rawviewer_app.widgets import TaskProgressDialog
+
+        self._batch_op_in_progress = True
+        signals = BatchFileOpSignals()
+        signals.progress.connect(self._on_batch_op_progress)
+        signals.finished.connect(
+            lambda done, failed, cancelled, detail, k=kind, d=dest_dir:
+            self._on_batch_op_finished(done, failed, cancelled, detail, k, d, reveal)
+        )
+        if kind == "edited":
+            pool = getattr(getattr(self, "image_manager", None), "_process_pool", None)
+            worker = BatchExportWorker(
+                paths, dest_dir, export_format, pool, signals=signals
+            )
+            title = f"Export ({export_format.upper() if export_format else 'Edited'})"
+        else:
+            worker = BatchFileOpWorker(paths, dest_dir, mode=kind, signals=signals)
+            title = {
+                "copy": "Copying Images",
+                "trash": "Deleting Images",
+                "discard": "Moving to Discard",
+            }.get(kind, "Batch Operation")
+
+        dlg = TaskProgressDialog(self, title=title)
+        dlg.canceled.connect(worker.cancel_event.set)
+        self._batch_op_in_progress_dialog: Optional[TaskProgressDialog] = dlg
+
+        def _show_dialog_if_current(d=dlg) -> None:
+            # Skip the flash for fast batches (mirror of the single-export dialog).
+            current = self._batch_op_in_progress_dialog
+            if current is not None and current is d:
+                current.show()
+
+        QTimer.singleShot(300, _show_dialog_if_current)
+        _get_bg_thread_pool().start(worker)
+
+    def _on_batch_op_progress(self, done: int, total: int, basename: str) -> None:
+        dlg = getattr(self, "_batch_op_in_progress_dialog", None)
+        if dlg is None:
+            return
+        try:
+            dlg.set_progress(int(done * 100 / total) if total else 100)
+            dlg.set_message(f"{done} of {total} · {basename}")
+        except Exception:
+            pass
+
+    def _close_batch_progress_dialog(self) -> None:
+        dlg = getattr(self, "_batch_op_in_progress_dialog", None)
+        if dlg is not None:
+            self._batch_op_in_progress_dialog = None
+            try:
+                dlg.canceled.disconnect()
+            except Exception:
+                pass
+            try:
+                dlg.close()
+                dlg.deleteLater()
+            except Exception:
+                pass
+
+    def _on_batch_op_finished(
+        self,
+        done: int,
+        failed: int,
+        cancelled: bool,
+        detail: List[tuple],
+        kind: str,
+        dest_dir: str,
+        reveal: bool,
+    ) -> None:
+        self._batch_op_in_progress = False
+        self._close_batch_progress_dialog()
+        verb = {
+            "copy": "Copied", "trash": "Deleted", "discard": "Discarded",
+            "edited": "Exported",
+        }.get(kind, "Processed")
+        if kind in ("trash", "discard"):
+            self._after_batch_removal(kind, detail)
+            return
+        if hasattr(self, "status_bar"):
+            msg = f"{verb} {done} image{'s' if done != 1 else ''}"
+            if kind in ("copy", "edited"):
+                msg += f" to {os.path.basename(dest_dir.rstrip(os.sep)) or dest_dir}"
+            if failed:
+                msg += f" ({failed} failed)"
+            if cancelled:
+                msg += " — cancelled"
+            self.status_bar.showMessage(msg, 6000)
+        # Files written into the currently open folder must enter the gallery,
+        # exactly like single-image exports do.
+        if kind in ("copy", "edited") and detail:
+            folder = _norm_path(getattr(self, "current_folder", "") or "")
+            for _src, _err, dest in detail:
+                if dest and folder and _norm_path(os.path.dirname(dest)) == folder:
+                    self.register_new_file(dest)
+        if failed:
+            failure = next((err for _s, err, _d in detail if err), "unknown error")
+            try:
+                self.show_error(
+                    f"{verb} — {failed} failed",
+                    f"{failed} file(s) could not be processed.\nLast error: {failure}",
+                )
+            except Exception:
+                pass
+        if reveal and not cancelled and os.path.isdir(dest_dir):
+            self._open_folder_in_file_manager(dest_dir)
+
+    def _after_batch_removal(self, kind: str, detail: List[tuple]) -> None:
+        """UI-thread post-pass for trash/discard batches.
+
+        detail: [(src, err|None, dest|None], one entry per attempted path —
+        including files that were already gone, which the old inline loop also
+        counted as removed.
+        """
         from image_cache import get_image_cache
 
         cache = get_image_cache()
-        anchor = self._surviving_anchor_after_removal(paths)
-        moved = 0
-        errors = 0
-        for file_path in list(paths):
-            if not os.path.exists(file_path):
-                self._remove_files_from_active_image_list([file_path])
-                self._drop_discarded_from_semantic_corpus(file_path)
-                moved += 1
+        removed_paths = []
+        failed = 0
+        last_err = None
+        for src, err, dest in detail:
+            if err:
+                failed += 1
+                last_err = err
                 continue
+            cache.invalidate_file(src)
+            if kind == "discard" and dest:
+                self._migrate_visual_rotation_path(src, dest)
+            self._drop_discarded_from_semantic_corpus(src)
+            removed_paths.append(src)
+        if removed_paths:
+            self._remove_files_from_active_image_list(removed_paths)
+        verb = "Deleted" if kind == "trash" else "Discarded"
+        removed = len(removed_paths)
+        if hasattr(self, "status_bar") and self.status_bar is not None:
+            msg = f"{verb} {removed} image{'s' if removed != 1 else ''}"
+            if failed:
+                msg += f" ({failed} failed)"
+            self.status_bar.showMessage(msg, 5000)
+        self._after_gallery_bulk_file_removal(
+            anchor_path=getattr(self, "_batch_removal_anchor", None)
+        )
+        self._batch_removal_anchor = None
+        self.schedule_save_session_state()
+        if failed:
             try:
-                folder_path = os.path.dirname(file_path)
-                discard_folder = os.path.join(folder_path, "Discard")
-                os.makedirs(discard_folder, exist_ok=True)
-                filename = os.path.basename(file_path)
-                target_path = os.path.join(discard_folder, filename)
-                base, ext = os.path.splitext(filename)
-                counter = 1
-                while os.path.exists(target_path):
-                    target_path = os.path.join(
-                        discard_folder, f"{base}_discarded_{counter}{ext}"
-                    )
-                    counter += 1
-                self._cancel_load_and_preload_for_path(file_path)
-                cache.invalidate_file(file_path)
-                os.rename(file_path, target_path)
-                self._migrate_visual_rotation_path(file_path, target_path)
-                self._drop_discarded_from_semantic_corpus(file_path)
-                self._remove_files_from_active_image_list([file_path])
-                moved += 1
+                self.show_error(
+                    f"{verb} — {failed} failed",
+                    f"{failed} file(s) could not be {verb.lower()}.\nLast error: {last_err}",
+                )
             except Exception:
-                errors += 1
-        if moved:
-            self.status_bar.showMessage(
-                f"Moved {moved} image{'s' if moved != 1 else ''} to Discard"
-                + (f" ({errors} failed)" if errors else ""),
-            )
-            self._after_gallery_bulk_file_removal(anchor_path=anchor)
-            self.schedule_save_session_state()
+                pass
+
+    def _open_folder_in_file_manager(self, folder: str) -> None:
+        """Open a folder in the OS file manager ('Open destination when finished')."""
+        if not folder or not os.path.isdir(folder):
+            return
+        import subprocess
+
+        try:
+            if sys.platform == "win32":
+                os.startfile(folder)  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.run(["open", folder], check=False)
+            else:
+                subprocess.run(["xdg-open", folder], check=False)
+        except Exception:
+            pass
 
     def _gallery_item_clicked(self, file_path):
         """Handle gallery item click - burst stack, single view, or selection."""
@@ -18261,23 +18456,28 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             )
             settings.setValue("last_opened_dir", folder_path)
 
+    def _pick_directory_dialog(self, title: str, start_dir: str = "") -> str:
+        """Native Explorer-style folder picker (Qt + macOS fallbacks). '' on cancel.
+
+        Same platform treatment open_folder used so opening a modal from a
+        terminal-launched process on macOS never silently returns ''.
+        """
+        if self._use_qt_file_dialog():
+            return QFileDialog.getExistingDirectory(
+                self,
+                title,
+                start_dir or "",
+                options=QFileDialog.Option.DontUseNativeDialog,
+            )
+        if sys.platform == "darwin":
+            return self._open_folder_dialog_macos_native(start_dir or "")
+        self._prepare_for_modal_dialog()
+        return QFileDialog.getExistingDirectory(self, title, start_dir or "")
+
     def open_folder(self):
         settings = self.get_settings()
         last_dir = settings.value("last_opened_dir", "")
-        if self._use_qt_file_dialog():
-            folder_path = QFileDialog.getExistingDirectory(
-                self,
-                "Open Folder",
-                last_dir,
-                options=QFileDialog.Option.DontUseNativeDialog,
-            )
-        elif sys.platform == "darwin":
-            folder_path = self._open_folder_dialog_macos_native(last_dir)
-        else:
-            self._prepare_for_modal_dialog()
-            folder_path = QFileDialog.getExistingDirectory(
-                self, "Open Folder", last_dir
-            )
+        folder_path = self._pick_directory_dialog("Open Folder", last_dir)
         if folder_path:
             self.load_folder_images(folder_path)
             settings.setValue("last_opened_dir", folder_path)
@@ -18327,6 +18527,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             "Trackpad Pinch / Ctrl+Scroll — Smooth zoom in/out",
             "← / → — Previous / next image",
             "0–5 — Star rating (0 clears; click bottom stars too)",
+            "Ctrl/Cmd+A — Gallery: select all shown images",
             "↓ — Move image(s) to Discard folder",
             "Delete — Delete image(s)",
             "Esc — Gallery: clear selection / exit filters; single view: back to gallery",
@@ -25054,9 +25255,9 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # matching CustomConfirmDialog (stock QProgressDialog was OS-native
         # title bar + an indeterminate marquee with no real percentage).
         try:
-            from rawviewer_app.widgets import ExportProgressDialog
+            from rawviewer_app.widgets import TaskProgressDialog
 
-            dlg = ExportProgressDialog(
+            dlg = TaskProgressDialog(
                 self, title="Export", message=f"Exporting {os.path.basename(output_path)}…"
             )
             dlg.canceled.connect(worker.cancel_event.set)
@@ -30524,6 +30725,13 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         elif key == Qt.Key.Key_G:
             if vm == "single":
                 self._toggle_composition_grid()
+                return True
+        elif key == Qt.Key.Key_A:
+            ctrl_a = bool(
+                modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+            )
+            if ctrl_a and vm == "gallery" and self._gallery_files_for_display():
+                self._gallery_select_all_displayed()
                 return True
         elif key == Qt.Key.Key_J:
             if vm == "single":
