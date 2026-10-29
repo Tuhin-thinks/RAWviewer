@@ -94,7 +94,13 @@ set RAWVIEWER_BUILD_PROFILE=full
 set RAWVIEWER_ENABLE_SEMANTIC_SEARCH=1
 set RAWVIEWER_ENABLE_FACE_SCAN=1
 set RAWVIEWER_PREFER_GPU_DECODE=1
-set RAWVIEWER_GPU_CUDA_GL=1
+REM GPU_CUDA_GL=1 enables the CUDA<->GL zero-copy display path but requires an
+REM OpenGL CompatibilityProfile context. That context creation can fail silently
+REM (bare except in gpu_image_view.py:RgbGlItem viewport setup), leaving the main
+REM image view blank while thumbnails/grid still work. Keep 0: Phase 2b fallback
+REM (device->host->GL) is robust and matches the released/built app, which never
+REM sets GPU_CUDA_GL. See docs/DEVELOPING.md.
+set RAWVIEWER_GPU_CUDA_GL=0
 set RAWVIEWER_ORT_PROVIDERS=DmlExecutionProvider,CPUExecutionProvider
 echo [launch_dev] Profile: Plus ^(full^) — semantic on; prefer GPU demosaic when available
 goto :run

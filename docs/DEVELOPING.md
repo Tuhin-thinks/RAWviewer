@@ -153,6 +153,15 @@ Semantic batch/chunk size for AI indexing is **auto-tuned separately** on first 
 
 Full list and dev defaults: [`scripts/Launch/README.md`](../scripts/Launch/README.md), [`docs/macos-sharing.md`](macos-sharing.md).
 
+### GPU display pipeline
+
+| Phase | Env var | Path | Notes |
+|-------|---------|------|-------|
+| 2b (default) | `GPU_CUDA_GL=0` | Decode on CUDA → `to_numpy()` → host QImage → GL texture (`QPainter.drawImage`) | Robust; used by the released/built app |
+| 2c (opt-in) | `GPU_CUDA_GL=1` | CUDA buffer registered as GL texture via `cudaGraphicsGLRegisterImage`, painted with native GL | Zero-copy, but requires an OpenGL CompatibilityProfile context. If that context creation fails **silently** (bare `except` in `src/rawviewer_ui/gpu_image_view.py` viewport setup), the main image view renders blank while thumbnails/grid still work. |
+
+**Dev rule:** keep `GPU_CUDA_GL=0` in `launch_dev.bat` (matching the built app). Only enable 2c when profiling display latency on large files and verify the GL context initializes (check logs for `[CUDA_GL]` messages). The released installer never sets `GPU_CUDA_GL`.
+
 ## MobileCLIP models (Full — AI search)
 
 | Platform | When downloaded | Change variant (Windows) |
