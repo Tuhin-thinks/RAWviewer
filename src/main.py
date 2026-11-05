@@ -27,10 +27,94 @@ import threading
 import weakref
 from datetime import datetime
 from typing import List, Optional, Tuple, Any, cast, Set
+from collections import OrderedDict
+import threading
 
 from PIL import Image
 # Finite decompression-bomb cap (~200 MP). None disables Pillow's check.
 Image.MAX_IMAGE_PIXELS = 200_000_000
+
+
+class FullImageCache:
+    """Simplified LRU(10) cache for full-resolution images.
+    
+    Replaces the adaptive full_image_cache with byte-budget enforcement
+    with a simple fixed-size LRU cache that stores up to 10 full-resolution images.
+    """
+    
+    def __init__(self, max_size: int = 10):
+        self.max_size = max_size
+        self.cache = OrderedDict()
+        self.lock = threading.RLock()
+        self.hits = 0
+        self.misses = 0
+    
+    def __contains__(self, key: str) -> bool:
+        with self.lock:
+            return key in self.cache
+    
+    def get(self, key: str):
+        """Get cached image, promoting it to MRU."""
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+                self.hits += 1
+                return self.cache[key]
+            self.misses += 1
+            return None
+    
+    def put(self, key: str, value) -> None:
+        """Store image in cache with LRU eviction."""
+        with self.lock:
+            if key in self.cache:
+                self.cache[key] = value
+                self.cache.move_to_end(key)
+            else:
+                self.cache[key] = value
+                if len(self.cache) > self.max_size:
+                    self.cache.popitem(last=False)
+    
+    def remove(self, key: str) -> bool:
+        with self.lock:
+            if key in self.cache:
+                del self.cache[key]
+                return True
+            return False
+    
+    def clear(self) -> None:
+        with self.lock:
+            self.cache.clear()
+            self.hits = 0
+            self.misses = 0
+    
+    def get_stats(self) -> dict:
+        with self.lock:
+            total_requests = self.hits + self.misses
+            hit_rate = self.hits / total_requests if total_requests > 0 else 0
+            return {
+                'size': len(self.cache),
+                'max_size': self.max_size,
+                'hits': self.hits,
+                'misses': self.misses,
+                'hit_rate': hit_rate
+            }
+
+    # Alias methods for compatibility with existing code
+    def get_full_image(self, file_path: str):
+        """Alias for get() to maintain compatibility."""
+        return self.get(file_path)
+    
+    def put_full_image(self, file_path: str, image, *, copy: bool = True):
+        """Alias for put() to maintain compatibility."""
+        if image is not None:
+            import numpy as np
+            stored = np.ascontiguousarray(image) if not copy else image.copy()
+            self.put(file_path, stored)
+    
+    def peek(self, key: str):
+        """Non-mutating lookup for compatibility."""
+        with self.lock:
+            return self.cache.get(key)
 
 
 def _is_multiprocessing_worker_process() -> bool:
@@ -2711,6 +2795,10 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         safe_print("  [RAWImageViewer] Initializing image cache...", flush=True)
         self.image_cache = get_image_cache()
         safe_print("  [RAWImageViewer] Image cache initialized", flush=True)
+        # Initialize simplified full image cache (LRU 10)
+        safe_print("  [RAWImageViewer] Initializing full image cache (LRU 10)...", flush=True)
+        self.full_image_cache = FullImageCache(max_size=10)
+        safe_print("  [RAWImageViewer] Full image cache initialized", flush=True)
         # Pass RAWProcessor class to PreloadManager for consistent processing (legacy support)
         safe_print("  [RAWImageViewer] Initializing PreloadManager...", flush=True)
         self.preload_manager = PreloadManager(max_preload_threads=8, processor_class=RAWProcessor)
@@ -2759,9 +2847,11 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # on screen and the normal paint-driven arming was missed (fast nav).
         if self._full_res_only_mode():
             safe_print("[FULL_RES_ONLY] Enabled - interim previews suppressed", flush=True)
-        self._full_res_upgrade_safety_timer.setInterval(3000)
-        self._full_res_upgrade_safety_timer.timeout.connect(self._full_res_upgrade_safety_tick)
-        QTimer.singleShot(6000, self._start_full_res_upgrade_safety_monitor)
+        # Note: _full_res_upgrade_safety_timer was deprecated in Phase 1
+        # and removed to simplify the TTFR + full-res upgrade system
+        # The new idle timer system uses _full_res_idle_timer instead
+        # _full_res_upgrade_safety_timer and _full_res_upgrade_safety_tick are no longer used
+        # _full_res_upgrade_safety_tick functionality is covered by the new idle timer system
         self._metadata_index_run_done = False
         self._metadata_index_prep_complete = False
         self._metadata_index_extract_pending_count = 0
