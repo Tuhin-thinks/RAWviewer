@@ -64,8 +64,7 @@ except Exception:
     pycountry = None
 
 
-class IndexAborted(Exception):
-    """Raised when background indexing is cancelled (e.g. folder scope changed)."""
+from core.errors import IndexAborted, RAWViewerError  # noqa: F401
 
 
 ProgressCallback = Optional[Callable[[int, int, str], None]]

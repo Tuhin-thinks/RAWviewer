@@ -57,17 +57,10 @@ from typing import Any, Callable, Dict, Optional
 
 import numpy as np
 
+from core.errors import DecodeCancelled, RAWViewerError  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
-
-class DecodeCancelled(Exception):
-    """Raised mid-decode when the owning load task was cancelled.
-
-    The chunked stages check ``cancel_check`` between chunks so a cancelled
-    background/prefetch decode releases its RAW worker slot within ~10ms
-    instead of running its remaining ~1s to completion -- this is what lets
-    a navigation's CURRENT-priority decode start immediately.
-    """
 
 # dcraw xyz_rgb: sRGB primaries -> XYZ (D65). Must match dcraw exactly —
 # these are not the higher-precision IEC values.

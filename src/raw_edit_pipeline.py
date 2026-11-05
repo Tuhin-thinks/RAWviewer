@@ -30,6 +30,7 @@ from raw_spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
 from raw_spot_heal import resolve_mask_from_adj as _resolve_heal_mask
 from raw_pv2012 import apply_pv2012_tone_rgb
 from raw_tone_curve import TONE_CURVE_SERIAL_KEY
+from core.errors import ExportCancelled, RAWViewerError  # noqa: F401
 
 
 def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
@@ -1254,10 +1255,6 @@ def export_adjusted_webp(
 EXPORT_FORMAT_TIFF16 = "tiff16"
 EXPORT_FORMAT_JPEG = "jpeg"
 EXPORT_FORMAT_WEBP = "webp"
-
-
-class ExportCancelled(Exception):
-    """Raised when the user cancels an in-progress export."""
 
 
 def export_adjusted_image(
