@@ -2517,34 +2517,16 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._session_restore_full_decode_allowed = False
         self._user_zoom_interaction_ts = 0.0
         self._single_view_ttfr_watch_generation = 0
-        # Signal + async-timer first-render tracking (replaces the polled watchdog).
-        # _ttfr_timeout_timer armed per load; stopped by _on_first_render_ack when
-        # _single_view_first_render fires. _ttfr_timeout_timer is a plain QTimer on
-        # the GUI thread, so no cross-thread races and no generation bookkeeping.
-        self._ttfr_timeout_timer = QTimer(self)
-        self._ttfr_timeout_timer.setSingleShot(True)
-        self._ttfr_timeout_timer.timeout.connect(self._on_first_render_timeout)
-        self._single_view_first_render.connect(self._on_first_render_ack)
-        self._ttfr_path = None
-        self._ttfr_load_start = 0.0
-        self._ttfr_recheck_count = 0
-        # Full-resolution upgrade tracker. TTFR only knows that *something*
-        # painted; a preview-tier buffer satisfies it while the sensor decode is
-        # still pending or starved behind prefetch. This timer watches for the
-        # real upgrade and forces it, event-driven, instead of guessing.
-        self._full_res_upgrade_timer = QTimer(self)
-        self._full_res_upgrade_timer.setSingleShot(True)
-        self._full_res_upgrade_timer.timeout.connect(self._on_full_res_upgrade_timeout)
-        self._full_res_upgrade_path = None
-        self._full_res_upgrade_attempts = 0
-        self._note_displayed_resolution_in_progress = False
+        # Simplified loading: a single idle timer requests full-res after the
+        # user has stayed on one image. Replaces TTFR + full-res-upgrade watchdogs.
+        self._full_res_idle_timer = QTimer(self)
+        self._full_res_idle_timer.setSingleShot(True)
+        self._full_res_idle_timer.timeout.connect(self._on_full_res_idle_timeout)
+        self._full_res_idle_path = None
+        self._full_res_idle_in_progress = False
         self._on_manager_thumbnail_ready_in_progress = False
         self._on_manager_image_ready_in_progress = False
         self._on_single_view_content_displayed_in_progress = False
-        self._defer_sensor_full_decode_path = None
-        self._sensor_full_decode_queued_norm = None
-        self._defer_full_exif_path = None
-        self._full_exif_queued_norm = None
         self.thumbnail_cache = {}  # Cache for thumbnails
         self._histogram_user_hidden = True
         self._adjust_user_hidden = True
@@ -2755,13 +2737,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._memory_pressure_timer.setInterval(4000)
         self._memory_pressure_timer.timeout.connect(self._on_memory_pressure_tick)
         QTimer.singleShot(5000, self._start_memory_pressure_monitor)
-        # Safety net: re-arm the full-res upgrade watchdog if a preview is stuck
-        # on screen and the normal paint-driven arming was missed (fast nav).
-        if self._full_res_only_mode():
-            safe_print("[FULL_RES_ONLY] Enabled - interim previews suppressed", flush=True)
-        self._full_res_upgrade_safety_timer.setInterval(3000)
-        self._full_res_upgrade_safety_timer.timeout.connect(self._full_res_upgrade_safety_tick)
-        QTimer.singleShot(6000, self._start_full_res_upgrade_safety_monitor)
         self._metadata_index_run_done = False
         self._metadata_index_prep_complete = False
         self._metadata_index_extract_pending_count = 0
@@ -3284,12 +3259,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         except ValueError:
             pass
         self._start_preloading()
-        if from_cache == "nav_full":
-            self._maybe_queue_background_full_decode(file_path)
-        elif from_cache == "nav_preview":
-            self._schedule_idle_full_decode_after_nav_preview(file_path)
-        elif from_cache == "preview":
-            self._maybe_queue_background_full_decode(file_path)
         if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
         return True
@@ -3738,7 +3707,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                     pm.size() if pm is not None and not pm.isNull() else None
                 )
                 gv._zoom_intent_100 = True
-                self._queue_sensor_full_decode(fp, priority_current=True, urgent=True)
+                self._request_full_res_decode(fp, priority_current=True, urgent=True)
                 if not focus_jump:
                     self._gpu_zoom_in_to_point_finish()
                 return
@@ -3895,7 +3864,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                     return
         except Exception:
             pass
-        self._queue_sensor_full_decode(fp, priority_current=True)
+        self._request_full_res_decode(fp, priority_current=True)
 
     def _gpu_zoom_in_to_point_finish(self) -> None:
         """Apply 100% zoom centered on ``zoom_center_point`` in GPU view."""
@@ -3986,7 +3955,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self._pending_zoom = True
                 self._pending_zoom_center = self.zoom_center_point
                 self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
-                self._queue_sensor_full_decode(
+                self._request_full_res_decode(
                     _require_str_path(self.current_file_path),
                     priority_current=True,
                     urgent=True,
@@ -4310,7 +4279,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._skip_resolution_downgrade_check = False
 
         if self._needs_full_resolution_upgrade(path):
-            self._queue_sensor_full_decode(path, priority_current=True)
+            self._request_full_res_decode(path, priority_current=True)
 
     def _disable_raw_recovery(self) -> None:
         was_active = self._raw_recovery_preview_active()
@@ -6864,7 +6833,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if not file_path:
             return
         if self._preserve_zoom_navigation_active() or self._single_view_is_zoomed_in():
-            self._queue_sensor_full_decode(file_path, priority_current=True)
+            self._request_full_res_decode(file_path, priority_current=True)
             return
         delay_ms = _env_int("RAWVIEWER_NAV_IDLE_FULL_MS", 1200, minimum=400)
         self._nav_idle_full_generation = int(
@@ -6880,50 +6849,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 return
             if not self._needs_full_resolution_upgrade(fp):
                 return
-            self._maybe_queue_background_full_decode(fp)
-
         QTimer.singleShot(delay_ms, _tick)
-
-    def _maybe_queue_background_full_decode(self, file_path: str) -> None:
-        """Queue sensor-res decode only when the on-screen buffer is not already full resolution."""
-        import logging
-
-        logger = logging.getLogger(__name__)
-        if self._should_defer_full_decode():
-            logger.debug("[LOAD] _maybe_queue_background_full_decode deferred for %s", os.path.basename(file_path or ""))
-            return
-        if not file_path:
-            return
-        try:
-            preview = self.image_cache.get_preview_memory_only(file_path)
-            exif = self.image_cache.get_exif(file_path)
-            if preview is not None and image_covers_sensor_resolution(
-                preview.shape[1], preview.shape[0], exif
-            ):
-                logger.debug("[LOAD] _maybe_queue_background_full_decode: preview covers sensor for %s", os.path.basename(file_path))
-                return
-            if self._cached_full_covers_sensor(file_path):
-                logger.debug("[LOAD] _maybe_queue_background_full_decode: cached full covers sensor for %s", os.path.basename(file_path))
-                return
-        except Exception:
-            pass
-        logger.info("[LOAD] _maybe_queue_background_full_decode: queueing for %s", os.path.basename(file_path))
-        from image_load_manager import Priority as _Priority
-
-        # On-screen image: CURRENT so GPU raw_limit reservation cannot let
-        # neighbor PRELOAD full starve this demosaic.
-        prio = _Priority.CURRENT
-        cur = getattr(self, "current_file_path", None)
-        if cur and _norm_path(cur) != _norm_path(file_path):
-            prio = _Priority.BACKGROUND
-            self.image_manager.load_image(
-                file_path,
-                priority=prio,
-                cancel_existing=False,
-                use_full_resolution=True,
-                stages={"full"},
-                bypass_cache=not self._cached_full_covers_sensor(file_path),
-            )
 
     def _finish_gallery_to_single_without_redisplay(self, file_path: str) -> None:
         """Gallery→single: keep the buffer already on screen; warm neighbors only."""
@@ -6962,8 +6888,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 )
             self._schedule_idle_full_decode_after_nav_preview(file_path)
         else:
-            self._maybe_queue_background_full_decode(file_path)
-        self._start_preloading()
+            self._start_preloading()
         if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
         self.setFocus()
@@ -7620,7 +7545,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             else:
                 if self._full_res_only_mode():
                     try:
-                        self._queue_sensor_full_decode(file_path, priority_current=True, force=True)
+                        self._request_full_res_decode(file_path, priority_current=True, force=True)
                     except Exception:
                         pass
                     return
@@ -7838,7 +7763,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 if self._full_res_only_mode():
                     self._pending_thumbnail = thumbnail
                     try:
-                        self._queue_sensor_full_decode(file_path, priority_current=True, force=True)
+                        self._request_full_res_decode(file_path, priority_current=True, force=True)
                     except Exception:
                         pass
                     return
@@ -7936,7 +7861,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # Reset the deferred-sensor-decode gate so a later navigation to the
         # same file is not permanently blocked ("stops loading full resolution
         # view of any image" symptom). The gate is set in
-        # _flush_deferred_sensor_full_decode and was never cleared before.
         try:
             if _norm_path(file_path) == _norm_path(getattr(self, "current_file_path", "") or ""):
                 self._sensor_full_decode_queued_norm = None
@@ -8458,7 +8382,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if "too many open files" in (error_message or "").lower():
             self._enter_io_pressure_mode("manager_error_emfile")
         if getattr(self, "_defer_sensor_full_decode_path", None):
-            self._flush_deferred_sensor_full_decode(file_path)
         if self._retry_composite_dng_embedded_preview(file_path, error_message):
             return
         if self._retry_raw_preview_with_full_decode(file_path, error_message):
@@ -8662,7 +8585,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         try:
             if hasattr(self, "loading_overlay"):
                 self.loading_overlay.show_loading("Decoding RAW…")
-            self._queue_sensor_full_decode(file_path, priority_current=True)
+            self._request_full_res_decode(file_path, priority_current=True)
             self.status_bar.showMessage(
                 f"{os.path.basename(file_path)}: preview unavailable, decoding full RAW…",
                 4000,
@@ -19159,7 +19082,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             except Exception:
                 pass
             try:
-                self._queue_sensor_full_decode(file_path, priority_current=True, force=True)
+                self._request_full_res_decode(file_path, priority_current=True, force=True)
             except Exception:
                 pass
 
@@ -19497,197 +19420,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return False
         return not getattr(self, "_single_view_first_render_logged", False)
 
-    def _schedule_deferred_sensor_full_after_first_paint(self, file_path: str) -> None:
-        """Queue sensor full decode after preview TTFR (avoids RAW worker slot contention)."""
-        from PyQt6.QtCore import QTimer
-
-        if not file_path:
-            return
-        np = _norm_path(file_path)
-        self._defer_sensor_full_decode_path = file_path
-        if getattr(self, "_sensor_full_decode_queued_norm", None) != np:
-            self._sensor_full_decode_queued_norm = None
-        delay_ms = _env_int("RAWVIEWER_DEFER_FULL_FALLBACK_MS", 6000, minimum=2000)
-
-        def _fallback(fp=file_path, norm=np) -> None:
-            if _norm_path(getattr(self, "current_file_path", "") or "") != norm:
-                return
-            if getattr(self, "_single_view_first_render_logged", False):
-                return
-            import logging
-
-            logging.getLogger(__name__).warning(
-                "[LOAD] Preview first paint timed out — queueing full decode for %s",
-                os.path.basename(fp),
-            )
-            self._flush_deferred_sensor_full_decode(fp)
-
-        QTimer.singleShot(delay_ms, _fallback)
-
-    def _schedule_deferred_full_exif_after_first_paint(self, file_path: str) -> None:
-        """Queue full exiftool EXIF after preview TTFR (avoids disk-cache EXIF before first paint)."""
-        from PyQt6.QtCore import QTimer
-
-        if not file_path:
-            return
-        np = _norm_path(file_path)
-        self._defer_full_exif_path = file_path
-        if getattr(self, "_full_exif_queued_norm", None) != np:
-            self._full_exif_queued_norm = None
-        delay_ms = _env_int("RAWVIEWER_DEFER_FULL_EXIF_FALLBACK_MS", 8000, minimum=3000)
-
-        def _fallback(fp=file_path, norm=np) -> None:
-            if _norm_path(getattr(self, "current_file_path", "") or "") != norm:
-                return
-            if getattr(self, "_single_view_first_render_logged", False):
-                return
-            import logging
-
-            logging.getLogger(__name__).warning(
-                "[LOAD] Preview first paint timed out — queueing full EXIF for %s",
-                os.path.basename(fp),
-            )
-            self._flush_deferred_full_exif_after_first_paint(fp)
-
-        QTimer.singleShot(delay_ms, _fallback)
-
-    def _flush_deferred_full_exif_after_first_paint(
-        self, file_path: str | None = None
-    ) -> None:
-        fp = file_path or getattr(self, "_defer_full_exif_path", None)
-        if not fp:
-            return
-        if _norm_path(fp) != _norm_path(getattr(self, "current_file_path", "") or ""):
-            self._defer_full_exif_path = None
-            return
-        norm = _norm_path(fp)
-        if getattr(self, "_full_exif_queued_norm", None) == norm:
-            self._defer_full_exif_path = None
-            return
-        self._full_exif_queued_norm = norm
-        self._defer_full_exif_path = None
-        from image_load_manager import Priority as _BgPriority
-
-        self.image_manager.load_image(
-            fp,
-            priority=_BgPriority.BACKGROUND,
-            cancel_existing=False,
-            use_full_resolution=False,
-            stages={"exif"},
-        )
-
-    def _flush_deferred_sensor_full_decode(
-        self, file_path: str | None = None, *, force: bool = False
-    ) -> None:
-        import logging
-
-        logger = logging.getLogger(__name__)
-        if self._adjust_panel_blocks_display_refresh():
-            return
-        if self._raw_recovery_preview_active():
-            return
-        if not force and self._should_defer_full_decode():
-            logger.debug(
-                "[LOAD] _flush_deferred_sensor_full_decode deferred for %s (session restore)",
-                os.path.basename(file_path or ""),
-            )
-            return
-        fp = file_path or getattr(self, "_defer_sensor_full_decode_path", None)
-        if not fp:
-            logger.debug("[LOAD] _flush_deferred_sensor_full_decode: no file path")
-            return
-        if _norm_path(fp) != _norm_path(getattr(self, "current_file_path", "") or ""):
-            logger.debug(
-                "[LOAD] _flush_deferred_sensor_full_decode: path mismatch %s vs %s",
-                os.path.basename(fp),
-                os.path.basename(getattr(self, "current_file_path", "") or ""),
-            )
-            self._defer_sensor_full_decode_path = None
-            return
-        norm = _norm_path(fp)
-        if getattr(self, "_sensor_full_decode_queued_norm", None) == norm:
-            logger.debug(
-                "[LOAD] _flush_deferred_sensor_full_decode: already queued for %s",
-                os.path.basename(fp),
-            )
-            self._defer_sensor_full_decode_path = None
-            return
-        self._sensor_full_decode_queued_norm = norm
-        self._defer_sensor_full_decode_path = None
-        logger.info(
-            "[LOAD] _flush_deferred_sensor_full_decode: queueing sensor decode for %s (force=%s)",
-            os.path.basename(fp),
-            force,
-        )
-        try:
-            cached_full = self.image_cache.get_full_image(fp)
-            if cached_full is not None and self._needs_full_resolution_upgrade(fp):
-                self.on_manager_image_ready(fp, cached_full)
-                return
-        except Exception:
-            pass
-        self._queue_sensor_full_decode(fp, priority_current=True, force=force)
-
-    def _queue_sensor_full_decode(
-        self, file_path: str, *, priority_current: bool = True, force: bool = False,
-        urgent: bool = False,
-    ) -> bool:
-        """Decode sensor-resolution buffer (e.g. after showing a cached preview tier).
-
-        ``force``: bypass session-restore defer *and* prefer a fresh decode when
-        the cached tier is untrusted (e.g. refused RAW interim).
-        ``urgent``: bypass session-restore defer only (user zoom / 100%) while
-        still using a covering cache hit when available.
-
-        Returns True only when a decode was actually queued — callers that set
-        in-flight flags (e.g. _full_resolution_loading) must not set them on an
-        early return, or the stale flag blocks every later upgrade attempt.
-        """
-        import logging
-
-        logger = logging.getLogger(__name__)
-        if self._adjust_panel_blocks_display_refresh():
-            logger.debug("[LOAD] _queue_sensor_full_decode blocked by adjust panel for %s", os.path.basename(file_path))
-            return False
-        if not force and not urgent and self._should_defer_full_decode():
-            logger.debug("[LOAD] _queue_sensor_full_decode deferred (session restore) for %s", os.path.basename(file_path))
-            return False
-        if not file_path:
-            return False
-        if not force:
-            try:
-                exif = self.image_cache.get_exif(file_path)
-                preview = self.image_cache.get_preview_memory_only(file_path)
-                if preview is not None and image_covers_sensor_resolution(
-                    preview.shape[1], preview.shape[0], exif
-                ):
-                    logger.debug("[LOAD] _queue_sensor_full_decode: preview already covers sensor for %s", os.path.basename(file_path))
-                    return False
-                if self._cached_full_covers_sensor(file_path):
-                    logger.debug("[LOAD] _queue_sensor_full_decode: cached full already covers sensor for %s", os.path.basename(file_path))
-                    return False
-            except Exception:
-                pass
-        logger.info(
-            "[LOAD] _queue_sensor_full_decode: queueing for %s (priority=%s, force=%s, urgent=%s)",
-            os.path.basename(file_path),
-            "CURRENT" if priority_current else "BACKGROUND",
-            force,
-            urgent,
-        )
-        from image_load_manager import Priority as _Priority
-
-        prio = _Priority.CURRENT if priority_current else _Priority.BACKGROUND
-        self.image_manager.load_image(
-            file_path,
-            priority=prio,
-            cancel_existing=False,
-            use_full_resolution=True,
-            stages={"full"},
-            bypass_cache=force or not self._cached_full_covers_sensor(file_path),
-        )
-        return True
-
     def _allow_full_decode_for_user_zoom(self) -> None:
         """User zoom/100% must not wait on session-restore full-decode deferral."""
         if getattr(self, "_session_restore_defer_preload", False):
@@ -19698,7 +19430,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         try:
             fp = getattr(self, "current_file_path", None)
             if fp and self._needs_full_resolution_upgrade(fp):
-                self._flush_deferred_sensor_full_decode(fp, force=True)
         except Exception:
             pass
 
@@ -19822,7 +19553,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # with a dead else/`pass` that claimed retries were allowed — so the
         # rest of the pinch gesture never asked again. Log only on success
         # to avoid the prior per-sample flood on no-op queues.
-        if self._queue_sensor_full_decode(fp, priority_current=True, urgent=True):
+        if self._request_full_res_decode(fp, priority_current=True, urgent=True):
             self._smooth_zoom_full_request_sent = True
             self._full_resolution_loading = True
             import logging
@@ -20156,15 +19887,14 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._defer_full_exif_path = None
             self._full_exif_queued_norm = None
             self._last_manager_exif_was_minimal = False
-            self._arm_first_render_timer(file_path, load_start)
-            # Re-arm the full-resolution upgrade watchdog for the new file; the
-            # first paint (via _on_single_view_content_displayed) will decide
-            # whether the buffer already covers sensor resolution and stop it.
-            up_timer = getattr(self, "_full_res_upgrade_timer", None)
-            if up_timer is not None:
-                up_timer.stop()
-            self._full_res_upgrade_path = None
-            self._full_res_upgrade_attempts = 0
+            # Restart the idle full-res timer for the new file.
+            try:
+                it = getattr(self, "_full_res_idle_timer", None)
+                if it is not None:
+                    it.stop()
+                self._full_res_idle_path = None
+            except Exception:
+                pass
             self._adjust_preview_base_rgb = None
             self._adjust_preview_base_rgb_fast = None
             self._adjust_edit_base_path = None
@@ -20596,9 +20326,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                                     preview_cached.shape[0],
                                     exif,
                                 ):
-                                    self._schedule_deferred_sensor_full_after_first_paint(
-                                        requested_file_path
-                                    )
                             except Exception:
                                 pass
                         return
@@ -20863,16 +20590,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                         self._schedule_idle_full_decode_after_nav_preview(
                             requested_file_path
                         )
-                        self._schedule_deferred_full_exif_after_first_paint(
-                            requested_file_path
-                        )
                     else:
-                        self._schedule_deferred_sensor_full_after_first_paint(
-                            requested_file_path
-                        )
-                        self._schedule_deferred_full_exif_after_first_paint(
-                            requested_file_path
-                        )
                 logger.info("[LOAD] Image load requested via ImageLoadManager")
             except Exception as manager_error:
                 logger.error(f"[LOAD] Failed to request image load: {manager_error}", exc_info=True)
@@ -21046,68 +20764,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     def on_memory_warning(self, memory_percent):
         """Handle memory warning events."""
         safe_print(f"⚠️ Memory usage high: {memory_percent:.1f}%")
-
-    def _start_full_res_upgrade_safety_monitor(self) -> None:
-        try:
-            timer = getattr(self, "_full_res_upgrade_safety_timer", None)
-            if timer is not None and not timer.isActive():
-                timer.start()
-        except Exception:
-            pass
-
-    def _full_res_upgrade_safety_tick(self) -> None:
-        try:
-            if getattr(self, "view_mode", "single") != "single":
-                return
-            fp = getattr(self, "current_file_path", None)
-            if not fp:
-                return
-            try:
-                from common_image_loader import is_raw_file
-
-                if not is_raw_file(fp):
-                    return
-            except Exception:
-                return
-            try:
-                if self._displayed_buffer_covers_sensor(fp):
-                    return
-            except Exception:
-                pass
-            self._note_displayed_resolution()
-        except Exception:
-            pass
-
-    def _start_full_res_upgrade_safety_monitor(self) -> None:
-        try:
-            timer = getattr(self, "_full_res_upgrade_safety_timer", None)
-            if timer is not None and not timer.isActive():
-                timer.start()
-        except Exception:
-            pass
-
-    def _full_res_upgrade_safety_tick(self) -> None:
-        try:
-            if getattr(self, "view_mode", "single") != "single":
-                return
-            fp = getattr(self, "current_file_path", None)
-            if not fp:
-                return
-            try:
-                from common_image_loader import is_raw_file
-
-                if not is_raw_file(fp):
-                    return
-            except Exception:
-                return
-            try:
-                if self._displayed_buffer_covers_sensor(fp):
-                    return
-            except Exception:
-                pass
-            self._note_displayed_resolution()
-        except Exception:
-            pass
 
     def _start_memory_pressure_monitor(self) -> None:
         """Idle QTimer (every few seconds). Not on thumbnail paint."""
@@ -21732,7 +21388,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                         # force+bypass: a gallery 512px entry may already sit in
                         # full_image_cache and (with bogus 160x120 EXIF) look like
                         # it "covers sensor", short-circuiting a non-forced re-queue.
-                        self._queue_sensor_full_decode(
+                        self._request_full_res_decode(
                             cur, priority_current=True, force=True
                         )
                     # Do NOT clear the viewport here. Clearing showed the empty-state
@@ -28740,7 +28396,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return
         
         logger.info("Loading full resolution image on-demand (user zoomed in)...")
-        if self._queue_sensor_full_decode(
+        if self._request_full_res_decode(
             self.current_file_path, priority_current=True, urgent=True
         ):
             self._full_resolution_loading = True
@@ -29039,8 +28695,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             "[SESSION] Starting deferred full decode for current image "
             "(RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS)"
         )
-        self._flush_deferred_full_exif_after_first_paint()
-        self._flush_deferred_sensor_full_decode(force=True)
         preload_delay_ms = _env_int(
             "RAWVIEWER_SESSION_RESTORE_PRELOAD_DELAY_MS", 200, minimum=0
         )
@@ -29220,7 +28874,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 if not self.image_manager.has_active_full_stage_for_path(cur):
                     # Ensure CURRENT full is queued before neighbor PRELOAD full
                     # can occupy the only GPU raw_limit slot.
-                    self._flush_deferred_sensor_full_decode(cur)
                     from PyQt6.QtCore import QTimer
 
                     QTimer.singleShot(200, self._queue_urgent_neighbor_prefetch)
@@ -29309,334 +28962,6 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self.image_files[prev_idx], priority=prio_prev, zoomed=zoomed, near=near
             )
 
-    def _arm_first_render_timer(self, file_path: str, load_start: float) -> None:
-        """Start the async first-render timeout for a new single-view load.
-
-        Replaces the old generation-counter watchdog. The timer is a single-shot
-        QTimer owned by the GUI thread and is stopped the moment
-        _single_view_first_render fires (see _on_first_render_ack), so a normal
-        fast load never reaches the timeout path at all.
-        """
-        import logging
-
-        logger = logging.getLogger(__name__)
-        self._single_view_ttfr_watch_generation = (
-            int(getattr(self, "_single_view_ttfr_watch_generation", 0)) + 1
-        )
-        self._ttfr_path = str(file_path or "")
-        self._ttfr_load_start = float(load_start)
-        self._ttfr_recheck_count = 0
-        delay_ms = _env_int("RAWVIEWER_TTFR_WATCH_MS", 5000, minimum=1000)
-        timer = getattr(self, "_ttfr_timeout_timer", None)
-        logger.info(
-            "[TTFR] Arming first-render timer for %s (delay=%dms, prev_path=%s)",
-            os.path.basename(file_path) if file_path else "<none>",
-            delay_ms,
-            os.path.basename(getattr(self, "current_file_path", "") or "") or "<none>",
-        )
-        if timer is not None:
-            timer.start(delay_ms)
-
-    def _schedule_ttfr_watchdog(self, file_path: str, load_start: float) -> None:
-        """Back-compat shim — renamed to _arm_first_render_timer."""
-        self._arm_first_render_timer(file_path, load_start)
-
-    def _on_first_render_ack(
-        self, file_path: str, elapsed: float, width: int, height: int
-    ) -> None:
-        """Slot: single-view pixels are painted. Stop the timeout timer and log TTFR/NAVTIME."""
-        import logging
-
-        logger = logging.getLogger(__name__)
-        self._single_view_first_render_logged = True
-        timer = getattr(self, "_ttfr_timeout_timer", None)
-        if timer is not None and timer.isActive():
-            timer.stop()
-        self._ttfr_path = None
-        self._ttfr_recheck_count = 0
-        import logging
-
-        logging.getLogger(__name__).info(
-            "[TTFR] First render acknowledged for %s (%dx%d, %.3fs)",
-            os.path.basename(file_path) if file_path else "<none>",
-            width,
-            height,
-            elapsed,
-        )
-        name = os.path.basename(file_path) if file_path else "<unknown>"
-        logger.info(
-            "[TTFR] load->first-render: %.3fs file=%s pixmap=%dx%d",
-            elapsed,
-            name,
-            width,
-            height,
-        )
-        safe_print(
-            f"[TTFR] load->first-render: {elapsed:.3f}s file={name} "
-            f"pixmap={width}x{height}",
-            flush=True,
-        )
-        # Navigation-instruction -> image-on-screen latency (user-facing
-        # responsiveness metric; includes queueing, decode, and conversion).
-        nav_ts = float(getattr(self, "_nav_instruction_ts", 0.0) or 0.0)
-        if nav_ts > 0.0:
-            nav_elapsed = max(0.0, time.time() - nav_ts)
-            self._nav_instruction_ts = 0.0
-            logger.info(
-                "[NAVTIME] navigation->display: %.3fs file=%s pixmap=%dx%d",
-                nav_elapsed,
-                name,
-                width,
-                height,
-            )
-            try:
-                from perf_metrics import perf_mark
-
-                perf_mark(
-                    "nav_to_display",
-                    nav_elapsed * 1000.0,
-                    file_path,
-                    px=f"{width}x{height}",
-                )
-            except Exception:
-                pass
-            if os.environ.get("RAWVIEWER_DEBUG", "").strip() == "1" and hasattr(
-                self, "status_bar"
-            ):
-                self.status_bar.showMessage(
-                    f"nav→display {nav_elapsed*1000:.0f} ms ({width}x{height})", 2500
-                )
-
-    def _displayed_buffer_covers_sensor(self, file_path: str) -> bool:
-        """True when the buffer actually on screen reaches sensor resolution.
-
-        GPU-aware: the CUDA-GL path keeps a 1x1 placeholder in ``current_pixmap``
-        (to avoid a huge empty alloc) and reports the real size via
-        ``gpu_view.image_size()``. In the RAW workflow an embedded-JPEG stand-in
-        never counts as full, matching _needs_full_resolution_upgrade.
-        """
-        if not file_path:
-            return False
-        width = height = 0
-        gv = getattr(self, "gpu_view", None)
-        if gv is not None and gv.has_pixmap():
-            try:
-                gw, gh = gv.image_size()
-                if gw > 0 and gh > 0:
-                    width, height = int(gw), int(gh)
-            except Exception:
-                pass
-        if width <= 0 or height <= 0:
-            pm = getattr(self, "current_pixmap", None)
-            if pm is not None and not pm.isNull():
-                width, height = int(pm.width()), int(pm.height())
-        if width <= 0 or height <= 0:
-            return False
-        try:
-            from common_image_loader import use_libraw_consistent_preview_first
-
-            if use_libraw_consistent_preview_first(
-                file_path
-            ) and self.image_cache.full_image_is_embedded_jpeg(file_path):
-                return False
-        except Exception:
-            pass
-        try:
-            exif = self.image_cache.get_exif(file_path)
-        except Exception:
-            exif = None
-        if image_covers_sensor_resolution is None:
-            return False
-        return image_covers_sensor_resolution(width, height, exif)
-
-    def _note_displayed_resolution(self) -> None:
-        """Manage the full-resolution upgrade timer from the current on-screen buffer.
-
-        Called on every single-view paint. When the buffer already reaches sensor
-        resolution the timer is disarmed; when it is still a preview the timer is
-        armed so a stalled sensor decode is forced instead of leaving the view
-        stuck on the blurry tier forever.
-
-        Guarded against re-entrancy: during a paint, cache/EXIF calls must not
-        re-trigger a paint or we recurse until the C stack overflows.
-        """
-        if getattr(self, "_note_displayed_resolution_in_progress", False):
-            return
-        self._note_displayed_resolution_in_progress = True
-        try:
-            fp = getattr(self, "current_file_path", None)
-            if not fp:
-                return
-            try:
-                from common_image_loader import is_raw_file
-
-                if not is_raw_file(fp):
-                    return
-            except Exception:
-                return
-            timer = getattr(self, "_full_res_upgrade_timer", None)
-            try:
-                covered = self._displayed_buffer_covers_sensor(fp)
-            except Exception:
-                covered = False
-            if covered:
-                if timer is not None and timer.isActive():
-                    timer.stop()
-                self._full_res_upgrade_path = None
-                self._full_res_upgrade_attempts = 0
-                return
-            self._arm_full_res_upgrade_timer(fp)
-        finally:
-            self._note_displayed_resolution_in_progress = False
-
-    def _arm_full_res_upgrade_timer(self, file_path: str) -> None:
-        """Start the upgrade watchdog for a preview-tier on-screen buffer."""
-        norm = _norm_path(file_path)
-        timer = getattr(self, "_full_res_upgrade_timer", None)
-        if timer is None:
-            return
-        # Already counting down for this file: do not reset the clock on every
-        # repaint (zoom/pan/toggle all repaint the same preview).
-        if (
-            getattr(self, "_full_res_upgrade_path", None) == norm
-            and timer.isActive()
-        ):
-            return
-        self._full_res_upgrade_path = norm
-        self._full_res_upgrade_attempts = 0
-        timer.start(_env_int("RAWVIEWER_FULL_RES_UPGRADE_MS", 12000, minimum=1500))
-
-    def _on_full_res_upgrade_timeout(self) -> None:
-        """Slot: preview still on screen past the window — force the sensor decode."""
-        import logging
-
-        logger = logging.getLogger(__name__)
-        fp = getattr(self, "current_file_path", None)
-        if not fp or _norm_path(fp) != getattr(self, "_full_res_upgrade_path", None):
-            # Path mismatch (e.g. fast navigation): disarm any stale timer and
-            # re-evaluate the current file so a preview stuck on screen still gets
-            # an upgrade watchdog instead of being silently skipped forever.
-            try:
-                timer = getattr(self, "_full_res_upgrade_timer", None)
-                if timer is not None and timer.isActive():
-                    timer.stop()
-                self._full_res_upgrade_path = None
-                self._full_res_upgrade_attempts = 0
-            except Exception:
-                pass
-            try:
-                self._note_displayed_resolution()
-            except Exception:
-                pass
-            return
-        if getattr(self, "view_mode", "single") != "single":
-            return
-        try:
-            if self._displayed_buffer_covers_sensor(fp):
-                return
-        except Exception:
-            return
-        attempts = int(getattr(self, "_full_res_upgrade_attempts", 0)) + 1
-        logger.warning(
-            "[TTFR] Full-res upgrade timeout fired for %s (attempt %d, covered=False)",
-            os.path.basename(fp),
-            attempts,
-        )
-        self._full_res_upgrade_attempts = attempts
-        max_attempts = _env_int("RAWVIEWER_FULL_RES_UPGRADE_ATTEMPTS", 5, minimum=1)
-        grace_attempts = _env_int(
-            "RAWVIEWER_FULL_RES_UPGRADE_GRACE_ATTEMPTS", 4, minimum=0
-        )
-        retry_ms = _env_int("RAWVIEWER_FULL_RES_UPGRADE_RETRY_MS", 5000, minimum=1000)
-
-        # A genuinely slow decode (large RAW on a slow volume) must not be
-        # thrown away and restarted on the first timeout. If a *full-stage* task
-        # for this file is truly in flight, give it the grace window: re-arm and
-        # wait. Only once it has had that, or when no full task is in flight at
-        # all (the request was lost / blocked by a phantom marker), force it.
-        full_in_flight = False
-        try:
-            mgr = getattr(self, "image_manager", None)
-            full_in_flight = bool(
-                mgr is not None
-                and hasattr(mgr, "has_active_full_stage_for_path")
-                and mgr.has_active_full_stage_for_path(fp)
-            )
-        except Exception:
-            full_in_flight = False
-
-        if full_in_flight and attempts <= grace_attempts:
-            logger.info(
-                "[TTFR] Full-resolution decode for %s still in flight (attempt %d/%d) "
-                "— waiting",
-                os.path.basename(fp),
-                attempts,
-                max_attempts,
-            )
-            timer = getattr(self, "_full_res_upgrade_timer", None)
-            if timer is not None:
-                timer.start(retry_ms)
-            return
-
-        logger.warning(
-            "[TTFR] Full-resolution upgrade still pending after preview for %s "
-            "(attempt %d/%d, in_flight=%s) — forcing sensor decode",
-            os.path.basename(fp),
-            attempts,
-            max_attempts,
-            full_in_flight,
-        )
-        # The sensor decode is starved behind prefetch or blocked by a phantom
-        # in-flight marker. Clear both, then force the decode.
-        try:
-            if hasattr(self.image_manager, "cancel_non_current_heavy_raw_except"):
-                self.image_manager.cancel_non_current_heavy_raw_except(fp)
-        except Exception:
-            pass
-        # load_image() strips the 'full' stage whenever another non-cancelled
-        # task owns it -- so a phantom CURRENT task would make the forced
-        # request a silent no-op. Cancel this file's tasks first; a demosaic
-        # already running still delivers its result, but the in-flight gate no
-        # longer suppresses the fresh request.
-        try:
-            if hasattr(self.image_manager, "cancel_task"):
-                self.image_manager.cancel_task(fp)
-        except Exception:
-            pass
-        try:
-            gj = getattr(self, "gallery_justified", None)
-            if gj is not None and hasattr(gj, "_evict_stale_active_tasks"):
-                gj._evict_stale_active_tasks(max_age_s=5.0, drop_prefetch=True)
-        except Exception:
-            pass
-        try:
-            self._queue_sensor_full_decode(fp, priority_current=True, force=True)
-        except Exception:
-            logger.debug("[TTFR] Forced sensor decode failed for %s", fp, exc_info=True)
-        if attempts < max_attempts:
-            timer = getattr(self, "_full_res_upgrade_timer", None)
-            if timer is not None:
-                timer.start(retry_ms)
-        else:
-            # Last resort: clear all stuck state so the next image can load.
-            logger.warning(
-                "[TTFR] Upgrade watchdog exhausted for %s — resetting stuck state",
-                os.path.basename(fp),
-            )
-            try:
-                self._reset_stuck_load_state()
-            except Exception:
-                logger.debug("[TTFR] State reset failed", exc_info=True)
-            # Re-arm for the current file if a preview is still on screen, so
-            # a genuinely slow (but progressing) decode gets another window
-            # instead of being abandoned permanently.
-            try:
-                cur = getattr(self, "current_file_path", None)
-                if cur and _norm_path(cur) == _norm_path(fp):
-                    self._note_displayed_resolution()
-            except Exception:
-                pass
-
     def _reset_stuck_load_state(self) -> None:
         """Clear all state that can permanently block full-resolution loading."""
         import logging
@@ -29670,126 +28995,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 gj._evict_stale_active_tasks(max_age_s=0.0, drop_prefetch=True)
         except Exception:
             pass
-        timer = getattr(self, "_full_res_upgrade_timer", None)
-        if timer is not None:
-            timer.stop()
-        timer = getattr(self, "_ttfr_timeout_timer", None)
-        if timer is not None:
-            timer.stop()
         logger.warning("[TTFR] Stuck load state reset complete")
-
-    def _on_first_render_timeout(self) -> None:
-        """Slot: no first-render signal within the window. Recover, then re-arm if still busy."""
-        import logging
-
-        logger = logging.getLogger(__name__)
-        file_path = str(getattr(self, "_ttfr_path", "") or "")
-        load_start = float(getattr(self, "_ttfr_load_start", 0.0) or 0.0)
-        if not file_path:
-            return
-        if getattr(self, "view_mode", "single") != "single":
-            return
-        if getattr(self, "_single_view_first_render_logged", False):
-            return
-        # A newer load superseded this one — the timer for it owns this state now.
-        req_path = str(getattr(self, "_single_view_load_request_path", "") or "")
-        if _norm_path(req_path) != _norm_path(file_path):
-            return
-        elapsed = max(0.0, time.time() - load_start) if load_start else 0.0
-
-        mgr = getattr(self, "image_manager", None)
-        still_loading = bool(
-            mgr is not None
-            and hasattr(mgr, "has_active_work_for_path")
-            and mgr.has_active_work_for_path(file_path)
-        )
-        max_wait_s = float(_env_int("RAWVIEWER_TTFR_WATCH_MAX_S", 18, minimum=8))
-        recheck_ms = _env_int("RAWVIEWER_TTFR_WATCH_RETRY_MS", 2500, minimum=500)
-        # Observability hook: the async timer fired without a first render.
-        try:
-            self._single_view_render_timeout.emit(file_path, elapsed)
-        except Exception:
-            pass
-        if still_loading and elapsed < max_wait_s:
-            self._ttfr_recheck_count = int(getattr(self, "_ttfr_recheck_count", 0)) + 1
-            logger.info(
-                "[TTFR] Still decoding %s after %.3fs — rechecking in %dms",
-                os.path.basename(file_path),
-                elapsed,
-                recheck_ms,
-            )
-            timer = getattr(self, "_ttfr_timeout_timer", None)
-            if timer is not None:
-                timer.start(recheck_ms)
-            return
-
-        pm = getattr(self, "current_pixmap", None)
-        pm_w = int(pm.width()) if pm is not None and not pm.isNull() else 0
-        pm_h = int(pm.height()) if pm is not None and not pm.isNull() else 0
-        gv = getattr(self, "gpu_view", None)
-        gpu_has = bool(gv is not None and gv.has_pixmap())
-        msg = (
-            f"[TTFR] load->first-render MISSING after {elapsed:.3f}s "
-            f"file={os.path.basename(file_path)} "
-            f"(current_pixmap={pm_w}x{pm_h} gpu_has_pixmap={gpu_has} "
-            f"manager_max_dim={getattr(self, '_manager_displayed_max_dim', 0)} "
-            f"manager_still_loading={still_loading})"
-        )
-        logger.warning(msg)
-        safe_print(msg, flush=True)
-        self._recover_stuck_first_render(file_path, still_loading)
-
-    def _recover_stuck_first_render(self, file_path: str, still_loading: bool) -> None:
-        """Force progress when no first render ever arrived.
-
-        Two distinct failures need different handling:
-        - A completed buffer exists in cache but was never painted -> paint it.
-        - Nothing completed yet -> drop phantom manager tasks (a task that never
-          completes keeps ``has_active_work_for_path`` True forever, which blocks
-          every later full-decode request for this file: the stuck-blurry
-          symptom) and force the sensor decode.
-        """
-        import logging
-
-        logger = logging.getLogger(__name__)
-        try:
-            if self._session_restore_burst_active():
-                self._session_restore_full_decode_allowed = True
-            try:
-                gj = getattr(self, "gallery_justified", None)
-                if gj is not None and hasattr(gj, "_evict_stale_active_tasks"):
-                    gj._evict_stale_active_tasks(max_age_s=6.0, drop_prefetch=True)
-            except Exception:
-                pass
-            cached_full = None
-            try:
-                cached_full = self.image_cache.get_full_image(file_path)
-            except Exception:
-                cached_full = None
-            if cached_full is not None:
-                logger.warning(
-                    "[TTFR] Recovering stuck view from cached buffer for %s",
-                    os.path.basename(file_path),
-                )
-                self._defer_sensor_full_decode_path = None
-                self._skip_resolution_downgrade_check = True
-                try:
-                    self.on_manager_image_ready(file_path, cached_full)
-                finally:
-                    self._skip_resolution_downgrade_check = False
-            else:
-                logger.warning(
-                    "[TTFR] No cached buffer for %s — forcing sensor decode",
-                    os.path.basename(file_path),
-                )
-                self._flush_deferred_sensor_full_decode(file_path, force=True)
-                self._queue_sensor_full_decode(
-                    file_path, priority_current=True, force=True
-                )
-        except Exception:
-            logger.warning(
-                "[TTFR] First-render recovery failed for %s", file_path, exc_info=True
-            )
 
     def _on_single_view_content_displayed(self):
         """Called when a single-view image or preview is successfully painted on screen.
@@ -29823,7 +29029,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # (calling cache/EXIF lookups synchronously inside a paint can
         # re-enter the paint path and overflow the C stack).
         try:
-            QTimer.singleShot(0, self._note_displayed_resolution)
+            self._restart_full_res_idle_timer()
         except Exception:
             pass
 
@@ -29847,14 +29053,10 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             except Exception:
                 defer_full_for_neighbors = False
             if defer_full_for_neighbors:
-                self._flush_deferred_full_exif_after_first_paint()
                 self._schedule_idle_full_decode_after_nav_preview(
                     getattr(self, "current_file_path", None) or ""
                 )
             else:
-                self._flush_deferred_sensor_full_decode()
-                self._flush_deferred_full_exif_after_first_paint()
-
         # Always warm next/prev immediately (even during session-restore defer).
         try:
             self._queue_urgent_neighbor_prefetch()
@@ -30349,6 +29551,69 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         ):
             interval_ms = _env_int("RAWVIEWER_IDLE_DISPLAY_PREFETCH_INTERVAL_MS", 450, minimum=150)
             self._idle_display_prefetch_timer.start(interval_ms)
+
+    def _restart_full_res_idle_timer(self, file_path=None) -> None:
+        """Restart the 3s idle timer that triggers full-res decode."""
+        try:
+            fp = file_path or getattr(self, "current_file_path", None)
+            if not fp:
+                return
+            it = getattr(self, "_full_res_idle_timer", None)
+            if it is None:
+                return
+            self._full_res_idle_path = _norm_path(fp)
+            it.stop()
+            delay = _env_int("RAWVIEWER_FULL_RES_IDLE_MS", 3000, minimum=1000)
+            it.start(delay)
+        except Exception:
+            pass
+
+    def _on_full_res_idle_timeout(self) -> None:
+        """Idle trigger: decode full resolution for the current image."""
+        try:
+            if getattr(self, "view_mode", "single") != "single":
+                return
+            fp = getattr(self, "current_file_path", None)
+            if not fp or _norm_path(fp) != getattr(self, "_full_res_idle_path", None):
+                return
+            # Skip if already full-res on screen.
+            try:
+                from common_image_loader import is_raw_file
+                if not is_raw_file(fp):
+                    return
+            except Exception:
+                return
+            # Request full decode (CURRENT priority).
+            try:
+                from image_load_manager import Priority as _Prio
+                self.image_manager.load_image(
+                    file_path=fp,
+                    priority=_Prio.CURRENT,
+                    cancel_existing=False,
+                    use_full_resolution=True,
+                    stages={"full"},
+                    bypass_cache=False,
+                )
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _request_full_res_decode(self, file_path, *, priority_current=True, force=False, urgent=False) -> bool:
+        """Request a full-resolution decode for file_path. Returns True."""
+        try:
+            from image_load_manager import Priority as _Prio
+            self.image_manager.load_image(
+                file_path=file_path,
+                priority=_Prio.CURRENT if priority_current else _Prio.BACKGROUND,
+                cancel_existing=False,
+                use_full_resolution=True,
+                stages={"full"},
+                bypass_cache=bool(force),
+            )
+            return True
+        except Exception:
+            return False
 
     def _start_preloading(self):
         """Start preloading adjacent images for fast navigation using aggressive caching strategy."""
@@ -32336,7 +31601,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                     self._pending_zoom = True
                     self._pending_zoom_center = self.zoom_center_point
                     self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
-                    self._queue_sensor_full_decode(
+                    self._request_full_res_decode(
                         _require_str_path(self.current_file_path),
                         priority_current=True,
                         urgent=True,
