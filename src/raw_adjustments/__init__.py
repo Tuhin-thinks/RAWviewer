@@ -9,6 +9,7 @@ from .apply import (
     _apply_adjustments_to_srgb_core,
     _apply_highlights_shadows,
     _apply_masked_luminance_adjust,
+    _BAND_PAD_PX,
     _black_region_weight,
     _channel_luminance,
     _format_xmp_value,

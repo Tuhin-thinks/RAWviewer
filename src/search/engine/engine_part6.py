@@ -8,10 +8,23 @@ from collections.abc import Sequence
 from typing import Any
 
 from search.indexer import _coerce_float, _coerce_int
-from search.types import MetadataRow
+from search.types import MetadataRow, Row
 
 
 class EnginePart6:
+    # Type annotations for attributes inherited from other EnginePart siblings
+    _canonical_path: Any
+    _conn: Any
+    _mtime_ns_from_stat: Any
+    _mtime_matches: Any
+    _filter_duplicate_raw_companions: Any
+    _normalize_loose_metadata_query: Any
+    _auto_match_metadata_keywords: Any
+    _FORMAT_HINT_FILENAME_TOKENS: frozenset[str]
+    _FACE_COUNT_POSITIVE_TOKENS: frozenset[str]
+    _FACE_COUNT_NEGATIVE_TOKENS: frozenset[str]
+    _RAW_FILE_EXTENSIONS: frozenset[str]
+    model_name: str
 
     def get_pending_paths(self, file_paths: Sequence[str]) -> list[str]:
         """
@@ -319,6 +332,7 @@ class EnginePart6:
 
         return result_map
 
+    @staticmethod
     def _parse_capture_year(capture_time: str) -> int:
         # EXIF style: "YYYY:MM:DD HH:MM:SS"
         try:
@@ -326,12 +340,14 @@ class EnginePart6:
         except Exception:
             return 0
 
+    @staticmethod
     def _parse_capture_month(capture_time: str) -> int:
         try:
             return int((capture_time or "")[5:7])
         except Exception:
             return 0
 
+    @staticmethod
     def _row_value(row: MetadataRow | None, key: str, default: object = "") -> object:
         if row is None:
             return default
@@ -345,16 +361,20 @@ class EnginePart6:
                 pass
             return default
 
+    @staticmethod
     def _to_int(value: object, default: int = 0) -> int:
-        return _coerce_int(value, default)
+        return _coerce_int(value, default)  # type: ignore[no-any-return]
 
+    @staticmethod
     def _to_float(value: object) -> float | None:
-        return _coerce_float(value)
+        return _coerce_float(value)  # type: ignore[no-any-return]
 
+    @staticmethod
     def _normalize_date_value(value: str) -> str:
         return (value or "").strip().replace("-", ":").replace("/", ":")
 
-    def _row_file_extension(row) -> str:
+    @staticmethod
+    def _row_file_extension(row: Row | dict[str, object] | None) -> str:
         from search.engine.semantic_index import SemanticImageIndex
 
         fp = str(SemanticImageIndex._row_value(row, "file_path") or "")
@@ -374,7 +394,8 @@ class EnginePart6:
             return False
         return n in self._FORMAT_HINT_FILENAME_TOKENS
 
-    def _format_specs_to_accept_set(cls, spec: str) -> frozenset:
+    @classmethod
+    def _format_specs_to_accept_set(cls, spec: str) -> frozenset[str]:
         """Map one user-facing format keyword to a set of lowercase extensions."""
         s = (spec or "").strip().lower().lstrip(".")
         if not s:
@@ -389,7 +410,8 @@ class EnginePart6:
             return cls._RAW_FILE_EXTENSIONS
         return frozenset({s})
 
-    def _row_matches_format_specs(cls, row, specs: Sequence[str]) -> bool:
+    @classmethod
+    def _row_matches_format_specs(cls, row: Row | dict[str, object] | None, specs: Sequence[str]) -> bool:
         fe = cls._row_file_extension(row)
         for spec in specs:
             accepted = cls._format_specs_to_accept_set(spec)
@@ -404,6 +426,7 @@ class EnginePart6:
         capture = str(capture_time or "")
         return capture.startswith(normalized)
 
+    @staticmethod
     def _contains_loose(haystack: str, needle: str) -> bool:
         h = str(haystack or "").strip().lower()
         n = str(needle or "").strip().lower()
@@ -418,6 +441,7 @@ class EnginePart6:
                     return True
         return False
 
+    @staticmethod
     def _contains_location_place(haystack: str, needle: str) -> bool:
         """Location field match — forward substring with word boundaries only."""
         h = str(haystack or "").strip().lower()
@@ -654,7 +678,7 @@ class EnginePart6:
                 key, op, val_str = m.group(1), m.group(2), m.group(3)
                 val = int(val_str)
 
-                def _ok(x: int, op=op, val=val) -> bool:
+                def _ok(x: int, op: str = op, val: int = val) -> bool:
                     if x <= 0:
                         if op == "=":
                             return val == 0
