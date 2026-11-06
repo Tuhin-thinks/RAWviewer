@@ -111,7 +111,7 @@ def main() -> int:
 
     check("manager exposes qimage_ready", hasattr(ilm.ImageLoadManager, "qimage_ready"))
     check("host has the converting slot", hasattr(mainmod.RAWImageViewer, "on_manager_qimage_ready"))
-    src = open(os.path.join(os.path.dirname(__file__), "..", "..", "src", "image_load_manager.py"), encoding="utf-8").read()
+    src = open(os.path.join(os.path.dirname(__file__), "..", "..", "src", "image_load_manager", "worker.py"), encoding="utf-8").read()
     check("the worker emits QImage buffers rather than dropping them", "qimage_ready.emit" in src)
 
     # --- the conversion must not be paid for a photo already navigated away ---
