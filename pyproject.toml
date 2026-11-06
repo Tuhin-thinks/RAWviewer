@@ -36,3 +36,16 @@ disallow_incomplete_defs = true
 [[tool.mypy.overrides]]
 module = ["tests.*", "scripts.*"]
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "PyQt6.*",
+    "objc",
+    "AppKit",
+    "CoreML",
+    "Foundation",
+    "Quartz",
+]
+ignore_missing_imports = true
+
+
