@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from typing import List
 
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
@@ -266,6 +267,9 @@ class GalleryPart3:
     # def _add_grid_row(self, row_files, available_width, row_height, item_spacing, row_index=0, start_index=0):
     #     """Create a simple grid row with fixed height - basic gallery layout"""
     #     pass  # Gallery functionality disabled
+        # Dummy assignments for old method parameters (gallery disabled)
+        available_width, row_height, item_spacing, row_index, start_index = 0, 0, 0, 0, 0
+        row_files, thumb_width = [], 0
 
         # Create row widget with fixed height
         row_widget = QWidget()
@@ -328,6 +332,10 @@ class GalleryPart3:
     # def _add_justified_row(self, row_items, row_width, available_width, row_height, min_spacing, row_index=0):
     #     """Create a row of thumbnails with equal horizontal spacing between images"""
     #     pass  # Gallery functionality disabled
+        # Dummy assignments for old method parameters (gallery disabled)
+        row_items, row_width, min_spacing, row_index = [], 0, 0, 0
+        target_width, target_height, thumb_width = 0, 0, 0
+
         # Calculate total width needed for all images at base scale
         total_images_width = sum(base_width for _, base_width in row_items)
 
