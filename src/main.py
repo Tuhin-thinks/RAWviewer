@@ -94,7 +94,7 @@ if not _IS_GUI_MAIN_PROCESS:
     close_native_splash()
 
 state._startup_splash = None  # set in ultra-fast splash block when frozen
-RAWApplication = None  # type: ignore[misc, assignment]
+RAWApplication = None
 
 # Ultra Fast Splash: Qt only in the GUI main process (pool workers must not touch Cocoa).
 if _IS_GUI_MAIN_PROCESS:
@@ -113,9 +113,9 @@ if _IS_GUI_MAIN_PROCESS:
             "qt.imageformats.warning=false\nqt.imageformats.tiff.warning=false"
         )
 
-        class RAWApplication(QApplication):
+        class RAWApplication(QApplication):  # type: ignore[no-redef]
             """Custom QApplication to handle macOS FileOpen events"""
-            def __init__(self, argv):
+            def __init__(self, argv: list[str]) -> None:
                 super().__init__(argv)
                 # Set explicit AppUserModelID on Windows so the taskbar groups and shows the app icon correctly
                 _set_windows_app_user_model_id()
@@ -124,16 +124,16 @@ if _IS_GUI_MAIN_PROCESS:
                 if _early_icon is not None:
                     self.setWindowIcon(_early_icon)
                 self.viewer = None
-                self.pending_files = []
+                self.pending_files: list[str] = []
 
-            def set_viewer(self, viewer):
+            def set_viewer(self, viewer: Any) -> None:
                 """Set the main viewer window and load any pending files"""
                 self.viewer = viewer
                 for file_path in self.pending_files:
                     self._load_file(file_path)
                 self.pending_files.clear()
 
-            def event(self, event):
+            def event(self, event: Any) -> bool:
                 """Intercept application-level events"""
                 if event.type() == QEvent.Type.FileOpen:
                     file_path = event.file()
@@ -143,9 +143,9 @@ if _IS_GUI_MAIN_PROCESS:
                         else:
                             self.pending_files.append(file_path)
                     return True
-                return super().event(event)
+                return super().event(event)  # type: ignore[no-any-return]
 
-            def _load_file(self, path):
+            def _load_file(self, path: str) -> None:
                 """Load a file into the viewer"""
                 if self.viewer is None:
                     return
@@ -161,7 +161,7 @@ if _IS_GUI_MAIN_PROCESS:
         # We need a temporary app just to show the splash
         _temp_app = QApplication.instance()
         if not _temp_app:
-            _temp_app = RAWApplication(sys.argv)
+            _temp_app = RAWApplication(sys.argv)  # type: ignore[misc]
 
         # Compact branded splash (full-res PNG is far too large as QSplashScreen).
         _splash_pixmap = _make_splash_pixmap()
@@ -210,7 +210,7 @@ __all__ = [
 ]
 
 
-def main():
+def main() -> None:
     """Main function to run the application"""
     import traceback
 
@@ -343,7 +343,7 @@ def main():
             # Try to get real platform info, but don't block if it fails
             import threading
             platform_result: list[Any] = [None, None]
-            def get_platform_info():
+            def get_platform_info() -> None:
                 try:
                     platform_result[0] = platform.system()
                     platform_result[1] = platform.release()
@@ -380,7 +380,7 @@ def main():
         safe_print("  [Windows] wintypes imported", flush=True)
 
         # Define exception handler function
-        def exception_handler(exception_info):
+        def exception_handler(exception_info: Any) -> int:
             """Handle Windows exceptions (access violations, etc.)"""
             exception_code = exception_info[0].ExceptionRecord[0].ExceptionCode
             exception_address = exception_info[0].ExceptionRecord[0].ExceptionAddress
@@ -411,7 +411,7 @@ def main():
             # 1. Use pre-created Application instance
             app = QApplication.instance()
             if not app:
-                app = RAWApplication(sys.argv)
+                app = RAWApplication(sys.argv)  # type: ignore[misc]
             safe_print("Application instance ready", flush=True)
 
             # 2. Update existing splash if present
