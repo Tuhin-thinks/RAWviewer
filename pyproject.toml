@@ -25,6 +25,25 @@ ignore = ["E501"]  # Line length handled by formatter
 quote-style = "double"
 indent-style = "space"
 
+[tool.ruff.lint.per-file-ignores]
+"src/search/indexer/__init__.py" = ["F401"]
+"src/raw_adjustments/__init__.py" = ["F401"]
+"src/bootstrap_pkg/__init__.py" = ["F401"]
+"src/enhanced_raw_processor/__init__.py" = ["F401"]
+"src/rawviewer_ui/widgets/gpu/__init__.py" = ["F401"]
+"src/cache/image_cache/__init__.py" = ["F401"]
+"src/rawviewer_app/processing/__init__.py" = ["F401"]
+"src/main.py" = ["E402"]
+"src/raw_edit_pipeline.py" = ["E402"]
+"src/release_update.py" = ["E402"]
+"src/common_image_loader/loaders.py" = ["E402"]
+"src/common_image_loader/mipmap.py" = ["E402"]
+"src/metadata_backend.py" = ["E402"]
+"src/processing/unified/helpers.py" = ["E402"]
+"src/rawviewer_app/window/mixins/metadata_part2.py" = ["E402"]
+"src/rawviewer_ui/widgets/adjust/adjust_part4.py" = ["E402"]
+"src/bootstrap_pkg/helpers.py" = ["E402"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

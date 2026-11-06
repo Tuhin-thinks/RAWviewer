@@ -1,6 +1,7 @@
 """_ConfirmDialogButton + CustomConfirmDialog: shared confirmation dialog."""
 from __future__ import annotations
 
+import contextlib
 import sys
 import time
 
@@ -355,10 +356,8 @@ class CustomConfirmDialog(QDialog):
     def hideEvent(self, event):
         app = QApplication.instance()
         if app and self._app_state_connected:
-            try:
+            with contextlib.suppress(Exception):
                 app.applicationStateChanged.disconnect(self._on_application_state_changed)
-            except Exception:
-                pass
             self._app_state_connected = False
         super().hideEvent(event)
 

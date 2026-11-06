@@ -8,9 +8,9 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from PyQt6.QtGui import QPainter, QPixmap
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

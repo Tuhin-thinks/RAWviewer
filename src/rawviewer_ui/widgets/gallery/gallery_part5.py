@@ -1,6 +1,7 @@
 """Gallery mixin part 5 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import time
@@ -48,10 +49,8 @@ class GalleryPart5:
         ):
             attempts = int(getattr(self, "_scroll_to_file_attempts", 0) or 0)
             if attempts < 40:
-                try:
+                with contextlib.suppress(Exception):
                     self._apply_pending_scroll_to_file()
-                except Exception:
-                    pass
             if (
                 getattr(self, "_pending_scroll_to_path", None)
                 or getattr(self, "_pending_scroll_anchor_state", None)
@@ -187,10 +186,8 @@ class GalleryPart5:
             # flush_queue clears the manager's active map but does not emit
             # task_completed — drop the gallery's parallel bookkeeping or
             # phantom CURRENT entries block reschedule until the 4s sweep.
-            try:
+            with contextlib.suppress(Exception):
                 self._active_tasks.clear()
-            except Exception:
-                pass
             # A deliberate jump away means the user is no longer following the entry
             # point -- stop anchoring center_paths/prefetch to it (see
             # _entry_prefetch_active, which is otherwise purely spatial and would
@@ -214,10 +211,8 @@ class GalleryPart5:
             # a volume that briefly dropped) and without this the tile stayed
             # grey until the folder was reopened.
             if self._placeholder_thumb_paths:
-                try:
+                with contextlib.suppress(Exception):
                     self.retry_placeholder_thumbnails(visible_paths)
-                except Exception:
-                    pass
 
             # Cancel thumbnail work that is no longer near the scrollbar thumb.
             # Skip cancel for visible RAW/DNG tiles still decoding at CURRENT priority.
@@ -227,10 +222,8 @@ class GalleryPart5:
                 if self._should_protect_active_raw_thumbnail(fp, visible_paths):
                     protected_paths.add(fp)
                     continue
-                try:
+                with contextlib.suppress(Exception):
                     self.load_manager.cancel_task(fp)
-                except Exception:
-                    pass
                 self._active_tasks.pop(fp, None)
             self._requested_thumbnail_paths = wanted_paths | protected_paths
         else:
@@ -239,10 +232,8 @@ class GalleryPart5:
             # the 4s sweep, starving the new viewport.
             to_cancel = self._requested_thumbnail_paths - visible_paths
             for fp in list(to_cancel):
-                try:
+                with contextlib.suppress(Exception):
                     self.load_manager.cancel_task(fp)
-                except Exception:
-                    pass
                 self._active_tasks.pop(fp, None)
             self._requested_thumbnail_paths = set(visible_paths)
 
@@ -370,10 +361,8 @@ class GalleryPart5:
                             return
                     except Exception:
                         pass
-                    try:
+                    with contextlib.suppress(Exception):
                         e.ignore()
-                    except Exception:
-                        pass
 
                 def _on_thumb_release(e, _w=w):
                     if getattr(_w, "_press_on_check", False):
@@ -451,12 +440,10 @@ class GalleryPart5:
             scaled_key = self._scaled_cache_key(path, physical_size, fast=False)
             cached_scaled = self._thumbnail_cache.get(scaled_key)
 
-            is_fast_cache = False
             if not cached_scaled and is_scrolling:
                 fast_key = self._scaled_cache_key(path, physical_size, fast=True)
                 cached_scaled = self._thumbnail_cache.get(fast_key)
                 if cached_scaled and not cached_scaled.isNull():
-                    is_fast_cache = True
                     scaled_key = fast_key
 
             if cached_scaled and not cached_scaled.isNull():
@@ -690,7 +677,7 @@ class GalleryPart5:
                 )
             self._request_load_visible_images(150)
             return
-        for path, priority, stages, *rest in load_tasks:
+        for path, priority, stages, *_rest in load_tasks:
             if scheduled >= max_tasks:
                 if self._load_timer is not None and not self._load_timer.isActive():
                     self._load_timer.start(16)
@@ -705,9 +692,8 @@ class GalleryPart5:
                 if self._load_timer is not None and not self._load_timer.isActive():
                     self._load_timer.start(16)
                 break
-            if priority != Priority.CURRENT:
-                if self._prefetch_active_count() >= prefetch_active_cap:
-                    continue
+            if priority != Priority.CURRENT and self._prefetch_active_count() >= prefetch_active_cap:
+                continue
             if len(self._active_tasks) >= active_cap:
                 if priority != Priority.CURRENT:
                     continue

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 from PyQt6.QtCore import QSize
@@ -759,7 +759,7 @@ class UnifiedPart7:
         return self.exif_extractor.extract_exif_data(file_path)
 
     def process_metadata_and_thumbnail(self, file_path: str, allow_heavy_fallback: bool = True,
-                                      target_size: QSize | None = None) -> Tuple[dict[str, Any] | None, np.ndarray | None]:
+                                      target_size: QSize | None = None) -> tuple[dict[str, Any] | None, np.ndarray | None]:
         """
         COMBINED OPTIMIZATION: Extract both metadata and thumbnail in a single pass.
         This is crucial for RAW files to avoid opening the large file twice.

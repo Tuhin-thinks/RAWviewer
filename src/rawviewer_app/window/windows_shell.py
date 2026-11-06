@@ -1,7 +1,8 @@
-from typing import List
+
 """Windows shell integration: open-with and share helpers."""
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import os
 import struct
@@ -188,14 +189,12 @@ def _share_windows_clipboard_cf_hdrop(path: str) -> bool:
             win32clipboard.CloseClipboard()
         return True
     except Exception:
-        try:
+        with contextlib.suppress(Exception):
             win32clipboard.CloseClipboard()
-        except Exception:
-            pass
         return False
 
 
-def _share_windows_clipboard_cf_hdrop_paths(file_paths: List[str]) -> bool:
+def _share_windows_clipboard_cf_hdrop_paths(file_paths: list[str]) -> bool:
     """Place multiple files on the clipboard as CF_HDROP."""
 
     try:
@@ -223,10 +222,8 @@ def _share_windows_clipboard_cf_hdrop_paths(file_paths: List[str]) -> bool:
             win32clipboard.CloseClipboard()
         return True
     except Exception:
-        try:
+        with contextlib.suppress(Exception):
             win32clipboard.CloseClipboard()
-        except Exception:
-            pass
         return False
 
 

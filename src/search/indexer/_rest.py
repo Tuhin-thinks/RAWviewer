@@ -1,6 +1,7 @@
 """Thumbnail prep, ONNX/DNN/CoreML, and source image loading helpers."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import platform
@@ -11,14 +12,15 @@ from typing import cast
 import numpy as np
 from PIL import Image, ImageOps
 from PIL.Image import Image as PilImage
+
 from raw_file_extensions import RAW_FILE_EXTENSIONS
 
 from ._config import (
-    _dnn_get_backend_name,
     _INDEX_THREAD_LOCAL,
     _YUNET_INFER_LOCK,
     _YUNET_SINGLETON,
     _YUNET_SINGLETON_MODEL_PATH,
+    _dnn_get_backend_name,
 )
 
 
@@ -202,10 +204,8 @@ def resolve_opencv_dnn_backend_target() -> tuple:
         return cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE, target_cpu
 
     # Auto: CUDA when available, else CPU. OpenCL stays disabled unless requested.
-    try:
+    with contextlib.suppress(Exception):
         cv2.ocl.setUseOpenCL(False)
-    except Exception:
-        pass
     try:
         if cv2.cuda.getCudaEnabledDeviceCount() > 0:
             return cv2.dnn.DNN_BACKEND_CUDA, cv2.dnn.DNN_TARGET_CUDA
@@ -653,7 +653,7 @@ def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage
                 oh = int(exif_data.get("original_height") or 0)
                 if ow > 0 and oh > 0:
                     dw, dh = exif_display_dimensions(ow, oh, orientation)
-                    if not ((dh > dw) == (im.height > im.width)):
+                    if (dh > dw) != (im.height > im.width):
                         exif = im.getexif()
                         exif[0x0112] = orientation
                         im = ImageOps.exif_transpose(im)
@@ -685,12 +685,10 @@ def _load_index_source_image(
                 fixed = finalize_index_thumbnail_array(file_path, arr, cache=cache)
                 if fixed is not None:
                     arr = fixed
-                    try:
+                    with contextlib.suppress(Exception):
                         cache.put_thumbnail(
                             file_path, arr, _thumbnail_jpeg_bytes(arr)
                         )
-                    except Exception:
-                        pass
             im = Image.fromarray(arr).convert("RGB")
             _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
             im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)

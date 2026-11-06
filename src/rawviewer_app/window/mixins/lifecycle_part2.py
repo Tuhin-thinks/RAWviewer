@@ -1,6 +1,7 @@
 """lifecycle mixin, part 2 of 2 (5 methods, 591 lines)."""
 from __future__ import annotations
 
+import contextlib
 import sys
 
 from PyQt6.QtCore import QEvent, Qt, QTimer
@@ -196,9 +197,8 @@ class LifecyclePart2:
             # Fallback: active main window but receiver not matched above (e.g. QOpenGLWidget).
             elif not self._shortcut_blocked_by_text_input():
                 app = QApplication.instance()
-                if app is not None and app.activeWindow() is self:
-                    if self._handle_app_shortcut(event):
-                        return True
+                if app is not None and app.activeWindow() is self and self._handle_app_shortcut(event):
+                    return True
 
         # Film strip hot zone: pointer events hit child widgets, not the overlay itself.
         if event.type() in (
@@ -227,13 +227,12 @@ class LifecyclePart2:
                 hasattr(self, "view_mode")
                 and self.view_mode == "single"
                 and self._raw_recovery_preview_active()
+            ) and event.gestureType() in (
+                Qt.NativeGestureType.ZoomNativeGesture,
+                Qt.NativeGestureType.SmartZoomNativeGesture,
             ):
-                if event.gestureType() in (
-                    Qt.NativeGestureType.ZoomNativeGesture,
-                    Qt.NativeGestureType.SmartZoomNativeGesture,
-                ):
-                    self._notify_raw_recovery_zoom_blocked()
-                    return True
+                self._notify_raw_recovery_zoom_blocked()
+                return True
             if hasattr(self, 'view_mode') and self.view_mode == 'single' and getattr(self, 'current_pixmap', None):
                 gpu_view = getattr(self, "gpu_view", None)
                 if gpu_view is not None and gpu_view.has_pixmap():
@@ -439,10 +438,8 @@ class LifecyclePart2:
         logger.info("[CLOSE] Application close event triggered, starting cleanup...")
 
         # Restore display brightness before teardown if Adjust raised it.
-        try:
+        with contextlib.suppress(Exception):
             self._restore_adjust_brightness()
-        except Exception:
-            pass
 
         # 1) Take the frontend down first -- user-visible quit.
         try:

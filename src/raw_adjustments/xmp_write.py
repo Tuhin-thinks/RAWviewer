@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 import xml.etree.ElementTree as ET
@@ -155,10 +156,8 @@ def _write_xmp_rating_locked(xmp_path: str, rating: int) -> None:
             tree.write(f, encoding="utf-8", xml_declaration=True)
         os.replace(tmp_path, xmp_path)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.remove(tmp_path)
-        except OSError:
-            pass
         raise
 
 
@@ -274,7 +273,7 @@ def _sidecar_has_foreign_content(desc: ET.Element) -> bool:
                 return True
         except ValueError:
             return True
-    for attr, val in desc.attrib.items():
+    for attr, _val in desc.attrib.items():
         if attr in (f"{{{RDF_NS}}}about", rating_attr):
             continue
         local = _crs_local_name(attr)
@@ -312,10 +311,8 @@ def _write_xmp_tree_atomic(root: ET.Element, xmp_path: str) -> None:
             tree.write(f, encoding="utf-8", xml_declaration=True)
         os.replace(tmp_path, xmp_path)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.remove(tmp_path)
-        except OSError:
-            pass
         raise
 
 

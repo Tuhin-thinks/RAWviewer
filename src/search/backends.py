@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import contextlib
+import gzip
 import hashlib
 import os
 import re
 import shutil
 import sys
 import threading
-from collections.abc import Sequence
-from typing import Any, Callable, cast
+from collections.abc import Callable, Sequence
+from typing import Any, cast
 
-import gzip
 import numpy as np
 from PIL import Image
 from PIL.Image import Image as PilImage
@@ -442,10 +443,8 @@ class MobileCLIPCoreMLBackend:
                         compiled_url = tmp_url
 
                 config = CoreML.MLModelConfiguration.alloc().init()
-                try:
+                with contextlib.suppress(Exception):
                     config.setComputeUnits_(_coreml_compute_units(role))
-                except Exception:
-                    pass
                 model, load_error = CoreML.MLModel.modelWithContentsOfURL_configuration_error_(
                     compiled_url, config, None
                 )
@@ -545,10 +544,7 @@ class MobileCLIPCoreMLBackend:
                 (256, 256), Image.Resampling.BICUBIC
             )
 
-        if workers <= 1:
-            images = [_prep(p) for p in paths]
-        else:
-            images = list(_get_shared_index_executor().map(_prep, paths))
+        images = [_prep(p) for p in paths] if workers <= 1 else list(_get_shared_index_executor().map(_prep, paths))
 
         if not semantic_coreml_use_native_batch():
             with objc.autorelease_pool():
@@ -774,7 +770,7 @@ class MobileCLIPCoreMLBackend:
 
 class MobileCLIPONNXBackend:
     """Windows ONNX backend for MobileCLIP2 (supports S0, S2, B, L14 variants).
-    
+
     Requires 'onnxruntime' and 'numpy'.
     """
 
@@ -912,10 +908,8 @@ class MobileCLIPONNXBackend:
                     for chunk in iter(lambda: fh.read(1024 * 1024), b""):
                         digest.update(chunk)
                 if digest.hexdigest().lower() != expected.lower():
-                    try:
+                    with contextlib.suppress(OSError):
                         os.remove(target_path)
-                    except OSError:
-                        pass
                     raise RuntimeError(
                         f"MobileCLIP ONNX {local_name} failed SHA-256 verification"
                     )
@@ -1067,7 +1061,7 @@ def _bytes_to_unicode() -> dict[int, str]:
             bs.append(b)
             cs.append(2**8 + n)
             n += 1
-    return dict(zip(bs, [chr(n) for n in cs]))
+    return dict(zip(bs, [chr(n) for n in cs], strict=False))
 
 
 def _get_pairs(word):
@@ -1094,8 +1088,8 @@ class _ClipBPETokenizer:
         for merge in merges:
             vocab.append("".join(merge))
         vocab.extend(["<|startoftext|>", "<|endoftext|>"])
-        self.encoder = dict(zip(vocab, range(len(vocab))))
-        self.bpe_ranks = dict(zip(merges, range(len(merges))))
+        self.encoder = dict(zip(vocab, range(len(vocab)), strict=False))
+        self.bpe_ranks = dict(zip(merges, range(len(merges)), strict=False))
         import collections
         self.bpe_cache = collections.OrderedDict()
         self.bpe_cache["<|startoftext|>"] = "<|startoftext|>"

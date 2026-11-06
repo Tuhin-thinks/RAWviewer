@@ -11,6 +11,7 @@ Callers must restore any saved value when leaving Adjust.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from typing import Protocol
 
@@ -63,10 +64,8 @@ def _close_backend(backend: _BrightnessBackend | None) -> None:
         return
     closer = getattr(backend, "close", None)
     if callable(closer):
-        try:
+        with contextlib.suppress(Exception):
             closer()
-        except Exception:
-            pass
 
 
 def _set_active_backend(backend: _BrightnessBackend | None) -> None:

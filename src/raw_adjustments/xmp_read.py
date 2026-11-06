@@ -1,8 +1,9 @@
-from typing import Dict
+
 """XMP sidecar path resolution, parse helpers, and adjustment load logic."""
 
 from __future__ import annotations
 
+import contextlib
 import os
 import xml.etree.ElementTree as ET
 
@@ -194,14 +195,14 @@ def _parse_crs_string_from_xmp(xmp_path: str, local_name: str) -> str:
     return ""
 
 # --- load adjustments
-def load_adjustments_from_xmp(xmp_path: str) -> Dict[str, float]:
+def load_adjustments_from_xmp(xmp_path: str) -> dict[str, float]:
     """Load edit settings from an arbitrary XMP file (sidecar or managed preset).
 
     Does not invent AsShotTemperature ΓÇö callers that apply onto an image should
     keep the current file's as-shot reference. Omits nothing the sidecar path
     would load (sliders, tone curves, LUT name, dodge/burn mask).
     """
-    adj: Dict[str, float] = dict(DEFAULT_ADJUSTMENTS)
+    adj: dict[str, float] = dict(DEFAULT_ADJUSTMENTS)
     if not xmp_path or not os.path.isfile(xmp_path):
         return adj
     parsed = parse_xmp_adjustments(xmp_path)
@@ -247,7 +248,7 @@ def load_adjustments_from_xmp(xmp_path: str) -> Dict[str, float]:
     return adj
 
 
-def load_adjustments_for_file(image_path: str) -> Dict[str, float]:
+def load_adjustments_for_file(image_path: str) -> dict[str, float]:
     adj = dict(DEFAULT_ADJUSTMENTS)
     as_shot = read_as_shot_temperature(image_path)
     adj[AS_SHOT_TEMP_KEY] = as_shot
@@ -358,10 +359,8 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
                     if prefix != 'crs':
                         continue
 
-                try:
+                with contextlib.suppress(ValueError):
                     adjustments[local_key] = float(val)
-                except ValueError:
-                    pass
 
         # 2. Search child elements in crs namespace under rdf:Description
         for desc in root.findall('.//rdf:Description', ns):
@@ -377,10 +376,8 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
                     if prefix != 'crs':
                         continue
                 if child.text:
-                    try:
+                    with contextlib.suppress(ValueError):
                         adjustments[local_key] = float(child.text.strip())
-                    except ValueError:
-                        pass
     except Exception:
         pass
 

@@ -1,6 +1,7 @@
 """macOS-specific integration: sharing, App Nap and AppKit tweaks."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import subprocess
@@ -40,10 +41,7 @@ def _macos_share_items_array(urls) -> object:
         return None
     try:
         from Foundation import NSArray
-        if isinstance(urls, (list, tuple)):
-            items_list = list(urls)
-        else:
-            items_list = [urls]
+        items_list = list(urls) if isinstance(urls, (list, tuple)) else [urls]
 
         arr = NSArray.arrayWithArray_(items_list)
         if arr is None:
@@ -92,13 +90,11 @@ def _macos_register_sharing_service_delegate_metadata(delegate_cls) -> None:
         import objc
 
         scope_out_type = objc._C_OUT + objc._C_PTR + objc._C_LNG
-        meta = dict(arguments={4: dict(type=scope_out_type)})
+        meta = {"arguments": {4: {"type": scope_out_type}}}
         sel = b"sharingService:sourceWindowForShareItems:sharingContentScope:"
         for cls_name in (delegate_cls.__name__.encode(), b"NSObject"):
-            try:
+            with contextlib.suppress(Exception):
                 objc.registerMetaDataForSelector(cls_name, sel, meta)
-            except Exception:
-                pass
     except Exception as exc:
         _share_log(logging.DEBUG, "sharing delegate metadata registration: %s", exc)
 
@@ -449,12 +445,9 @@ def _macos_disable_line_edit_system_completion(line_edit) -> None:
         "on",
     ):
         return
-    try:
+    with contextlib.suppress(Exception):
         line_edit.setInputMethodHints(Qt.InputMethodHint.ImhNoPredictiveText)
-    except Exception:
-        pass
     try:
-        from ctypes import c_void_p
 
         import objc
     except ImportError:

@@ -1,6 +1,7 @@
 """navigation mixin, part 1 of 2 (22 methods, 866 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -99,9 +100,8 @@ class NavigationPart1:
         self._release_indexing_load_throttle()
         try:
             mgr = getattr(self, "image_manager", None)
-            if mgr is not None:
-                if hasattr(mgr, "cancel_all_tasks"):
-                    mgr.cancel_all_tasks()
+            if mgr is not None and hasattr(mgr, "cancel_all_tasks"):
+                mgr.cancel_all_tasks()
         except Exception:
             pass
         try:
@@ -273,7 +273,7 @@ class NavigationPart1:
     def _prepare_file_for_load(self, requested_file_path, force_reload):
         """Prepare file for loading (reset flags, cleanup, etc.)"""
         # Reset flags when loading new image
-        is_raw = self._is_raw_file(requested_file_path)
+        self._is_raw_file(requested_file_path)
         self._is_half_size_displayed = False
         self._full_resolution_loading = False
         self._smooth_zoom_full_request_sent = False
@@ -407,23 +407,17 @@ class NavigationPart1:
                 gj._metadata_cache[path] = {}
             gj._metadata_cache[path]['rating'] = rating
             if hasattr(gj, "refresh_visible_tile_for_path"):
-                try:
+                with contextlib.suppress(Exception):
                     gj.refresh_visible_tile_for_path(path)
-                except Exception:
-                    pass
             elif hasattr(gj, "update_visible_images"):
-                try:
+                with contextlib.suppress(Exception):
                     gj.update_visible_images()
-                except Exception:
-                    pass
             # refresh_visible_tile_for_path only repaints the pixmap (e.g.
             # after rotation); badges are a separate sync pass, same as
             # bookmark/burst/edited.
             if hasattr(gj, "refresh_gallery_rating_visuals"):
-                try:
+                with contextlib.suppress(Exception):
                     gj.refresh_gallery_rating_visuals()
-                except Exception:
-                    pass
 
         bar = self._filmstrip_bar()
         if bar is not None and hasattr(bar, "_metadata_cache"):
@@ -431,10 +425,8 @@ class NavigationPart1:
                 bar._metadata_cache[path] = {}
             bar._metadata_cache[path]['rating'] = rating
             if hasattr(bar, "refresh_cell_for_path"):
-                try:
+                with contextlib.suppress(Exception):
                     bar.refresh_cell_for_path(path)
-                except Exception:
-                    pass
             elif hasattr(bar, "update"):
                 bar.update()
 

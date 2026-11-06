@@ -1,6 +1,7 @@
 """image_load mixin, part 1 of 3 (21 methods, 756 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import time
@@ -318,21 +319,18 @@ class ImageLoadPart1:
         if hasattr(image, 'shape'):
             shape = image.shape
             height, width = shape[0], shape[1]
-            channels = shape[2] if len(shape) > 2 else 1
+            shape[2] if len(shape) > 2 else 1
         elif hasattr(image, 'width') and hasattr(image, 'height'):
             # It's likely a QPixmap or QImage
             height, width = image.height(), image.width()
-            channels = 3 # Assume RGB
         else:
             logger.error(f"[MANAGER] Invalid image object type: {type(image)}")
             return
 
         max_dim = max(height, width)
         exif_for_res = None
-        try:
+        with contextlib.suppress(Exception):
             exif_for_res = self.image_cache.get_exif(file_path)
-        except Exception:
-            pass
         is_full_resolution = image_covers_sensor_resolution(width, height, exif_for_res)
 
         # Skip redundant redraws when the same path is already on screen at the same max
@@ -516,10 +514,8 @@ class ImageLoadPart1:
             def on_frame_changed(frame_no):
                 if not self._current_movie:
                     return
-                try:
+                with contextlib.suppress(Exception):
                     self._current_movie.frameChanged.disconnect(on_frame_changed)
-                except Exception:
-                    pass
                 movie_size = self._current_movie.frameRect().size()
                 self._original_movie_size = movie_size
                 self._update_gif_scaling()

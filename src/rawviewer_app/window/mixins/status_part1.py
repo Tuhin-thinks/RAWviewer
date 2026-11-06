@@ -70,7 +70,7 @@ class StatusPart1:
     def on_manager_progress(self, file_path: str, status_message: str):
         """處理 ImageLoadManager 的進度更新信號"""
         import logging
-        logger = logging.getLogger(__name__)
+        logging.getLogger(__name__)
 
         # Only handle current file's progress (normalize for Windows path format differences)
         if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", None)):
@@ -171,7 +171,7 @@ class StatusPart1:
             if gv.is_fit_mode():
                 self.update_status_bar()
             else:
-                pct = int(round(gv.current_scale() * 100))
+                int(round(gv.current_scale() * 100))
                 self.update_status_bar()
         except Exception:
             pass
@@ -199,9 +199,7 @@ class StatusPart1:
             return False
         if pos.y() < self.height() - status_h:
             return False
-        if self._status_bar_corner_resize_at(pos):
-            return False
-        return True
+        return not self._status_bar_corner_resize_at(pos)
 
     def _is_status_bar_chrome_widget(self, obj) -> bool:
         from PyQt6.QtWidgets import QWidget

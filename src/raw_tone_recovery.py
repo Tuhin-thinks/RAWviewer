@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from collections.abc import Callable
@@ -69,22 +70,20 @@ def edit_base_decode_params(
     """
     import rawpy
 
-    params = dict(
-        use_camera_wb=True,
-        use_auto_wb=False,
-        output_bps=16,
-        gamma=(1, 1),
-        no_auto_bright=True,
-        bright=1.0,
-        user_flip=0,
-        half_size=half_size,
-        highlight_mode=rawpy.HighlightMode.Blend,
-    )
+    params = {
+        'use_camera_wb': True,
+        'use_auto_wb': False,
+        'output_bps': 16,
+        'gamma': (1, 1),
+        'no_auto_bright': True,
+        'bright': 1.0,
+        'user_flip': 0,
+        'half_size': half_size,
+        'highlight_mode': rawpy.HighlightMode.Blend,
+    }
     if demosaic:
-        try:
+        with contextlib.suppress(AttributeError, TypeError):
             params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
-        except (AttributeError, TypeError):
-            pass
     if for_file:
         try:
             from fast_raw_decode import get_corrected_camera_wb
@@ -110,24 +109,22 @@ def recovery_decode_params(
     """
     import rawpy
 
-    params = dict(
-        use_camera_wb=True,
-        use_auto_wb=False,
-        output_bps=16,
-        gamma=(1, 1),
-        no_auto_bright=True,
-        bright=1.0,
-        user_flip=0,
-        half_size=half_size,
-        highlight_mode=_highlight_reconstruct_mode(),
-        exp_shift=1.0,
-        exp_preserve_highlights=0.45,
-    )
+    params = {
+        'use_camera_wb': True,
+        'use_auto_wb': False,
+        'output_bps': 16,
+        'gamma': (1, 1),
+        'no_auto_bright': True,
+        'bright': 1.0,
+        'user_flip': 0,
+        'half_size': half_size,
+        'highlight_mode': _highlight_reconstruct_mode(),
+        'exp_shift': 1.0,
+        'exp_preserve_highlights': 0.45,
+    }
     if demosaic:
-        try:
+        with contextlib.suppress(AttributeError, TypeError):
             params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
-        except (AttributeError, TypeError):
-            pass
     if for_file:
         try:
             from fast_raw_decode import get_corrected_camera_wb
@@ -422,10 +419,8 @@ def decode_and_recover_raw(
     if exif_data:
         orientation = int(exif_data.get("orientation", 1) or 1)
     if apply_orientation is not None and orientation != 1:
-        try:
+        with contextlib.suppress(Exception):
             rgb = apply_orientation(rgb, orientation, exif_data)
-        except Exception:
-            pass
 
     return process_linear_recovery_rgb(rgb, max_edge=max_edge)
 
@@ -462,10 +457,8 @@ def decode_raw_for_edr_rgb(
     if exif_data:
         orientation = int(exif_data.get("orientation", 1) or 1)
     if apply_orientation is not None and orientation != 1:
-        try:
+        with contextlib.suppress(Exception):
             rgb = apply_orientation(rgb, orientation, exif_data)
-        except Exception:
-            pass
 
     edge = max_edge if max_edge > 0 else 0
     return process_linear_edr_rgb(rgb, max_edge=edge, peak_display=peak_display)

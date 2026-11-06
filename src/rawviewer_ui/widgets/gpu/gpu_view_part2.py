@@ -296,9 +296,8 @@ class GpuImageViewPart2:
             abs(r - float(getattr(self, "_brush_cursor_pixmap_r", -1.0))) < 0.5
             and abs(flow - float(getattr(self, "_brush_cursor_pixmap_flow", -1.0)))
             < 0.02
-        ):
-            if not self._brush_cursor_item.pixmap().isNull():
-                return
+        ) and not self._brush_cursor_item.pixmap().isNull():
+            return
         try:
             import numpy as np
 
@@ -402,9 +401,7 @@ class GpuImageViewPart2:
             return False
         if getattr(self, "_dodge_burn_mode", False):
             return False
-        if getattr(self, "_color_pick_mode", False):
-            return False
-        return True
+        return not getattr(self, "_color_pick_mode", False)
     def _clamped_scene_point(self, view_pos) -> QPointF:
         scene_pt = self.mapToScene(view_pos)
         return QPointF(

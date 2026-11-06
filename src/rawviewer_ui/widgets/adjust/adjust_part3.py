@@ -4,11 +4,18 @@ from __future__ import annotations
 import os
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QSizePolicy, QSlider, QVBoxLayout
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QSizePolicy,
+    QSlider,
+    QVBoxLayout,
+)
 
 import theme
-
-from .helpers import _EDIT_SETTINGS_CLIPBOARD
 from raw_adjustments import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,

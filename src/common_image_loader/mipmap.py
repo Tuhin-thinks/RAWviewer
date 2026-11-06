@@ -1,8 +1,10 @@
-from typing import Optional, Dict, Any
+from typing import Any
+
 """Mipmap tier publish/backfill helpers for the image cache."""
 
 from __future__ import annotations
 
+import contextlib
 import os
 
 import numpy as np
@@ -60,10 +62,8 @@ def encode_tile_bytes(pil_image, *, quality: int = 85) -> bytes:
     return buf.getvalue()
 def _bump_mipmap_stat(cache, key: str) -> None:
     """Debug-only counters surfaced via ImageCache.get_cache_stats()['request_stats']."""
-    try:
+    with contextlib.suppress(Exception):
         cache.stats[key] = int(cache.stats.get(key, 0)) + 1
-    except Exception:
-        pass
 def _tier_really_present(cache, file_path: str, tier: str) -> bool:
     """Direct presence check for ONE tier, bypassing get_preview()/get_grid()'s
     cross-tier "dynamic mipmap fallback" (which synthesizes a tier by up/down-sampling
@@ -90,7 +90,7 @@ def publish_mipmap_tiers(
     file_path: str,
     native_array,
     *,
-    exif_data: Optional[Dict[str, Any]] = None,
+    exif_data: dict[str, Any] | None = None,
     cache=None,
     source: str = "decode",
 ) -> str:

@@ -1269,11 +1269,11 @@ def export_adjusted_image(
 ) -> None:
     """Dispatch baked export (TIFF16 / JPEG / WebP)."""
     fmt = (export_format or EXPORT_FORMAT_TIFF16).strip().lower()
-    extra = dict(
-        use_ai_denoise=use_ai_denoise,
-        cancel_check=cancel_check,
-        progress_cb=progress_cb,
-    )
+    extra = {
+        "use_ai_denoise": use_ai_denoise,
+        "cancel_check": cancel_check,
+        "progress_cb": progress_cb,
+    }
     if rgb_linear is None:
         raise RuntimeError("Full-resolution RAW decode failed")
     if cancel_check is not None and cancel_check():

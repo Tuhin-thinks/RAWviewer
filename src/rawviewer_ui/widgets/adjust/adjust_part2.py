@@ -137,9 +137,8 @@ class AdjustPart2:
         if cur_data is None and not cur_text.startswith("Custom"):
             if abs(temperature - as_shot) <= 25.0:
                 return
-        elif cur_data is not None and cur_data != -1.0:
-            if abs(temperature - float(cur_data)) <= 25.0:
-                return
+        elif cur_data is not None and cur_data != -1.0 and abs(temperature - float(cur_data)) <= 25.0:
+            return
         target_idx = None
         for i in range(combo.count()):
             data = combo.itemData(i)

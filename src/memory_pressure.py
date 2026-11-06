@@ -13,6 +13,7 @@ Kill switch: ``RAWVIEWER_MEMORY_PRESSURE_BACKOFF=0``.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -248,9 +249,7 @@ def classify_sample(sample: MemorySample) -> PressureLevel:
             return True
         if available_gb is not None and available_gb <= crit_avail_gb:
             return True
-        if mac_mb is not None and mac_mb <= mac_crit:
-            return True
-        return False
+        return bool(mac_mb is not None and mac_mb <= mac_crit)
 
     def _is_warn() -> bool:
         if percent is not None and percent >= warn_pct:
@@ -259,9 +258,7 @@ def classify_sample(sample: MemorySample) -> PressureLevel:
             return True
         if available_gb is not None and available_gb <= warn_avail_gb:
             return True
-        if mac_mb is not None and mac_mb <= mac_warn:
-            return True
-        return False
+        return bool(mac_mb is not None and mac_mb <= mac_warn)
 
     if _is_critical():
         return "critical"
@@ -370,10 +367,7 @@ def _apply_scales(level: PressureLevel) -> None:
         cap = 1
     else:
         return
-    if _preload_cap is None:
-        _preload_cap = cap
-    else:
-        _preload_cap = min(_preload_cap, cap)
+    _preload_cap = cap if _preload_cap is None else min(_preload_cap, cap)
 
 
 def _trim_image_cache() -> None:
@@ -415,23 +409,17 @@ def _pause_viewer_preload(viewer: object) -> None:
     cap = adjacent_preload_cap()
     if cap is not None:
         if hasattr(viewer, "_PRELOAD_NEXT_COUNT"):
-            try:
+            with contextlib.suppress(Exception):
                 viewer._PRELOAD_NEXT_COUNT = min(int(viewer._PRELOAD_NEXT_COUNT), cap)
-            except Exception:
-                pass
         prev_cap = 1 if cap <= 1 else max(1, cap - 1)
         if hasattr(viewer, "_PRELOAD_PREV_COUNT"):
-            try:
+            with contextlib.suppress(Exception):
                 viewer._PRELOAD_PREV_COUNT = min(int(viewer._PRELOAD_PREV_COUNT), prev_cap)
-            except Exception:
-                pass
 
     timer = getattr(viewer, "_idle_display_prefetch_timer", None)
     if timer is not None and hasattr(timer, "stop"):
-        try:
+        with contextlib.suppress(Exception):
             timer.stop()
-        except Exception:
-            pass
 
     gv = getattr(viewer, "gallery_view", None)
     if gv is None:

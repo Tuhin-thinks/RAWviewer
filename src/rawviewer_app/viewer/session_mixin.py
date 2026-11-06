@@ -1,4 +1,5 @@
 """Folder load and session persistence (mixin for RAWImageViewer)."""
+import contextlib
 import logging
 import os
 
@@ -100,9 +101,8 @@ class SessionMixin:
                     # Hide single view immediately so gallery mode never stacks two panes.
                     self._show_gallery_view()
                 else:
-                    if hasattr(self, 'loading_overlay'):
-                        if not fast_open:
-                            self.loading_overlay.show_loading("Scanning folder...")
+                    if hasattr(self, 'loading_overlay') and not fast_open:
+                        self.loading_overlay.show_loading("Scanning folder...")
                     if hasattr(self, 'image_label') and not fast_open:
                         self.image_label.clear()
 
@@ -288,19 +288,15 @@ class SessionMixin:
         if 0 <= i < len(self.image_files) and self.image_files[i] == file_path:
             del self.image_files[i]
             return
-        try:
+        with contextlib.suppress(ValueError):
             self.image_files.remove(file_path)
-        except ValueError:
-            pass
 
     def _drop_discarded_from_semantic_corpus(self, file_path: str) -> None:
         lst = getattr(self, "_semantic_search_corpus_files", None)
         if not lst:
             return
-        try:
+        with contextlib.suppress(ValueError):
             lst.remove(file_path)
-        except ValueError:
-            pass
 
     def save_session_state(self):
         settings = self.get_settings()

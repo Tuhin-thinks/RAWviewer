@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -97,10 +98,8 @@ def safe_print_err(*args: Any, **kwargs: Any) -> None:
     """
     _ = kwargs.pop("force", False)
     if sys.stderr is not None:
-        try:
+        with contextlib.suppress(OSError, AttributeError):
             print(*args, file=sys.stderr, **kwargs)
-        except (OSError, AttributeError):
-            pass
 
 
 def _norm_path(p: object) -> str:

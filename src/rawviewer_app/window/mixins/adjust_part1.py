@@ -1,6 +1,7 @@
 """adjust mixin, part 1 of 5 (42 methods, 892 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -439,18 +440,12 @@ class AdjustPart1:
                 best_pm = pm
                 best_oriented = oriented
 
-        try:
+        with contextlib.suppress(Exception):
             _consider(self.image_cache.get_full_image(file_path), oriented=True)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             _consider(self.image_cache.get_preview(file_path), oriented=True)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             _consider(self.image_cache.get_pixmap(file_path), oriented=False)
-        except Exception:
-            pass
         _consider(self._gallery_preview_pixmap_for_path(file_path), oriented=True)
         if best_dim < 1920 and file_path:
             try:
@@ -734,10 +729,8 @@ class AdjustPart1:
             if anim["type"] == "gif":
                 movie = anim["movie"]
                 movie.stop()
-                try:
+                with contextlib.suppress(Exception):
                     movie.frameChanged.disconnect(anim["handler"])
-                except Exception:
-                    pass
             elif anim["type"] == "webp":
                 timer = anim["timer"]
                 timer.stop()

@@ -241,11 +241,7 @@ class DisplayPart2:
             return True
         if getattr(self, "_pending_zoom_focus_subject", False):
             return True
-        if getattr(self, "_pending_zoom", False) and getattr(
-            self, "zoom_center_point", None
-        ) is not None:
-            return True
-        return False
+        return bool(getattr(self, "_pending_zoom", False) and getattr(self, "zoom_center_point", None) is not None)
 
     def _focus_zoom_target_for_pixmap(self, pixmap) -> QPoint | None:
         """Image-pixel zoom anchor for *pixmap* (focus box preferred when active)."""
@@ -518,10 +514,7 @@ class DisplayPart2:
                 self.fit_to_window = True
                 self.current_zoom_level = float(gv.current_scale())
             else:
-                if overscale:
-                    target_scale = max(fit, level)
-                else:
-                    target_scale = max(fit, min(gv.MAX_SCALE, level))
+                target_scale = max(fit, level) if overscale else max(fit, min(gv.MAX_SCALE, level))
                 gv.set_pixmap_zoomed_at(
                     pixmap,
                     float(eff_center.x()),

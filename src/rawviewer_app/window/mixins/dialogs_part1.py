@@ -1,7 +1,8 @@
-from typing import List
+
 """dialogs mixin, part 1 of 1 (40 methods, 852 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -54,10 +55,8 @@ class DialogsPart1:
                 if long_edge >= 1400:
                     return
                 exif = None
-                try:
+                with contextlib.suppress(Exception):
                     exif = self.image_cache.get_exif(file_path)
-                except Exception:
-                    pass
                 if image_covers_sensor_resolution(pm.width(), pm.height(), exif):
                     return
                 if self._nef_he_compressed(file_path) and long_edge >= 768:
@@ -209,20 +208,16 @@ class DialogsPart1:
 
         label = getattr(self, "image_label", None)
         if label is not None:
-            try:
+            with contextlib.suppress(Exception):
                 label.setPixmap(QPixmap())
-            except Exception:
-                pass
         self.current_pixmap = None
         self._manager_displayed_max_dim = 0
         self._gpu_last_path = None
 
         cache = getattr(self, "image_cache", None)
         if cur and cache is not None and hasattr(cache, "release_full_image_memory"):
-            try:
+            with contextlib.suppress(Exception):
                 cache.release_full_image_memory(cur)
-            except Exception:
-                pass
 
         logger.info(
             "[GALLERY] Released single-view full-res buffers for gallery entry (%s, gl_cleared=%s gl_deferred=%s gl_pending=%s)",
@@ -466,10 +461,8 @@ class DialogsPart1:
         if default_name:
             panel.setNameFieldStringValue_(default_name)
         if file_types:
-            try:
+            with contextlib.suppress(Exception):
                 panel.setAllowedFileTypes_(file_types)
-            except Exception:
-                pass
 
         start = self._sanitize_dialog_start_dir(default_dir)
         if start:
@@ -482,10 +475,8 @@ class DialogsPart1:
             return ""
         # Defensive: keep security-scoped access alive for the chosen file URL
         # (harmless when not sandboxed; required if TCC treats the pick specially).
-        try:
+        with contextlib.suppress(Exception):
             url.startAccessingSecurityScopedResource()
-        except Exception:
-            pass
         try:
             return str(url.path() or "")
         finally:
@@ -548,10 +539,8 @@ class DialogsPart1:
         panel.setCanChooseDirectories_(True)
         panel.setAllowsMultipleSelection_(False)
         panel.setTreatsFilePackagesAsDirectories_(True)
-        try:
+        with contextlib.suppress(Exception):
             panel.setAllowedFileTypes_(["app"])
-        except Exception:
-            pass
 
         start = self._sanitize_dialog_start_dir(start_dir) or "/Applications"
         panel.setDirectoryURL_(NSURL.fileURLWithPath_(start))
@@ -789,14 +778,14 @@ class DialogsPart1:
         except Exception:
             pass
 
-    def _open_macos_choose_editing_app(self, paths: List[str]) -> bool:
+    def _open_macos_choose_editing_app(self, paths: list[str]) -> bool:
         app_path = self._choose_macos_editing_app_dialog("/Applications")
         if not app_path:
             return False
         return self._open_with_macos_app_path(paths, app_path)
 
-    def _open_windows_choose_editing_app(self, paths: List[str]) -> bool:
-        start_dir = os.environ.get("ProgramFiles", "C:\\Program Files")
+    def _open_windows_choose_editing_app(self, paths: list[str]) -> bool:
+        start_dir = os.environ.get("PROGRAMFILES", "C:\\Program Files")
         exe_path, _ = QFileDialog.getOpenFileName(
             self,
             "Choose Editing App",
@@ -901,7 +890,7 @@ class DialogsPart1:
                         _share_log(logging.DEBUG, "share button anchor: %s", exc)
         return self._macos_share_content_view_and_rect()
 
-    def _share_macos_picker_ui(self, paths: List[str]) -> bool:
+    def _share_macos_picker_ui(self, paths: list[str]) -> bool:
         """Native NSSharingServicePicker -- minimal v2.1 path by default."""
         if not self._macos_share_use_heavy_picker():
             if self._share_macos_minimal_v21(paths):

@@ -579,7 +579,6 @@ def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> np.nda
                     val_offset = unpack_from(endian + "I", ifd_data, entry_off + 8)[0]
 
                     # StripOffsets (0x0117) or JPEGInterchangeFormat (0x0201)
-                    strip_tags = {0x0117, 0x0201, 0x0100}  # ImageWidth, etc.
                     if tag == 0x0201 and type_ == 7:  # JPEGInterchangeFormat
                         f.seek(val_offset)
                         jpeg_data = f.read(min(count_, 10 * 1024 * 1024))

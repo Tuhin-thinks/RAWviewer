@@ -1,7 +1,8 @@
-from typing import List
+
 """display mixin, part 4 of 6 (14 methods, 859 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -76,18 +77,12 @@ class DisplayPart4:
                 self._manager_displayed_max_dim = max(
                     getattr(self, "_manager_displayed_max_dim", 0), pm_max
                 )
-            try:
+            with contextlib.suppress(Exception):
                 self._sync_single_image_histogram()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self._on_single_view_content_displayed()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self._sync_gpu_single_view_visibility()
-            except Exception:
-                pass
             import logging
 
             logging.getLogger(__name__).info(
@@ -151,18 +146,12 @@ class DisplayPart4:
                 self._manager_displayed_max_dim = max(
                     getattr(self, "_manager_displayed_max_dim", 0), pm_max
                 )
-            try:
+            with contextlib.suppress(Exception):
                 self._sync_single_image_histogram()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self._on_single_view_content_displayed()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self._sync_gpu_single_view_visibility()
-            except Exception:
-                pass
             import logging
 
             logging.getLogger(__name__).info(
@@ -217,10 +206,8 @@ class DisplayPart4:
         ctx = self._pending_display_pixmap_context
         if ctx.get("use_edr"):
             exif_data = None
-            try:
+            with contextlib.suppress(Exception):
                 exif_data = self.image_cache.get_exif(file_path)
-            except Exception:
-                pass
             max_edge = max(width, height) if is_half_size else 0
             converter = RawEdrPixmapConverter(
                 file_path,
@@ -492,10 +479,8 @@ class DisplayPart4:
                 and self.current_file_path
             ):
                 exif_for_edr = None
-                try:
+                with contextlib.suppress(Exception):
                     exif_for_edr = self.image_cache.get_exif(self.current_file_path)
-                except Exception:
-                    pass
                 is_half_size_edr = not image_covers_sensor_resolution(
                     width, height, exif_for_edr
                 )
@@ -594,10 +579,8 @@ class DisplayPart4:
 
             exif_for_flag = None
             if hasattr(self, "current_file_path") and self.current_file_path:
-                try:
+                with contextlib.suppress(Exception):
                     exif_for_flag = self.image_cache.get_exif(self.current_file_path)
-                except Exception:
-                    pass
             is_half_size = not image_covers_sensor_resolution(
                 width, height, exif_for_flag
             )
@@ -765,9 +748,7 @@ class DisplayPart4:
         if pm is not None and not pm.isNull():
             return True
         gv = getattr(self, "gpu_view", None)
-        if gv is not None and gv.has_pixmap():
-            return True
-        return False
+        return bool(gv is not None and gv.has_pixmap())
 
     def _display_brightness_hwnd(self) -> int | None:
         """HWND of this window so Windows can raise the nearest monitor."""
@@ -782,9 +763,7 @@ class DisplayPart4:
         if gv is None:
             return False
         path = getattr(self, "current_file_path", None)
-        if path and self.is_animated_image(_require_str_path(path)):
-            return False
-        return True
+        return not (path and self.is_animated_image(_require_str_path(path)))
 
     def _unrotated_display_size(self) -> tuple[int, int] | None:
         """Display size in pre-visual-rotation space (matches edit/sample buffers)."""
@@ -812,9 +791,9 @@ class DisplayPart4:
             return float(y), float(dw - 1 - x)
         return float(x), float(y)
 
-    def _widgets_with_main_mouse_event_filter(self) -> List:
+    def _widgets_with_main_mouse_event_filter(self) -> list:
         """Widgets where MainWindow.eventFilter handles mouse/gesture."""
-        out: List = []
+        out: list = []
         sa = getattr(self, "scroll_area", None)
         if sa is not None:
             out.append(sa)
@@ -836,7 +815,7 @@ class DisplayPart4:
         if drop_targets:
             out.extend(list(drop_targets))
         seen = set()
-        deduped: List = []
+        deduped: list = []
         for w in out:
             key = int(w.winId()) if hasattr(w, "winId") else id(w)
             if key in seen:

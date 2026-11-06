@@ -164,12 +164,12 @@ def hlg_to_linear(v: np.ndarray) -> np.ndarray:
     exponent = np.clip((v[mask_high] - c) / a, -80.0, 80.0)
     linear[mask_high] = (np.exp(exponent) + b) / 12.0
     return linear
-def linear_to_srgb(l: np.ndarray) -> np.ndarray:
-    srgb = np.zeros_like(l, dtype=np.float32)
-    mask_low = l <= 0.0031308
-    srgb[mask_low] = 12.92 * l[mask_low]
+def linear_to_srgb(arr: np.ndarray) -> np.ndarray:
+    srgb = np.zeros_like(arr, dtype=np.float32)
+    mask_low = arr <= 0.0031308
+    srgb[mask_low] = 12.92 * arr[mask_low]
     mask_high = ~mask_low
-    srgb[mask_high] = 1.055 * np.power(np.maximum(l[mask_high], 0.0), 1.0 / 2.4) - 0.055
+    srgb[mask_high] = 1.055 * np.power(np.maximum(arr[mask_high], 0.0), 1.0 / 2.4) - 0.055
     return np.clip(srgb, 0.0, 1.0)
 def tone_map_reinhard(img_float: np.ndarray, exposure: float = 1.0) -> np.ndarray:
     img_exposed = img_float * exposure

@@ -1,7 +1,8 @@
-from typing import List, Optional
+
 """misc mixin, part 2 of 4 (31 methods, 880 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -175,18 +176,14 @@ class MiscPart2:
 
     def _stop_animations(self):
         if hasattr(self, "_current_movie") and self._current_movie:
-            try:
+            with contextlib.suppress(Exception):
                 self._current_movie.stop()
-            except Exception:
-                pass
             self.image_label.setMovie(None)
             self._current_movie = None
 
         if hasattr(self, "_webp_timer") and self._webp_timer:
-            try:
+            with contextlib.suppress(Exception):
                 self._webp_timer.stop()
-            except Exception:
-                pass
             self._webp_timer = None
 
         self._current_webp_frames = []
@@ -344,10 +341,8 @@ class MiscPart2:
             self.image_files = files
             current = getattr(self, "current_file_path", None)
             if current:
-                try:
+                with contextlib.suppress(ValueError):
                     self.current_file_index = self.image_files.index(current)
-                except ValueError:
-                    pass
 
             gj = getattr(self, "gallery_justified", None)
             if gj is not None and hasattr(gj, "set_images"):
@@ -416,7 +411,7 @@ class MiscPart2:
                 3500,
             )
 
-    def _remove_files_from_active_image_list(self, file_paths: List[str]) -> None:
+    def _remove_files_from_active_image_list(self, file_paths: list[str]) -> None:
         if not file_paths or not self.image_files:
             return
         remove_keys = {_norm_path(p) for p in file_paths if p}
@@ -444,7 +439,7 @@ class MiscPart2:
                 self.current_file_index = -1
                 self.current_file_path = None
 
-    def _surviving_anchor_after_removal(self, removed_paths) -> Optional[str]:
+    def _surviving_anchor_after_removal(self, removed_paths) -> str | None:
         """Nearest file that will still exist after removing *removed_paths*.
 
         The scroll anchor passed to _sync_gallery_to_folder_files must be a
@@ -501,10 +496,8 @@ class MiscPart2:
             return False
         finally:
             if probe:
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(probe)
-                except OSError:
-                    pass
 
     def _macos_nsopenpanel_reliable(self) -> bool:
         """False when NSOpenPanel/NSSavePanel construction is unsafe to try.
@@ -727,10 +720,8 @@ class MiscPart2:
                         return
             except Exception:
                 pass
-            try:
+            with contextlib.suppress(Exception):
                 self._request_full_res_decode(file_path, priority_current=True, force=True)
-            except Exception:
-                pass
 
         QTimer.singleShot(0, _upgrade)
 
@@ -793,13 +784,11 @@ class MiscPart2:
             return False
         if getattr(self, "_preserve_nav_zoom_active", False):
             return False
-        if not _norm_path(requested_file_path) == _norm_path(getattr(self, "current_file_path", "") or ""):
+        if _norm_path(requested_file_path) != _norm_path(getattr(self, "current_file_path", "") or ""):
             return False
         if not getattr(self, "_single_view_first_render_logged", False):
             return False
-        if not self._single_view_pixels_on_screen(requested_file_path):
-            return False
-        return True
+        return self._single_view_pixels_on_screen(requested_file_path)
 
     def on_image_processed_enhanced(self, rgb_image):
         """Handle enhanced image processing results."""

@@ -65,10 +65,7 @@ def apply_vignette(
     strength = abs(a) / 100.0
     wgt = (strength * mask)[..., np.newaxis]
     src = np.clip(img, 0.0, None).astype(np.float32, copy=False)
-    if a < 0:
-        out = src * (1.0 - wgt)
-    else:
-        out = src + (1.0 - np.clip(src, 0.0, 1.0)) * wgt
+    out = src * (1.0 - wgt) if a < 0 else src + (1.0 - np.clip(src, 0.0, 1.0)) * wgt
     return np.clip(out, 0.0, None).astype(np.float32)
 
 

@@ -3,6 +3,7 @@ Enhanced RAW processor with progressive loading and caching.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 from typing import Any
 
@@ -130,11 +131,9 @@ class EnhancedRAWProcessor(QThread):
 
         # Try to extract thumbnail as fallback first
         thumbnail_fallback = None
-        try:
+        with contextlib.suppress(Exception):
             thumbnail_fallback = self.thumbnail_extractor.extract_thumbnail_from_raw(
                 self.file_path)
-        except Exception:
-            pass
 
         # Choose processing method based on quality setting
         try:

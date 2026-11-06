@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 from collections import OrderedDict
@@ -124,10 +125,8 @@ class LRUCache:
             while len(self.cache) > self.max_size:
                 evicted_key, _ = self.cache.popitem(last=False)
                 if self.on_evict is not None:
-                    try:
+                    with contextlib.suppress(Exception):
                         self.on_evict(evicted_key)
-                    except Exception:
-                        pass
 
     def __contains__(self, key: str) -> bool:
         with self.lock:
@@ -167,10 +166,8 @@ class LRUCache:
                     # Remove least recently used item
                     evicted_key, _ = self.cache.popitem(last=False)
                     if self.on_evict is not None:
-                        try:
+                        with contextlib.suppress(Exception):
                             self.on_evict(evicted_key)
-                        except Exception:
-                            pass
 
     def remove(self, key: str) -> bool:
         with self.lock:

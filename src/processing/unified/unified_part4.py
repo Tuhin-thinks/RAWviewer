@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 from PyQt6.QtCore import QSize
@@ -129,7 +129,7 @@ class UnifiedPart4:
         file_path: str,
         cached_exif: dict[str, Any] | None,
         cached_thumb,
-    ) -> Tuple[dict[str, Any] | None, np.ndarray | None] | None:
+    ) -> tuple[dict[str, Any] | None, np.ndarray | None] | None:
         """Single rawpy open: embedded preview first, defer exiftool to a follow-up task."""
         if cached_exif is not None and self._cached_preview_meets_display_tier(cached_thumb):
             return cached_exif, cached_thumb

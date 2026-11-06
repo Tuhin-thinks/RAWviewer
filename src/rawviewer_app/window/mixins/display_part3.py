@@ -1,6 +1,7 @@
 """display mixin, part 3 of 6 (21 methods, 830 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -37,10 +38,8 @@ class DisplayPart3:
             self.image_manager.set_gallery_view_active(False)
         self._suppress_single_manager_callbacks = False
         # Gallery entry aborts/defers CuPy import; resume once back in single view.
-        try:
+        with contextlib.suppress(Exception):
             self._schedule_deferred_gpu_backend_import(reason="fallback")
-        except Exception:
-            pass
         try:
             from PyQt6.QtCore import QTimer
             self._pause_semantic_indexing_deferred()
@@ -176,9 +175,8 @@ class DisplayPart3:
                     gallery_instant = getattr(self, "_gallery_instant_display_quality", False)
                 elif path_changed:
                     self._clear_stale_single_view_image()
-                if not from_gallery and hasattr(self, "loading_overlay"):
-                    if not gallery_instant:
-                        self.loading_overlay.show_loading("Loading Image...")
+                if not from_gallery and hasattr(self, "loading_overlay") and not gallery_instant:
+                    self.loading_overlay.show_loading("Loading Image...")
 
             if (
                 from_gallery
@@ -396,10 +394,8 @@ class DisplayPart3:
             panel = ns_save_panel.savePanel()
         if panel is None:
             raise RuntimeError("NSSavePanel could not be created")
-        try:
+        with contextlib.suppress(Exception):
             panel.setCanCreateDirectories_(True)
-        except Exception:
-            pass
         return panel
 
     def image_mouse_press_event(self, ev):
@@ -821,7 +817,7 @@ class DisplayPart3:
 
     def _display_cached_pixmap(self, requested_file_path, cached_pixmap):
         """Display a cached pixmap (non-RAW files only)"""
-        filename = os.path.basename(requested_file_path)
+        os.path.basename(requested_file_path)
         logger.info("[LOAD] Displaying cached pixmap")
         display_start = time.time()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)

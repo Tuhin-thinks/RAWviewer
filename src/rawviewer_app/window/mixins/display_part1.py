@@ -1,6 +1,7 @@
 """display mixin, part 1 of 6 (23 methods, 893 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -114,10 +115,8 @@ class DisplayPart1:
             self.image_label.setPixmap(blended)
             if old_pm is not None:
                 def _finish_label_resize(_size=pending_size):
-                    try:
+                    with contextlib.suppress(Exception):
                         self.image_label.resize(_size)
-                    except Exception:
-                        pass
 
                 try:
                     self._run_content_crossfade(
@@ -133,17 +132,13 @@ class DisplayPart1:
         """Stop and remove any in-flight cross-fade overlay/animation."""
         anim = getattr(self, "_crossfade_anim", None)
         if anim is not None:
-            try:
+            with contextlib.suppress(Exception):
                 anim.stop()
-            except Exception:
-                pass
             self._crossfade_anim = None
         overlay = getattr(self, "_crossfade_overlay", None)
         if overlay is not None:
-            try:
+            with contextlib.suppress(Exception):
                 overlay.deleteLater()
-            except Exception:
-                pass
             self._crossfade_overlay = None
 
     def _resolution_crossfade_duration_ms(
@@ -543,19 +538,15 @@ class DisplayPart1:
             anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
             def _cleanup(_overlay=overlay, _anim=anim, _done=on_finished):
-                try:
+                with contextlib.suppress(Exception):
                     _overlay.deleteLater()
-                except Exception:
-                    pass
                 if getattr(self, "_crossfade_overlay", None) is _overlay:
                     self._crossfade_overlay = None
                 if getattr(self, "_crossfade_anim", None) is _anim:
                     self._crossfade_anim = None
                 if _done is not None:
-                    try:
+                    with contextlib.suppress(Exception):
                         _done()
-                    except Exception:
-                        pass
 
             anim.finished.connect(_cleanup)
             self._crossfade_overlay = overlay
@@ -564,10 +555,8 @@ class DisplayPart1:
         except Exception:
             self._cancel_content_crossfade()
             if on_finished is not None:
-                try:
+                with contextlib.suppress(Exception):
                     on_finished()
-                except Exception:
-                    pass
 
     def _crossfade_anim_duration_ms(self, duration_ms: int | None) -> int:
         if duration_ms is not None:
@@ -606,18 +595,14 @@ class DisplayPart1:
     ) -> None:
         """Show an opaque snapshot overlay, apply the new view underneath, then fade the overlay out."""
         if not getattr(self, "_crossfade_enabled", True):
-            try:
+            with contextlib.suppress(Exception):
                 apply_fn()
-            except Exception:
-                pass
             if on_finished is not None:
                 on_finished()
             return
         if parent is None or overlay_pixmap is None or overlay_pixmap.isNull():
-            try:
+            with contextlib.suppress(Exception):
                 apply_fn()
-            except Exception:
-                pass
             if on_finished is not None:
                 on_finished()
             return
@@ -640,10 +625,8 @@ class DisplayPart1:
             self._crossfade_overlay = overlay
 
             def _apply_and_fade() -> None:
-                try:
+                with contextlib.suppress(Exception):
                     apply_fn()
-                except Exception:
-                    pass
                 anim = QPropertyAnimation(effect, b"opacity", self)
                 anim.setDuration(self._crossfade_anim_duration_ms(duration_ms))
                 anim.setStartValue(1.0)
@@ -651,19 +634,15 @@ class DisplayPart1:
                 anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
 
                 def _cleanup(_overlay=overlay, _anim=anim, _done=on_finished):
-                    try:
+                    with contextlib.suppress(Exception):
                         _overlay.deleteLater()
-                    except Exception:
-                        pass
                     if getattr(self, "_crossfade_overlay", None) is _overlay:
                         self._crossfade_overlay = None
                     if getattr(self, "_crossfade_anim", None) is _anim:
                         self._crossfade_anim = None
                     if _done is not None:
-                        try:
+                        with contextlib.suppress(Exception):
                             _done()
-                        except Exception:
-                            pass
 
                 anim.finished.connect(_cleanup)
                 self._crossfade_anim = anim
@@ -672,15 +651,11 @@ class DisplayPart1:
             QTimer.singleShot(0, _apply_and_fade)
         except Exception:
             self._cancel_content_crossfade()
-            try:
+            with contextlib.suppress(Exception):
                 apply_fn()
-            except Exception:
-                pass
             if on_finished is not None:
-                try:
+                with contextlib.suppress(Exception):
                     on_finished()
-                except Exception:
-                    pass
 
     def _run_viewport_crossfade(
         self,
@@ -744,19 +719,15 @@ class DisplayPart1:
             anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
 
             def _cleanup(_overlay=overlay, _anim=anim, _done=on_finished):
-                try:
+                with contextlib.suppress(Exception):
                     _overlay.deleteLater()
-                except Exception:
-                    pass
                 if getattr(self, "_crossfade_overlay", None) is _overlay:
                     self._crossfade_overlay = None
                 if getattr(self, "_crossfade_anim", None) is _anim:
                     self._crossfade_anim = None
                 if _done is not None:
-                    try:
+                    with contextlib.suppress(Exception):
                         _done()
-                    except Exception:
-                        pass
 
             anim.finished.connect(_cleanup)
             self._crossfade_overlay = overlay
@@ -765,10 +736,8 @@ class DisplayPart1:
         except Exception:
             self._cancel_content_crossfade()
             if on_finished is not None:
-                try:
+                with contextlib.suppress(Exception):
                     on_finished()
-                except Exception:
-                    pass
 
     def _zoom_in_to_image_point_finish(self) -> None:
         """``zoom_center_point`` already set; match double-click zoom-in (full decode + 100%)."""

@@ -1,6 +1,7 @@
 """ui_build mixin, part 2 of 3 (11 methods, split init_ui into helpers)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import platform
 import sys
@@ -170,14 +171,10 @@ class UiBuildPart2:
         self.create_menu_bar()
         # Windows uses a frameless window: the system menu bar is often invisible; embed it in-window.
         if platform.system() == "Windows":
-            try:
+            with contextlib.suppress(Exception):
                 self.menuBar().setNativeMenuBar(False)
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self.menuBar().setVisible(False)
-            except Exception:
-                pass
         self.scroll_area = QScrollArea()
         # Key: allow scrolling when image is larger
         self.scroll_area.setWidgetResizable(False)
@@ -894,12 +891,10 @@ class UiBuildPart2:
         self.search_expand_layout = QStackedLayout(self.search_expand_container)
         self.search_expand_layout.setContentsMargins(0, 0, 0, 0)
         # Width animation clips a fixed-size field; layout must not fight setFixedWidth.
-        try:
+        with contextlib.suppress(Exception):
             self.search_expand_layout.setSizeConstraint(
                 QLayout.SizeConstraint.SetNoConstraint
             )
-        except Exception:
-            pass
 
         self.gallery_search_panel = QWidget()
         self.gallery_search_panel.setFixedHeight(28)

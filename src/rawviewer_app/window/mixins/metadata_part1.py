@@ -1,4 +1,4 @@
-from typing import List, Optional
+
 """metadata mixin, part 1 of 2 (29 methods, 874 lines)."""
 from __future__ import annotations
 
@@ -49,10 +49,7 @@ class MetadataPart1:
             rw = max(1, min(rw, bw - rx))
             rh = max(1, min(rh, bh - ry))
         src = getattr(self, "_focus_rect_source", None) or ""
-        if src == "makernote_af":
-            col = QColor(255, 185, 45, 255)
-        else:
-            col = QColor(165, 255, 95, 255)
+        col = QColor(255, 185, 45, 255) if src == "makernote_af" else QColor(165, 255, 95, 255)
         pen = QPen(col)
         pen.setWidth(max(2, min(base_pm.width(), base_pm.height()) // 380))
         pen.setCosmetic(True)
@@ -261,12 +258,12 @@ class MetadataPart1:
         ):
             QTimer.singleShot(0, self._sync_focus_subject_outline_after_display)
 
-    def _filter_paths_to_min_rating(self, files: List[str], min_rating: int) -> List[str]:
+    def _filter_paths_to_min_rating(self, files: list[str], min_rating: int) -> list[str]:
         if min_rating <= 0:
             return files
         return [p for p in files if p and self._gallery_path_rating(p) >= min_rating]
 
-    def _capture_times_for_paths(self, paths: List[str]) -> dict:
+    def _capture_times_for_paths(self, paths: list[str]) -> dict:
         capture_times = {}
         try:
             capture_times = self.image_cache.get_capture_times_for_sort(paths)
@@ -824,7 +821,7 @@ class MetadataPart1:
         file_paths,
         bulk_metadata,
         *,
-        sample_path: Optional[str] = None,
+        sample_path: str | None = None,
         conservative: bool = False,
     ) -> dict:
         """Probe capture timestamps in parallel for all paths not cached in bulk_metadata."""

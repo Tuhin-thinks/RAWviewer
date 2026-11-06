@@ -1,6 +1,7 @@
 """misc mixin, part 4 of 4 (28 methods, 536 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -85,7 +86,7 @@ class MiscPart4:
 
         self._is_delete_dialog_open = True
         try:
-            result = dialog.exec()
+            dialog.exec()
             return dialog.result_value
         finally:
             self._is_delete_dialog_open = False
@@ -230,10 +231,7 @@ class MiscPart4:
         return not hit.isNull() and hit.contains(pos)
 
     def _resize_pos_from_event(self, event) -> QPoint:
-        if hasattr(event, "globalPosition"):
-            gp = event.globalPosition().toPoint()
-        else:
-            gp = event.globalPos()
+        gp = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
         return self.mapFromGlobal(gp)
 
     def _frame_resize_border(self) -> int:
@@ -247,9 +245,7 @@ class MiscPart4:
         title_chrome = self._is_title_bar_chrome_widget(obj)
         if status_chrome and not self._status_bar_corner_resize_at(pos):
             return False
-        if title_chrome and not self._title_bar_corner_resize_at(pos):
-            return False
-        return True
+        return not (title_chrome and not self._title_bar_corner_resize_at(pos))
 
     def _resize_blocked_at(self, pos: QPoint) -> bool:
         if self.isMaximized():
@@ -258,9 +254,7 @@ class MiscPart4:
             return True
         if self._status_bar_blocks_resize_at(pos):
             return True
-        if self._scrollbar_blocks_resize_at(pos):
-            return True
-        return False
+        return bool(self._scrollbar_blocks_resize_at(pos))
 
     def _begin_resize_at_edge(self, event, edge: str) -> bool:
         if event.button() != Qt.MouseButton.LeftButton:
@@ -281,10 +275,8 @@ class MiscPart4:
             gallery = getattr(self, "gallery_justified", None)
             if gallery is not None:
                 gallery._ignore_resize_events = True
-        try:
+        with contextlib.suppress(Exception):
             self.grabMouse()
-        except Exception:
-            pass
         return True
 
     def _begin_resize_if_edge(self, event, pos: QPoint) -> bool:
@@ -309,10 +301,8 @@ class MiscPart4:
             gallery = getattr(self, "gallery_justified", None)
             if gallery is not None:
                 gallery._ignore_resize_events = True
-        try:
+        with contextlib.suppress(Exception):
             self.grabMouse()
-        except Exception:
-            pass
         return True
 
     def _handle_frame_resize_event(self, event) -> bool:

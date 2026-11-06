@@ -1,6 +1,7 @@
 """Startup splash lifecycle helpers."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -98,26 +99,18 @@ def _force_hide_startup_splash(app, main_window=None, splash=None) -> None:
             # the HWND and flashes a brief empty popup on Windows.
             sp.hide()
             if main_window is not None:
-                try:
+                with contextlib.suppress(Exception):
                     sp.finish(main_window)
-                except Exception:
-                    pass
-            try:
+            with contextlib.suppress(Exception):
                 sp.close()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 sp.deleteLater()
-            except Exception:
-                pass
         except Exception:
             pass
     _startup_splash = None
     if app is not None:
-        try:
+        with contextlib.suppress(Exception):
             app.processEvents()
-        except Exception:
-            pass
     if main_window is not None:
         try:
             # Avoid repeated show/raise/activate on Windows (taskbar flicker).

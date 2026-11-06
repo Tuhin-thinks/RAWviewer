@@ -1,6 +1,7 @@
 """Core lifecycle, purge helpers, and memory management for ImageCache."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import threading
@@ -143,10 +144,8 @@ class ImageCacheCore(QObject):
                 self.disk_grid_cache,
                 self.disk_preview_cache,
             ):
-                try:
+                with contextlib.suppress(Exception):
                     cache.clear()
-                except Exception:
-                    pass
             with open(marker, "w", encoding="utf-8") as fh:
                 fh.write(str(int(RAW_EXIF_SENSOR_META_VER)))
         except Exception:
@@ -175,10 +174,8 @@ class ImageCacheCore(QObject):
                 self.disk_grid_cache,
                 self.disk_preview_cache,
             ):
-                try:
+                with contextlib.suppress(Exception):
                     cache.clear()
-                except Exception:
-                    pass
             with open(marker, "w", encoding="utf-8") as fh:
                 fh.write(str(int(self.EDIT_BAKE_PIXEL_VER)))
         except Exception:
@@ -208,10 +205,8 @@ class ImageCacheCore(QObject):
                 self.disk_grid_cache,
                 self.disk_preview_cache,
             ):
-                try:
+                with contextlib.suppress(Exception):
                     cache.clear()
-                except Exception:
-                    pass
             try:
                 from processing.unified import (
                     prune_libraw_unsupported_paths,
@@ -221,15 +216,11 @@ class ImageCacheCore(QObject):
                 prune_libraw_unsupported_paths = None
                 release_edit_base_cache = None
             if release_edit_base_cache is not None:
-                try:
+                with contextlib.suppress(Exception):
                     release_edit_base_cache()
-                except Exception:
-                    pass
             if prune_libraw_unsupported_paths is not None:
-                try:
+                with contextlib.suppress(Exception):
                     prune_libraw_unsupported_paths(clear_all=True)
-                except Exception:
-                    pass
             try:
                 self.libraw_preview_paths.clear()
                 self._save_libraw_preview_paths()

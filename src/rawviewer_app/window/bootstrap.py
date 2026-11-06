@@ -54,18 +54,12 @@ def _runtime_log_dir() -> str:
     Central runtime log directory.
     Use LocalAppData for both installed and dev runs to avoid packaging stale src/logs.
     """
-    if os.name == "nt":
-        app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    else:
-        app_data = os.path.expanduser("~")
+    app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~") if os.name == "nt" else os.path.expanduser("~")
     return os.path.join(app_data, "RAWviewer", "logs")
 
 
 def _debug_log_marker_path() -> str:
-    if os.name == "nt":
-        app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    else:
-        app_data = os.path.expanduser("~")
+    app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~") if os.name == "nt" else os.path.expanduser("~")
     return os.path.join(app_data, "RAWviewer", "enable_debug_log")
 
 

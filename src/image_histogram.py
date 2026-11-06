@@ -21,10 +21,7 @@ def _qimage_to_rgb_array(image: QImage) -> np.ndarray | None:
     if bits is None:
         return None
     try:
-        if hasattr(bits, "asstring"):
-            raw = bits.asstring(nbytes)
-        else:
-            raw = bytes(memoryview(bits)[:nbytes])
+        raw = bits.asstring(nbytes) if hasattr(bits, "asstring") else bytes(memoryview(bits)[:nbytes])
     except (BufferError, TypeError, AttributeError):
         # Vectorised fallback. This used to be a per-pixel Python loop --
         # h*w iterations with three shifts each, on the GUI thread. It is only

@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import threading
@@ -117,7 +118,7 @@ except ImportError:
 if "CUDA_PATH" not in os.environ:
     _cuda_candidates = []
     _base = os.path.join(
-        os.environ.get("ProgramFiles", r"C:\Program Files"),
+        os.environ.get("PROGRAMFILES", r"C:\Program Files"),
         "NVIDIA GPU Computing Toolkit",
         "CUDA",
     )
@@ -435,10 +436,7 @@ def gpu_vram_snapshot(device_str: str | None = None) -> dict[str, float]:
     try:
         if not torch.cuda.is_available():
             return {}
-        if device_str:
-            idx = int(torch.device(device_str).index or 0)
-        else:
-            idx = _cuda_device_index()
+        idx = int(torch.device(device_str).index or 0) if device_str else _cuda_device_index()
         free_b, total_b = torch.cuda.mem_get_info(idx)
         return {
             "allocated_mib": torch.cuda.memory_allocated(idx) / (1024.0 ** 2),
@@ -554,10 +552,8 @@ def _sync_if_timing(device, enabled: bool) -> None:
     if device.type == "cuda":
         torch.cuda.synchronize(device)
     elif device.type == "mps" and hasattr(torch, "mps"):
-        try:
+        with contextlib.suppress(Exception):
             torch.mps.synchronize()
-        except Exception:
-            pass
 
 
 def _record_gpu_isp_stages(stage_ms: dict[str, float], file_path: str = "") -> None:
@@ -707,10 +703,8 @@ def _gpu_demosaic_pytorch_body(
         )
         if keep_device:
             # Synchronize producer stream so GUI-thread CUDA-GL map sees data.
-            try:
+            with contextlib.suppress(Exception):
                 torch.cuda.current_stream(device).synchronize()
-            except Exception:
-                pass
             from gpu_gl_bridge import DeviceRgb
 
             out = DeviceRgb(
@@ -1012,10 +1006,8 @@ def try_gpu_decode_from_unpacked(
             )
         except Exception:
             pass
-        try:
+        with contextlib.suppress(Exception):
             maybe_release_gpu_memory_after_decode()
-        except Exception:
-            pass
         return res
 
     return None

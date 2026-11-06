@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from PyQt6.QtGui import QPixmap
@@ -21,7 +21,7 @@ class UnifiedPart6:
     def process_full_image(self, file_path: str,
                           use_full_resolution: bool = False,
                           executor: Any | None = None,
-                          apply_sidecar_adjustments: bool | None = None) -> Union[np.ndarray, QPixmap] | None:
+                          apply_sidecar_adjustments: bool | None = None) -> np.ndarray | QPixmap | None:
         """處理完整圖像（統一接口）"""
         if apply_sidecar_adjustments is None:
             from raw_adjustments import sidecar_adjustments_enabled

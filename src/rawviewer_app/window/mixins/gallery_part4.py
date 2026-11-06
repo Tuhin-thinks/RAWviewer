@@ -1,7 +1,8 @@
-from typing import List, Optional
+
 """gallery mixin, part 4 of 5 (47 methods, 813 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -59,7 +60,7 @@ class GalleryPart4:
         self._gallery_last_select_action = "shift"
         self._gallery_set_selection_keys(selected)
 
-    def _gallery_canonical_path(self, file_path: str) -> Optional[str]:
+    def _gallery_canonical_path(self, file_path: str) -> str | None:
         if not file_path or not self.image_files:
             return None
         target = _norm_path(file_path)
@@ -242,10 +243,10 @@ class GalleryPart4:
                 )
             self.status_bar.showMessage(msg, 2500)
 
-    def _gallery_bookmarked_canonical_paths(self) -> List[str]:
+    def _gallery_bookmarked_canonical_paths(self) -> list[str]:
         return self._filter_paths_to_bookmarked(list(getattr(self, "image_files", []) or []))
 
-    def _gallery_files_for_display(self) -> List[str]:
+    def _gallery_files_for_display(self) -> list[str]:
         """Gallery file list, optionally narrowed to bookmarked images only."""
         if getattr(self, "view_mode", "") != "gallery":
             return list(getattr(self, "image_files", []) or [])
@@ -465,11 +466,11 @@ class GalleryPart4:
         self._gallery_last_select_action = "toggle"
         self._gallery_set_selection_keys(selected)
 
-    def _gallery_selected_canonical_paths(self) -> List[str]:
+    def _gallery_selected_canonical_paths(self) -> list[str]:
         keys = self._gallery_selected_expanded_norm_keys()
         return self._gallery_selected_canonical_paths_from_keys(keys)
 
-    def _after_gallery_bulk_file_removal(self, anchor_path: Optional[str] = None) -> None:
+    def _after_gallery_bulk_file_removal(self, anchor_path: str | None = None) -> None:
         self._clear_gallery_selection()
         self._refresh_filmstrip_bookmark_visuals()
         self._refresh_gallery_bookmark_visuals()
@@ -693,11 +694,9 @@ class GalleryPart4:
         """Check if we can skip loading when transitioning from gallery to single view"""
         if not getattr(self, "_gallery_instant_display_quality", False):
             return False
-        if not _norm_path(getattr(self, "_displayed_content_path", "")) == _norm_path(requested_file_path):
+        if _norm_path(getattr(self, "_displayed_content_path", "")) != _norm_path(requested_file_path):
             return False
-        if not self._single_view_pixels_on_screen(requested_file_path):
-            return False
-        return True
+        return self._single_view_pixels_on_screen(requested_file_path)
 
     def _finish_gallery_to_single_without_redisplay(self, requested_file_path):
         """Finish gallery to single view transition without redisplaying"""
@@ -715,10 +714,9 @@ class GalleryPart4:
             "true",
             "yes",
             "on",
-        ):
-            if self.current_file_path:
-                name = os.path.basename(_require_str_path(self.current_file_path))
-                self.status_bar.showMessage(f"{name}: Loading preview…")
+        ) and self.current_file_path:
+            name = os.path.basename(_require_str_path(self.current_file_path))
+            self.status_bar.showMessage(f"{name}: Loading preview…")
 
     def on_thumbnail_ready(self, thumbnail):
         """Handle when thumbnail is ready for immediate display."""
@@ -766,7 +764,7 @@ class GalleryPart4:
         # Show thumbnail in fit-to-window mode for quick overview
         return True
 
-    def _gallery_slideshow_scope(self) -> List[str]:
+    def _gallery_slideshow_scope(self) -> list[str]:
         if getattr(self, "_gallery_bookmark_filter_active", False):
             return self._gallery_files_for_display()
         return list(getattr(self, "image_files", []) or [])
@@ -794,10 +792,8 @@ class GalleryPart4:
         self._session_restore_full_decode_allowed = False
         timer = getattr(self, "_gpu_backend_import_timer", None)
         if timer is not None:
-            try:
+            with contextlib.suppress(Exception):
                 timer.stop()
-            except Exception:
-                pass
 
     def _gallery_has_thumbnail_load_pressure(self) -> bool:
         """True when gallery thumbnail decodes are still in flight (defer heavy background work)."""

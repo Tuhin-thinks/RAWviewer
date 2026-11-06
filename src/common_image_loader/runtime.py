@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import threading
 import time
@@ -17,13 +18,11 @@ def use_progressive_raw_loading() -> bool:
     the background (may cause a visible color shift). Default: off; use
     RAWVIEWER_LIBRAW_CONSISTENT_PREVIEW=1 for a single LibRaw pipeline instead.
     """
-    v = os.environ.get("RAWVIEWER_PROGRESSIVE_RAW_LOAD") or os.environ.get("SkySpotter_PROGRESSIVE_RAW_LOAD", "")
+    v = os.environ.get("RAWVIEWER_PROGRESSIVE_RAW_LOAD") or os.environ.get("SKYSPOTTER_PROGRESSIVE_RAW_LOAD", "")
     v = v.strip().lower()
     if v in ("0", "false", "no", "off"):
         return False
-    if v in ("1", "true", "yes", "on"):
-        return True
-    return False
+    return v in ("1", "true", "yes", "on")
 def pil_downscale_resample():
     """CPU downscale filter for thumbnails ΓÇö HAMMING is faster than LANCZOS for shrink."""
     from PIL import Image
@@ -59,13 +58,11 @@ def use_raw_process_pool() -> bool:
         if raw in ("1", "true", "yes", "on"):
             # Frozen .app without a plain-python helper would spawn the GUI
             # binary again ΓÇö refuse unless the helper is configured.
-            if getattr(_sys, "frozen", False) and not process_pool_python_executable():
-                return False
-            return True
+            return not (getattr(_sys, "frozen", False) and not process_pool_python_executable())
         return False
 
     raw = os.environ.get("RAWVIEWER_USE_PROCESS_POOL") or os.environ.get(
-        "SkySpotter_USE_PROCESS_POOL", ""
+        "SKYSPOTTER_USE_PROCESS_POOL", ""
     )
     raw = raw.strip().lower()
     if raw in ("0", "false", "no", "off"):
@@ -94,10 +91,8 @@ def process_pool_mp_context():
     ctx = mp.get_context("spawn")
     helper = process_pool_python_executable()
     if helper and os.path.isfile(helper) and os.access(helper, os.X_OK):
-        try:
+        with contextlib.suppress(Exception):
             ctx.set_executable(helper)
-        except Exception:
-            pass
     return ctx
 def _gpu_demosaic_backend_available() -> bool:
     """True when gpu_raw_processor is loaded and reports a non-CPU backend."""
@@ -196,7 +191,7 @@ def is_slow_storage_path(path: str) -> bool:
     return False
 def _windows_system_drive() -> str:
     """Boot/system volume letter (e.g. ``C:``) for probe heuristics."""
-    drive = os.environ.get("SystemDrive", "C:").strip()
+    drive = os.environ.get("SYSTEMDRIVE", "C:").strip()
     if len(drive) >= 2 and drive[1] == ":":
         return drive[:2].upper()
     return "C:"
@@ -315,10 +310,7 @@ def index_metadata_worker_count(total_files: int, sample_path: str | None = None
 
     cpu = os.cpu_count() or 4
 
-    if total_files > 2000:
-        count = min(3, max(2, cpu // 2))
-    else:
-        count = min(6, max(2, cpu - 1))
+    count = min(3, max(2, cpu // 2)) if total_files > 2000 else min(6, max(2, cpu - 1))
 
     if sample_path is not None:
         try:
@@ -487,22 +479,21 @@ def raw_concurrent_load_limit(sample_path: str | None = None) -> int:
         "RAWVIEWER_RAW_LOAD_LIMIT", default, minimum=1, maximum=32
     )
 
-    if not os.environ.get("RAWVIEWER_RAW_LOAD_LIMIT", "").strip():
-        if is_external_or_network_volume(sample_path):
-            if volume_speed_tier(sample_path) == "slow":
-                limit = min(
-                    limit,
-                    _env_int_bounded(
-                        "RAWVIEWER_SLOW_VOLUME_RAW_LIMIT", 3, minimum=1, maximum=8
-                    ),
-                )
-            elif moderate_external_cap_enabled():
-                limit = min(
-                    limit,
-                    _env_int_bounded(
-                        "RAWVIEWER_EXTERNAL_VOLUME_RAW_LIMIT", 8, minimum=1, maximum=32
-                    ),
-                )
+    if not os.environ.get("RAWVIEWER_RAW_LOAD_LIMIT", "").strip() and is_external_or_network_volume(sample_path):
+        if volume_speed_tier(sample_path) == "slow":
+            limit = min(
+                limit,
+                _env_int_bounded(
+                    "RAWVIEWER_SLOW_VOLUME_RAW_LIMIT", 3, minimum=1, maximum=8
+                ),
+            )
+        elif moderate_external_cap_enabled():
+            limit = min(
+                limit,
+                _env_int_bounded(
+                    "RAWVIEWER_EXTERNAL_VOLUME_RAW_LIMIT", 8, minimum=1, maximum=32
+                ),
+            )
     return raw_load_limit_aligned_to_gpu(limit)
 def process_pool_worker_count() -> int:
     """LibRaw postprocess process-pool size when RAWVIEWER_USE_PROCESS_POOL is on."""

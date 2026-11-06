@@ -1,6 +1,7 @@
 """search mixin, part 3 of 4 (24 methods, 873 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -151,16 +152,12 @@ class SearchPart3:
         self._semantic_disabled_notice_shown = True
         notice, tooltip = self._semantic_disabled_hint_texts()
         if hasattr(self, "status_bar"):
-            try:
+            with contextlib.suppress(Exception):
                 self.status_bar.showMessage(notice, 10000)
-            except Exception:
-                pass
         inp = getattr(self, "gallery_search_input", None)
         if inp is not None:
-            try:
+            with contextlib.suppress(Exception):
                 inp.setToolTip(tooltip)
-            except Exception:
-                pass
 
     def _start_user_semantic_indexing(self, corpus_files) -> None:
         """Run or resume semantic embeddings after the user opens search (metadata may already be silent)."""
@@ -598,7 +595,7 @@ class SearchPart3:
                 return
 
         hits = result.get("hits") or []
-        semantic_query = result.get("semantic_query")
+        result.get("semantic_query")
         used_semantic_backend = bool(result.get("used_semantic_backend"))
         sort_newest = bool(result.get("sort_newest"))
         status_message = str(result.get("status_message") or "")

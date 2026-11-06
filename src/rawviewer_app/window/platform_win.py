@@ -1,6 +1,7 @@
 """Windows platform integration (taskbar identity and native icons)."""
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import os
 import sys
@@ -21,12 +22,10 @@ _WINDOWS_APP_USER_MODEL_ID = "markyip.rawviewer.app.1"
 def _set_windows_app_user_model_id() -> None:
     if sys.platform != "win32":
         return
-    try:
+    with contextlib.suppress(Exception):
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             _WINDOWS_APP_USER_MODEL_ID
         )
-    except Exception:
-        pass
 
 
 def _apply_windows_native_window_icon(widget, ico_path: str | None = None) -> None:

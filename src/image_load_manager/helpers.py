@@ -1,6 +1,7 @@
 """Module-level helpers and state for the ImageLoadManager package."""
 from __future__ import annotations
 
+import contextlib
 import os
 import threading
 import time
@@ -221,10 +222,8 @@ def get_image_load_manager(max_workers: int = 4) -> ImageLoadManager:
             if _global_manager is None:
                 raw = os.environ.get("RAWVIEWER_LOAD_WORKERS", "").strip()
                 if raw:
-                    try:
+                    with contextlib.suppress(ValueError):
                         max_workers = max(2, min(16, int(raw)))
-                    except ValueError:
-                        pass
                 from .manager import ImageLoadManager
 
                 _global_manager = ImageLoadManager(max_workers)
@@ -234,7 +233,5 @@ def apply_gpu_decode_profile_to_manager() -> None:
     """Called after main-thread GPU backend import (see torch_bootstrap)."""
     mgr = _global_manager
     if mgr is not None and hasattr(mgr, "apply_gpu_decode_profile"):
-        try:
+        with contextlib.suppress(Exception):
             mgr.apply_gpu_decode_profile()
-        except Exception:
-            pass

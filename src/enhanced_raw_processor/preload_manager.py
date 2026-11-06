@@ -43,7 +43,7 @@ class PreloadManager(QObject):
         use_raw_processor = (self.processor_class is not None)
 
         # Start preloading up to max_preload_threads images
-        for i, file_path in enumerate(priority_order[:self.max_preload_threads]):
+        for _i, file_path in enumerate(priority_order[:self.max_preload_threads]):
             if file_path not in self.active_threads:
                 # Check if already cached
                 if self.cache.get_full_image(file_path) is not None:

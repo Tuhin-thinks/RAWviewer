@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 from PyQt6.QtCore import QPointF, QRectF
 from PyQt6.QtGui import QColor, QImage, QPainter, QPen, QTransform
 from PyQt6.QtWidgets import (
@@ -191,10 +193,8 @@ class RgbGlImageItem(QGraphicsObject):
                     widget.makeCurrent()
                     self._drain_pending_cuda_releases(widget)
                 finally:
-                    try:
+                    with contextlib.suppress(Exception):
                         widget.doneCurrent()
-                    except Exception:
-                        pass
             except RuntimeError:
                 # Underlying C++ item already deleted; nothing left to free
                 # through it.
@@ -202,10 +202,8 @@ class RgbGlImageItem(QGraphicsObject):
             except Exception:
                 pass
 
-        try:
+        with contextlib.suppress(Exception):
             QTimer.singleShot(0, _drain)
-        except Exception:
-            pass
 
     def _drain_pending_cuda_releases(self, widget) -> None:
         """Release deferred interop slots. Call from paint(), context current."""
@@ -236,21 +234,15 @@ class RgbGlImageItem(QGraphicsObject):
                 fns.glDeleteTextures(1, [tex_id])
 
             if widget is not None:
-                try:
+                with contextlib.suppress(Exception):
                     widget.makeCurrent()
-                except Exception:
-                    pass
             slot.release(gl_delete_fn=_del_tex)
             if widget is not None:
-                try:
+                with contextlib.suppress(Exception):
                     widget.doneCurrent()
-                except Exception:
-                    pass
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 slot.release()
-            except Exception:
-                pass
 
     def _device_upload_key(self):
         d = self._device_rgb
@@ -346,10 +338,8 @@ class RgbGlImageItem(QGraphicsObject):
                 "[CUDA_GL] register/upload failed; falling back: %s", e
             )
             self._cuda_upload_failed = True
-            try:
+            with contextlib.suppress(Exception):
                 self._release_cuda_gl(None if context_already_current else widget)
-            except Exception:
-                pass
             return False
 
     def _apply_painter_gl_matrices(self, painter: QPainter, fns) -> None:
@@ -415,10 +405,8 @@ class RgbGlImageItem(QGraphicsObject):
         # A GL context is current here, which is the only place it reliably
         # is -- release anything dropped while it was not.
         if self._pending_cuda_release:
-            try:
+            with contextlib.suppress(Exception):
                 self._drain_pending_cuda_releases(widget)
-            except Exception:
-                pass
         # Device path: CUDA→GL texture then native textured quad.
         if self._device_rgb is not None and not self._cuda_upload_failed:
             vp = widget
@@ -450,14 +438,10 @@ class RgbGlImageItem(QGraphicsObject):
                     fns.glDisable(GL_DEPTH_TEST)
                     self._apply_painter_gl_matrices(painter, fns)
                     fns.glEnable(GL_TEXTURE_2D)
-                    try:
+                    with contextlib.suppress(Exception):
                         fns.glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-                    except Exception:
-                        pass
-                    try:
+                    with contextlib.suppress(Exception):
                         fns.glColor4f(1.0, 1.0, 1.0, 1.0)
-                    except Exception:
-                        pass
                     fns.glBindTexture(GL_TEXTURE_2D, self._cuda_slot.tex_id)
                     w, h = float(self._w), float(self._h)
                     # DeviceRgb row0 = image top. cudaMemcpy2DToArray writes that to
@@ -478,10 +462,8 @@ class RgbGlImageItem(QGraphicsObject):
                     painter.endNativePainting()
                     return
                 except Exception as e:
-                    try:
+                    with contextlib.suppress(Exception):
                         painter.endNativePainting()
-                    except Exception:
-                        pass
                     import logging
 
                     logging.getLogger(__name__).info(

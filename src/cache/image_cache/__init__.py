@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import atexit
+import contextlib
 import logging
 import os
 from typing import Any
@@ -52,10 +53,8 @@ def _register_exif_cache_atexit() -> None:
     def _flush_exif_on_exit():
         global _global_cache
         if _global_cache is not None:
-            try:
+            with contextlib.suppress(Exception):
                 _global_cache.flush_exif_disk_cache()
-            except Exception:
-                pass
     atexit.register(_flush_exif_on_exit)
 
 

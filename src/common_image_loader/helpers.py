@@ -27,10 +27,7 @@ def raise_process_fd_limit(soft_target: int = 4096) -> None:
         import resource
 
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-        if hard == resource.RLIM_INFINITY:
-            target = soft_target
-        else:
-            target = min(int(hard), soft_target)
+        target = soft_target if hard == resource.RLIM_INFINITY else min(int(hard), soft_target)
         if soft < target:
             resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
     except Exception:
@@ -287,7 +284,7 @@ def image_covers_sensor_resolution(
 def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> tuple[Any | None, str | None]:
     """
     µ¬óµƒÑσ┐½σÅûΣ╕¡µÿ»σÉªσ¡ÿσ£¿σ£ûσâÅµêûτ¢╕Θù£µò╕µôÜπÇé
-    
+
     Φ┐öσ¢₧: (µò╕µôÜ, σ┐½σÅûΘí₧σ₧ï) µêû (None, None)
     Θí₧σ₧ïσîàµï¼: 'full_image', 'pixmap', 'thumbnail', 'exif'
 
@@ -328,7 +325,7 @@ def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> 
 def check_memory_cache_for_image(file_path: str, use_full_resolution: bool = False) -> tuple[Any | None, str | None]:
     """
     µ¬óµƒÑΦ¿ÿµå╢Θ½öσ┐½σÅûΣ╕¡µÿ»σÉªσ¡ÿσ£¿σ£ûσâÅ (Θ¥₧Θÿ╗σí₧∩╝îΣ╕ìΦ«ÇσÅûτúüτ¢ñ)πÇé
-    
+
     Φ┐öσ¢₧: (µò╕µôÜ, σ┐½σÅûΘí₧σ₧ï) µêû (None, None)
     Θí₧σ₧ïσîàµï¼: 'full_image', 'pixmap', 'thumbnail'
     """

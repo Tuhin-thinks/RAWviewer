@@ -1,6 +1,7 @@
 """image_load mixin, part 3 of 3 (25 methods, 747 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -140,10 +141,8 @@ class ImageLoadPart3:
 
         if self.current_pixmap and not self.current_pixmap.isNull():
             exif_now = None
-            try:
+            with contextlib.suppress(Exception):
                 exif_now = self.image_cache.get_exif(self.current_file_path)
-            except Exception:
-                pass
             if image_covers_sensor_resolution(
                 self.current_pixmap.width(), self.current_pixmap.height(), exif_now
             ):
@@ -151,10 +150,8 @@ class ImageLoadPart3:
                 return
 
         exif_for_res = None
-        try:
+        with contextlib.suppress(Exception):
             exif_for_res = self.image_cache.get_exif(self.current_file_path)
-        except Exception:
-            pass
 
         # Check if full resolution is already cached
         cached_full = self.image_cache.get_full_image(self.current_file_path)
@@ -169,10 +166,8 @@ class ImageLoadPart3:
                 self._is_half_size_displayed = False
                 self._full_resolution_loading = False
                 return
-            try:
+            with contextlib.suppress(Exception):
                 self.image_cache.full_image_cache.remove(self.current_file_path)
-            except Exception:
-                pass
 
         # Check if we're already loading full resolution
         if hasattr(self, '_full_resolution_loading') and self._full_resolution_loading:
@@ -261,12 +256,10 @@ class ImageLoadPart3:
         logger.info("[SESSION] Starting deferred nav preload after session restore")
         self._start_preloading()
         self._schedule_idle_display_prefetch()
-        try:
+        with contextlib.suppress(Exception):
             self._queue_display_tier_prefetch_for_paths(
                 self._paths_within_nav_prefetch_radius()
             )
-        except Exception:
-            pass
         # Full decode + neighbor preload have landed -- now it's safe to pay
         # the main-thread CuPy/torch import without starving those timers.
         self._schedule_deferred_gpu_backend_import(reason="post_session_restore")
@@ -490,10 +483,8 @@ class ImageLoadPart3:
         # "[ZOOM] Preview below sensor resolution" and fought the edit base.
         if self._adjust_panel_active():
             return
-        try:
+        with contextlib.suppress(Exception):
             self._maybe_request_full_res_for_smooth_zoom()
-        except Exception:
-            pass
 
     def _request_sensor_dimensions_async(self, file_path, cached_exif) -> None:
         """Resolve a RAW file's true sensor dimensions on a worker thread.
@@ -530,10 +521,8 @@ class ImageLoadPart3:
 
         # Connect the completion signal once.
         if not getattr(self, "_sensor_dims_signal_connected", False):
-            try:
+            with contextlib.suppress(Exception):
                 self._sensor_dims_resolved.connect(self._on_sensor_dims_resolved)
-            except Exception:
-                pass
             self._sensor_dims_signal_connected = True
 
         def _probe(path=file_path):
@@ -574,10 +563,8 @@ class ImageLoadPart3:
                         self.image_cache.put_exif(path, ce)
             except Exception:
                 pass
-            try:
+            with contextlib.suppress(Exception):
                 self._sensor_dims_resolved.emit(path)
-            except Exception:
-                pass
 
         try:
             import threading
@@ -679,10 +666,8 @@ class ImageLoadPart3:
                 self._restore_zoom_center = None
                 self._restore_zoom_level = None
                 if hasattr(self, '_maintain_zoom_on_navigation'):
-                    try:
+                    with contextlib.suppress(AttributeError):
                         delattr(self, "_maintain_zoom_on_navigation")
-                    except AttributeError:
-                        pass
 
                 # Immediately clear the image view to prevent stale pixels
                 self.image_label.setPixmap(QPixmap())

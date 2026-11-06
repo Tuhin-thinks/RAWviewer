@@ -53,10 +53,9 @@ class ResizeGripIndicator(QWidget):
 
     def mouseReleaseEvent(self, event):
         viewer = self._viewer()
-        if viewer is not None and hasattr(viewer, "_finish_resize_drag"):
-            if viewer._finish_resize_drag():
-                event.accept()
-                return
+        if viewer is not None and hasattr(viewer, "_finish_resize_drag") and viewer._finish_resize_drag():
+            event.accept()
+            return
         super().mouseReleaseEvent(event)
 
     def enterEvent(self, event):

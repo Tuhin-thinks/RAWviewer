@@ -1,6 +1,7 @@
 """adjust mixin, part 2 of 5 (37 methods, 889 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import time
@@ -625,10 +626,8 @@ class AdjustPart2:
             memo.clear()
             return
         memo.pop(file_path, None)
-        try:
+        with contextlib.suppress(Exception):
             memo.pop(os.path.normpath(file_path), None)
-        except Exception:
-            pass
 
     def _should_hold_full_until_preview_paint(self, file_path: str) -> bool:
         """preview_first_stages: do not paint full-res before embedded preview lands.
@@ -748,10 +747,8 @@ class AdjustPart2:
                 for attr in ("_adjust_preview_stage_cache", "_adjust_preview_stage_cache_fast"):
                     cache = getattr(self, attr, None)
                     if cache is not None and hasattr(cache, "reset"):
-                        try:
+                        with contextlib.suppress(Exception):
                             cache.reset()
-                        except Exception:
-                            pass
                 try:
                     from processing.unified import release_edit_base_cache
 
@@ -837,10 +834,8 @@ class AdjustPart2:
         except Exception:
             return
         side = normalize_adjust_dock(side)
-        try:
+        with contextlib.suppress(Exception):
             self.get_settings().setValue(ADJUST_DOCK_SETTINGS_KEY, side)
-        except Exception:
-            pass
         self._apply_adjust_panel_dock(side)
 
     def _maybe_maximize_brightness_for_adjust(self, entering: bool) -> None:

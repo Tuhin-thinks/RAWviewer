@@ -1,6 +1,7 @@
 """Gallery mixin part 3 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import time
 
@@ -245,10 +246,8 @@ class GalleryPart3:
         resolved = self._resolve_gallery_path(file_path)
         if resolved:
             file_path = resolved
-        try:
+        with contextlib.suppress(Exception):
             self._thumbnail_cache.remove_keys_for_file_path(file_path)
-        except Exception:
-            pass
         # Drop the remembered aspect so a re-decode (e.g. after on-disk rotation) re-measures.
         self._measured_raw_aspects.pop(file_path, None)
         self._base_fetch_miss_ts.pop(file_path, None)
@@ -263,10 +262,8 @@ class GalleryPart3:
                 self._clear_widget_thumbnail(w)
                 needs_reload = True
         if needs_reload and not self._is_scrolling_fast:
-            try:
+            with contextlib.suppress(Exception):
                 self.load_visible_images()
-            except Exception:
-                pass
 
     def _prune_path_caches(self, keep: set) -> None:
         """Forget cached data for paths that are no longer on show.
@@ -549,10 +546,8 @@ class GalleryPart3:
 
     def resizeEvent(self, event):
         # Debounce expensive rebuilds during window resize.
-        try:
+        with contextlib.suppress(Exception):
             self._schedule_viewport_width_rebuild()
-        except Exception:
-            pass
         try:
             if getattr(self, "_empty_label", None) and self._empty_label.isVisible():
                 self._update_empty_label_geometry()
@@ -586,28 +581,20 @@ class GalleryPart3:
             if p:
                 self._scroll_area = p
                 scrollbar = p.verticalScrollBar()
-                try:
+                with contextlib.suppress(Exception):
                     scrollbar.valueChanged.disconnect(self._on_scroll)
-                except Exception:
-                    pass
                 scrollbar.valueChanged.connect(self._on_scroll)
                 # Dragging the scrollbar thumb should trigger immediate loading on release
-                try:
+                with contextlib.suppress(Exception):
                     scrollbar.sliderPressed.disconnect(self._on_slider_pressed)
-                except Exception:
-                    pass
-                try:
+                with contextlib.suppress(Exception):
                     scrollbar.sliderReleased.disconnect(self._on_slider_released)
-                except Exception:
-                    pass
                 scrollbar.sliderPressed.connect(self._on_slider_pressed)
                 scrollbar.sliderReleased.connect(self._on_slider_released)
 
                 # Install wheel event filter on viewport for smooth scrolling
-                try:
+                with contextlib.suppress(Exception):
                     p.viewport().removeEventFilter(self)
-                except Exception:
-                    pass
                 p.viewport().installEventFilter(self)
         except Exception:
             pass
@@ -733,10 +720,7 @@ class GalleryPart3:
         frac = 1.0 - (1.0 - self._wheel_decay_per_tick) ** dt_ticks
         adaptive_step = self._wheel_accum_px * frac
         min_step = self._wheel_step_px * dt_ticks
-        if abs(adaptive_step) < min_step:
-            step = min_step if self._wheel_accum_px > 0 else -min_step
-        else:
-            step = adaptive_step
+        step = (min_step if self._wheel_accum_px > 0 else -min_step) if abs(adaptive_step) < min_step else adaptive_step
 
         # Don't over-consume
         if abs(step) > abs(self._wheel_accum_px):

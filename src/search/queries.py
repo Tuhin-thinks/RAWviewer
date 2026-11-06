@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sqlite3
 import threading
@@ -20,10 +21,8 @@ def _semantic_sort_read_conn(db_path: str) -> sqlite3.Connection:
         conn = sqlite3.connect(db_path, check_same_thread=False, timeout=30.0)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA busy_timeout=60000")
-        try:
+        with contextlib.suppress(sqlite3.OperationalError):
             conn.execute("PRAGMA query_only=ON")
-        except sqlite3.OperationalError:
-            pass
         _semantic_sort_read_local.conn = conn
         _semantic_sort_read_local.db_path = db_path
     return conn
@@ -107,10 +106,7 @@ def get_semantic_capture_times_for_folder(
     if not root:
         return {}
     root_lower = root.rstrip("\\/").lower()
-    if os.sep == "\\":
-        prefix = root_lower + "\\%"
-    else:
-        prefix = root_lower.replace("\\", "/") + "/%"
+    prefix = root_lower + "\\%" if os.sep == "\\" else root_lower.replace("\\", "/") + "/%"
     path_expr = (
         "lower(replace(file_path, '/', '\\\\'))"
         if os.sep == "\\"

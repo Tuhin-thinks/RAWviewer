@@ -28,6 +28,8 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = 200_000_000
 
 
+import contextlib
+
 from core.config import (
     _env_int,
     _env_true,
@@ -311,7 +313,7 @@ def main():
 
             platform_system = _platform_mod.system()
             platform_release = _platform_mod.release()
-            log_file = setup_logging()
+            setup_logging()
             logger.info("=" * 80)
             logger.info("Application startup started")
             logger.info(f"Python version: {sys.version}")
@@ -491,10 +493,8 @@ def main():
                 _apply_windows_native_window_icon(viewer)
             # Paint the main window under the splash before dismissing, so the
             # splash does not uncover an empty desktop flash.
-            try:
+            with contextlib.suppress(Exception):
                 app.processEvents()
-            except Exception:
-                pass
             QTimer.singleShot(0, viewer._restore_keyboard_focus)
             _schedule_startup_splash_dismiss(app, viewer, splash)
             safe_print("Splash screen closed, main window displayed", flush=True)

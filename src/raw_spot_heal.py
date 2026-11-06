@@ -240,10 +240,7 @@ def apply_spot_heal(
         _, area, adaptive_radius, method_key, bounds = geom
     else:
         coverage_full = resize_mask_to(mask, fh, w)
-        if ro != 0 or fh != h:
-            coverage = coverage_full[ro : ro + h]
-        else:
-            coverage = coverage_full
+        coverage = coverage_full[ro:ro + h] if ro != 0 or fh != h else coverage_full
         bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
         if not np.any(bin_mask):
             mask._geom_cache = (geom_key, 0, radius, "telea", None)

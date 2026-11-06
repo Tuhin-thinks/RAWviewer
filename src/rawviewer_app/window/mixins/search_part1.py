@@ -1,10 +1,11 @@
 """search mixin, part 1 of 4 (49 methods, 850 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 import time
-from typing import Any, cast, List
+from typing import Any, cast
 
 from PyQt6.QtCore import QPoint, Qt, QTimer
 from PyQt6.QtGui import QCursor, QRegion
@@ -24,7 +25,7 @@ class SearchPart1:
         query = (getattr(self, "_last_semantic_query", "") or "").strip()
         return bool(query and getattr(self, "_semantic_search_backup_files", None) is not None)
 
-    def _gallery_search_base_files(self) -> List[str]:
+    def _gallery_search_base_files(self) -> list[str]:
         """Files searched by the gallery bar (full folder/corpus; bookmark filter is display-only)."""
         if self._semantic_search_corpus_files:
             return list(self._semantic_search_corpus_files)
@@ -105,10 +106,8 @@ class SearchPart1:
             return
         setter = getattr(index, "set_load_throttle_hooks", None)
         if callable(setter):
-            try:
+            with contextlib.suppress(Exception):
                 setter(enter, exit_)
-            except Exception:
-                pass
 
     def _begin_indexing_load_throttle(self) -> None:
         """Cut ILM concurrency while semantic or face indexing holds large RAM."""
@@ -118,10 +117,8 @@ class SearchPart1:
             return
         mgr = getattr(self, "image_manager", None)
         if mgr is not None and hasattr(mgr, "enter_semantic_indexing_throttle"):
-            try:
+            with contextlib.suppress(Exception):
                 mgr.enter_semantic_indexing_throttle()
-            except Exception:
-                pass
 
     def _end_indexing_load_throttle(self) -> None:
         depth = int(getattr(self, "_indexing_load_throttle_depth", 0) or 0)
@@ -133,20 +130,16 @@ class SearchPart1:
             return
         mgr = getattr(self, "image_manager", None)
         if mgr is not None and hasattr(mgr, "exit_semantic_indexing_throttle"):
-            try:
+            with contextlib.suppress(Exception):
                 mgr.exit_semantic_indexing_throttle()
-            except Exception:
-                pass
 
     def _release_indexing_load_throttle(self) -> None:
         """Force-release semantic indexing I/O throttle (e.g. on folder change or gallery entry)."""
         self._indexing_load_throttle_depth = 0
         mgr = getattr(self, "image_manager", None)
         if mgr is not None and hasattr(mgr, "force_exit_semantic_indexing_throttle"):
-            try:
+            with contextlib.suppress(Exception):
                 mgr.force_exit_semantic_indexing_throttle()
-            except Exception:
-                pass
 
     def _defer_background_indexing_for_gallery(self) -> None:
         """Pause semantic/face background work while gallery thumbnails first paint."""
@@ -202,18 +195,12 @@ class SearchPart1:
             self._metadata_index_defer_timer.stop()
         self._gallery_search_user_collapsed_while_busy = False
         # Collapse first so clearing status does not re-trigger expand-with-new-width while still open.
-        try:
+        with contextlib.suppress(Exception):
             self._set_search_panel_expanded(False, animate=False)
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self._ensure_gallery_search_collapsed()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self._set_gallery_search_status("")
-        except Exception:
-            pass
         if hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
             try:
                 self.gallery_search_input.blockSignals(True)
@@ -397,12 +384,11 @@ class SearchPart1:
 
         now = time.time()
         cache = getattr(self, "_gallery_search_ready_cache", None)
-        if cache and (now - getattr(self, "_gallery_search_ready_cache_ts", 0.0)) < 3.0:
-            if (
-                cache.get("folder") == getattr(self, "current_folder", None)
-                and cache.get("count") == len(corpus)
-            ):
-                return bool(cache.get("ready", False))
+        if cache and (now - getattr(self, "_gallery_search_ready_cache_ts", 0.0)) < 3.0 and (
+            cache.get("folder") == getattr(self, "current_folder", None)
+            and cache.get("count") == len(corpus)
+        ):
+            return bool(cache.get("ready", False))
 
         from search import face_scan_enabled, semantic_embeddings_enabled
 
@@ -665,10 +651,8 @@ class SearchPart1:
         if has_msg and self._should_show_search_index_progress(message) and not show_in_search:
             # Background metadata/semantic passes stay silent in the search UI.
             if self._is_gallery_search_indexing_active() and hasattr(self, "status_bar"):
-                try:
+                with contextlib.suppress(Exception):
                     self.status_bar.showMessage(str(message).strip(), 0)
-                except Exception:
-                    pass
             has_msg = False
             message = ""
         self._gallery_search_status_full = (message or "").strip()
@@ -694,10 +678,8 @@ class SearchPart1:
             self._sync_gallery_search_input_editable()
 
         if not has_msg and hasattr(self, "status_bar") and self.status_bar is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.status_bar.clearMessage()
-            except Exception:
-                pass
 
         if not relayout:
             return
@@ -756,10 +738,8 @@ class SearchPart1:
         anchor = self._search_expand_overlay_anchor()
         if anchor is None:
             if reveal_w <= 0:
-                try:
+                with contextlib.suppress(Exception):
                     container.clearMask()
-                except Exception:
-                    pass
                 container.hide()
             return
         x, y, h = anchor
@@ -798,17 +778,13 @@ class SearchPart1:
         if reveal_w > 0:
             if container.parent() is not host:
                 container.setParent(host)
-            try:
+            with contextlib.suppress(Exception):
                 container.setMask(QRegion(0, 0, int(reveal_w), int(h)))
-            except Exception:
-                pass
             container.show()
             container.raise_()
         else:
-            try:
+            with contextlib.suppress(Exception):
                 container.clearMask()
-            except Exception:
-                pass
             container.hide()
 
     def _apply_search_expand_overlay_geometry(

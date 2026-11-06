@@ -1,6 +1,7 @@
 """Small PyQt helper factories shared by the main window."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from typing import Any, cast
@@ -49,10 +50,8 @@ def _get_bg_thread_pool():
     n = max(2, (os.cpu_count() or 4) // 2)
     cap = os.environ.get("RAWVIEWER_BG_POOL_THREADS", "").strip()
     if cap:
-        try:
+        with contextlib.suppress(ValueError):
             n = max(1, min(int(cap), 16))
-        except ValueError:
-            pass
     if _shared_bg_pool is None:
         from PyQt6.QtCore import QThreadPool
         _shared_bg_pool = QThreadPool()

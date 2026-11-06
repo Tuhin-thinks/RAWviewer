@@ -1,7 +1,9 @@
-from typing import Any, Optional
+from typing import Any
+
 """metadata mixin, part 2 of 2 (30 methods, 708 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import platform
 import sys
@@ -27,7 +29,7 @@ class MetadataPart2:
         file_stats=None,
         *,
         probe_uncached: bool = True,
-        folder_path: Optional[str] = None,
+        folder_path: str | None = None,
         sort_probe_conservative: bool = False,
         capture_time_only: bool = False,
     ):
@@ -314,10 +316,8 @@ class MetadataPart2:
                 label or "", make=make, model=model, iso=iso_val
             )
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 panel.set_camera_profile_active("")
-            except Exception:
-                pass
 
     def _on_camera_profile_removed(self) -> None:
         """Re-decode defaults after a saved camera profile was deleted."""
@@ -458,10 +458,7 @@ class MetadataPart2:
                     load_adjustments_for_file,
                 )
 
-                if a is None:
-                    a = load_adjustments_for_file(fp)
-                else:
-                    a = dict(a)
+                a = load_adjustments_for_file(fp) if a is None else dict(a)
                 if not is_default_adjustments(a):
                     rgb = apply_adjustments_to_rgb(rgb, a)
                 h, w = rgb.shape[:2]
@@ -663,18 +660,14 @@ class MetadataPart2:
         border = self._frame_resize_border()
         if pos.x() <= border and pos.y() <= border:
             return True
-        if pos.x() >= self.width() - border and pos.y() <= border:
-            return True
-        return False
+        return bool(pos.x() >= self.width() - border and pos.y() <= border)
 
     def _title_bar_blocks_resize_at(self, pos: QPoint) -> bool:
         if not (hasattr(self, "title_bar") and self.title_bar is not None):
             return False
         if pos.y() >= self.title_bar.height():
             return False
-        if self._title_bar_corner_resize_at(pos):
-            return False
-        return True
+        return not self._title_bar_corner_resize_at(pos)
 
     def _is_title_bar_chrome_widget(self, obj) -> bool:
         from PyQt6.QtWidgets import QWidget

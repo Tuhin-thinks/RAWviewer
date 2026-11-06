@@ -1,6 +1,7 @@
 """Background workers for the adjust panel preview, masks and export."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from typing import Any
@@ -380,10 +381,8 @@ class _AdjustExportWorker(QRunnable):
         from rawviewer_app.services.batch import export_one_file
 
         def emit_progress(percent: int, stage: str = "") -> None:
-            try:
+            with contextlib.suppress(Exception):
                 self.signals.progress.emit(self.file_path, percent, stage)
-            except Exception:
-                pass
 
         err, xmp_warning = None, None
         try:

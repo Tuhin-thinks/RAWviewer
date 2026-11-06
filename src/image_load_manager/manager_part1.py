@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import os
 import queue
 import threading
@@ -187,10 +188,8 @@ class ImageLoadManagerPart1(QObject):
 
         env_workers = os.environ.get("RAWVIEWER_LOAD_MAX_WORKERS", "").strip()
         if env_workers:
-            try:
+            with contextlib.suppress(ValueError):
                 default_workers = max(4, int(env_workers))
-            except ValueError:
-                pass
         elif is_external_or_network_volume(folder_path):
             # Gallery thumbnail decodes are NOT gated by raw_load_limit (only heavy
             # full-res decodes are), so the worker pool size is the real lever for
@@ -294,14 +293,10 @@ class ImageLoadManagerPart1(QObject):
             pool = self._process_pool
             self._process_pool = None
             if hasattr(self, "_process_pool_shutdown_hook"):
-                try:
+                with contextlib.suppress(Exception):
                     atexit.unregister(self._process_pool_shutdown_hook)
-                except Exception:
-                    pass
-            try:
+            with contextlib.suppress(Exception):
                 pool.shutdown(wait=False)
-            except Exception:
-                pass
             log.info(
                 "[LOAD] LibRaw process pool disabled (GPU demosaic=%s; RAWVIEWER_USE_PROCESS_POOL=1 to force)",
                 backend,
@@ -434,10 +429,8 @@ class ImageLoadManagerPart1(QObject):
                 return
             if best_mbps is not None:
                 record_volume_speed(probe_path, best_mbps)
-            try:
+            with contextlib.suppress(Exception):
                 self.update_volume_throttling(folder_path)
-            except Exception:
-                pass
             try:
                 import logging
 

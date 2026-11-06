@@ -245,31 +245,31 @@ def _rotate_rect(
     """Rotate (l, t, w, h) from sensor space (iw x ih) to display space."""
     if orientation <= 1:
         return rect
-    l, t, w, h = rect
+    left, t, w, h = rect
     if orientation == 6:  # 90° CW
-        return (ih - t - h, l, h, w)
+        return (ih - t - h, left, h, w)
     if orientation == 8:  # 90° CCW
-        return (t, iw - l - w, h, w)
+        return (t, iw - left - w, h, w)
     if orientation == 3:  # 180°
-        return (iw - l - w, ih - t - h, w, h)
+        return (iw - left - w, ih - t - h, w, h)
     if orientation == 2:  # Flip H
-        return (iw - l - w, t, w, h)
+        return (iw - left - w, t, w, h)
     if orientation == 4:  # Flip V
-        return (l, ih - t - h, w, h)
+        return (left, ih - t - h, w, h)
     if orientation == 5:  # 90° CCW + Flip H
-        return (ih - t - h, iw - l - w, h, w)
+        return (ih - t - h, iw - left - w, h, w)
     if orientation == 7:  # 90° CW + Flip H
-        return (t, l, h, w)
+        return (t, left, h, w)
     return rect
 
 
 def _clamp_rect(left: float, top: float, wi: float, hi: float, iw: int, ih: int) -> tuple[int, int, int, int]:
     iw_f, ih_f = float(max(iw, 1)), float(max(ih, 1))
-    l = max(0.0, min(left, iw_f - 1.0))
+    left_clamped = max(0.0, min(left, iw_f - 1.0))
     t = max(0.0, min(top, ih_f - 1.0))
-    wcl = max(1.0, min(wi, iw_f - l))
+    wcl = max(1.0, min(wi, iw_f - left_clamped))
     hcl = max(1.0, min(hi, ih_f - t))
-    return int(l), int(t), int(round(wcl)), int(round(hcl))
+    return int(left_clamped), int(t), int(round(wcl)), int(round(hcl))
 
 
 def _rect_ref_from_subject_area(nums: list[int], iw: int, ih: int) -> tuple[int, int, int, int] | None:
@@ -583,8 +583,8 @@ def _ltwh_in_pixmap(
         return rect_ref
     sx = pw / float(ref_w)
     sy = ph / float(ref_h)
-    l, t, w, h = rect_ref
-    return _clamp_rect(l * sx, t * sy, w * sx, h * sy, pw, ph)
+    left, t, w, h = rect_ref
+    return _clamp_rect(left * sx, t * sy, w * sx, h * sy, pw, ph)
 
 
 def _ensure_min_display_ltwh(
@@ -594,14 +594,14 @@ def _ensure_min_display_ltwh(
     Expand very thin / tiny rectangles in **pixmap** space so outlines are not a
     single pixel dot or line after scaling (common for SubjectArea vs large ref).
     """
-    l, t, w, h = ltwh
+    left, t, w, h = ltwh
     if pw < 4 or ph < 4:
         return ltwh
     # ~2% of shorter side, at least 12 px — visible but not dominating the image.
     min_side = max(12, min(pw, ph) // 50)
     if w >= min_side and h >= min_side:
         return ltwh
-    cx = l + w / 2.0
+    cx = left + w / 2.0
     cy = t + h / 2.0
     nw = float(max(w, min_side))
     nh = float(max(h, min_side))
@@ -621,14 +621,13 @@ def _row_from_exiv2_raw_dict(raw: dict[str, str]) -> dict[str, Any]:
         by_leaf.setdefault(leaf, []).append((k, v2))
     row: dict[str, Any] = {}
     for leaf, pairs in by_leaf.items():
-        if len(pairs) > 1:
-            if leaf in ("SubjectArea", "SubjectLocation"):
-                standard = [
-                    kv for kv in pairs if "Exif.Photo." in kv[0] or "Exif.Image." in kv[0]
-                ]
-                if standard:
-                    row[leaf] = standard[0][1]
-                    continue
+        if len(pairs) > 1 and leaf in ("SubjectArea", "SubjectLocation"):
+            standard = [
+                kv for kv in pairs if "Exif.Photo." in kv[0] or "Exif.Image." in kv[0]
+            ]
+            if standard:
+                row[leaf] = standard[0][1]
+                continue
         pairs.sort(key=lambda kv: len(kv[0]), reverse=True)
         row[leaf] = pairs[0][1]
     return row

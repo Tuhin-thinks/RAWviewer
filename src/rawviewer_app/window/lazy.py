@@ -8,6 +8,7 @@ the real objects into every registered module namespace.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from typing import Any
 
@@ -103,10 +104,8 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     has_pyexiv2 = _hp2
     process_file_from_path = _pfp
 
-    try:
+    with contextlib.suppress(Exception):
         _update_splash(f"Metadata engine: {'pyexiv2' if has_pyexiv2() else 'exifread'}")
-    except Exception:
-        pass
 
     _update_splash("Loading core architecture...")
     from image_cache import get_image_cache as _get_image_cache

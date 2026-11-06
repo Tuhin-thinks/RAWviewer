@@ -1,7 +1,8 @@
-from typing import List
+
 """external mixin, part 2 of 2 (21 methods, 690 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -30,10 +31,7 @@ class ExternalPart2:
     def _macos_share_airdrop_finder(self, share_paths) -> None:
         import subprocess
 
-        if isinstance(share_paths, str):
-            paths = [share_paths]
-        else:
-            paths = list(share_paths)
+        paths = [share_paths] if isinstance(share_paths, str) else list(share_paths)
 
         try:
             for p in paths:
@@ -71,10 +69,7 @@ class ExternalPart2:
 
     def _macos_share_airdrop_via_appkit(self, urls, share_paths) -> None:
         """AirDrop: Finder Share sheet is reliable under Qt; in-app perform is opt-in only."""
-        if isinstance(share_paths, str):
-            paths = [share_paths]
-        else:
-            paths = list(share_paths)
+        paths = [share_paths] if isinstance(share_paths, str) else list(share_paths)
 
         if not _env_true("RAWVIEWER_AIRDROP_PERFORM"):
             _share_log(
@@ -102,10 +97,8 @@ class ExternalPart2:
             service, urls, is_airdrop=True, share_paths=paths
         )
         delay_ms = 1500
-        try:
+        with contextlib.suppress(ValueError):
             delay_ms = max(800, int(os.environ.get("RAWVIEWER_AIRDROP_WATCHDOG_MS", "1500")))
-        except ValueError:
-            pass
         QTimer.singleShot(
             delay_ms, lambda sps=paths: self._macos_share_airdrop_perform_watchdog(sps)
         )
@@ -114,10 +107,7 @@ class ExternalPart2:
         self, service, urls, *, is_airdrop: bool = False, share_paths = None
     ) -> None:
         def run() -> None:
-            if isinstance(share_paths, str):
-                fallback_paths = [share_paths]
-            else:
-                fallback_paths = list(share_paths or [])
+            fallback_paths = [share_paths] if isinstance(share_paths, str) else list(share_paths or [])
 
             if not fallback_paths and urls:
                 try:
@@ -194,7 +184,7 @@ class ExternalPart2:
             return
         self._perform_macos_share_service(service, urls, share_paths=share_paths)
 
-    def _share_macos_services_menu(self, paths: List[str]) -> bool:
+    def _share_macos_services_menu(self, paths: list[str]) -> bool:
         """List NSSharingService targets in a Qt menu (picker sheet often spins empty in v2.2)."""
         try:
             from AppKit import NSSharingService
@@ -253,10 +243,7 @@ class ExternalPart2:
         except Exception:
             pass
         _activate_macos_foreground_for_share()
-        if btn is not None and btn.isVisible():
-            pos = btn.mapToGlobal(QPoint(0, btn.height()))
-        else:
-            pos = QCursor.pos()
+        pos = btn.mapToGlobal(QPoint(0, btn.height())) if btn is not None and btn.isVisible() else QCursor.pos()
         # exec (not popup): popup often fails to appear above frameless Qt6 windows on macOS.
         menu.exec(pos)
         return True
@@ -334,7 +321,7 @@ class ExternalPart2:
 
         self._macos_share_defer_to_main(run)
 
-    def _share_macos_ui_impl(self, paths: List[str]) -> None:
+    def _share_macos_ui_impl(self, paths: list[str]) -> None:
         if self._macos_share_try_native_picker() and not self._macos_share_use_qt_menu():
             _share_log(
                 logging.INFO,
@@ -343,10 +330,8 @@ class ExternalPart2:
             if self._share_macos_picker_ui(paths):
                 if _env_true("RAWVIEWER_SHARE_AUTO_MENU_FALLBACK", default=True):
                     delay = 900
-                    try:
+                    with contextlib.suppress(ValueError):
                         delay = max(400, int(os.environ.get("RAWVIEWER_SHARE_MENU_FALLBACK_MS", "900")))
-                    except ValueError:
-                        pass
                     QTimer.singleShot(delay, lambda fps=paths: self._share_macos_auto_menu_fallback(fps))
                 return
 
@@ -367,7 +352,7 @@ class ExternalPart2:
                 self._copy_paths_to_clipboard(paths)
         self.status_bar.showMessage("Share unavailable -- path copied to clipboard", 4000)
 
-    def _share_macos_auto_menu_fallback(self, paths: List[str]) -> None:
+    def _share_macos_auto_menu_fallback(self, paths: list[str]) -> None:
         """If the native popover spinner never populates, offer the working Qt service menu."""
         if getattr(self, "_macos_share_menu_fallback_used", False):
             return
@@ -379,7 +364,7 @@ class ExternalPart2:
         if self._share_macos_services_menu(paths):
             self.status_bar.showMessage("Share -- choose a target below", 3500)
 
-    def _macos_share_prepare_urls(self, paths: List[str]):
+    def _macos_share_prepare_urls(self, paths: list[str]):
         """Return (list of NSURL, list of share_paths) for AppKit; copies /Volumes/ files to local temp files."""
         try:
             from AppKit import NSURL
@@ -435,10 +420,8 @@ class ExternalPart2:
                     ok, temp_share_path, reason = self._macos_share_validate_file(temp_path)
                     if not ok:
                         _share_log(logging.WARNING, "temp share file invalid (%s): %s", reason, temp_path)
-                        try:
+                        with contextlib.suppress(OSError):
                             os.remove(temp_path)
-                        except OSError:
-                            pass
                         continue
                     self._macos_share_temp_paths.append(temp_path)
                     share_path = temp_path
@@ -460,7 +443,7 @@ class ExternalPart2:
 
         return urls, share_paths
 
-    def _share_macos_minimal_v21(self, paths: List[str]) -> bool:
+    def _share_macos_minimal_v21(self, paths: list[str]) -> bool:
         """v2.1 picker: window contentView anchor, no event-filter pause, no picker delegate."""
         try:
             from AppKit import NSSharingServicePicker
@@ -540,7 +523,7 @@ class ExternalPart2:
         except Exception:
             return None
 
-    def _share_macos(self, paths: List[str]) -> bool:
+    def _share_macos(self, paths: list[str]) -> bool:
         """macOS NSSharingServicePicker -- must run on Qt GUI thread."""
         try:
             from AppKit import NSSharingService, NSSharingServicePicker
@@ -665,10 +648,7 @@ class ExternalPart2:
     def _continue_resize_drag(self, event) -> bool:
         if not self._resize_edge_active:
             return False
-        if hasattr(event, "globalPosition"):
-            current_pos = event.globalPosition().toPoint()
-        else:
-            current_pos = event.globalPos()
+        current_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
         delta = current_pos - self._resize_start_pos
         start_geometry = self._resize_start_geometry
         if start_geometry is None:
@@ -698,10 +678,8 @@ class ExternalPart2:
         grip = getattr(self, "_resize_grip", None)
         if grip is not None:
             grip.hide()
-        try:
+        with contextlib.suppress(Exception):
             self.releaseMouse()
-        except Exception:
-            pass
         if hasattr(self, "view_mode") and self.view_mode == "gallery":
             gallery = getattr(self, "gallery_justified", None)
             if gallery is not None:
@@ -719,10 +697,8 @@ class ExternalPart2:
                 from PyQt6.QtCore import QTimer
 
                 QTimer.singleShot(100, self.scale_image_to_fit)
-        try:
+        with contextlib.suppress(Exception):
             self._update_resize_edge_hover(self.mapFromGlobal(QCursor.pos()))
-        except Exception:
-            pass
         return True
 
     def _should_fast_open_single_file(self, start_file, start_view) -> bool:
@@ -734,6 +710,4 @@ class ExternalPart2:
         """
         if not start_file:
             return False
-        if start_view == "gallery":
-            return False
-        return True
+        return start_view != "gallery"

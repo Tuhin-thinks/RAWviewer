@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -194,10 +195,8 @@ def get_camera_profile(make: str, model: str, iso: int | None = None) -> dict[st
             iso_keys = [k for k in registry if k.startswith(f"{base_key}_iso")]
             iso_pairs = []
             for k in iso_keys:
-                try:
+                with contextlib.suppress(ValueError):
                     iso_pairs.append((abs(int(k.split("_iso")[-1]) - iso), k))
-                except ValueError:
-                    pass
             if iso_pairs:
                 iso_pairs.sort(key=lambda x: x[0])
                 return registry[iso_pairs[0][1]]

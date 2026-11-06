@@ -1,6 +1,7 @@
 """gallery mixin, part 2 of 5 (17 methods, 872 lines)."""
 from __future__ import annotations
 
+import contextlib
 import platform
 import sys
 from typing import Any, cast
@@ -512,10 +513,8 @@ class GalleryPart2:
 
         # Capture dates for the scrollbar-drag date bubble. Injected because
         # the times live in this window's image cache, not in the gallery.
-        try:
+        with contextlib.suppress(Exception):
             justified_gallery.set_capture_date_provider(self._gallery_capture_date)
-        except Exception:
-            pass
 
         justified_gallery.installEventFilter(self)
         gallery_scroll.setWidget(justified_gallery)
@@ -588,10 +587,8 @@ class GalleryPart2:
                 gj.begin_zoom_session()
             gj.apply_gallery_zoom(value)
             gj.end_zoom_session()
-            try:
+            with contextlib.suppress(Exception):
                 self.get_settings().setValue("gallery_row_height", value)
-            except Exception:
-                pass
 
     def _gallery_layout_seed_paths(self, files: list, anchor_path: str | None) -> list:
         """Subset of paths for layout metadata pre-seed (avoid 5k+ SQLite lookups on gallery open)."""

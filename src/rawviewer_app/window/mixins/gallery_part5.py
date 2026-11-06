@@ -1,6 +1,7 @@
 """gallery mixin, part 5 of 5 (3 methods, 236 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -65,10 +66,8 @@ class GalleryPart5:
                     )
                     if is_emfile_error(e):
                         note_emfile_pressure()
-                        try:
+                        with contextlib.suppress(Exception):
                             viewer._enter_io_pressure_mode("sort_refine_emfile")
-                        except Exception:
-                            pass
                     fallback = list(getattr(viewer, "image_files", []) or paths)
                     if fallback:
                         try:

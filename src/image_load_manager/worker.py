@@ -1,4 +1,4 @@
-from typing import Optional
+
 """ImageLoadWorker: reusable QRunnable that executes one ImageLoadTask."""
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ import time
 
 import numpy as np
 from PyQt6.QtCore import QRunnable, QSize, Qt
+from PyQt6.QtGui import QImage, QPixmap
 
 from image_load_manager import ImageLoadManager
-from PyQt6.QtGui import QImage, QPixmap
 
 from .helpers import (
     Priority,
@@ -28,8 +28,8 @@ class ImageLoadTask:
 
     def __init__(self, file_path: str, priority: Priority = Priority.CURRENT,
                  use_full_resolution: bool = False,
-                 stages: Optional[set] = None,
-                 thumbnail_target_size: Optional[QSize] = None,
+                 stages: set | None = None,
+                 thumbnail_target_size: QSize | None = None,
                  thumbnail_fit: str = "crop",
                  gallery_thumbnail: bool = False):
         self.file_path = file_path
@@ -222,9 +222,8 @@ class ImageLoadWorker(QRunnable):
                 if exif_data is not None and not self.task.is_cancelled():
                     if self._safe_emit():
                         self.manager.exif_data_ready.emit(file_path, exif_data)
-                elif exif_data is None and not self.task.is_cancelled():
-                    if self._safe_emit():
-                        self.manager.exif_data_ready.emit(file_path, {})
+                elif exif_data is None and not self.task.is_cancelled() and self._safe_emit():
+                    self.manager.exif_data_ready.emit(file_path, {})
             else:
                 # Sequential or partial stages
                 if 'exif' in stages and not self.task.is_cancelled():
@@ -235,9 +234,8 @@ class ImageLoadWorker(QRunnable):
                     if exif_data is not None and not self.task.is_cancelled():
                         if self._safe_emit():
                             self.manager.exif_data_ready.emit(file_path, exif_data)
-                    elif exif_data is None and not self.task.is_cancelled():
-                        if self._safe_emit():
-                            self.manager.exif_data_ready.emit(file_path, {})
+                    elif exif_data is None and not self.task.is_cancelled() and self._safe_emit():
+                        self.manager.exif_data_ready.emit(file_path, {})
 
                 if 'thumbnail' in stages and not self.task.is_cancelled():
                     self._yield_if_needed()
@@ -275,9 +273,8 @@ class ImageLoadWorker(QRunnable):
                         allow_heavy_fallback
                         and exif_data is not None
                         and not self.task.is_cancelled()
-                    ):
-                        if self._safe_emit():
-                            self.manager.exif_data_ready.emit(file_path, exif_data)
+                    ) and self._safe_emit():
+                        self.manager.exif_data_ready.emit(file_path, exif_data)
                     if allow_heavy_fallback and processor._is_raw_file(file_path):
                         min_preview_dim = _min_acceptable_preview_dim(file_path)
                         _d0 = processor._preview_buffer_max_dim(thumbnail) if thumbnail is not None else -1
@@ -525,9 +522,7 @@ class ImageLoadWorker(QRunnable):
         """Verify the manager still exists before emitting signals from background thread."""
         try:
             from PyQt6 import sip
-            if self.manager is None or sip.isdeleted(self.manager):
-                return False
-            return True
+            return not (self.manager is None or sip.isdeleted(self.manager))
         except (ImportError, AttributeError):
             # Fallback if sip is not available or manager is None
             return self.manager is not None

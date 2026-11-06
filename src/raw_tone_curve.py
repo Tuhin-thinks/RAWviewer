@@ -267,7 +267,7 @@ def _fit_point_curve(points: list[tuple[float, float]]):
     # (can appear in malformed/legacy serialized data) keeping the later one.
     dedup_x = [xs[0]]
     dedup_y = [ys[0]]
-    for x, y in zip(xs[1:], ys[1:]):
+    for x, y in zip(xs[1:], ys[1:], strict=False):
         if x - dedup_x[-1] < 1e-6:
             dedup_y[-1] = y
         else:
@@ -350,7 +350,7 @@ def sample_point_curve_for_display(
         return None
     grid = np.linspace(0.0, 1.0, max(2, n_samples))
     ys = fit(grid)
-    return [(float(x) * 255.0, float(y) * 255.0) for x, y in zip(grid, ys)]
+    return [(float(x) * 255.0, float(y) * 255.0) for x, y in zip(grid, ys, strict=False)]
 
 
 def _smooth_weight(t: np.ndarray) -> np.ndarray:
@@ -401,10 +401,7 @@ def apply_parametric_tone_curve(y: np.ndarray, adj: dict[str, float]) -> np.ndar
         # shadow-lift, which needed the identical fix) -- any coefficient
         # above ~0.17 makes the combined curve locally decreasing there. 0.15
         # keeps a monotonic curve at +/-100 with margin, for all four regions.
-        if amt > 0:
-            out = out + w * amt * (1.0 - out) * 0.15
-        else:
-            out = out + w * amt * out * 0.15
+        out = out + w * amt * (1.0 - out) * 0.15 if amt > 0 else out + w * amt * out * 0.15
     return np.clip(out, 0.0, 1.0)
 
 

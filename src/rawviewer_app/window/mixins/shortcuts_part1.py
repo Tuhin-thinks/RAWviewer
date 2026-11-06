@@ -467,15 +467,13 @@ class ShortcutsPart1:
                 self._cancel_wb_picker()
                 return True
 
-        if key in (Qt.Key.Key_H, Qt.Key.Key_P, Qt.Key.Key_M):
-            if vm == "compare":
-                return True
+        if key in (Qt.Key.Key_H, Qt.Key.Key_P, Qt.Key.Key_M) and vm == "compare":
+            return True
 
-        if Qt.Key.Key_0 <= key <= Qt.Key.Key_5:
-            if vm == "single":
-                rating = key - Qt.Key.Key_0
-                self.rate_current_image(rating)
-                return True
+        if Qt.Key.Key_0 <= key <= Qt.Key.Key_5 and vm == "single":
+            rating = key - Qt.Key.Key_0
+            self.rate_current_image(rating)
+            return True
 
         if key == Qt.Key.Key_Space:
             if vm == "compare":
@@ -578,20 +576,17 @@ class ShortcutsPart1:
             return True
         # Handle H (Histogram) separately to ensure it works even when no image is loaded
         # but only in single view mode.
-        if key == Qt.Key.Key_H:
-            if vm == "single":
-                self._shortcut_activate_histogram()
-                return True
+        if key == Qt.Key.Key_H and vm == "single":
+            self._shortcut_activate_histogram()
+            return True
 
-        if key == Qt.Key.Key_M:
-            if vm == "single":
-                self._shortcut_activate_location_map()
-                return True
+        if key == Qt.Key.Key_M and vm == "single":
+            self._shortcut_activate_location_map()
+            return True
 
-        if key == Qt.Key.Key_P:
-            if vm == "single":
-                self._shortcut_activate_raw_recovery()
-                return True
+        if key == Qt.Key.Key_P and vm == "single":
+            self._shortcut_activate_raw_recovery()
+            return True
 
         return False
 
@@ -599,8 +594,8 @@ class ShortcutsPart1:
         if getattr(self, '_is_delete_dialog_open', False):
             event.ignore()
             return
-        key = event.key()
-        vm = getattr(self, "view_mode", "single")
+        event.key()
+        getattr(self, "view_mode", "single")
 
         # Try to handle common app shortcuts first
         if self._handle_app_shortcut(event):

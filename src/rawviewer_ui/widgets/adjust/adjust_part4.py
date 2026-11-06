@@ -1,4 +1,5 @@
-from typing import Callable
+from collections.abc import Callable
+
 """Adjust mixin part 4 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
@@ -84,8 +85,8 @@ class AdjustPart4:
                 out[key] = float(val)
         if self._recovery_baseline:
             out[RECOVERY_BASELINE_KEY] = 1.0
-        l, r, t, b = self.get_crop_insets()
-        out["CropLeft"] = float(l)
+        left_ins, r, t, b = self.get_crop_insets()
+        out["CropLeft"] = float(left_ins)
         out["CropRight"] = float(r)
         out["CropTop"] = float(t)
         out["CropBottom"] = float(b)

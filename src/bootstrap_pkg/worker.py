@@ -6,11 +6,10 @@ import shutil
 import subprocess
 import sys
 import time
+import winreg
 import zipfile
 
 from PyQt6.QtCore import QObject, pyqtSignal
-
-import winreg
 
 from app_version import APP_VERSION
 

@@ -1,5 +1,6 @@
 """SCUNet ONNX export denoise engine with tiled processing."""
 
+import contextlib
 import logging
 import os
 import sys
@@ -40,10 +41,8 @@ def release_scunet_sessions() -> None:
     for session in sessions:
         closer = getattr(session, "close", None)
         if callable(closer):
-            try:
+            with contextlib.suppress(Exception):
                 closer()
-            except Exception:
-                pass
 
 
 def _sha256_of_file(path: str) -> str:
@@ -322,15 +321,13 @@ class SCUNetONNX:
 
                 if y > 0:
                     win_y[:tile_overlap] = ramp_in[:tile_overlap]
-                if y + tile_size < h:
-                    if th == tile_size:
-                        win_y[-tile_overlap:] = ramp_out[-tile_overlap:]
+                if y + tile_size < h and th == tile_size:
+                    win_y[-tile_overlap:] = ramp_out[-tile_overlap:]
 
                 if x > 0:
                     win_x[:tile_overlap] = ramp_in[:tile_overlap]
-                if x + tile_size < w:
-                    if tw == tile_size:
-                        win_x[-tile_overlap:] = ramp_out[-tile_overlap:]
+                if x + tile_size < w and tw == tile_size:
+                    win_x[-tile_overlap:] = ramp_out[-tile_overlap:]
 
                 window_2d = np.expand_dims(np.outer(win_y, win_x), axis=-1)
 

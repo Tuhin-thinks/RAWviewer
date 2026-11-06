@@ -5,13 +5,12 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeAlias
 
 from core.errors import IndexAborted  # re-export
 
-ProgressCallback: TypeAlias = Callable[[int, int, str], None] | None
+type ProgressCallback = Callable[[int, int, str], None] | None
 
-MetadataRow: TypeAlias = sqlite3.Row | dict[str, object]
+type MetadataRow = sqlite3.Row | dict[str, object]
 
 
 @dataclass

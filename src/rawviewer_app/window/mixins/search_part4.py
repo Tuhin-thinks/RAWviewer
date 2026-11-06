@@ -1,6 +1,7 @@
 """search mixin, part 4 of 4 (19 methods, 697 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -424,22 +425,21 @@ class SearchPart4:
         pending_extract = int(
             getattr(self, "_metadata_index_extract_pending_count", 0) or 0
         )
-        if getattr(self, "view_mode", "") == "gallery":
-            if self._gallery_blocks_background_indexing():
-                import logging
+        if getattr(self, "view_mode", "") == "gallery" and self._gallery_blocks_background_indexing():
+            import logging
 
-                logging.getLogger(__name__).info(
-                    "[INDEX] Deferring metadata worker after prep (gallery first-paint, pending=%d)",
-                    pending_extract,
-                )
-                t = getattr(self, "_metadata_index_defer_timer", None)
-                if t is not None:
-                    t.start(
-                        _env_int(
-                            "RAWVIEWER_METADATA_INDEX_GALLERY_RETRY_MS", 1500, minimum=250
-                        )
+            logging.getLogger(__name__).info(
+                "[INDEX] Deferring metadata worker after prep (gallery first-paint, pending=%d)",
+                pending_extract,
+            )
+            t = getattr(self, "_metadata_index_defer_timer", None)
+            if t is not None:
+                t.start(
+                    _env_int(
+                        "RAWVIEWER_METADATA_INDEX_GALLERY_RETRY_MS", 1500, minimum=250
                     )
-                return
+                )
+            return
         if self._should_defer_metadata_index_for_single_view(
             pending_extract=pending_extract
         ):
@@ -725,12 +725,10 @@ class SearchPart4:
         if self._should_defer_nav_preload():
             self._schedule_post_session_restore_prefetch()
         else:
-            try:
+            with contextlib.suppress(Exception):
                 QTimer.singleShot(
                     0,
                     lambda: self._queue_display_tier_prefetch_for_paths(
                         self._paths_within_nav_prefetch_radius(self.current_file_index)
                     ),
                 )
-            except Exception:
-                pass

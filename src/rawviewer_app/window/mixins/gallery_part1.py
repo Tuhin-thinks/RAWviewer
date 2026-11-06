@@ -1,9 +1,10 @@
 """gallery mixin, part 1 of 5 (35 methods, 895 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
-from typing import Any, cast, List, Optional
+from typing import Any, cast
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QImage, QPixmap
@@ -92,13 +93,13 @@ class GalleryPart1:
             return True
         return container._pointer_in_bottom_hotzone()
 
-    def _filter_paths_to_bookmarked(self, files: List[str]) -> List[str]:
+    def _filter_paths_to_bookmarked(self, files: list[str]) -> list[str]:
         bookmarked = getattr(self, "_gallery_bookmarked_paths", set()) or set()
         if not bookmarked:
             return []
         return [p for p in files if p and _norm_path(p) in bookmarked]
 
-    def _filter_burst_rejected_paths(self, files: List[str]) -> List[str]:
+    def _filter_burst_rejected_paths(self, files: list[str]) -> list[str]:
         rejected = getattr(self, "_burst_rejected_paths", set()) or set()
         if not rejected:
             return list(files or [])
@@ -184,7 +185,7 @@ class GalleryPart1:
                 self._gallery_capture_date_folder = None
         return cached
 
-    def _burst_collapsed_gallery_paths(self, files: List[str]) -> List[str]:
+    def _burst_collapsed_gallery_paths(self, files: list[str]) -> list[str]:
         from burst_grouping import build_collapsed_display_paths
 
         if not self._is_burst_grouping_enabled():
@@ -205,7 +206,7 @@ class GalleryPart1:
             _norm_path(p): p for p in (getattr(self, "image_files", None) or [])
         }
 
-    def _gallery_path_for_norm_key(self, key: str) -> Optional[str]:
+    def _gallery_path_for_norm_key(self, key: str) -> str | None:
         m = getattr(self, "_gallery_norm_map_cache", None)
         if m is None or m[0] is not self.image_files:
             m = (self.image_files, self._gallery_norm_path_map())
@@ -254,12 +255,12 @@ class GalleryPart1:
             expanded |= tile_keys
         return expanded
 
-    def _gallery_selected_canonical_paths_from_keys(self, keys: set) -> List[str]:
+    def _gallery_selected_canonical_paths_from_keys(self, keys: set) -> list[str]:
         if not keys:
             return []
         return [p for p in (self.image_files or []) if _norm_path(p) in keys]
 
-    def _gallery_effective_files(self) -> List[str]:
+    def _gallery_effective_files(self) -> list[str]:
         """Current gallery scope: folder/search results, optionally ∩ bookmarks ∩ min rating."""
         files = list(getattr(self, "image_files", []) or [])
         if getattr(self, "_gallery_bookmark_filter_active", False):
@@ -663,10 +664,8 @@ class GalleryPart1:
                 return
             else:
                 if self._full_res_only_mode():
-                    try:
+                    with contextlib.suppress(Exception):
                         self._request_full_res_decode(file_path, priority_current=True, force=True)
-                    except Exception:
-                        pass
                     return
                 if isinstance(thumbnail, QImage):
                     self.display_pixmap(QPixmap.fromImage(thumbnail))
@@ -788,7 +787,7 @@ class GalleryPart1:
                 self._pending_thumbnail = thumbnail
                 from image_load_manager import Priority as _Prio
 
-                try:
+                with contextlib.suppress(Exception):
                     self.image_manager.load_image(
                         file_path,
                         priority=_Prio.CURRENT,
@@ -796,8 +795,6 @@ class GalleryPart1:
                         use_full_resolution=False,
                         stages={"thumbnail", "exif", "full"},
                     )
-                except Exception:
-                    pass
                 return
 
         # If thumbnail is already very large (near full embedded JPEG), skip displaying it and wait for image_ready.
@@ -881,10 +878,8 @@ class GalleryPart1:
                 # Full-res-only testing mode: never paint interim thumbnails/previews.
                 if self._full_res_only_mode():
                     self._pending_thumbnail = thumbnail
-                    try:
+                    with contextlib.suppress(Exception):
                         self._request_full_res_decode(file_path, priority_current=True, force=True)
-                    except Exception:
-                        pass
                     return
 
                 if not getattr(self, "_navigation_in_progress", False):

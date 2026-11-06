@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import concurrent
+import contextlib
 import os
 import sqlite3
 import sys
@@ -15,13 +16,13 @@ from PIL import Image, ImageOps
 from core.errors import IndexAborted
 from search.backends import MobileCLIPCoreMLBackend, MobileCLIPONNXBackend, resolve_mobileclip_backend
 from search.indexer import (
+    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _cached_index_source_array,
     _coerce_float,
     _get_shared_index_executor,
     _index_thumbnail_needs_warm,
     _load_semantic_batch_cache,
     _save_semantic_batch_cache,
-    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _thumbnail_jpeg_bytes,
     face_scan_enabled,
     format_index_progress,
@@ -467,10 +468,8 @@ class EnginePart3:
 
                 if arr is not None:
                     jpeg = None
-                    try:
+                    with contextlib.suppress(Exception):
                         jpeg = _thumbnail_jpeg_bytes(arr)
-                    except Exception:
-                        pass
                     cache.put_thumbnail(path, arr, jpeg if jpeg is not None else b"")
                     return True
             except Exception:

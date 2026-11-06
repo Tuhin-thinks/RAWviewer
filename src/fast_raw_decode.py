@@ -526,9 +526,7 @@ def params_supported(params: dict[str, Any], return_linear: bool = False) -> boo
         return False
     if int(params.get("user_flip", 0)) != 0:
         return False
-    if params.get("half_size", False):
-        return False
-    return True
+    return not params.get("half_size", False)
 
 
 def params_supported_half(params: dict[str, Any], return_linear: bool = False) -> bool:

@@ -246,7 +246,7 @@ class GalleryPart4:
         """(first, last) image index currently on screen; widest known guess."""
         visible = getattr(self, "_visible_widgets", None)
         if visible:
-            keys = [k for k in visible.keys() if isinstance(k, int)]
+            keys = [k for k in visible if isinstance(k, int)]
             if keys:
                 return min(keys), max(keys)
         return 0, 0
@@ -376,7 +376,7 @@ class GalleryPart4:
 
     def build_gallery(self, bulk_metadata=None, force=False):
         """
-        Calculate grid layout and place placeholders. 
+        Calculate grid layout and place placeholders.
         Does not load images directly - that's handled by visible range tracking.
         """
         if self._building:

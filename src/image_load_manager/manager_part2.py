@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import queue
 import time
@@ -269,10 +270,8 @@ class ImageLoadManagerPart2:
                 # forever. _task_finished would have released it on completion.
                 enq = getattr(t, "_enqueue_ts", None)
                 if enq is not None and (_now - float(enq)) > _stale_threshold_s:
-                    try:
+                    with contextlib.suppress(Exception):
                         t.cancel()
-                    except Exception:
-                        pass
                     orphaned.add(t)
             except Exception:
                 orphaned.add(t)

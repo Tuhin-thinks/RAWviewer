@@ -1,6 +1,7 @@
 """Gallery mixin part 1 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 import time
@@ -245,27 +246,19 @@ class GalleryPart1:
             else:
                 self.load_manager = get_image_load_manager()
 
-            try:
+            with contextlib.suppress(Exception):
                 self.load_manager.thumbnail_ready.disconnect(self.on_thumbnail_ready)
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 self.load_manager.error_occurred.disconnect(self.on_thumbnail_error)
-            except Exception:
-                pass
             self.load_manager.thumbnail_ready.connect(self.on_thumbnail_ready)
             self.load_manager.error_occurred.connect(self.on_thumbnail_error)
 
-            try:
+            with contextlib.suppress(Exception):
                 self.load_manager.exif_data_ready.disconnect(self.on_exif_ready)
-            except Exception:
-                pass
             self.load_manager.exif_data_ready.connect(self.on_exif_ready)
 
-            try:
+            with contextlib.suppress(Exception):
                 self.load_manager.task_completed.disconnect(self.on_task_completed)
-            except Exception:
-                pass
             self.load_manager.task_completed.connect(self.on_task_completed)
 
             # Timer Management
@@ -367,20 +360,14 @@ class GalleryPart1:
     def suspend_thumbnail_display(self) -> None:
         """Hide thumbnail widgets when leaving gallery without discarding layout."""
         for w in list(self._visible_widgets.values()):
-            try:
+            with contextlib.suppress(Exception):
                 w.hide()
-            except Exception:
-                pass
         for w in self._widget_pool:
-            try:
+            with contextlib.suppress(Exception):
                 w.hide()
-            except Exception:
-                pass
         for child in self.findChildren(ThumbnailLabel):
-            try:
+            with contextlib.suppress(Exception):
                 child.hide()
-            except Exception:
-                pass
 
     def cancel_background_loading(self) -> None:
         """Stop gallery thumbnail scheduling and in-flight decodes (mode switch to single view)."""
@@ -395,16 +382,12 @@ class GalleryPart1:
         ):
             timer = getattr(self, timer_name, None)
             if timer is not None and hasattr(timer, "stop"):
-                try:
+                with contextlib.suppress(Exception):
                     timer.stop()
-                except Exception:
-                    pass
         mgr = getattr(self, "load_manager", None)
         if mgr is not None and hasattr(mgr, "cancel_gallery_tasks"):
-            try:
+            with contextlib.suppress(Exception):
                 mgr.cancel_gallery_tasks()
-            except Exception:
-                pass
         self._active_tasks.clear()
         self._requested_thumbnail_paths.clear()
         self._placeholder_thumb_paths.clear()
@@ -537,10 +520,8 @@ class GalleryPart1:
             return
         if not hasattr(pv, "_maybe_queue_background_full_decode"):
             return
-        try:
+        with contextlib.suppress(Exception):
             pv._maybe_queue_background_full_decode(path)
-        except Exception:
-            pass
 
     def _pixmap_matches(self, widget, pixmap: QPixmap | None) -> bool:
         """True when the widget already displays the same pixmap instance."""

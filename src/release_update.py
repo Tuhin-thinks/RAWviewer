@@ -35,7 +35,7 @@ def compare_version_labels(current: str, latest: str) -> int:
     width = max(len(a), len(b))
     a = a + (0,) * (width - len(a))
     b = b + (0,) * (width - len(b))
-    for x, y in zip(a, b):
+    for x, y in zip(a, b, strict=False):
         if x < y:
             return -1
         if x > y:

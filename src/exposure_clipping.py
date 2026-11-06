@@ -144,10 +144,7 @@ def rgb_array_from_pixmap(pixmap: QPixmap, max_side: int = 0) -> np.ndarray | No
     if bits is None:
         return None
     try:
-        if hasattr(bits, "asstring"):
-            raw = bits.asstring(h * bpl)
-        else:
-            raw = bytes(memoryview(bits)[: h * bpl])
+        raw = bits.asstring(h * bpl) if hasattr(bits, "asstring") else bytes(memoryview(bits)[:h * bpl])
     except (BufferError, TypeError, AttributeError):
         return None
     arr = np.frombuffer(bytearray(raw), dtype=np.uint8).reshape(h, bpl)

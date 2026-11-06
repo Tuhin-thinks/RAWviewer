@@ -1,6 +1,7 @@
 """Gallery mixin part 6 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import time
@@ -265,7 +266,7 @@ class GalleryPart6:
             self._first_thumb_ready_after_set = True
             self._end_gallery_load_warmup_throttle()
 
-        now = time.time()
+        time.time()
         if self._thumb_first_after_scroll_t is not None:
             self._thumb_first_after_scroll_t = None
         if self._thumb_first_after_settle_t is not None and self._last_scroll_settle_t > 0:
@@ -553,10 +554,8 @@ class GalleryPart6:
                 except ValueError:
                     pass
             if removed and hasattr(pv, "_update_gallery_counter"):
-                try:
+                with contextlib.suppress(Exception):
                     pv._update_gallery_counter()
-                except Exception:
-                    pass
 
         if removed:
             logger.info(
@@ -568,9 +567,8 @@ class GalleryPart6:
 
         if self.parent_viewer is not None and getattr(
             self.parent_viewer, "view_mode", "gallery"
-        ) == "gallery":
-            if not self._retry_timer.isActive():
-                self._retry_timer.start(100)
+        ) == "gallery" and not self._retry_timer.isActive():
+            self._retry_timer.start(100)
 
     def on_exif_ready(self, file_path, exif_data):
         """Update aspect ratio in layout when metadata arrives."""

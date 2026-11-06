@@ -285,14 +285,13 @@ class StatusPart2:
                 self._schedule_raw_sensor_exif_status_refresh()
 
         # Determine if we're displaying a thumbnail (for status bar indication)
-        is_displaying_thumbnail = False
         if original_width and original_height and display_width and display_height:
             # Check if display size is significantly smaller than original
             original_max = max(original_width, original_height)
             display_max = max(display_width, display_height)
             # Consider it a thumbnail if display is less than 80% of original
             if display_max < original_max * 0.8:
-                is_displaying_thumbnail = True
+                pass
 
         # Get zoom level
         if self._raw_recovery_preview_active():
@@ -300,10 +299,7 @@ class StatusPart2:
         else:
             gv = getattr(self, "gpu_view", None)
             if gv is not None and gv.has_pixmap():
-                if gv.is_fit_mode():
-                    zoom_level = "Fit"
-                else:
-                    zoom_level = f"{int(round(gv.current_scale() * 100))}%"
+                zoom_level = "Fit" if gv.is_fit_mode() else f"{int(round(gv.current_scale() * 100))}%"
             elif self.fit_to_window:
                 zoom_level = "Fit"
             else:
@@ -402,7 +398,7 @@ class StatusPart2:
                         continue
             if not focal_length:
                 # Try to find any tag containing "Focal" in the name
-                for tag_key in exif_tags.keys():
+                for tag_key in exif_tags:
                     if 'Focal' in tag_key and tag_key not in focal_length_tags:
                         try:
                             focal_str = str(exif_tags[tag_key])
@@ -419,7 +415,7 @@ class StatusPart2:
                             continue
                 if not focal_length:
                     logger.debug(f"[STATUS] No focal length found in tags. Available focal length tags: {[tag for tag in focal_length_tags if tag in exif_tags]}, "
-                               f"all tags with 'Focal': {[tag for tag in exif_tags.keys() if 'Focal' in tag]}")
+                               f"all tags with 'Focal': {[tag for tag in exif_tags if 'Focal' in tag]}")
 
             # Extract aperture (only if not 0 or null)
             # Try multiple possible tag keys for aperture
@@ -445,7 +441,7 @@ class StatusPart2:
                         continue
             if not aperture:
                 # Try to find any tag containing "FNumber" or "Aperture" in the name
-                for tag_key in exif_tags.keys():
+                for tag_key in exif_tags:
                     if ('FNumber' in tag_key or 'Aperture' in tag_key) and tag_key not in aperture_tags:
                         try:
                             aperture_str = str(exif_tags[tag_key])
@@ -462,7 +458,7 @@ class StatusPart2:
                             continue
                 if not aperture:
                     logger.debug(f"[STATUS] No aperture found in tags. Available aperture tags: {[tag for tag in aperture_tags if tag in exif_tags]}, "
-                               f"all tags with 'FNumber' or 'Aperture': {[tag for tag in exif_tags.keys() if 'FNumber' in tag or 'Aperture' in tag]}")
+                               f"all tags with 'FNumber' or 'Aperture': {[tag for tag in exif_tags if 'FNumber' in tag or 'Aperture' in tag]}")
 
             # Extract ISO
             # Try multiple possible tag keys for ISO
@@ -488,7 +484,7 @@ class StatusPart2:
                         continue
             if not iso:
                 # Try to find any tag containing "ISO" in the name
-                for tag_key in exif_tags.keys():
+                for tag_key in exif_tags:
                     if 'ISO' in tag_key.upper() and tag_key not in iso_tags:
                         try:
                             iso_str = str(exif_tags[tag_key])
@@ -505,7 +501,7 @@ class StatusPart2:
                             continue
                 if not iso:
                     logger.debug(f"[STATUS] No ISO found in tags. Available ISO tags: {[tag for tag in iso_tags if tag in exif_tags]}, "
-                               f"all tags with 'ISO': {[tag for tag in exif_tags.keys() if 'ISO' in tag.upper()]}")
+                               f"all tags with 'ISO': {[tag for tag in exif_tags if 'ISO' in tag.upper()]}")
 
             # Extract capture time
             datetime_tags = ['EXIF DateTimeOriginal',
@@ -588,7 +584,7 @@ class StatusPart2:
                 )
 
                 # Search all tags for focal length
-                for tag_key in tags.keys():
+                for tag_key in tags:
                     if "Focal" in tag_key and not any(
                         "mm" in item for item in exif_info
                     ):
@@ -610,7 +606,7 @@ class StatusPart2:
                             continue
 
                 # Search all tags for ISO
-                for tag_key in tags.keys():
+                for tag_key in tags:
                     if "ISO" in tag_key.upper() and not any(
                         "ISO" in item for item in exif_info
                     ):
@@ -632,7 +628,7 @@ class StatusPart2:
                             continue
 
                 # Search all tags for aperture
-                for tag_key in tags.keys():
+                for tag_key in tags:
                     if (
                         "FNumber" in tag_key or "Aperture" in tag_key
                     ) and not any("f/" in item for item in exif_info):

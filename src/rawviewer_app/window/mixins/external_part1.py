@@ -1,7 +1,8 @@
-from typing import List, Tuple
+
 """external mixin, part 1 of 2 (48 methods, 882 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -55,7 +56,7 @@ class ExternalPart1:
         if btn.isVisible() != vis:
             btn.setVisible(vis)
 
-    def _gallery_share_target_paths(self) -> List[str]:
+    def _gallery_share_target_paths(self) -> list[str]:
         """Paths to open/share: gallery multi-select, else all visible bookmarked when filter on; single view uses current file."""
         vm = getattr(self, "view_mode", "")
         if vm == "gallery":
@@ -129,10 +130,7 @@ class ExternalPart1:
                 return False
         except Exception:
             pass
-        for url in mime_data.urls():
-            if url.isLocalFile():
-                return True
-        return False
+        return any(url.isLocalFile() for url in mime_data.urls())
 
     def _process_dropped_urls(self, mime_data) -> bool:
         """Open a dropped folder or image file. Shows a styled alert and stays on page if unsupported."""
@@ -277,7 +275,7 @@ class ExternalPart1:
         finally:
             self._release_share_bottom_button()
 
-    def _dispatch_share_bottom(self, paths: List[str]) -> None:
+    def _dispatch_share_bottom(self, paths: list[str]) -> None:
         _share_log(logging.INFO, "share dispatch paths=%d platform=%s", len(paths), sys.platform)
         valid = self._valid_open_target_paths(list(paths))
         if not valid:
@@ -295,7 +293,7 @@ class ExternalPart1:
             pos = btn.mapToGlobal(QPoint(0, btn.height()))
         menu.exec(pos)
 
-    def _show_gallery_open_share_menu(self, paths: List[str]) -> None:
+    def _show_gallery_open_share_menu(self, paths: list[str]) -> None:
         """Open in another app and/or share for one or more gallery targets."""
         paths = list(paths)
         n = len(paths)
@@ -371,7 +369,7 @@ class ExternalPart1:
 
         self._exec_share_anchor_menu(menu)
 
-    def _valid_open_target_paths(self, paths: List[str]) -> List[str]:
+    def _valid_open_target_paths(self, paths: list[str]) -> list[str]:
         raw_in = list(paths)
         valid = [os.path.abspath(p) for p in raw_in if p and os.path.isfile(p)]
         if len(raw_in) != len(valid):
@@ -380,7 +378,7 @@ class ExternalPart1:
                     _share_log(logging.WARNING, "skipped missing open-in-app file: %s", p)
         return valid
 
-    def _open_paths_in_editing_app(self, paths: List[str]) -> None:
+    def _open_paths_in_editing_app(self, paths: list[str]) -> None:
         """Open one or more RAW/JPEG originals in an external editing app."""
         valid = self._valid_open_target_paths(paths)
         if not valid:
@@ -418,7 +416,7 @@ class ExternalPart1:
 
         QTimer.singleShot(0, _show_open_with_dialog)
 
-    def _copy_paths_to_clipboard(self, paths: List[str]) -> None:
+    def _copy_paths_to_clipboard(self, paths: list[str]) -> None:
         try:
             from PyQt6.QtCore import QMimeData, QUrl
             mime = QMimeData()
@@ -439,10 +437,8 @@ class ExternalPart1:
 
             QApplication.clipboard().setMimeData(mime)
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 QApplication.clipboard().setText("\n".join(os.path.abspath(p) for p in paths))
-            except Exception:
-                pass
 
     def _open_image_with_default_app(self, path: str) -> bool:
         import subprocess
@@ -458,7 +454,7 @@ class ExternalPart1:
         except Exception:
             return False
 
-    def _open_with_macos_app_path(self, paths: List[str], app_path: str) -> bool:
+    def _open_with_macos_app_path(self, paths: list[str], app_path: str) -> bool:
         import subprocess
 
         app_path = os.path.abspath(app_path)
@@ -476,7 +472,7 @@ class ExternalPart1:
             _share_log(logging.WARNING, "macOS open in app failed: %s", exc)
             return False
 
-    def _open_with_windows_exe_path(self, paths: List[str], exe_path: str) -> bool:
+    def _open_with_windows_exe_path(self, paths: list[str], exe_path: str) -> bool:
         import subprocess
 
         exe_path = os.path.abspath(exe_path)
@@ -494,7 +490,7 @@ class ExternalPart1:
             _share_log(logging.WARNING, "Windows open in app failed: %s", exc)
             return False
 
-    def _open_paths_in_macos_editing_app(self, paths: List[str]) -> None:
+    def _open_paths_in_macos_editing_app(self, paths: list[str]) -> None:
         """macOS: open in the last chosen editor, or pick one (no intermediate menu)."""
         last_app = str(self.get_settings().value(self._macos_editing_app_settings_key(), "") or "")
         if last_app and os.path.isdir(last_app):
@@ -504,14 +500,14 @@ class ExternalPart1:
         if not ok:
             self.status_bar.showMessage("No editing app selected", 2500)
 
-    def _open_paths_in_windows_editing_app(self, paths: List[str]) -> None:
+    def _open_paths_in_windows_editing_app(self, paths: list[str]) -> None:
         """Windows: single file uses native Open With; multi-file shows open/share menu."""
         if len(paths) == 1:
             self._open_image_with_app(paths[0])
             return
         self._show_gallery_open_share_menu(paths)
 
-    def _share_paths_os(self, paths: List[str]) -> None:
+    def _share_paths_os(self, paths: list[str]) -> None:
         """macOS share sheet or Windows share/clipboard for one or more files."""
         raw_in = list(paths)
         paths = [os.path.abspath(p) for p in paths if p and os.path.isfile(p)]
@@ -549,10 +545,8 @@ class ExternalPart1:
             self._copy_file_path_to_clipboard(paths[0])
         else:
             joined = "\n".join(paths)
-            try:
+            with contextlib.suppress(Exception):
                 QApplication.clipboard().setText(joined)
-            except Exception:
-                pass
         hint = (
             "Share failed -- path(s) copied. "
             "Set RAWVIEWER_FILE_LOG=1 and retry; check logs for [SHARE]."
@@ -687,10 +681,8 @@ class ExternalPart1:
             # Defer past press/release so AppKit is not invoked on mouseUp (see NSSharingServicePicker).
             self._macos_share_pending_path = path
             delay_ms = 100
-            try:
+            with contextlib.suppress(ValueError):
                 delay_ms = max(50, int(os.environ.get("RAWVIEWER_SHARE_DELAY_MS", "100")))
-            except ValueError:
-                pass
             QTimer.singleShot(delay_ms, self._on_share_macos_deferred)
             return
         elif sys.platform == "win32":
@@ -699,10 +691,8 @@ class ExternalPart1:
         self._copy_current_file_path_to_clipboard()
 
     def _copy_file_path_to_clipboard(self, path: str) -> None:
-        try:
+        with contextlib.suppress(Exception):
             QApplication.clipboard().setText(os.path.abspath(path))
-        except Exception:
-            pass
 
     def _share_windows_owner_hwnd(self) -> int:
         """Return a usable top-level HWND for anchoring the share UI."""
@@ -804,7 +794,7 @@ class ExternalPart1:
             self._macos_share_on_main_thread(),
         )
 
-    def _macos_share_validate_file(self, path: str) -> Tuple[bool, str, str]:
+    def _macos_share_validate_file(self, path: str) -> tuple[bool, str, str]:
         """Return (ok, absolute_path, reason). Rejects missing/empty/unreadable items."""
         if not path or not str(path).strip():
             return False, "", "empty_path"

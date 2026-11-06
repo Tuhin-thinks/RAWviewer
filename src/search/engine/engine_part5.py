@@ -122,10 +122,7 @@ class EnginePart5:
                 row = existing_meta[cp]
                 if not self._mtime_matches(row["mtime"], st):
                     return True
-                if int(row["size"]) != int(st.st_size):
-                    return True
-
-                return False
+                return int(row["size"]) != int(st.st_size)
 
             # 1.2 Identify files that actually need metadata extraction
             to_extract = []
@@ -380,7 +377,7 @@ class EnginePart5:
                                     len(batch_items),
                                     t_batch_dur,
                                 )
-                            for (canonical_fp, st), vec in zip(batch_items, vecs):
+                            for (canonical_fp, st), vec in zip(batch_items, vecs, strict=False):
                                 i += 1
                                 conn.execute(
                                     """
@@ -609,7 +606,7 @@ class EnginePart5:
         canonical_paths = [self._canonical_path(p) for p in indexable_paths if p]
 
         # Bulk lookup in database
-        placeholders = ",".join(["?"] * len(canonical_paths))
+        ",".join(["?"] * len(canonical_paths))
         # SQLite has a limit on parameters (usually 999), so we batch if needed.
         batch_size = 900
         indexed_count = 0

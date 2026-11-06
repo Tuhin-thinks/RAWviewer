@@ -1,7 +1,7 @@
 """Engine mixin part 1 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import concurrent
+import contextlib
 import hashlib
 import os
 import re
@@ -9,7 +9,8 @@ import sqlite3
 import sys
 import threading
 import time
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 import numpy as np
 from PIL import Image
@@ -122,10 +123,8 @@ class EnginePart1:
             fn = self._load_throttle_enter
             self._load_throttle_held = True
         if fn is not None:
-            try:
+            with contextlib.suppress(Exception):
                 fn()
-            except Exception:
-                pass
 
     def _release_load_throttle(self) -> None:
         """Release the ILM indexing throttle (idempotent)."""
@@ -135,10 +134,8 @@ class EnginePart1:
             fn = self._load_throttle_exit
             self._load_throttle_held = False
         if fn is not None:
-            try:
+            with contextlib.suppress(Exception):
                 fn()
-            except Exception:
-                pass
 
     def pause_indexing(self, pause: bool) -> None:
         """Pause or resume the background indexing loops."""

@@ -131,8 +131,8 @@ class CustomTitleBar(QFrame):
                 margin: 0px;
                 padding: 0px;
             }
-            QPushButton:hover { 
-                background-color: rgba(255, 255, 255, 0.1); 
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
             }
         """
 

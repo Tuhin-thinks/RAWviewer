@@ -134,14 +134,13 @@ def apply_container_orientation_to_array(
         ow, oh = 3, 2  # Default to landscape sensor aspect ratio (matches most cameras)
 
     dw, dh = exif_display_dimensions(ow, oh, o)
-    if (dh > dw) == (h > w):
-        if o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data):
-            import logging
-            logging.getLogger(__name__).debug(
-                f"apply_container_orientation_to_array: skipping orientation {o} "
-                f"because array shape {w}x{h} already matches expected display orientation."
-            )
-            return image_array
+    if (dh > dw) == (h > w) and (o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data)):
+        import logging
+        logging.getLogger(__name__).debug(
+            f"apply_container_orientation_to_array: skipping orientation {o} "
+            f"because array shape {w}x{h} already matches expected display orientation."
+        )
+        return image_array
 
     if o == 2:
         return np.fliplr(image_array)

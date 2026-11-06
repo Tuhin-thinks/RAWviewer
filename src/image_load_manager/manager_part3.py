@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import queue
-from typing import Any, Tuple
+from typing import Any
 
 from PyQt6.QtCore import QSize, QTimer
 
@@ -171,29 +172,21 @@ class ImageLoadManagerPart3:
         self._stopped = True
         watchdog = getattr(self, '_dispatch_watchdog', None)
         if watchdog is not None:
-            try:
+            with contextlib.suppress(Exception):
                 watchdog.stop()
-            except Exception:
-                pass
         if hasattr(self, '_process_pool') and self._process_pool:
             import atexit
             if hasattr(self, '_process_pool_shutdown_hook'):
-                try:
+                with contextlib.suppress(Exception):
                     atexit.unregister(self._process_pool_shutdown_hook)
-                except Exception:
-                    pass
             self._process_pool.shutdown(wait=False)
         for pool_name in ("_thread_pool", "_current_thread_pool"):
             pool = getattr(self, pool_name, None)
             if pool is not None:
-                try:
+                with contextlib.suppress(Exception):
                     pool.clear()
-                except Exception:
-                    pass
-                try:
+                with contextlib.suppress(Exception):
                     pool.waitForDone(1000)
-                except Exception:
-                    pass
 
     def _task_finished(self, task: ImageLoadTask, *, emit: bool = True):
         """Remove completed work from the active map and keep the queue moving.
@@ -276,7 +269,7 @@ class ImageLoadManagerPart3:
 
     def _make_task_key(self, file_path: str, use_full_resolution: bool,
                        stages: set | None, thumbnail_target_size: QSize | None,
-                       thumbnail_fit: str) -> Tuple:
+                       thumbnail_fit: str) -> tuple:
         """Build a stable key for de-duplicating queued/running work."""
         wanted = tuple(sorted(stages if stages is not None else {'thumbnail', 'exif', 'full'}))
         if thumbnail_target_size is not None and isinstance(thumbnail_target_size, QSize) and thumbnail_target_size.isValid():
@@ -360,21 +353,18 @@ class ImageLoadManagerPart3:
 
             if gallery_thumbnail:
                 grid_buf = cache.get_grid_memory_only(file_path)
-                if _try_emit_display_thumb(grid_buf):
-                    if preview_only:
-                        return True
+                if _try_emit_display_thumb(grid_buf) and preview_only:
+                    return True
 
             # Must use *_memory_only/path_key: put_* stores under _path_key(),
             # so dict gets with raw paths miss after first load and re-decode
             # on every gallery scroll pass.
             preview_buf = cache.get_preview_memory_only(file_path)
-            if _try_emit_display_thumb(preview_buf):
-                if preview_only:
-                    return True
+            if _try_emit_display_thumb(preview_buf) and preview_only:
+                return True
             thumb = cache.get_thumbnail_memory_only(file_path)
-            if _try_emit_display_thumb(thumb):
-                if preview_only:
-                    return True
+            if _try_emit_display_thumb(thumb) and preview_only:
+                return True
                 # Not terminal if callers also requested EXIF/full image work.
 
         # 2) EXIF stage: memory-only (this whole method's contract, see docstring).

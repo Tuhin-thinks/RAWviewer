@@ -1,6 +1,7 @@
 """display mixin, part 5 of 6 (4 methods, 891 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import time
@@ -207,7 +208,7 @@ class DisplayPart5:
         if gv is not None:
             gv.set_file_path(cur_path)
             self._crossfade_next_paint = False
-            maintain_zoom = (
+            (
                 getattr(self, "_preserve_nav_zoom_active", False)
                 or getattr(self, "_maintain_zoom_on_navigation", False)
             )
@@ -300,12 +301,10 @@ class DisplayPart5:
                                 # re-decoded sensor buffer is discarded as a
                                 # stale duplicate and the view stays blurry.
                                 self._manager_displayed_max_dim = 0
-                                try:
+                                with contextlib.suppress(Exception):
                                     self._file_max_dim_map.pop(
                                         _norm_path(cur_path), None
                                     )
-                                except Exception:
-                                    pass
                                 # The interim must not get stuck blurry: some
                                 # cache-hit loads (e.g. quality_preview) never
                                 # queue a follow-up decode. Display the cached
@@ -466,17 +465,13 @@ class DisplayPart5:
             gv.clear_overlay()
 
             if hasattr(self, "_maintain_zoom_on_navigation"):
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_maintain_zoom_on_navigation")
-                except AttributeError:
-                    pass
 
             pending_gpu_pt = getattr(self, "_pending_gpu_zoom_point", None)
             if pending_gpu_pt is not None:
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_gpu_zoom_point")
-                except AttributeError:
-                    pass
                 self.zoom_center_point = QPoint(
                     int(pending_gpu_pt.x()), int(pending_gpu_pt.y())
                 )
@@ -484,10 +479,8 @@ class DisplayPart5:
             elif getattr(self, "_pending_zoom_toggle", False):
                 self._pending_zoom_toggle = False
                 if hasattr(self, "_pending_zoom_target_path"):
-                    try:
+                    with contextlib.suppress(AttributeError):
                         delattr(self, "_pending_zoom_target_path")
-                    except AttributeError:
-                        pass
                 if getattr(self, "zoom_center_point", None) is not None:
                     self._gpu_zoom_in_to_point_finish()
                 elif gv.wants_zoom_in_toggle():
@@ -511,14 +504,11 @@ class DisplayPart5:
             logger.info("[DISPLAY_PIXMAP] Handling pending zoom toggle")
             self._pending_zoom_toggle = False
             if hasattr(self, "_pending_zoom_target_path"):
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_zoom_target_path")
-                except AttributeError:
-                    pass
 
             if hasattr(self, '_pending_zoom_pos'):
                 # Zoom to the recorded point instead of center
-                click_pos = self._pending_zoom_pos
                 delattr(self, '_pending_zoom_pos')
                 # Need to wait until label layout is done to compute ratios reliably,
                 # but we can try to guess or simply center for now if layout hasn't run.
@@ -557,10 +547,8 @@ class DisplayPart5:
         )
         if has_restore_zoom:
             if hasattr(self, "_maintain_zoom_on_navigation"):
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_maintain_zoom_on_navigation")
-                except AttributeError:
-                    pass
             logger.info("[DISPLAY_PIXMAP] Zoom restoration pending, preserving zoom state")
         elif needs_resolution_crossfade and self._single_view_is_fit_mode():
             # Fit-mode resolution upgrade: refit the sharper buffer once (crossfade handles the blend).
@@ -757,12 +745,9 @@ class DisplayPart5:
 
         # Handle pending zoom from double-click on thumbnail
         # Check actual pixmap size to be extra safe
-        actual_is_half_size = max(pixmap.width(), pixmap.height()) < 3000
+        max(pixmap.width(), pixmap.height()) < 3000
         pending_thumb_size = getattr(self, "_pending_zoom_thumbnail_size", None)
-        if pending_thumb_size is not None:
-            old_max = max(pending_thumb_size.width(), pending_thumb_size.height())
-        else:
-            old_max = 0
+        old_max = max(pending_thumb_size.width(), pending_thumb_size.height()) if pending_thumb_size is not None else 0
         new_max = max(pixmap.width(), pixmap.height())
         size_upgraded = (old_max <= 0) or (new_max > int(old_max * 1.02))
         pending_zoom_ready = not getattr(self, "_full_resolution_loading", False)
@@ -818,28 +803,25 @@ class DisplayPart5:
                 req_ts = float(getattr(self, "_single_view_load_request_ts", 0.0) or 0.0)
                 req_path = str(getattr(self, "_single_view_load_request_path", "") or "")
                 cur_path = str(getattr(self, "current_file_path", "") or "")
-                if req_ts > 0.0 and req_path:
-                    if _norm_path(req_path) == _norm_path(cur_path):
-                        pm = getattr(self, "current_pixmap", None)
-                        pm_w = int(pm.width()) if pm is not None and not pm.isNull() else 0
-                        pm_h = int(pm.height()) if pm is not None and not pm.isNull() else 0
-                        if pm_w > 0 and pm_h > 0:
-                            elapsed = max(0.0, time.time() - req_ts)
-                            # Signal, not a poll: _on_first_render_ack stops the
-                            # timeout timer and records TTFR/NAVTIME. The guard
-                            # above (plus the flag set in the slot) keeps this
-                            # idempotent, so a repeated paint cannot re-fire it.
-                            self._single_view_first_render.emit(
-                                cur_path, elapsed, pm_w, pm_h
-                            )
+                if req_ts > 0.0 and req_path and _norm_path(req_path) == _norm_path(cur_path):
+                    pm = getattr(self, "current_pixmap", None)
+                    pm_w = int(pm.width()) if pm is not None and not pm.isNull() else 0
+                    pm_h = int(pm.height()) if pm is not None and not pm.isNull() else 0
+                    if pm_w > 0 and pm_h > 0:
+                        elapsed = max(0.0, time.time() - req_ts)
+                        # Signal, not a poll: _on_first_render_ack stops the
+                        # timeout timer and records TTFR/NAVTIME. The guard
+                        # above (plus the flag set in the slot) keeps this
+                        # idempotent, so a repeated paint cannot re-fire it.
+                        self._single_view_first_render.emit(
+                            cur_path, elapsed, pm_w, pm_h
+                        )
         except Exception:
             pass
 
         # Restart the idle full-res timer for the current image.
-        try:
+        with contextlib.suppress(Exception):
             self._restart_full_res_idle_timer()
-        except Exception:
-            pass
 
         if self._should_defer_nav_preload():
             self._schedule_post_session_restore_prefetch()
@@ -870,10 +852,8 @@ class DisplayPart5:
                 self._flush_deferred_full_exif_after_first_paint()
 
         # Always warm next/prev immediately (even during session-restore defer).
-        try:
+        with contextlib.suppress(Exception):
             self._queue_urgent_neighbor_prefetch()
-        except Exception:
-            pass
 
         self._schedule_deferred_filmstrip_flush()
 
@@ -888,12 +868,10 @@ class DisplayPart5:
         QTimer.singleShot(1500, self._prefetch_filmstrip_thumbnails)
         if not self._should_defer_nav_preload():
             self._schedule_idle_display_prefetch()
-            try:
+            with contextlib.suppress(Exception):
                 self._queue_display_tier_prefetch_for_paths(
                     self._paths_within_nav_prefetch_radius()
                 )
-            except Exception:
-                pass
         from search import metadata_auto_index_enabled
         if metadata_auto_index_enabled():
             if not self._semantic_indexing_in_progress and not getattr(self, "_semantic_index_prep_in_progress", False):

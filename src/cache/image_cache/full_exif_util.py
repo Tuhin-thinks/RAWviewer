@@ -1,6 +1,7 @@
 """Full image, EXIF, pixmap, orientation verify, and utility operations."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import threading
@@ -145,10 +146,8 @@ class ImageCacheFullExifUtil:
                     total -= self._estimate_entry_bytes(oldest)
                     evicted += 1
                     if lru.on_evict is not None:
-                        try:
+                        with contextlib.suppress(Exception):
                             lru.on_evict(evicted_key)
-                        except Exception:
-                            pass
             if evicted:
                 logger.info(
                     "%s cache: evicted %d oldest (budget ~%.0fMB, now ~%.0fMB, %d left)",
@@ -382,10 +381,8 @@ class ImageCacheFullExifUtil:
                     # fetch re-extracts fresh (extraction writes a verified one).
                     if not getattr(self, "_closing", False):
                         self.exif_memory_cache.remove(path)
-                    try:
+                    with contextlib.suppress(Exception):
                         self.exif_cache.remove(path)
-                    except Exception:
-                        pass
                     self.cache_miss.emit(path, 'exif')
             except Exception:
                 pass
@@ -565,10 +562,8 @@ class ImageCacheFullExifUtil:
             pass
         self.libraw_preview_paths.clear()
         if self._libraw_preview_paths_file and os.path.isfile(self._libraw_preview_paths_file):
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(self._libraw_preview_paths_file)
-            except Exception:
-                pass
         self.full_image_embedded_jpeg_paths.clear()
         self.exif_cache.clear()
         self.exif_memory_cache.clear()
@@ -644,10 +639,8 @@ class ImageCacheFullExifUtil:
                 continue
             # Evict proportionally to this tier's share of total usage.
             share = int(to_free * (tier_usage / total))
-            try:
+            with contextlib.suppress(Exception):
                 freed_total += cache.evict_lru(share)
-            except Exception:
-                pass
 
         logger.info(
             "[CACHE] Disk cache budget exceeded (%.1f MB > %d MB); evicted %.1f MB "

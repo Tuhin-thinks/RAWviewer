@@ -1,7 +1,8 @@
-from typing import List, Optional
+
 """batch mixin, part 1 of 1 (15 methods, 669 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
@@ -18,7 +19,7 @@ lazy.register(sys.modules[__name__])
 
 
 class BatchPart1:
-    def _start_batch_removal(self, kind: str, paths: List[str]) -> None:
+    def _start_batch_removal(self, kind: str, paths: list[str]) -> None:
         """Trash/discard a selection via the serial off-thread worker.
 
         Pre-cancels in-flight loads (UI thread), snapshots the surviving scroll
@@ -96,12 +97,12 @@ class BatchPart1:
     def _start_batch_op(
         self,
         kind: str,
-        paths: List[str],
+        paths: list[str],
         dest_dir: str,
         reveal: bool,
         export_format: str = "",
         use_ai_denoise: bool = False,
-        ai_amount: Optional[float] = None,
+        ai_amount: float | None = None,
     ) -> None:
         """Shared launcher: modal TaskProgressDialog + serial off-thread worker.
 
@@ -144,7 +145,7 @@ class BatchPart1:
         try:
             dlg = TaskProgressDialog(self, title=title)
             dlg.canceled.connect(worker.cancel_event.set)
-            self._batch_op_in_progress_dialog: Optional[TaskProgressDialog] = dlg
+            self._batch_op_in_progress_dialog: TaskProgressDialog | None = dlg
 
             def _show_dialog_if_current(d=dlg) -> None:
                 # Skip the flash for fast batches (mirror of the single-export dialog).
@@ -178,10 +179,8 @@ class BatchPart1:
         dlg = getattr(self, "_batch_op_in_progress_dialog", None)
         if dlg is not None:
             self._batch_op_in_progress_dialog = None
-            try:
+            with contextlib.suppress(Exception):
                 dlg.canceled.disconnect()
-            except Exception:
-                pass
             try:
                 dlg.close()
                 dlg.deleteLater()
@@ -193,7 +192,7 @@ class BatchPart1:
         done: int,
         failed: int,
         cancelled: bool,
-        detail: List[tuple],
+        detail: list[tuple],
         kind: str,
         dest_dir: str,
         reveal: bool,
@@ -226,17 +225,15 @@ class BatchPart1:
                     self.register_new_file(dest)
         if failed:
             failure = next((err for _s, err, _d in detail if err), "unknown error")
-            try:
+            with contextlib.suppress(Exception):
                 self.show_error(
                     f"{verb} -- {failed} failed",
                     f"{failed} file(s) could not be processed.\nLast error: {failure}",
                 )
-            except Exception:
-                pass
         if reveal and not cancelled and os.path.isdir(dest_dir):
             self._open_folder_in_file_manager(dest_dir)
 
-    def _after_batch_removal(self, kind: str, detail: List[tuple]) -> None:
+    def _after_batch_removal(self, kind: str, detail: list[tuple]) -> None:
         """UI-thread post-pass for trash/discard batches.
 
         detail: [(src, err|None, dest|None], one entry per attempted path --
@@ -274,13 +271,11 @@ class BatchPart1:
         self._batch_removal_anchor = None
         self.schedule_save_session_state()
         if failed:
-            try:
+            with contextlib.suppress(Exception):
                 self.show_error(
                     f"{verb} -- {failed} failed",
                     f"{failed} file(s) could not be {verb.lower()}.\nLast error: {last_err}",
                 )
-            except Exception:
-                pass
 
     def _preferred_writable_export_dir(self, preferred: str = "") -> str:
         """Pick a writable export folder; fall back to Pictures/Desktop/home."""
@@ -336,10 +331,8 @@ class BatchPart1:
             return
         try:
             converter.stop_processing()
-            try:
+            with contextlib.suppress(Exception):
                 converter.pixmap_ready.disconnect(self._on_display_numpy_pixmap_ready)
-            except Exception:
-                pass
             converter.quit()
             if not converter.wait(500):
                 converter.terminate()
@@ -395,13 +388,11 @@ class BatchPart1:
 
         nn_suffix = " + AI denoise" if use_ai_denoise else ""
         if use_ai_denoise:
-            try:
+            with contextlib.suppress(TypeError, ValueError, AttributeError):
                 nn_suffix = (
                     " + AI denoise "
                     f"{int(round(float(adj.get('AIDenoiseAmount', 100.0))))}%"
                 )
-            except (TypeError, ValueError, AttributeError):
-                pass
         if fmt == EXPORT_FORMAT_JPEG:
             default_name = f"{base}_edited.jpg"
             dialog_title = "Export JPEG" + nn_suffix
@@ -589,10 +580,8 @@ class BatchPart1:
         if dlg is not None:
             self._adjust_export_dialog = None
             self._adjust_export_dialog_path = None
-            try:
+            with contextlib.suppress(Exception):
                 dlg.canceled.disconnect()
-            except Exception:
-                pass
             try:
                 dlg.close()
                 dlg.deleteLater()
@@ -625,10 +614,8 @@ class BatchPart1:
                             f"Export of {name} failed (while viewing another image): {msg}",
                             7000,
                         )
-                        try:
+                        with contextlib.suppress(Exception):
                             self.show_error("Export failed", f"{name}: {msg}")
-                        except Exception:
-                            pass
                 else:
                     self.status_bar.showMessage(
                         f"Exported {name} to {os.path.basename(output_path)}"
@@ -662,10 +649,8 @@ class BatchPart1:
                 )
             if hasattr(self, "status_bar"):
                 self.status_bar.showMessage(f"Export failed: {msg}", 7000)
-            try:
+            with contextlib.suppress(Exception):
                 self.show_error("Export failed", msg)
-            except Exception:
-                pass
             return
         fmt = (export_format or "tiff16").strip().lower()
         labels = {

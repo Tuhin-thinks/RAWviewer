@@ -1,6 +1,7 @@
 """display mixin, part 6 of 6 (14 methods, 408 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 
@@ -25,10 +26,8 @@ class DisplayPart6:
         if not self._single_view_is_zoomed_in():
             self._preserve_nav_zoom_active = False
             if hasattr(self, "_maintain_zoom_on_navigation"):
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_maintain_zoom_on_navigation")
-                except AttributeError:
-                    pass
             self._restore_zoom_center = None
             self._restore_zoom_level = None
             self._restore_pixmap_size = None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import bisect
+import contextlib
 import os
 
 import numpy as np
@@ -873,10 +874,8 @@ class FilmStripBar(QFrame):
             cell = self._acquire_cell(idx)
             cell.index = idx
             cell.file_path = path
-            try:
+            with contextlib.suppress(Exception):
                 cell.clicked.disconnect()
-            except Exception:
-                pass
             cell.clicked.connect(self._on_cell_clicked)
             self._active_paths.add(path)
             self._thumb_gen[path] = self._generation

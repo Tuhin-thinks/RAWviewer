@@ -1,6 +1,7 @@
 """adjust mixin, part 5 of 5 (13 methods, 537 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -152,21 +153,15 @@ class AdjustPart5:
                 self._adjust_hires_render_norm = None
         gj = getattr(self, "gallery_justified", None)
         if gj is not None and hasattr(gj, "invalidate_thumbnails_for_path"):
-            try:
+            with contextlib.suppress(Exception):
                 gj.invalidate_thumbnails_for_path(path)
-            except Exception:
-                pass
         bar = self._filmstrip_bar() if hasattr(self, "_filmstrip_bar") else None
         if bar is not None and hasattr(bar, "invalidate_thumbnails_for_path"):
-            try:
+            with contextlib.suppress(Exception):
                 bar.invalidate_thumbnails_for_path(path)
-            except Exception:
-                pass
         elif bar is not None and hasattr(bar, "refresh_visible_thumbnails"):
-            try:
+            with contextlib.suppress(Exception):
                 bar.refresh_visible_thumbnails(refresh_cache=True)
-            except Exception:
-                pass
         QTimer.singleShot(0, self._restore_keyboard_focus)
 
     def _bake_browse_caches_for_visited_edit(self, path: str) -> None:
@@ -413,10 +408,9 @@ class AdjustPart5:
             panel.hide()
             return
         pm = getattr(self, "current_pixmap", None)
-        if pm is None or pm.isNull():
-            if not self._single_view_has_display_image():
-                panel.hide()
-                return
+        if (pm is None or pm.isNull()) and not self._single_view_has_display_image():
+            panel.hide()
+            return
         if getattr(self, "_adjust_user_hidden", True):
             self._adjust_overlay_visible = False
             panel.hide()
@@ -475,10 +469,8 @@ class AdjustPart5:
             os.replace(tmp, path)
         except Exception:
             if os.path.isfile(tmp):
-                try:
+                with contextlib.suppress(OSError):
                     os.unlink(tmp)
-                except OSError:
-                    pass
             raise
         finally:
             if im is not None:
@@ -512,28 +504,20 @@ class AdjustPart5:
                 else path
             )
             if hasattr(gj, "on_visual_rotation_changed"):
-                try:
+                with contextlib.suppress(Exception):
                     gj.on_visual_rotation_changed(gallery_path or path)
-                except Exception:
-                    pass
             elif hasattr(gj, "refresh_visible_tile_for_path"):
-                try:
+                with contextlib.suppress(Exception):
                     gj.refresh_visible_tile_for_path(gallery_path or path)
-                except Exception:
-                    pass
 
         bar = self._filmstrip_bar()
         if bar is not None:
             if hasattr(bar, "on_visual_rotation_changed"):
-                try:
+                with contextlib.suppress(Exception):
                     bar.on_visual_rotation_changed(path)
-                except Exception:
-                    pass
             elif hasattr(bar, "refresh_cell_for_path"):
-                try:
+                with contextlib.suppress(Exception):
                     bar.refresh_cell_for_path(path)
-                except Exception:
-                    pass
 
         # Re-render from the current base pixmap if available; otherwise load from cache/source.
         base_pixmap = getattr(self, "_base_display_pixmap", None)

@@ -217,13 +217,12 @@ class UnifiedPart5:
             if sidecar_adjustments_enabled() and thumbnail is not None:
                 adj = load_adjustments_for_file(file_path)
                 if adj and not is_default_adjustments(adj):
-                    if not isinstance(thumbnail, np.ndarray):
-                        if isinstance(thumbnail, QImage):
-                            from_qimage_autotransform = True
-                            from enhanced_raw_processor import _qimage_to_rgb_array
-                            rgb = _qimage_to_rgb_array(thumbnail)
-                            if rgb is not None:
-                                thumbnail = rgb
+                    if not isinstance(thumbnail, np.ndarray) and isinstance(thumbnail, QImage):
+                        from_qimage_autotransform = True
+                        from enhanced_raw_processor import _qimage_to_rgb_array
+                        rgb = _qimage_to_rgb_array(thumbnail)
+                        if rgb is not None:
+                            thumbnail = rgb
                     if isinstance(thumbnail, np.ndarray):
                         thumbnail = apply_adjustments_to_rgb(thumbnail, adj)
         except Exception as e:

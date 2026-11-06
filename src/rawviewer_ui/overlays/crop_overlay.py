@@ -245,19 +245,19 @@ class CropOverlayItem(QGraphicsObject):
             return
         dx = (event.pos().x() - self._drag_origin.x()) / self._img_w
         dy = (event.pos().y() - self._drag_origin.y()) / self._img_h
-        l, r, t, b = self._drag_start_insets
+        left_ins, r, t, b = self._drag_start_insets
         mode = self._drag_mode
         if mode == "move":
             # Preserve size; clamp so we don't push past edges.
-            width_frac = 1.0 - l - r
+            width_frac = 1.0 - left_ins - r
             height_frac = 1.0 - t - b
-            l = np_clip(l + dx, 0.0, 1.0 - width_frac)
+            left_ins = np_clip(left_ins + dx, 0.0, 1.0 - width_frac)
             t = np_clip(t + dy, 0.0, 1.0 - height_frac)
-            r = 1.0 - width_frac - l
+            r = 1.0 - width_frac - left_ins
             b = 1.0 - height_frac - t
         else:
             if "l" in mode:
-                l = np_clip(l + dx, 0.0, _MAX_INSET)
+                left_ins = np_clip(left_ins + dx, 0.0, _MAX_INSET)
             if "r" in mode:
                 r = np_clip(r - dx, 0.0, _MAX_INSET)
             if "t" in mode:
@@ -265,8 +265,8 @@ class CropOverlayItem(QGraphicsObject):
             if "b" in mode:
                 b = np_clip(b - dy, 0.0, _MAX_INSET)
             if self._aspect is not None:
-                l, r, t, b = self._constrain_aspect(l, r, t, b, mode)
-        self._left, self._right, self._top, self._bottom = l, r, t, b
+                left_ins, r, t, b = self._constrain_aspect(left_ins, r, t, b, mode)
+        self._left, self._right, self._top, self._bottom = left_ins, r, t, b
         self._normalize_min_size()
         self.update()
         self.insetsChanged.emit(self._left, self._right, self._top, self._bottom)
@@ -304,12 +304,12 @@ class CropOverlayItem(QGraphicsObject):
         else:
             h = max_h
             w = h * self._aspect
-        l = (cx - w / 2) / self._img_w
+        left_ins = (cx - w / 2) / self._img_w
         r = 1.0 - (cx + w / 2) / self._img_w
         t = (cy - h / 2) / self._img_h
         b = 1.0 - (cy + h / 2) / self._img_h
         self._left, self._right, self._top, self._bottom = (
-            max(0.0, l),
+            max(0.0, left_ins),
             max(0.0, r),
             max(0.0, t),
             max(0.0, b),
@@ -318,7 +318,7 @@ class CropOverlayItem(QGraphicsObject):
         self.insetsChanged.emit(self._left, self._right, self._top, self._bottom)
 
     def _constrain_aspect(
-        self, l: float, r: float, t: float, b: float, mode: str
+        self, left_ins: float, r: float, t: float, b: float, mode: str
     ) -> tuple[float, float, float, float]:
         assert self._aspect is not None
         img_aspect = self._img_w / max(1.0, float(self._img_h))
@@ -326,13 +326,13 @@ class CropOverlayItem(QGraphicsObject):
         # (w_frac * img_w) / (h_frac * img_h) = aspect
         # => w_frac / h_frac = aspect / img_aspect
         target = self._aspect / img_aspect
-        w_frac = max(_MIN_FRAC, 1.0 - l - r)
+        w_frac = max(_MIN_FRAC, 1.0 - left_ins - r)
         h_frac = max(_MIN_FRAC, 1.0 - t - b)
         if mode in ("t", "b"):
             new_w = h_frac * target
-            cx = l + w_frac / 2.0
-            l = np_clip(cx - new_w / 2.0, 0.0, _MAX_INSET)
-            r = np_clip(1.0 - new_w - l, 0.0, _MAX_INSET)
+            cx = left_ins + w_frac / 2.0
+            left_ins = np_clip(cx - new_w / 2.0, 0.0, _MAX_INSET)
+            r = np_clip(1.0 - new_w - left_ins, 0.0, _MAX_INSET)
         elif mode in ("l", "r"):
             new_h = w_frac / target
             cy = t + h_frac / 2.0
@@ -345,7 +345,7 @@ class CropOverlayItem(QGraphicsObject):
                 t = np_clip(1.0 - b - new_h, 0.0, _MAX_INSET)
             else:
                 b = np_clip(1.0 - t - new_h, 0.0, _MAX_INSET)
-        return l, r, t, b
+        return left_ins, r, t, b
 
 
 def np_clip(v: float, lo: float, hi: float) -> float:

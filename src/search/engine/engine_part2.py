@@ -1,6 +1,7 @@
 """Engine mixin part 2 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sqlite3
 import sys
@@ -15,12 +16,12 @@ from PIL.Image import Image as PilImage
 import metadata_backend
 from search.backends import MobileCLIPONNXBackend, copy_bgra_into_cvpixelbuffer, resolve_mobileclip_backend
 from search.indexer import (
+    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _apply_opencv_dnn_acceleration,
     _coerce_float,
     _coerce_int,
     _load_index_source_image,
     _ort_get_available_providers,
-    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _yunet_detect_faces_bgr,
     resolve_onnx_execution_providers,
 )
@@ -98,10 +99,8 @@ class EnginePart2:
         try:
             im = None
             if include_face:
-                try:
+                with contextlib.suppress(Exception):
                     im = _load_index_source_image(file_path, max_size=1280, qt_decode=False)
-                except Exception:
-                    pass
 
             t_exif = time.time()
             # Stop after GPS block when possible; RAW uses exifread (header-only) in auto mode.
@@ -174,10 +173,7 @@ class EnginePart2:
                 if val is not None:
                     try:
                         vals = getattr(val, "values", val)
-                        if isinstance(vals, (list, tuple)) and vals:
-                            o = vals[0]
-                        else:
-                            o = vals
+                        o = vals[0] if isinstance(vals, (list, tuple)) and vals else vals
                         if isinstance(o, int) and 1 <= o <= 8:
                             orientation = o
                             break
@@ -384,12 +380,12 @@ class EnginePart2:
     def _vision_face_count_from_pil(im: PilImage) -> int | None:
         """Apple Vision face count from an in-memory PIL image (no temp JPEG)."""
         try:
-            from search.engine.semantic_index import SemanticImageIndex
-
             import Foundation  # type: ignore[import-not-found]
             import objc  # type: ignore[import-not-found]
             import Quartz  # type: ignore[import-not-found]
             import Vision  # type: ignore[import-not-found]
+
+            from search.engine.semantic_index import SemanticImageIndex
         except Exception:
             return None
 
@@ -551,7 +547,7 @@ class EnginePart2:
             return False
         if int(row["file_size"]) != int(st.st_size):
             return False
-        row_mtime_ns = row["mtime_ns"] if "mtime_ns" in row.keys() else None
+        row_mtime_ns = row.get("mtime_ns", None)
         if row_mtime_ns is not None:
             try:
                 return int(row_mtime_ns) == self._mtime_ns_from_stat(st)

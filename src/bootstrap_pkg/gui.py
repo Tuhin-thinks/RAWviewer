@@ -1,10 +1,11 @@
 """InstallerGUI — the setup wizard window."""
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 
-from PyQt6.QtCore import QThread, Qt, QTimer
+from PyQt6.QtCore import Qt, QThread, QTimer
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -429,19 +430,15 @@ class InstallerGUI(QMainWindow):
             self.stack.setCurrentIndex(2)
             self.btn_next.setText("LAUNCH")
             self.btn_next.setEnabled(True)
-            try:
+            with contextlib.suppress(TypeError):
                 self.btn_next.clicked.disconnect()
-            except TypeError:
-                pass
             self.btn_next.clicked.connect(self.launch_app)
             self.btn_cancel.hide()
         else:
             self.btn_next.setText("RETRY")
             self.btn_next.setEnabled(True)
-            try:
+            with contextlib.suppress(TypeError):
                 self.btn_next.clicked.disconnect()
-            except TypeError:
-                pass
             self.btn_next.clicked.connect(self.retry_install)
 
         if not success and close_after_failure:
@@ -452,10 +449,8 @@ class InstallerGUI(QMainWindow):
         self.btn_next.setText("INSTALL")
         self.btn_cancel.setText("CANCEL")
         self.btn_cancel.show()
-        try:
+        with contextlib.suppress(TypeError):
             self.btn_next.clicked.disconnect()
-        except TypeError:
-            pass
         self.btn_next.clicked.connect(self.start_install)
         self.progress_bar.setValue(0)
 

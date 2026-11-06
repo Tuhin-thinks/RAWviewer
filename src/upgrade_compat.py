@@ -53,10 +53,7 @@ def is_existing_install() -> bool:
     """True when the user already has a pre-v2 cache / index on disk."""
     if not os.path.isdir(_CACHE_DIR):
         return False
-    for name in _LEGACY_MARKERS:
-        if os.path.isfile(os.path.join(_CACHE_DIR, name)):
-            return True
-    return False
+    return any(os.path.isfile(os.path.join(_CACHE_DIR, name)) for name in _LEGACY_MARKERS)
 
 
 def perf_v2_explicitly_enabled() -> bool:

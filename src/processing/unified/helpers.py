@@ -34,6 +34,7 @@ _LIBRAW_UNSUPPORTED_PATHS: set[str] = set()
 
 # In-flight decode_raw_edit_base registry (module-level: workers build their
 # own UnifiedImageProcessor instances, so instance state cannot dedup them).
+import contextlib
 import threading as _ebt  # noqa: E402
 
 _EDIT_BASE_INFLIGHT: dict = {}
@@ -141,10 +142,8 @@ def release_adjusted_full_cache() -> int:
     freed = 0
     with _ADJUSTED_FULL_LOCK:
         for entry in _ADJUSTED_FULL_SLOTS:
-            try:
+            with contextlib.suppress(Exception):
                 freed += int(getattr(entry[2], "nbytes", 0) or 0)
-            except Exception:
-                pass
         _ADJUSTED_FULL_SLOTS.clear()
     return freed
 
@@ -197,10 +196,8 @@ def _submit_persist(fn) -> None:
     try:
         _persist_executor().submit(fn)
     except Exception:
-        try:
+        with contextlib.suppress(Exception):
             fn()
-        except Exception:
-            pass
 
 
 # Generation tokens for deferred put_full / preview persist. MODULE-level:

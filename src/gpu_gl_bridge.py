@@ -16,6 +16,7 @@ a later phase. CTA: GUI thread only for GL / ``cudaGraphics*``.
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import logging
 import os
@@ -267,16 +268,12 @@ class CudaGlTextureSlot:
     def release(self, gl_delete_fn=None) -> None:
         lib = _load_cudart()
         if self.resource and lib is not None:
-            try:
+            with contextlib.suppress(Exception):
                 lib.cudaGraphicsUnregisterResource(ctypes.c_void_p(self.resource))
-            except Exception:
-                pass
             self.resource = 0
         if self.tex_id and gl_delete_fn is not None:
-            try:
+            with contextlib.suppress(Exception):
                 gl_delete_fn(self.tex_id)
-            except Exception:
-                pass
         self.tex_id = 0
         self.width = self.height = 0
 

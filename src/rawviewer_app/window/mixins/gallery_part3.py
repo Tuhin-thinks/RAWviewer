@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import sys
-from typing import List
 
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
@@ -24,7 +23,7 @@ class GalleryPart3:
         """
         import logging
         import os
-        logger = logging.getLogger(__name__)
+        logging.getLogger(__name__)
 
         # 1. Check in-memory cache
         if file_path in self.gallery_aspect_cache:
@@ -333,8 +332,8 @@ class GalleryPart3:
     #     """Create a row of thumbnails with equal horizontal spacing between images"""
     #     pass  # Gallery functionality disabled
         # Dummy assignments for old method parameters (gallery disabled)
-        row_items, row_width, min_spacing, row_index = [], 0, 0, 0
-        target_width, target_height, thumb_width = 0, 0, 0
+        row_items, _row_width, min_spacing, row_index = [], 0, 0, 0
+        _target_width, target_height, thumb_width = 0, 0, 0
 
         # Calculate total width needed for all images at base scale
         total_images_width = sum(base_width for _, base_width in row_items)
@@ -493,13 +492,11 @@ class GalleryPart3:
             logger.warning(f"[GALLERY] File {os.path.basename(file_path)} not in load tracking")
 
         # Store target dimensions in local variables to ensure they're available in closure
-        final_target_width = target_width
         final_target_height = target_height
 
         def load_thumbnail():
             load_start = time.time()
             # Use local variables for target dimensions
-            local_target_width = final_target_width
             local_target_height = final_target_height
 
             try:
@@ -682,10 +679,7 @@ class GalleryPart3:
                                     # CRITICAL: Calculate bytes_per_line for PIL Image
                                     bytes_per_line = 3 * width  # RGB = 3 channels
                                     qimage = QImage(image_bytes, width, height, bytes_per_line, QImage.Format.Format_RGB888)
-                                    if not qimage.isNull():
-                                        pixmap = QPixmap.fromImage(qimage)
-                                    else:
-                                        pixmap = None
+                                    pixmap = QPixmap.fromImage(qimage) if not qimage.isNull() else None
                                 except Exception as pil_error:
                                     logger.debug(f"Error loading with PIL for {os.path.basename(file_path)}: {pil_error}")
                                     pixmap = None
@@ -814,8 +808,8 @@ class GalleryPart3:
     # def _create_gallery_item(self, file_path, thumb_width=200):
     #     """Create a single gallery item with thumbnail"""
     #     pass  # Gallery functionality disabled
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+        from PyQt6.QtWidgets import QLabel
 
 
         item = QWidget()
@@ -904,7 +898,7 @@ class GalleryPart3:
         self._gallery_selected_paths = set(keys)
         self._gallery_refresh_selection_ui()
 
-    def _gallery_selection_ordered_paths(self) -> List[str]:
+    def _gallery_selection_ordered_paths(self) -> list[str]:
         """Ordered paths used for Shift+click range selection (matches on-screen gallery)."""
         if getattr(self, "view_mode", "") == "gallery":
             gj = getattr(self, "gallery_justified", None)

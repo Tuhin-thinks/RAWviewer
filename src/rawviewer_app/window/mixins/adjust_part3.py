@@ -1,6 +1,7 @@
 """adjust mixin, part 3 of 5 (31 methods, 892 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -200,13 +201,9 @@ class AdjustPart3:
         from raw_dodge_burn import MASK_OBJ_KEY
         from raw_spot_heal import MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY
 
-        if getattr(self, "_adjust_loading_edit_wants_db", False):
-            if adj_used.get(MASK_OBJ_KEY) is None:
-                return False
-        if getattr(self, "_adjust_loading_edit_wants_heal", False):
-            if adj_used.get(HEAL_MASK_OBJ_KEY) is None:
-                return False
-        return True
+        if getattr(self, "_adjust_loading_edit_wants_db", False) and adj_used.get(MASK_OBJ_KEY) is None:
+            return False
+        return not (getattr(self, "_adjust_loading_edit_wants_heal", False) and adj_used.get(HEAL_MASK_OBJ_KEY) is None)
 
     def _on_adjust_mask_load_ready(
         self, generation: int, file_path: str, db_mask, heal_mask
@@ -271,10 +268,8 @@ class AdjustPart3:
         """Cancel competing decodes and load a fresh LibRaw half-res edit base."""
         if not file_path:
             return
-        try:
+        with contextlib.suppress(Exception):
             self.image_manager.cancel_task(file_path)
-        except Exception:
-            pass
         # Cancelling the task above can strand the generic single-view
         # "Loading Image..." overlay forever: it was shown by the reload
         # that toggle_raw_jpeg_workflow() just dispatched (opening the
@@ -650,10 +645,8 @@ class AdjustPart3:
             # encodes shape + mutation version, so a mask edited since the
             # cached render still correctly fails the comparison and falls
             # through to a real re-render.
-            try:
+            with contextlib.suppress(Exception):
                 adj = self._dodge_burn_overlay_adj(adj)
-            except Exception:
-                pass
             from raw_dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
             from raw_spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
 
@@ -864,10 +857,8 @@ class AdjustPart3:
         if panel is not None:
             insets = getattr(self, "_crop_working_insets", None)
             if insets is not None:
-                try:
+                with contextlib.suppress(Exception):
                     panel.set_crop_insets(*insets, emit=False)
-                except Exception:
-                    pass
         if gv is not None:
             gv.set_crop_mode(False)
         if refresh:
@@ -938,9 +929,7 @@ class AdjustPart3:
             and getattr(self, "_geometry_overlay_preview", False)
             and not panel.is_crop_mode()
         ):
-            try:
+            with contextlib.suppress(Exception):
                 panel.set_crop_insets(
                     float(left), float(right), float(top), float(bottom), emit=False
                 )
-            except Exception:
-                pass

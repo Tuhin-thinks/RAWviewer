@@ -3,6 +3,7 @@ Fast thumbnail extractor for immediate display.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -161,9 +162,8 @@ class ThumbnailExtractor(QObject):
                                     shutil.rmtree(ql_dir, ignore_errors=True)
                     finally:
                         if tmp_name and os.path.exists(tmp_name):
-                            try:
+                            with contextlib.suppress(Exception):
                                 os.remove(tmp_name)
-                            except Exception: pass
                 except Exception:
                     pass
         return thumb

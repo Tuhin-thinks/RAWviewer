@@ -1,6 +1,7 @@
 """navigation mixin, part 2 of 2 (9 methods, 336 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -331,10 +332,8 @@ class NavigationPart2:
         self._restore_zoom_center = None
         self._restore_zoom_level = None
         if hasattr(self, "_maintain_zoom_on_navigation"):
-            try:
+            with contextlib.suppress(AttributeError):
                 delattr(self, "_maintain_zoom_on_navigation")
-            except AttributeError:
-                pass
         if hasattr(self, "image_label"):
             self.image_label.clear()
         if hasattr(self, "loading_overlay"):

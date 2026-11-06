@@ -204,8 +204,8 @@ class EnginePart6:
             # prefer the current model's row so that semantic_ready/embedding are
             # correct; otherwise fall back to any row for the path.
             query = f"""
-                SELECT file_path, file_name, file_signature, dim, embedding, capture_time, 
-                       camera_model, lens_model, iso, gps_lat, gps_lon, width, height, 
+                SELECT file_path, file_name, file_signature, dim, embedding, capture_time,
+                       camera_model, lens_model, iso, gps_lat, gps_lon, width, height,
                        city, landmark, admin1, country, country_code, face_count, semantic_ready,
                        file_size, file_mtime, mtime_ns, model_name
                 FROM semantic_index
@@ -267,7 +267,7 @@ class EnginePart6:
 
     def get_layout_metadata_for_paths(self, paths: Sequence[str]) -> dict[str, dict[str, Any]]:
         """
-        Fast synchronous fetch of layout metadata (width, height, orientation, capture_time) 
+        Fast synchronous fetch of layout metadata (width, height, orientation, capture_time)
         for pre-seeding the gallery layout to avoid flashing on first render.
         """
         if not paths:
@@ -701,7 +701,7 @@ class EnginePart6:
                     matched = True
                     filtered = [r for r in filtered if self._row_matches_format_specs(r, [bare])]
                     continue
-                bare_place = bare.replace("_", " ")
+                bare.replace("_", " ")
                 semantic_terms.append(t)
 
         filtered, semantic_terms = self._auto_match_metadata_keywords(filtered, semantic_terms)

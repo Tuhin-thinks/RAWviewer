@@ -1,6 +1,7 @@
 """adjust mixin, part 4 of 5 (19 methods, 894 lines)."""
 from __future__ import annotations
 
+import contextlib
 import math
 import sys
 import time
@@ -767,16 +768,11 @@ class AdjustPart4:
         path = getattr(self, "current_file_path", None)
         if not path:
             return
-        if panel is not None:
-            adj = panel.get_adjustments()
-        else:
-            adj = getattr(self, "_pending_adjust_preview", None)
+        adj = panel.get_adjustments() if panel is not None else getattr(self, "_pending_adjust_preview", None)
         if adj is None:
             return
-        try:
+        with contextlib.suppress(Exception):
             adj = self._dodge_burn_overlay_adj(adj)
-        except Exception:
-            pass
         self._sync_geometry_overlay_with_adj(adj)
         if getattr(self, "_crop_preview_uncropped", False):
             adj = self._crop_keys_zeroed(adj)

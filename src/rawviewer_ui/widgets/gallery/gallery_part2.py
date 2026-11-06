@@ -299,7 +299,7 @@ class GalleryPart2:
                 self.hide_empty_message()
             same_order = (
                 len(new_images) == len(self.images)
-                and all(a == b for a, b in zip(new_images, self.images))
+                and all(a == b for a, b in zip(new_images, self.images, strict=False))
             )
             if _focus_gallery_switch_logs():
                 logger.debug(
@@ -334,7 +334,7 @@ class GalleryPart2:
                             self._metadata_cache.update(bulk_fetched)
                             # If any aspect ratios/rotations changed, trigger a layout rebuild
                             layout_changed = False
-                            for path, exif in bulk_fetched.items():
+                            for path, _exif in bulk_fetched.items():
                                 if self.on_visual_rotation_changed(path, defer_rebuild=True):
                                     layout_changed = True
                             if layout_changed:

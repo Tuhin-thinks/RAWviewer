@@ -17,6 +17,7 @@ The import itself still runs on the main thread (OpenMP constraint), but
 callers can pass a ``pump`` callback (typically QApplication.processEvents)
 between heavy stages so paints/timers can flush mid-import.
 """
+import contextlib
 import os
 import threading
 from collections.abc import Callable
@@ -47,10 +48,8 @@ def import_gpu_backend_on_main_thread(
     def _pump() -> None:
         if pump is None:
             return
-        try:
+        with contextlib.suppress(Exception):
             pump()
-        except Exception:
-            pass
 
     try:
         # Prefer CuPy (torch-free Windows CUDA product path). Optional torch/
@@ -61,7 +60,7 @@ def import_gpu_backend_on_main_thread(
         # but cupy.cuda.Device() fails and the backend falls back to CPU-only.
         if "CUDA_PATH" not in os.environ:
             _cuda_base = os.path.join(
-                os.environ.get("ProgramFiles", r"C:\Program Files"),
+                os.environ.get("PROGRAMFILES", r"C:\Program Files"),
                 "NVIDIA GPU Computing Toolkit",
                 "CUDA",
             )

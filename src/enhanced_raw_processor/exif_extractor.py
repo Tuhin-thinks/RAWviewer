@@ -3,6 +3,7 @@ Fast EXIF data extractor with caching.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from typing import Any
@@ -38,10 +39,8 @@ class EXIFExtractor(QObject):
         """Write freshly extracted metadata to memory + persistent EXIF cache."""
         if not file_path or not isinstance(result, dict) or not result:
             return
-        try:
+        with contextlib.suppress(Exception):
             self.cache.put_exif(file_path, result)
-        except Exception:
-            pass
 
     def build_minimal_raw_exif(
         self, file_path: str, raw_object: rawpy.RawPy

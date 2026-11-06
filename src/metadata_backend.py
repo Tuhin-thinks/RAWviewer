@@ -24,6 +24,7 @@ from typing import Any, BinaryIO
 _HAS_PYEXIV2 = None
 _pyexiv2 = None  # type: ignore
 
+import contextlib
 import logging
 
 logging.getLogger("exifread").setLevel(logging.ERROR)
@@ -370,10 +371,8 @@ def process_file(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         if auto_seek:
-            try:
+            with contextlib.suppress(Exception):
                 fh.seek(0)
-            except Exception:
-                pass
         if stop_tag is not None:
             return exifread.process_file(
                 fh,

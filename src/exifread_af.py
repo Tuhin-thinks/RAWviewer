@@ -89,11 +89,11 @@ def _split_xy(seq: list[int]) -> tuple[list[int], list[int]]:
 
 def _clamp_ltwh(left: float, top: float, w: float, h: float, iw: int, ih: int) -> tuple[int, int, int, int]:
     iw_f, ih_f = float(max(iw, 1)), float(max(ih, 1))
-    l = max(0.0, min(left, iw_f - 1.0))
+    left_clamped = max(0.0, min(left, iw_f - 1.0))
     t = max(0.0, min(top, ih_f - 1.0))
-    wc = max(1.0, min(w, iw_f - l))
+    wc = max(1.0, min(w, iw_f - left_clamped))
     hc = max(1.0, min(h, ih_f - t))
-    return int(l), int(t), int(round(wc)), int(round(hc))
+    return int(left_clamped), int(t), int(round(wc)), int(round(hc))
 
 
 def _scale_to_pixmap(
@@ -103,12 +103,12 @@ def _scale_to_pixmap(
     pixmap_w: int,
     pixmap_h: int,
 ) -> tuple[int, int, int, int] | None:
-    l, t, ww, hh = ltwh
+    left, t, ww, hh = ltwh
     if ref_w <= 0 or ref_h <= 0 or pixmap_w < 4 or pixmap_h < 4:
         return None
     sx = pixmap_w / float(ref_w)
     sy = pixmap_h / float(ref_h)
-    return _clamp_ltwh(l * sx, t * sy, ww * sx, hh * sy, pixmap_w, pixmap_h)
+    return _clamp_ltwh(left * sx, t * sy, ww * sx, hh * sy, pixmap_w, pixmap_h)
 
 
 def _canon_af_ltwh_in_ref(

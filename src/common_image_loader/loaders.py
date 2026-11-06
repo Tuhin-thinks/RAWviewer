@@ -1,4 +1,4 @@
-from typing import Optional
+
 """Common image loader: QImage/QPixmap/PIL/HDR/EDR decode entry points."""
 
 from __future__ import annotations
@@ -12,8 +12,6 @@ from PyQt6.QtGui import QImage, QPixmap
 
 from image_cache import get_image_cache
 
-from .edr import _last_load_used_edr
-
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats.warning=false\\nqt.imageformats.tiff.warning=false")
 try:
@@ -21,6 +19,8 @@ try:
     register_heif_opener()
 except ImportError:
     pass
+
+import contextlib
 
 from rawpy_gil import rawpy_imread_warm
 
@@ -46,7 +46,7 @@ from .helpers import (
 def decode_embedded_jpeg_bytes(
     jpeg_bytes: bytes,
     max_size: int = 0,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Decode embedded JPEG to RGB; applies the JPEG segment's own EXIF orientation."""
     import logging
     logger = logging.getLogger(__name__)
@@ -74,10 +74,8 @@ def decode_embedded_jpeg_bytes(
             and os.environ.get("RAWVIEWER_JPEG_DRAFT_DECODE", "1").strip().lower()
             not in {"0", "false", "no", "off"}
         ):
-            try:
+            with contextlib.suppress(Exception):
                 im.draft("RGB", (max_size, max_size))
-            except Exception:
-                pass
         if im.mode != "RGB":
             im = im.convert("RGB")
         w, h = im.size
@@ -400,7 +398,7 @@ def load_raw_preview_array(
     max_size: int = 2048,
     *,
     apply_container_orientation: bool = True,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Single RAW preview path: cache ΓåÆ ThumbnailExtractor ΓåÆ container EXIF (once)."""
     cache = get_image_cache()
     for getter in (cache.get_thumbnail, cache.get_preview):
@@ -560,7 +558,7 @@ def get_image_aspect_ratio(file_path: str) -> float:
             pass
 
     return 1.333  # Θ╗ÿΦ¬ìσ»¼Θ½ÿµ»ö (4:3)
-def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPixmap]:
+def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | None:
     """Try to decode HEIF/AVIF/TIFF HDR images with EDR on macOS or SDR tone-mapping."""
     import os
 
@@ -611,10 +609,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
                 bits = pil_img.tag.get(258)
                 is_16bit = False
                 if bits:
-                    if isinstance(bits, tuple):
-                        is_16bit = any(b > 8 for b in bits)
-                    else:
-                        is_16bit = bits > 8
+                    is_16bit = any(b > 8 for b in bits) if isinstance(bits, tuple) else bits > 8
                 if not is_16bit:
                     is_16bit = pil_img.mode in ("I;16", "I;16L", "I;16B", "RGBA;16", "RGB;16")
 
@@ -648,10 +643,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
         # above 4095) as 10/12-bit if its bright content is sparse enough to
         # get averaged below the threshold -- picking a denominator dozens of
         # times too small and rendering the preview badly over-bright.
-        if arr.dtype == np.uint16:
-            max_val = 65535.0 if arr.max() > 4095 else ((2 ** bit_depth) - 1)
-        else:
-            max_val = 255.0
+        max_val = (65535.0 if arr.max() > 4095 else 2 ** bit_depth - 1) if arr.dtype == np.uint16 else 255.0
 
         # Perform downsizing early to save memory and processing time
         if max_edge > 0 and max(w, h) > max_edge:
@@ -685,10 +677,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
                 arr_64 = padded
                 q_format = QImage.Format.Format_RGBX64
             elif channels == 4:
-                if arr.dtype == np.uint16:
-                    arr_64 = arr
-                else:
-                    arr_64 = (img_float * 65535.0).astype(np.uint16)
+                arr_64 = arr if arr.dtype == np.uint16 else (img_float * 65535.0).astype(np.uint16)
                 q_format = QImage.Format.Format_RGBA64
             else:  # Grayscale -> RGBX64
                 padded = np.empty((h, w, 4), dtype=np.uint16)

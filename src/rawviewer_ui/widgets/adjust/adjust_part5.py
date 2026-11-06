@@ -1,6 +1,8 @@
 """Adjust mixin part 5 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
+import contextlib
+
 from PyQt6.QtCore import QSettings, Qt, QThreadPool
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QMenu, QPushButton, QVBoxLayout, QWidget
@@ -128,12 +130,10 @@ class AdjustPart5:
     def _save_section_order(self) -> None:
         import json
 
-        try:
+        with contextlib.suppress(Exception):
             self._settings().setValue(
                 _GLOBAL_SECTION_ORDER_SETTING, json.dumps(list(self._section_order))
             )
-        except Exception:
-            pass
 
     def _apply_section_order(self) -> None:
         """Lay Global sections out in ``self._section_order``; Export stays last."""
@@ -169,7 +169,7 @@ class AdjustPart5:
 
     def _set_visible_section_order(self, visible: list) -> None:
         slots = [i for i, k in enumerate(self._section_order) if k in visible]
-        for slot, k in zip(slots, visible):
+        for slot, k in zip(slots, visible, strict=False):
             self._section_order[slot] = k
 
     def _nudge_section(self, key: str, delta: int) -> None:

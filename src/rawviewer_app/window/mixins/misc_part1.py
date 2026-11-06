@@ -1,7 +1,8 @@
-from typing import List, Optional, Set
+
 """misc mixin, part 1 of 4 (31 methods, 827 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import threading
@@ -150,10 +151,8 @@ class MiscPart1:
             return
         self._raw_recovery_worker_path = norm
         exif_data = {}
-        try:
+        with contextlib.suppress(Exception):
             exif_data = self.image_cache.get_exif(file_path) or {}
-        except Exception:
-            pass
         from rawviewer_app.workers import RawRecoveryWorker
 
         _get_bg_thread_pool().start(
@@ -228,10 +227,8 @@ class MiscPart1:
         current = getattr(self, "_composition_grid_mode", "off")
         new_mode = next_grid_mode(current)
         self._composition_grid_mode = new_mode
-        try:
+        with contextlib.suppress(Exception):
             self.get_settings().setValue("composition_grid_mode", new_mode)
-        except Exception:
-            pass
         self.status_bar.showMessage(f"Composition guide: {grid_mode_label(new_mode)}", 2000)
         self._sync_composition_grid_display()
         return True
@@ -243,7 +240,7 @@ class MiscPart1:
             return
         gv.set_composition_grid_mode(getattr(self, "_composition_grid_mode", "off"))
 
-    def _burst_visibility_exclusion_set(self) -> Set[str]:
+    def _burst_visibility_exclusion_set(self) -> set[str]:
         """Burst-rejected paths, plus anything the active rating/bookmark
         gallery filter hides right now.
 
@@ -378,7 +375,7 @@ class MiscPart1:
             rejected,
         )
 
-    def _burst_members_for_path(self, file_path: str) -> Optional[List[str]]:
+    def _burst_members_for_path(self, file_path: str) -> list[str] | None:
         if not self._is_burst_grouping_enabled():
             return None
         members = (getattr(self, "_burst_path_to_group", {}) or {}).get(
@@ -392,12 +389,12 @@ class MiscPart1:
         visible = [p for p in members if _norm_path(p) not in rejected]
         return visible if len(visible) >= BURST_MIN_COUNT else None
 
-    def _burst_group_view_visible_members(self) -> List[str]:
+    def _burst_group_view_visible_members(self) -> list[str]:
         rejected = set(getattr(self, "_burst_rejected_paths", set()) or set())
         members = list(getattr(self, "_burst_group_view_members", []) or [])
         return [p for p in members if _norm_path(p) not in rejected]
 
-    def _enter_burst_group_view(self, members: List[str], *, cover: str | None = None) -> None:
+    def _enter_burst_group_view(self, members: list[str], *, cover: str | None = None) -> None:
         self._burst_group_view_active = True
         self._burst_group_view_members = list(members)
         self._clear_gallery_selection()
@@ -420,10 +417,8 @@ class MiscPart1:
         self._update_gallery_view()
         self.update_status_bar()
         if scroll_to and getattr(self, "gallery_justified", None):
-            try:
+            with contextlib.suppress(Exception):
                 self.gallery_justified.scroll_to_file(scroll_to)
-            except Exception:
-                pass
         from PyQt6.QtCore import QTimer
 
         self._restore_keyboard_focus()
@@ -511,10 +506,8 @@ class MiscPart1:
             pixmap = _QPixmap.fromImage(image)
             if pixmap.isNull():
                 return
-            try:
+            with contextlib.suppress(Exception):
                 self.image_cache.put_pixmap(file_path, pixmap)
-            except Exception:
-                pass
             self.on_manager_pixmap_ready(file_path, pixmap)
         except Exception:
             import logging
@@ -627,10 +620,8 @@ class MiscPart1:
             if self._auto_revert_to_embedded_jpeg_workflow(
                 file_path, reason="manager clearly_unsupported"
             ):
-                try:
+                with contextlib.suppress(Exception):
                     self._invalidate_workflow_pixel_caches([file_path])
-                except Exception:
-                    pass
                 self.load_raw_image(file_path, force_reload=True)
                 return
             # Already marked unsupported: a failed LibRaw/full attempt
@@ -754,17 +745,13 @@ class MiscPart1:
         self._pending_zoom_thumbnail_size = None
         self._pending_zoom_toggle = False
         if hasattr(self, "_pending_zoom_target_path"):
-            try:
+            with contextlib.suppress(AttributeError):
                 delattr(self, "_pending_zoom_target_path")
-            except AttributeError:
-                pass
         self.zoom_center_point = None
         self.fit_to_window = True
         if hasattr(self, "_maintain_zoom_on_navigation"):
-            try:
+            with contextlib.suppress(AttributeError):
                 delattr(self, "_maintain_zoom_on_navigation")
-            except AttributeError:
-                pass
         gv = getattr(self, "gpu_view", None)
         if gv is not None:
             gv._zoom_intent_100 = False
@@ -806,10 +793,8 @@ class MiscPart1:
         self._update_raw_toggle_button_state()
         if self.current_file_path:
             self._reset_view_for_workflow_toggle()
-            try:
+            with contextlib.suppress(Exception):
                 self.image_manager.cancel_task(self.current_file_path)
-            except Exception:
-                pass
             self._manager_displayed_max_dim = 0
             self._displayed_content_path = None
             self._gpu_last_path = None
@@ -844,10 +829,8 @@ class MiscPart1:
         if cur and cur not in targets:
             targets.append(cur)
         cache = self.image_cache
-        try:
+        with contextlib.suppress(Exception):
             cache.libraw_preview_paths.clear()
-        except Exception:
-            pass
         raw_targets = []
         for fp in targets:
             if not fp:

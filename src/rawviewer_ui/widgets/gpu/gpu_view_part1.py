@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 
 from PyQt6.QtCore import QPointF, QRect, QRectF, Qt
@@ -734,10 +735,8 @@ class GpuImageViewPart1:
             pass
         finally:
             if gl_widget is not None:
-                try:
+                with contextlib.suppress(Exception):
                     gl_widget.doneCurrent()
-                except Exception:
-                    pass
     def _clear_for_gallery_if_hidden(self) -> None:
         if not self.has_heavy_pixmap():
             return

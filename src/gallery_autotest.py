@@ -30,6 +30,7 @@ Metrics:
   first paint / confirmed gallery mode (not merely a toggle attempt).
 """
 
+import contextlib
 import os
 import time
 
@@ -83,10 +84,8 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
 
     def _quit_app(reason: str) -> None:
         safe_print(f"[GALLERYTEST] quit: {reason}", flush=True, force=True)
-        try:
+        with contextlib.suppress(Exception):
             viewer.close()
-        except Exception:
-            pass
         app = QApplication.instance()
         if app is not None:
             QTimer.singleShot(500, app.quit)

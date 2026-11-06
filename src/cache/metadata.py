@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sqlite3
@@ -383,7 +384,7 @@ class PersistentEXIFCache:
 
     def get_multiple(self, file_paths: list, file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.
-        
+
         Args:
             fast_mode: If True, tries to skip unpickling the full EXIF blob if columns are available.
         """
@@ -681,10 +682,8 @@ class PersistentEXIFCache:
         star rating set near the end of a session) sat in _pending_writes
         and was silently dropped on quit, never reaching disk.
         """
-        try:
+        with contextlib.suppress(Exception):
             self.flush()
-        except Exception:
-            pass
         try:
             if hasattr(self, '_local') and hasattr(self._local, 'conn'):
                 self._local.conn.close()

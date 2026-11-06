@@ -445,7 +445,7 @@ class EnginePart7:
             original = canonical_to_original.get(canonical, db_path)
             found_paths.add(self._canonical_path(original))
 
-            face_count = row["face_count"] if "face_count" in row.keys() else None
+            face_count = row.get("face_count", None)
             # Never run YuNet/OpenCV on the UI thread during gallery search — use
             # indexed face_count only (NULL → 0). Live detection belongs in indexing.
             if face_count is None:

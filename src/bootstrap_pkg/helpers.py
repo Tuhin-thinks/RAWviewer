@@ -443,6 +443,8 @@ def _installed_app_icon_path(install_dir: str) -> str | None:
         return ico
     return _installer_icon_path()
 
+import contextlib
+
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
@@ -537,15 +539,13 @@ def _kill_running_app_processes(target_dir: str, log) -> None:
     """
     log("Stopping running RAWviewer instances...")
     flags = subprocess.CREATE_NO_WINDOW
-    try:
+    with contextlib.suppress(Exception):
         subprocess.run(
             ["taskkill", "/F", "/IM", "RAWviewer.exe", "/T"],
             capture_output=True,
             creationflags=flags,
             timeout=15,
         )
-    except Exception:
-        pass
     # PowerShell path-scoped kill: single quotes in the dir are doubled for
     # PS single-quoted string escaping.
     ps_dir = os.path.normpath(target_dir).rstrip("\\").replace("'", "''")

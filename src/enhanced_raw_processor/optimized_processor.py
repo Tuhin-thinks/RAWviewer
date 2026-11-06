@@ -107,7 +107,7 @@ class OptimizedRAWProcessor(QObject):
             # DCB is high quality but slower - disable for fast processing
             params.update({
                 'use_camera_wb': True,
-                'dcb_enhance': False if file_size_mb > 20 else True
+                'dcb_enhance': not file_size_mb > 20
             })
         elif self.is_sony_camera(file_path, exif_data):
             # Sony cameras

@@ -1,6 +1,8 @@
 """Overlays built on the shared Qt widget layer."""
 from __future__ import annotations
 
+import contextlib
+
 from PyQt6.QtCore import QAbstractAnimation, QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy, QWidget
@@ -171,14 +173,10 @@ class SingleImageViewOverlay(QWidget):
         if anim is not None:
             # Disconnect all signals BEFORE stop() to prevent the synchronous
             # finished emission from triggering _finish_hide during cancellation.
-            try:
+            with contextlib.suppress(TypeError, RuntimeError):
                 anim.finished.disconnect()
-            except (TypeError, RuntimeError):
-                pass
-            try:
+            with contextlib.suppress(TypeError, RuntimeError):
                 anim.valueChanged.disconnect()
-            except (TypeError, RuntimeError):
-                pass
             if anim.state() == QAbstractAnimation.State.Running:
                 anim.stop()
         self._filmstrip_fade_anim = None
@@ -390,7 +388,7 @@ class SingleImageViewOverlay(QWidget):
             return
         pos = self._local_pos_from_global(global_pos)
         in_hot = self._pointer_in_bottom_hotzone_at(pos)
-        in_strip_band = self._pointer_in_filmstrip_band_at(pos)
+        self._pointer_in_filmstrip_band_at(pos)
         strip_rect = self._filmstrip_rect_in_container()
         over_strip = (
             self._filmstrip_accepts_pointer()
@@ -430,13 +428,12 @@ class SingleImageViewOverlay(QWidget):
         from PyQt6.QtCore import QEvent
 
         gpu = self._gpu_view
-        if gpu is not None and watched in (gpu, gpu.viewport()):
-            if event.type() in (
-                QEvent.Type.MouseMove,
-                QEvent.Type.HoverMove,
-                QEvent.Type.Enter,
-            ):
-                self.handle_pointer_for_filmstrip(event.globalPosition())
+        if gpu is not None and watched in (gpu, gpu.viewport()) and event.type() in (
+            QEvent.Type.MouseMove,
+            QEvent.Type.HoverMove,
+            QEvent.Type.Enter,
+        ):
+            self.handle_pointer_for_filmstrip(event.globalPosition())
         return False
 
     def _reveal_filmstrip(self) -> None:

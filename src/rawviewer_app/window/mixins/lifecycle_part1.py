@@ -1,6 +1,7 @@
 """lifecycle mixin, part 1 of 2 (12 methods, 825 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import platform
@@ -132,10 +133,8 @@ class LifecyclePart1:
         # back to a launch that silently starts in RAW mode reads as "the app is
         # slow" rather than "RAW mode is still on". Always start in the embedded-
         # preview workflow; the user re-enables RAW per session.
-        try:
+        with contextlib.suppress(Exception):
             self.get_settings().setValue("use_embedded_jpeg_workflow", True)
-        except Exception:
-            pass
         self.thumbnail_threads = []  # Track running thumbnail threads
 
         # View mode: 'single' for single image view, 'gallery' for gallery view
@@ -396,9 +395,8 @@ class LifecyclePart1:
         # Restore last folder / file / view mode (opt-out: RAWVIEWER_DISABLE_SESSION_RESTORE=1)
         if os.environ.get("RAWVIEWER_DISABLE_SESSION_RESTORE", "0").strip() != "1":
             safe_print("  [RAWImageViewer] Restoring session state...", flush=True)
-            if self.restore_session_state():
-                if hasattr(self, "view_mode") and self.view_mode == "gallery":
-                    self._show_gallery_view()
+            if self.restore_session_state() and hasattr(self, "view_mode") and self.view_mode == "gallery":
+                self._show_gallery_view()
         else:
             safe_print("  [RAWImageViewer] Session restore skipped (RAWVIEWER_DISABLE_SESSION_RESTORE)", flush=True)
         if os.environ.get("RAWVIEWER_UPDATE_CHECK_DELAY_MS"):
@@ -575,10 +573,8 @@ class LifecyclePart1:
                     logger.error(f"Error during processor cleanup: {cleanup_error}", exc_info=True)
                     logger.debug(f"Cleanup error traceback: {traceback.format_exc()}")
                     # Try to clear reference even if cleanup failed
-                    try:
+                    with contextlib.suppress(Exception):
                         self.current_processor = None
-                    except Exception:
-                        pass
             else:
                 logger.debug("No current_processor to clean up")
 

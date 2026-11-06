@@ -1,6 +1,7 @@
 """image_load mixin, part 2 of 3 (3 methods, 883 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import platform
 import sys
@@ -245,10 +246,8 @@ class ImageLoadPart2:
                     logger.debug("Clearing _pending_zoom_center")
                     delattr(self, "_pending_zoom_center")
                 if hasattr(self, "_pending_zoom_thumbnail_size"):
-                    try:
+                    with contextlib.suppress(AttributeError):
                         delattr(self, "_pending_zoom_thumbnail_size")
-                    except AttributeError:
-                        pass
             if hasattr(self, '_pending_zoom_level'):
                 logger.debug("Clearing _pending_zoom_level")
                 delattr(self, '_pending_zoom_level')
@@ -261,25 +260,19 @@ class ImageLoadPart2:
             if hasattr(self, "_pending_zoom_toggle") and not same_pending_target:
                 self._pending_zoom_toggle = False
                 if hasattr(self, "_pending_zoom_target_path"):
-                    try:
+                    with contextlib.suppress(AttributeError):
                         delattr(self, "_pending_zoom_target_path")
-                    except AttributeError:
-                        pass
             if hasattr(self, "_pending_zoom_focus_subject") and not (
                 same_pending_target or keep_pending_point_zoom
             ):
                 self._pending_zoom_focus_subject = False
             if hasattr(self, "_pending_gpu_zoom_point"):
-                try:
+                with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_gpu_zoom_point")
-                except AttributeError:
-                    pass
             if not getattr(self, "_preserve_nav_zoom_active", False):
                 if hasattr(self, "_maintain_zoom_on_navigation"):
-                    try:
+                    with contextlib.suppress(AttributeError):
                         delattr(self, "_maintain_zoom_on_navigation")
-                    except AttributeError:
-                        pass
 
             # Clean up current processing (simplified with new architecture)
             cleanup_start = time.time()

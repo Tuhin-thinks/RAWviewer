@@ -440,7 +440,6 @@ class RAWProcessorPart2(RAWProcessorPart1):
 
                                     if thumbnail_rgb is not None:
                                         # Resize to max 1024px for thumbnail
-                                        import numpy as np
                                         from PIL import Image
 
                                         # Convert to PIL Image for resizing
@@ -679,7 +678,6 @@ class RAWProcessorPart2(RAWProcessorPart1):
         except Exception as e:
             # Provide more specific error messages
             error_msg = str(e)
-            import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Unhandled exception in RAWProcessor for {os.path.basename(self.file_path) if hasattr(self, 'file_path') else 'unknown'}: {e}", exc_info=True)
 

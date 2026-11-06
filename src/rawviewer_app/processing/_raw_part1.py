@@ -1,4 +1,5 @@
 """Background RAW / pixmap processing."""
+import contextlib
 import logging
 import os
 import threading
@@ -381,10 +382,8 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                         }
                         # Add performance optimizations if available
-                        try:
+                        with contextlib.suppress(AttributeError, TypeError):
                             postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                        except (AttributeError, TypeError):
-                            pass
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -407,10 +406,8 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                         }
                         # Add performance optimizations if available
-                        try:
+                        with contextlib.suppress(AttributeError, TypeError):
                             postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                        except (AttributeError, TypeError):
-                            pass
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -470,10 +467,8 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                         }
                         # Add performance optimizations if available
-                        try:
+                        with contextlib.suppress(AttributeError, TypeError):
                             postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                        except (AttributeError, TypeError):
-                            pass
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -496,10 +491,8 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                         }
                         # Add performance optimizations if available
-                        try:
+                        with contextlib.suppress(AttributeError, TypeError):
                             postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                        except (AttributeError, TypeError):
-                            pass
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -522,10 +515,8 @@ class RAWProcessorPart1(QThread):
                     'user_flip': 0
                 }
                 # Add performance optimizations if available
-                try:
+                with contextlib.suppress(AttributeError, TypeError):
                     postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                except (AttributeError, TypeError):
-                    pass
                 rgb_image = raw.postprocess(**postprocess_params)
                 if self._should_stop:
                     return None
@@ -545,10 +536,8 @@ class RAWProcessorPart1(QThread):
                 'user_flip': 0
             }
             # Add performance optimizations if available
-            try:
+            with contextlib.suppress(AttributeError, TypeError):
                 postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-            except (AttributeError, TypeError):
-                pass
             rgb_image = raw.postprocess(**postprocess_params)
             if self._should_stop:
                 return None

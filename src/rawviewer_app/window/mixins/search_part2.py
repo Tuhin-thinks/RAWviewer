@@ -1,6 +1,7 @@
 """search mixin, part 2 of 4 (17 methods, 898 lines)."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import sys
 import time
@@ -38,19 +39,15 @@ class SearchPart2:
             # Don't release child widths until the collapse slide finishes --
             # releasing mid-setup reflows the field and causes a halfway hitch.
             if hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
-                try:
+                with contextlib.suppress(Exception):
                     self.gallery_search_input.clearFocus()
-                except Exception:
-                    pass
 
         if expanded:
             # Child min-width must not fight the 0→target slide.
             self._release_gallery_search_panel_width()
             if hasattr(self, "search_expand_layout") and hasattr(self, "gallery_search_panel"):
-                try:
+                with contextlib.suppress(Exception):
                     self.search_expand_layout.setCurrentWidget(self.gallery_search_panel)
-                except Exception:
-                    pass
 
         # Visible footprint is full content width; reveal amount is the mask.
         content_now = int(getattr(self, "_search_panel_anim_content_width", 0) or 0)
@@ -74,14 +71,10 @@ class SearchPart2:
 
         anim = getattr(self, "_search_panel_animation", None)
         if anim is not None:
-            try:
+            with contextlib.suppress(Exception):
                 anim.finished.disconnect()
-            except Exception:
-                pass
-            try:
+            with contextlib.suppress(Exception):
                 anim.stop()
-            except Exception:
-                pass
             self._search_panel_animation = None
 
         # Clip-reveal: keep the field laid out at the final width for the whole slide.
@@ -97,10 +90,8 @@ class SearchPart2:
                 self._search_panel_anim_content_width = 0
                 self._reapply_gallery_search_panel_width_from_status()
                 self._place_search_expand_overlay(target)
-                try:
+                with contextlib.suppress(Exception):
                     self.search_expand_container.clearMask()
-                except Exception:
-                    pass
             else:
                 self._search_panel_anim_content_width = 0
                 self._place_search_expand_overlay(0)
@@ -147,10 +138,8 @@ class SearchPart2:
                     getattr(self, "_search_panel_target_width", final) or final
                 )
                 self._place_search_expand_overlay(final)
-                try:
+                with contextlib.suppress(Exception):
                     self.search_expand_container.clearMask()
-                except Exception:
-                    pass
                 self._run_pending_search_index_after_expand()
             else:
                 self._search_panel_anim_content_width = 0
@@ -367,10 +356,8 @@ class SearchPart2:
             self._semantic_index_pass_kind = "silent_metadata"
         else:
             self._semantic_index_pass_kind = "metadata_pass"
-        try:
+        with contextlib.suppress(Exception):
             self._get_semantic_index().pause_indexing(False)
-        except Exception:
-            pass
 
         index = self._get_semantic_index()
         try:
@@ -402,10 +389,8 @@ class SearchPart2:
         indexed_files = max(0, total_files - len(pending_files))
         if not pending_files:
             self._clear_stale_gallery_search_index_progress()
-            try:
+            with contextlib.suppress(Exception):
                 self._start_face_index_background(corpus_files)
-            except Exception:
-                pass
             if not self._is_gallery_search_indexing_active():
                 self._mark_gallery_search_index_session_complete(corpus_files)
                 self._reset_gallery_search_to_idle()
@@ -604,10 +589,8 @@ class SearchPart2:
 
         # Remember the latest counts so opening the search panel mid-pass can
         # immediately show "Metadata: 1234/6881" instead of a static message.
-        try:
+        with contextlib.suppress(Exception):
             self._semantic_index_last_progress = (max(0, int(i)), max(0, int(n)))
-        except Exception:
-            pass
 
         if not show_progress:
             # If search UI doesn't want progress, route standard indexing/thumbnail messages to status bar only
@@ -695,14 +678,13 @@ class SearchPart2:
             except Exception:
                 face_pending = 0
         will_run_face = face_pending > 0
-        if not will_run_face:
-            if not (
-                getattr(self, "_gallery_search_user_wants_semantic", False)
-                or getattr(self, "_defer_semantic_after_metadata", False)
-            ):
-                self._mark_gallery_search_index_session_complete(corpus)
-                self._reset_gallery_search_to_idle()
-        user_hid = getattr(self, "_gallery_search_user_collapsed_while_busy", False)
+        if not will_run_face and not (
+            getattr(self, "_gallery_search_user_wants_semantic", False)
+            or getattr(self, "_defer_semantic_after_metadata", False)
+        ):
+            self._mark_gallery_search_index_session_complete(corpus)
+            self._reset_gallery_search_to_idle()
+        getattr(self, "_gallery_search_user_collapsed_while_busy", False)
         self._gallery_search_user_collapsed_while_busy = False
         if getattr(self, "_search_panel_expanded", False):
             self._set_gallery_search_input_visible()
@@ -825,13 +807,11 @@ class SearchPart2:
             self._format_index_progress("Face", 0, pending)
         ) if show_search_progress else None
         if not show_search_progress and hasattr(self, "status_bar"):
-            try:
+            with contextlib.suppress(Exception):
                 self.status_bar.showMessage(
                     f"Face scan in background -- {pending} photos remaining",
                     4000,
                 )
-            except Exception:
-                pass
         self._face_index_show_search_progress = bool(show_search_progress)
         logger.info(
             "[INDEX][FACE] Start worker "
@@ -903,10 +883,8 @@ class SearchPart2:
             self._end_indexing_load_throttle()
         self._face_index_active_token = None
         self._face_index_signals = None
-        try:
+        with contextlib.suppress(Exception):
             self._reset_gallery_search_to_idle()
-        except Exception:
-            pass
         self._sync_gallery_search_input_editable()
         self._invalidate_semantic_coverage_cache()
         self.status_bar.showMessage(f"Face search failed: {error}", 5000)
@@ -921,10 +899,8 @@ class SearchPart2:
         self._semantic_index_signals = None
         self._semantic_index_progress_base = 0
         self._semantic_index_progress_total = 0
-        try:
+        with contextlib.suppress(Exception):
             self._restore_gallery_search_placeholder()
-        except Exception:
-            pass
         user_hid = getattr(self, "_gallery_search_user_collapsed_while_busy", False)
         if not user_hid and getattr(self, "_search_panel_expanded", False):
             self._set_gallery_search_input_visible()

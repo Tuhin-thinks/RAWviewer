@@ -1,7 +1,8 @@
-from typing import List, Optional
+
 """misc mixin, part 3 of 4 (22 methods, 849 lines)."""
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import time
@@ -51,10 +52,8 @@ class MiscPart3:
             if not self._should_use_raw_edr_display(fp):
                 return
             exif_for_edr = None
-            try:
+            with contextlib.suppress(Exception):
                 exif_for_edr = self.image_cache.get_exif(fp)
-            except Exception:
-                pass
             is_half_size_edr = not image_covers_sensor_resolution(
                 w, h, exif_for_edr
             )
@@ -236,9 +235,8 @@ class MiscPart3:
         only a genuine on-image -> off-image transition does.
         """
         panel = getattr(self, "single_image_adjust_panel", None)
-        if panel is not None and hasattr(panel, "disarm_dodge_burn"):
-            if panel.dodge_burn_mode() is not None:
-                panel.disarm_dodge_burn()
+        if panel is not None and hasattr(panel, "disarm_dodge_burn") and panel.dodge_burn_mode() is not None:
+            panel.disarm_dodge_burn()
 
     def _adj_has_warp(self, adj: dict | None) -> bool:
         """True when straighten / keystone would change the frame."""
@@ -329,7 +327,7 @@ class MiscPart3:
         self._slideshow_scope_paths = None
         self._sync_slideshow_button_icon(False)
 
-    def _slideshow_scope_start_path(self, scope: List[str]) -> str:
+    def _slideshow_scope_start_path(self, scope: list[str]) -> str:
         scope_norm = {_norm_path(p): p for p in scope if p}
         cp = getattr(self, "current_file_path", None)
         if cp and _norm_path(cp) in scope_norm:
@@ -358,10 +356,7 @@ class MiscPart3:
                     if _norm_path(p) == _norm_path(cur):
                         idx = i
                         break
-            if direction == "next":
-                idx = (idx + 1) % len(files)
-            else:
-                idx = (idx - 1) % len(files)
+            idx = (idx + 1) % len(files) if direction == "next" else (idx - 1) % len(files)
             self._open_slideshow_image(files[idx])
             return
         if direction == "next":
@@ -395,7 +390,7 @@ class MiscPart3:
         self._slideshow_timer.start(self._slideshow_interval_ms())
         self._sync_slideshow_button_icon(True)
 
-    def _begin_slideshow_at_path(self, start: str, *, scope_paths: Optional[List[str]]) -> None:
+    def _begin_slideshow_at_path(self, start: str, *, scope_paths: list[str] | None) -> None:
         idx = _find_file_index_in_list(self.image_files, start, default=-1)
         if idx >= 0:
             self.current_file_index = idx
