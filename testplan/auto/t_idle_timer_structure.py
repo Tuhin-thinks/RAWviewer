@@ -18,7 +18,7 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    MAIN_PY = os.path.join(ROOT, "src", "main.py")
+    MAIN_PY = os.path.join(ROOT, "src", "rawviewer_app", "window", "raw_image_viewer.py")
 
     with open(MAIN_PY, "r", encoding="utf-8") as fh:
         src = fh.read()

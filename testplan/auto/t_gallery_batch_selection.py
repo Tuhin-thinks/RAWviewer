@@ -201,7 +201,7 @@ def main() -> int:
     # --- source pins --------------------------------------------------------
     src = open(
         os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_ui", "widgets.py"),
+                     "rawviewer_ui", "widgets", "__init__.py"),
         encoding="utf-8",
     ).read()
     check(
@@ -210,23 +210,21 @@ def main() -> int:
     )
     bops_src = open(
         os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_app", "batch_ops.py"),
+                     "rawviewer_app", "services", "batch.py"),
         encoding="utf-8",
     ).read()
     check(
         "no UI/cache imports in batch_ops (QPixmaps stay on UI thread)",
         "from PyQt6.QtGui import" not in bops_src and "from image_cache" not in bops_src,
     )
-    vp = open(
-        os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "main.py"),
-        encoding="utf-8",
-    ).read()
+    from _source_utils import main_source
+
+    vp = main_source()
     check(
         "TaskProgressDialog rename complete (no ExportProgressDialog left)",
         "ExportProgressDialog" not in vp
         and open(os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                              "rawviewer_app", "widgets.py"),
+                              "rawviewer_app", "core", "widgets.py"),
                  encoding="utf-8").read().count("ExportProgressDialog") == 0,
     )
     check(
