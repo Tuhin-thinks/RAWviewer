@@ -148,8 +148,7 @@ class GalleryPart4:
             self._update_scroll_date_bubble(force=False)
 
         # Pause background indexing once per scroll burst (not every valueChanged tick).
-        if self.parent_viewer is not None and not self._scroll_indexing_paused:
-            if hasattr(self.parent_viewer, "_pause_semantic_indexing_deferred"):
+        if self.parent_viewer is not None and not self._scroll_indexing_paused and hasattr(self.parent_viewer, "_pause_semantic_indexing_deferred"):
                 try:
                     self.parent_viewer._pause_semantic_indexing_deferred()
                     self._scroll_indexing_paused = True
@@ -554,10 +553,7 @@ class GalleryPart4:
             if len(self.images) > 100 and not (
                 getattr(self, "_is_zooming", False)
                 or getattr(self, "_gallery_zoom_rebuild", False)
-            ):
-                # Only schedule a deferred settle when aspects are still drifting;
-                # otherwise large folders rebuild every few seconds for no gain.
-                if self._metadata_changed_paths:
+            ) and self._metadata_changed_paths:
                     self._schedule_aspects_settle_rebuild()
             if len(self.images) > 1000:
                 self.hide_loading_message()

@@ -424,11 +424,10 @@ class GpuImageViewPart1:
         if self._fit_mode or not capture:
             if self._fit_mode and not getattr(self, "_zoom_intent_100", False):
                 self.fit_to_window()
-            elif not capture:
-                # Stale state: _fit_mode False but transform still at fit scale (e.g. zoom
-                # requested before the first pixmap arrived). Refit so Space/double-click
-                # toggles predictably instead of staying stuck at ~fit%.
-                if self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
+            elif not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
+                    # Stale state: _fit_mode False but transform still at fit scale (e.g. zoom
+                    # requested before the first pixmap arrived). Refit so Space/double-click
+                    # toggles predictably instead of staying stuck at ~fit%.
                     self.fit_to_window()
             self._sync_fit_mode_flag()
             return
@@ -525,11 +524,8 @@ class GpuImageViewPart1:
                 self._update_compare_overlay()
 
             if self._fit_mode or not capture:
-                if self._fit_mode and not getattr(self, "_zoom_intent_100", False):
+                if self._fit_mode and not getattr(self, "_zoom_intent_100", False) or not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
                     self.fit_to_window()
-                elif not capture:
-                    if self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
-                        self.fit_to_window()
                 self._sync_fit_mode_flag()
                 return True
 
@@ -611,11 +607,8 @@ class GpuImageViewPart1:
                 self._update_compare_overlay()
 
             if self._fit_mode or not capture:
-                if self._fit_mode and not getattr(self, "_zoom_intent_100", False):
+                if self._fit_mode and not getattr(self, "_zoom_intent_100", False) or not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
                     self.fit_to_window()
-                elif not capture:
-                    if self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
-                        self.fit_to_window()
                 self._sync_fit_mode_flag()
                 return True
 

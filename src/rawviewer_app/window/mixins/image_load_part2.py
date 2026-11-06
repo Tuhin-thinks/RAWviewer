@@ -269,8 +269,7 @@ class ImageLoadPart2:
             if hasattr(self, "_pending_gpu_zoom_point"):
                 with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_gpu_zoom_point")
-            if not getattr(self, "_preserve_nav_zoom_active", False):
-                if hasattr(self, "_maintain_zoom_on_navigation"):
+            if not getattr(self, "_preserve_nav_zoom_active", False) and hasattr(self, "_maintain_zoom_on_navigation"):
                     with contextlib.suppress(AttributeError):
                         delattr(self, "_maintain_zoom_on_navigation")
 

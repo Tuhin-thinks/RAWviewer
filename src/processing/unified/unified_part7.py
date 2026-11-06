@@ -804,11 +804,10 @@ class UnifiedPart7:
                         memory_preview_max_edge() * 0.85
                     ):
                         cached_thumb = None
-                elif hasattr(cached_thumb, "width"):
-                    if max(int(cached_thumb.height()), int(cached_thumb.width())) < int(
-                        memory_preview_max_edge() * 0.85
-                    ):
-                        cached_thumb = None
+                elif hasattr(cached_thumb, "width") and max(int(cached_thumb.height()), int(cached_thumb.width())) < int(
+                    memory_preview_max_edge() * 0.85
+                ):
+                    cached_thumb = None
             except Exception:
                 pass
 
@@ -818,17 +817,15 @@ class UnifiedPart7:
                 if hasattr(cached_thumb, "shape"):
                     if max(int(cached_thumb.shape[0]), int(cached_thumb.shape[1])) < min_px:
                         cached_thumb = None
-                elif hasattr(cached_thumb, "width"):
-                    if max(int(cached_thumb.height()), int(cached_thumb.width())) < min_px:
-                        cached_thumb = None
+                elif hasattr(cached_thumb, "width") and max(int(cached_thumb.height()), int(cached_thumb.width())) < min_px:
+                    cached_thumb = None
             except Exception:
                 pass
 
-        if cached_exif is not None and cached_thumb is not None:
-            if not cached_exif.get("minimal_preview_exif") and self._cached_preview_meets_display_tier(
-                cached_thumb
-            ):
-                return cached_exif, cached_thumb
+        if cached_exif is not None and cached_thumb is not None and not cached_exif.get("minimal_preview_exif") and self._cached_preview_meets_display_tier(
+            cached_thumb
+        ):
+            return cached_exif, cached_thumb
 
         if allow_heavy_fallback and target_size is None:
             fast_pair = self._extract_raw_preview_before_full_exiftool(

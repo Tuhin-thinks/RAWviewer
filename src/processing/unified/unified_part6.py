@@ -56,11 +56,10 @@ class UnifiedPart6:
                     # full-resolution request. Half tiles go to preview/grid
                     # only (see _process_raw_image); if a stale half buffer
                     # somehow remains under this key, reject it here.
-                    if cached_image is not None and is_raw:
-                        if not image_covers_sensor_resolution(w, h, exif_data):
-                            if _verbose_orientation_logs():
-                                pass
-                            cached_image = None
+                    if cached_image is not None and is_raw and not image_covers_sensor_resolution(w, h, exif_data):
+                        if _verbose_orientation_logs():
+                            pass
+                        cached_image = None
 
                     # An embedded-JPEG stand-in (see _try_full_embedded_raw_
                     # preview) can reach/exceed sensor resolution in pixel
@@ -76,8 +75,7 @@ class UnifiedPart6:
                     # full_image_is_embedded_jpeg flag) knows this is a
                     # repeat ask and skips its own JPEG shortcut to produce
                     # the true decode instead.
-                    if cached_image is not None and is_raw:
-                        if self.cache.full_image_is_embedded_jpeg(file_path):
+                    if cached_image is not None and is_raw and self.cache.full_image_is_embedded_jpeg(file_path):
                             cached_image = None
 
                     if cached_image is not None:
@@ -94,19 +92,10 @@ class UnifiedPart6:
         # Only check pixmap cache for non-RAW files
         if not is_raw:
             cached_pixmap = self.cache.get_pixmap(file_path)
-            if cached_pixmap is not None:
-                # A full-resolution request must not be satisfied by a
-                # preview-sized cache entry. The fit view caches a
-                # memory_preview_max_edge()-capped pixmap under the same key;
-                # returning it here unconditionally meant zooming into any
-                # image larger than the preview cap (e.g. a 32888x8470
-                # panorama cached at 2304px) re-delivered the small preview
-                # forever -- instant "Pixmap ready" events, never an on-screen
-                # upgrade, blur at 100%.
-                if not use_full_resolution or self._pixmap_covers_file_resolution(
-                    file_path, cached_pixmap
-                ):
-                    return cached_pixmap
+            if cached_pixmap is not None and (not use_full_resolution or self._pixmap_covers_file_resolution(
+                file_path, cached_pixmap
+            )):
+                return cached_pixmap
         else:
             # For RAW files, don't use cached pixmap - always process fresh
             if _verbose_orientation_logs():

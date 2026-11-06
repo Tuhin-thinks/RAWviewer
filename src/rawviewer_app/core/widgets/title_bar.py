@@ -180,8 +180,7 @@ class CustomTitleBar(QFrame):
         self._sync_maximize_state()
 
         # Trigger gallery layout update after maximize/restore
-        if hasattr(self.parent, 'view_mode') and self.parent.view_mode == 'gallery':
-            if hasattr(self.parent, 'gallery_justified') and self.parent.gallery_justified:
+        if hasattr(self.parent, 'view_mode') and self.parent.view_mode == 'gallery' and hasattr(self.parent, 'gallery_justified') and self.parent.gallery_justified:
                 from PyQt6.QtCore import QTimer
                 # Wait a bit for window size to settle
                 QTimer.singleShot(200, self.parent.gallery_justified.force_layout_update)

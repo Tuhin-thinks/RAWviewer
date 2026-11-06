@@ -562,18 +562,14 @@ class GalleryPart5:
             # Selection state applies on every bind (cheap bool + repaint);
             # skipping it while scrolling left stale/missing checks after fast
             # scroll-settles. Badges are QSS-heavy widgets, keep their guard.
-            if pv is not None and hasattr(pv, "_is_gallery_path_selected"):
-                if hasattr(w, "set_gallery_selected"):
+            if pv is not None and hasattr(pv, "_is_gallery_path_selected") and hasattr(w, "set_gallery_selected"):
                     w.set_gallery_selected(pv._is_gallery_path_selected(path))
             if not actively_scrolling:
-                if pv is not None and hasattr(pv, "_burst_stack_count_for_path"):
-                    if hasattr(w, "set_burst_stack_count"):
+                if pv is not None and hasattr(pv, "_burst_stack_count_for_path") and hasattr(w, "set_burst_stack_count"):
                         w.set_burst_stack_count(pv._burst_stack_count_for_path(path))
-                if pv is not None and hasattr(pv, "_is_gallery_path_edited"):
-                    if hasattr(w, "set_gallery_edited"):
+                if pv is not None and hasattr(pv, "_is_gallery_path_edited") and hasattr(w, "set_gallery_edited"):
                         w.set_gallery_edited(pv._is_gallery_path_edited(path))
-                if pv is not None and hasattr(pv, "_gallery_path_rating"):
-                    if hasattr(w, "set_gallery_rating"):
+                if pv is not None and hasattr(pv, "_gallery_path_rating") and hasattr(w, "set_gallery_rating"):
                         w.set_gallery_rating(pv._gallery_path_rating(path))
             thumb_missing = not cache_hit
             if thumb_missing and self._thumb_fail_counts.get(path, 0) >= 3:

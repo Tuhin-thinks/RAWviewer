@@ -162,8 +162,7 @@ class LifecyclePart2:
                     event.ignore()
                 return True
 
-        if event.type() in (QEvent.Type.MouseMove, QEvent.Type.Enter) and getattr(self, "view_mode", "single") == "single":
-            if self._is_status_bar_chrome_widget(obj):
+        if event.type() in (QEvent.Type.MouseMove, QEvent.Type.Enter) and getattr(self, "view_mode", "single") == "single" and self._is_status_bar_chrome_widget(obj):
                 container = getattr(self, "single_view_container", None)
                 if container is not None:
                     container.set_filmstrip_pointer_active(False)
@@ -185,8 +184,7 @@ class LifecyclePart2:
         ):
             self._position_gallery_frame_grip()
 
-        if event.type() == QEvent.Type.Leave and not getattr(self, "_resize_edge_active", None):
-            if not self._is_status_bar_chrome_widget(obj):
+        if event.type() == QEvent.Type.Leave and not getattr(self, "_resize_edge_active", None) and not self._is_status_bar_chrome_widget(obj):
                 self.unsetCursor()
 
         if event.type() == QEvent.Type.KeyPress:
@@ -291,10 +289,7 @@ class LifecyclePart2:
                     return True
 
         # Handle wheel events for navigation in single image view when fit-to-window
-        if event.type() == QEvent.Type.Wheel:
-            # Check if we're in single view mode and the event is from scroll area viewport
-            if (hasattr(self, 'view_mode') and self.view_mode == 'single' and
-                hasattr(self, 'scroll_area') and obj == self.scroll_area.viewport()):
+        if event.type() == QEvent.Type.Wheel and hasattr(self, 'view_mode') and self.view_mode == 'single' and hasattr(self, 'scroll_area') and obj == self.scroll_area.viewport():
                 self._stop_slideshow()
                 if self._filmstrip_handles_input():
                     bar = self._filmstrip_bar()
@@ -548,8 +543,7 @@ class LifecyclePart2:
                 except Exception as e:
                     logger.warning(f"[CLOSE] Error waiting for thread pool: {e}", exc_info=True)
 
-            if hasattr(self, 'image_manager') and self.image_manager is not None:
-                if hasattr(self.image_manager, '_thread_pool') and self.image_manager._thread_pool is not None:
+            if hasattr(self, 'image_manager') and self.image_manager is not None and hasattr(self.image_manager, '_thread_pool') and self.image_manager._thread_pool is not None:
                     logger.info("[CLOSE] Waiting for image manager thread pool to finish...")
                     try:
                         self.image_manager._thread_pool.waitForDone(_pool_wait_ms)

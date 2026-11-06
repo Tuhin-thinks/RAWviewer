@@ -285,8 +285,7 @@ class DisplayPart5:
                             or getattr(self, "_pending_zoom_focus_subject", False)
                             or getattr(self, "_focus_zoom_anchor_active", False)
                         )
-                        if not user_zoom_intent and nav_preserve:
-                            if self._apply_gpu_navigation_zoom_restore(
+                        if not user_zoom_intent and nav_preserve and self._apply_gpu_navigation_zoom_restore(
                                 pixmap, gv, scale_level_to_pixmap=True
                             ):
                                 # Supersede any stale deferred zoom and hold
@@ -735,8 +734,7 @@ class DisplayPart5:
                 delattr(self, "_pending_zoom_level")
 
             # Apply saved scroll position before applying zoom and pan
-            if hasattr(self, '_restore_start_scroll_x') and hasattr(self, '_restore_start_scroll_y'):
-                if self._restore_start_scroll_x is not None and self._restore_start_scroll_y is not None:
+            if hasattr(self, '_restore_start_scroll_x') and hasattr(self, '_restore_start_scroll_y') and self._restore_start_scroll_x is not None and self._restore_start_scroll_y is not None:
                     self.start_scroll_x = self._restore_start_scroll_x
                     self.start_scroll_y = self._restore_start_scroll_y
 
@@ -872,9 +870,7 @@ class DisplayPart5:
                     self._paths_within_nav_prefetch_radius()
                 )
         from search import metadata_auto_index_enabled
-        if metadata_auto_index_enabled():
-            if not self._semantic_indexing_in_progress and not getattr(self, "_semantic_index_prep_in_progress", False):
-                if not getattr(self, "_metadata_index_run_done", False):
+        if metadata_auto_index_enabled() and not self._semantic_indexing_in_progress and not getattr(self, "_semantic_index_prep_in_progress", False) and not getattr(self, "_metadata_index_run_done", False):
                     delay_ms = metadata_index_idle_delay_ms()
                     self._metadata_index_defer_timer.start(delay_ms)
 

@@ -114,8 +114,7 @@ class ThumbnailLabel(QLabel):
                     break
                 p = p.parent()
 
-            if pv is not None and hasattr(pv, "_is_gallery_path_selected") and hasattr(pv, "_gallery_selected_canonical_paths"):
-                if pv._is_gallery_path_selected(self.file_path):
+            if pv is not None and hasattr(pv, "_is_gallery_path_selected") and hasattr(pv, "_gallery_selected_canonical_paths") and pv._is_gallery_path_selected(self.file_path):
                     selected = pv._gallery_selected_canonical_paths()
                     if selected:
                         drag_paths = selected

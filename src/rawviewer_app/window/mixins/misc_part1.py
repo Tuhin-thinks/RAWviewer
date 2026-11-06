@@ -629,8 +629,7 @@ class MiscPart1:
             # already put usable pixels on screen for this file.
             if self._single_view_pixels_on_screen(file_path):
                 pm = getattr(self, "current_pixmap", None)
-                if pm is not None and not pm.isNull():
-                    if max(int(pm.width()), int(pm.height())) >= 1400:
+                if pm is not None and not pm.isNull() and max(int(pm.width()), int(pm.height())) >= 1400:
                         self.status_bar.showMessage(
                             f"{os.path.basename(file_path)}: keeping embedded preview "
                             f"(decoder cannot demosaic this RAW compression).",

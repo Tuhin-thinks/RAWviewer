@@ -218,35 +218,34 @@ class EnginePart2:
                 result["gps_raw"] = f"{lat_ref} {lat} | {lon_ref} {lon}"
 
             # Reverse Geocoding
-            if result["gps_lat"] is not None and result["gps_lon"] is not None:
+            if result["gps_lat"] is not None and result["gps_lon"] is not None and (abs(result["gps_lat"]) > 0.001 or abs(result["gps_lon"]) > 0.001):
                 # Skip (0,0) as it's often a placeholder for no-fix
-                if abs(result["gps_lat"]) > 0.001 or abs(result["gps_lon"]) > 0.001:
-                    geo = self._ensure_reverse_geocoder()
-                    if isinstance(geo, CustomReverseGeocoder):
-                        try:
-                            t_geo = time.time()
-                            # reverse_geocoder is not thread-safe; serialize lookups.
-                            with self._rg_lock:
-                                recs = geo.search(
-                                    [(
-                                        _coerce_float(result["gps_lat"]) or 0.0,
-                                        _coerce_float(result["gps_lon"]) or 0.0,
-                                    )],
-                                    mode=1,
-                                )
-                            dur_geo = time.time() - t_geo
-                            if recs:
-                                rec = recs[0] or {}
-                                city_name = str(rec.get("name", "") or "")
-                                alternates = str(rec.get("alternates", "") or "")
-                                result["city"] = f"{city_name}, {alternates}" if alternates else city_name
-                                result["landmark"] = str(rec.get("landmark", "") or "")
-                                result["admin1"] = str(rec.get("admin1", "") or "")
-                                cc = str(rec.get("cc", "") or "").upper()
-                                result["country_code"] = cc
-                                result["country"] = self._country_name_from_code(cc)
-                        except Exception:
-                            pass
+                geo = self._ensure_reverse_geocoder()
+                if isinstance(geo, CustomReverseGeocoder):
+                    try:
+                        t_geo = time.time()
+                        # reverse_geocoder is not thread-safe; serialize lookups.
+                        with self._rg_lock:
+                            recs = geo.search(
+                                [(
+                                    _coerce_float(result["gps_lat"]) or 0.0,
+                                    _coerce_float(result["gps_lon"]) or 0.0,
+                                )],
+                                mode=1,
+                            )
+                        dur_geo = time.time() - t_geo
+                        if recs:
+                            rec = recs[0] or {}
+                            city_name = str(rec.get("name", "") or "")
+                            alternates = str(rec.get("alternates", "") or "")
+                            result["city"] = f"{city_name}, {alternates}" if alternates else city_name
+                            result["landmark"] = str(rec.get("landmark", "") or "")
+                            result["admin1"] = str(rec.get("admin1", "") or "")
+                            cc = str(rec.get("cc", "") or "").upper()
+                            result["country_code"] = cc
+                            result["country"] = self._country_name_from_code(cc)
+                    except Exception:
+                        pass
             if include_face:
                 result["face_count"] = self._detect_face_count(file_path, preloaded_im=im)
 

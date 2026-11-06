@@ -253,14 +253,8 @@ class AdjustPart4:
         cur_burn = self._burn_btn.isChecked()
         cur_erase = bool(erase_btn is not None and erase_btn.isChecked())
         cur_heal = bool(heal_btn is not None and heal_btn.isChecked())
-        if (
-            cur_dodge == dodge_on
-            and cur_burn == burn_on
-            and cur_erase == erase_on
-            and cur_heal == heal_on
-        ):
-            # Same mode again → toggle off.
-            if want:
+        # Same mode again → toggle off.
+        if want and cur_dodge == dodge_on and cur_burn == burn_on and cur_erase == erase_on and cur_heal == heal_on:
                 dodge_on = burn_on = erase_on = heal_on = False
         self._block_emit = True
         try:
@@ -540,8 +534,7 @@ class AdjustPart4:
         self._sync_chroma_nr_amount_row_visible()
         # Turning on from Off: seed amount to the historical default (50) if
         # the slider was never touched for this file.
-        if index > 0 and hasattr(self, "_chroma_nr_amount_slider"):
-            if self._chroma_nr_amount_slider.value() < 1:
+        if index > 0 and hasattr(self, "_chroma_nr_amount_slider") and self._chroma_nr_amount_slider.value() < 1:
                 self._chroma_nr_amount_slider.setValue(int(CHROMA_NR_ON_VALUE))
         self._emit_preview_and_save()
 

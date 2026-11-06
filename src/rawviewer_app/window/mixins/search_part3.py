@@ -178,8 +178,7 @@ class SearchPart3:
 
         from search import semantic_embeddings_enabled
 
-        if not getattr(self, "_defer_semantic_after_metadata", False):
-            if self._is_gallery_semantic_search_ready(corpus_files):
+        if not getattr(self, "_defer_semantic_after_metadata", False) and self._is_gallery_semantic_search_ready(corpus_files):
                 logger.info("[INDEX][USER] Skip semantic start: already ready")
                 self._finish_gallery_search_unlock(corpus_files)
                 return

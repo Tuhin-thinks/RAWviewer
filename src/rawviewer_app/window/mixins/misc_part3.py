@@ -708,8 +708,7 @@ class MiscPart3:
                         or getattr(self, "_restore_zoom_center", None) is not None
                         or getattr(self, "_restore_zoom_level", None) is not None
                     )
-                    if navigate_zoom_restore:
-                        if is_half_size:
+                    if navigate_zoom_restore and is_half_size:
                             logger.debug(f"Zoom restoration needed: center={self._restore_zoom_center}, level={getattr(self, '_restore_zoom_level', 'N/A')}, skipping half_size display")
                             if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
                                 # Check if full resolution is already cached
@@ -816,8 +815,7 @@ class MiscPart3:
                         or getattr(self, "_restore_zoom_center", None) is not None
                         or getattr(self, "_restore_zoom_level", None) is not None
                     )
-                    if navigate_zoom_restore:
-                        if is_half_size:
+                    if navigate_zoom_restore and is_half_size:
                             logger.debug("Zoom restoration needed: skipping half_size display (converted from numpy)")
                             if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
                                 # Check if full resolution is already cached

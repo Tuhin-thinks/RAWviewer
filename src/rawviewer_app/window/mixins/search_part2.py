@@ -35,10 +35,7 @@ class SearchPart2:
         self._search_panel_expanded = bool(expanded)
         container = self.search_expand_container
 
-        if not expanded:
-            # Don't release child widths until the collapse slide finishes --
-            # releasing mid-setup reflows the field and causes a halfway hitch.
-            if hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
+        if not expanded and hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
                 with contextlib.suppress(Exception):
                     self.gallery_search_input.clearFocus()
 
@@ -609,11 +606,8 @@ class SearchPart2:
         if pass_kind == "user_semantic" and msg.lower().startswith("metadata:"):
             return
         if msg and self._should_show_search_index_progress(msg):
-            if pass_kind == "user_semantic" and not msg.lower().startswith("semantic:"):
-                if not msg.lower().startswith("face:") and not msg.lower().startswith(
-                    "preparing thumbnail"
-                ):
-                    return
+            if pass_kind == "user_semantic" and not msg.lower().startswith("semantic:") and not msg.lower().startswith("face:") and not msg.lower().startswith("preparing thumbnail"):
+                return
             self._set_gallery_search_status(msg)
             return
         total = max(1, int(n) if n else self._semantic_index_progress_total)

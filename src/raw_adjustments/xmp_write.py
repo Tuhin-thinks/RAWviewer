@@ -246,7 +246,7 @@ def _strip_our_crs_fields(desc: ET.Element) -> None:
     """Remove only RAWviewer-owned crs attributes and child elements."""
     for attr in list(desc.attrib.keys()):
         local = _crs_local_name(attr)
-        if local in _OUR_CRS_ATTR_LOCALS and (
+        if local in _OUR_CRS_ATTR_LOCALS and (  # noqa: SIM102  # Intentional: nested structure is clearer for complex XML filtering
             attr.startswith(f"{{{CRS_NS}}}")
             or attr.startswith("crs:")
             or (not attr.startswith("{") and local in _OUR_CRS_ATTR_LOCALS)

@@ -197,8 +197,7 @@ class DisplayPart2:
         """Map a deferred zoom target into *pixmap* pixel coordinates."""
         if pixmap is None or pixmap.isNull():
             return None
-        if getattr(self, "_pending_zoom_focus_subject", False):
-            if getattr(self, "_focus_subject_outline_active", False):
+        if getattr(self, "_pending_zoom_focus_subject", False) and getattr(self, "_focus_subject_outline_active", False):
                 self._refresh_focus_subject_rect_from_exif()
                 rect = getattr(self, "_focus_subject_rect_image", None)
                 if (
@@ -655,11 +654,7 @@ class DisplayPart2:
         file_ext = os.path.splitext(file_path)[1].lower()
         is_raw_file = file_ext in raw_extensions
 
-        if is_raw_file:
-            # safe_print(f"[ORIENTATION] WARNING: RAW file {os.path.basename(file_path)} received as pixmap! Ensuring it is oriented.")
-            # If it's a RAW file coming through here, it should ideally be oriented by the processor.
-            # But as a safety measure, we check if we need to apply it ourselves.
-            if not getattr(self, '_orientation_already_applied', False):
+        if is_raw_file and not getattr(self, '_orientation_already_applied', False):
                 orientation = self.get_orientation_from_exif(file_path)
                 if orientation != 1:
                     pixmap = self.apply_orientation_to_pixmap(pixmap, orientation)

@@ -284,9 +284,8 @@ class EnginePart4:
             if not fp:
                 continue
             ext = os.path.splitext(fp)[1].lower().lstrip(".")
-            if ext in RAW_FILE_EXTENSIONS:
-                if (os.path.dirname(fp), cls._raw_companion_key(fp)) in non_raw_keys:
-                    skipped_raw.append(fp)
-                    continue
+            if ext in RAW_FILE_EXTENSIONS and (os.path.dirname(fp), cls._raw_companion_key(fp)) in non_raw_keys:
+                skipped_raw.append(fp)
+                continue
             filtered_paths.append(fp)
         return filtered_paths, skipped_raw

@@ -664,8 +664,7 @@ class AdjustPart1:
                     self._compare_update_focus_overlay_for_view(view)
                 continue
             best_pm, _ = self._compare_best_pixmap_for_path(path)
-            if best_pm is not None and not best_pm.isNull():
-                if not self._compare_pixmap_matches_exif(path, best_pm):
+            if best_pm is not None and not best_pm.isNull() and not self._compare_pixmap_matches_exif(path, best_pm):
                     preserve = not view.is_fit_mode()
                     view.set_pixmap(correct, preserve_view=preserve)
                     if getattr(self, "_compare_focus_outline_active", False):

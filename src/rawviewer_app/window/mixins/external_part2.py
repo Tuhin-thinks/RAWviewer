@@ -690,10 +690,7 @@ class ExternalPart2:
                     QTimer.singleShot(100, gallery.force_layout_update)
                 except Exception:
                     pass
-        if hasattr(self, "view_mode") and self.view_mode == "single":
-            if getattr(self, "current_pixmap", None) is not None and getattr(
-                self, "fit_to_window", False
-            ):
+        if hasattr(self, "view_mode") and self.view_mode == "single" and getattr(self, "current_pixmap", None) is not None and getattr(self, "fit_to_window", False):
                 from PyQt6.QtCore import QTimer
 
                 QTimer.singleShot(100, self.scale_image_to_fit)

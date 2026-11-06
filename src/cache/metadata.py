@@ -116,10 +116,9 @@ class PersistentEXIFCache:
                 is_raw_file,
             )
 
-            if is_raw_file(file_path) and width and height:
-                if max(int(width), int(height)) < _MIN_TRUSTED_SENSOR_LONG_EDGE:
-                    width = None
-                    height = None
+            if is_raw_file(file_path) and width and height and max(int(width), int(height)) < _MIN_TRUSTED_SENSOR_LONG_EDGE:
+                width = None
+                height = None
         except Exception:
             pass
 

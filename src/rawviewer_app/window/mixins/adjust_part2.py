@@ -286,8 +286,7 @@ class AdjustPart2:
             self.display_numpy_image(preview_arr)
             return True
 
-        if gal_pm is not None and not gal_pm.isNull() and gal_max >= min_quality:
-            if arr_max <= 0 or gal_max >= int(arr_max * 0.95):
+        if gal_pm is not None and not gal_pm.isNull() and gal_max >= min_quality and (arr_max <= 0 or gal_max >= int(arr_max * 0.95)):
                 self._gallery_preview_pending_full = False
                 self._clear_pending_resolution_crossfade()
                 self._gallery_instant_display_quality = True

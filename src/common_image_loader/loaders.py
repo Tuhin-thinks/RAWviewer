@@ -260,8 +260,7 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
     # µ¬óµƒÑσ┐½σÅû (size-aware: a preview-capped entry must not satisfy a
     # larger/native-resolution request -- see pixmap_covers_requested_edge)
     cached_pixmap = cache.get_pixmap(file_path)
-    if cached_pixmap is not None and not cached_pixmap.isNull():
-        if pixmap_covers_requested_edge(file_path, cached_pixmap, max_edge):
+    if cached_pixmap is not None and not cached_pixmap.isNull() and pixmap_covers_requested_edge(file_path, cached_pixmap, max_edge):
             return cached_pixmap
 
     if is_raw_file(file_path):

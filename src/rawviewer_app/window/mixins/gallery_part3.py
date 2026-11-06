@@ -635,8 +635,7 @@ class GalleryPart3:
                     if pixmap and not pixmap.isNull():
                         # Already loaded, skip reloading but still update label if needed
                         load_time = time.time() - load_start
-                        if file_path in self._gallery_load_tracking:
-                            if not self._gallery_load_tracking[file_path]['loaded']:
+                        if file_path in self._gallery_load_tracking and not self._gallery_load_tracking[file_path]['loaded']:
                                 self._gallery_load_tracking[file_path]['loaded'] = True
                                 self._gallery_load_tracking[file_path]['load_time'] = load_time
                         # Continue to update label below
@@ -651,8 +650,7 @@ class GalleryPart3:
 
                 # If not in cache, try to load directly
 
-                if not pixmap or pixmap.isNull():
-                    if os.path.exists(file_path):
+                if (not pixmap or pixmap.isNull()) and os.path.exists(file_path):
                         file_ext = os.path.splitext(file_path)[1].lower()
                         raw_extensions = ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw']
 

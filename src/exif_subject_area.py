@@ -398,9 +398,11 @@ def _rect_ref_nikon_initial(row: dict[str, Any], ref_w: int, ref_h: int) -> tupl
     if iw < 2 or ih < 2:
         return None
     # Heuristic: signed small values are not pixel boxes; skip unless plausible pixels
-    if abs(ix) < 400 and abs(iy) < 400 and iw <= 256 and ih <= 256:
-        if ix >= 0 and iy >= 0 and ix + iw <= ref_w + 4 and iy + ih <= ref_h + 4:
-            return _clamp_rect(float(ix), float(iy), float(iw), float(ih), ref_w, ref_h)
+    if (
+        abs(ix) < 400 and abs(iy) < 400 and iw <= 256 and ih <= 256
+        and ix >= 0 and iy >= 0 and ix + iw <= ref_w + 4 and iy + ih <= ref_h + 4
+    ):
+        return _clamp_rect(float(ix), float(iy), float(iw), float(ih), ref_w, ref_h)
     return None
 
 

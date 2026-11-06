@@ -184,21 +184,20 @@ class ImageLoadWorker(QRunnable):
 
                 preview_tier = allow_heavy_fallback
                 min_preview_dim = _min_acceptable_preview_dim(file_path)
-                if preview_tier and thumbnail is not None and not self.task.is_cancelled():
-                    if processor._is_raw_file(file_path):
-                        if (
-                            processor._preview_buffer_max_dim(thumbnail)
-                            < min_preview_dim
-                        ):
-                            thumbnail = processor.ensure_display_tier_preview(
-                                file_path, thumbnail
-                            )
-                        if (
-                            processor._preview_buffer_max_dim(thumbnail)
-                            < min_preview_dim
-                            and not _preview_is_best_possible(processor, file_path)
-                        ):
-                            thumbnail = None
+                if preview_tier and thumbnail is not None and not self.task.is_cancelled() and processor._is_raw_file(file_path):
+                    if (
+                        processor._preview_buffer_max_dim(thumbnail)
+                        < min_preview_dim
+                    ):
+                        thumbnail = processor.ensure_display_tier_preview(
+                            file_path, thumbnail
+                        )
+                    if (
+                        processor._preview_buffer_max_dim(thumbnail)
+                        < min_preview_dim
+                        and not _preview_is_best_possible(processor, file_path)
+                    ):
+                        thumbnail = None
                 if thumbnail is not None and not self.task.is_cancelled():
                     self._cache_gallery_thumbnail_for_indexing(
                         processor, file_path, thumbnail, exif_data

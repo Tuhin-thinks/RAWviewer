@@ -164,8 +164,7 @@ class SearchPart1:
         """Restore background indexing / load concurrency after gallery warmup."""
         self._gallery_indexing_deferred_until = 0.0
         try:
-            if hasattr(self, "image_manager") and self.image_manager is not None:
-                if hasattr(self.image_manager, "exit_gallery_warmup_throttle"):
+            if hasattr(self, "image_manager") and self.image_manager is not None and hasattr(self.image_manager, "exit_gallery_warmup_throttle"):
                     self.image_manager.exit_gallery_warmup_throttle()
         except Exception:
             pass
@@ -692,8 +691,7 @@ class SearchPart1:
                 self._gallery_search_status_full
             )
 
-        if getattr(self, "view_mode", "single") != "gallery":
-            if not getattr(self, "_search_panel_expanded", False):
+        if getattr(self, "view_mode", "single") != "gallery" and not getattr(self, "_search_panel_expanded", False):
                 return
 
         user_collapsed = getattr(

@@ -356,8 +356,7 @@ class AdjustPart3:
         if max(h, w) < 1200:
             return False
         cur = getattr(self, "current_pixmap", None)
-        if cur is not None and not cur.isNull():
-            if max(h, w) <= max(int(cur.width()), int(cur.height())) * 1.05:
+        if cur is not None and not cur.isNull() and max(h, w) <= max(int(cur.width()), int(cur.height())) * 1.05:
                 return False
         try:
             pixmap = self._numpy_to_qpixmap(arr)

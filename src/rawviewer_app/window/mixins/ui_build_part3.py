@@ -243,8 +243,7 @@ class UiBuildPart3:
         if start_path:
             start_abs = os.path.abspath(start_path)
             start_norm = _norm_path(start_abs)
-            if not any(_norm_path(fp) == start_norm for fp in image_files):
-                if self.is_image_file(start_abs) and os.path.isfile(start_abs):
+            if not any(_norm_path(fp) == start_norm for fp in image_files) and self.is_image_file(start_abs) and os.path.isfile(start_abs):
                     image_files.append(start_abs)
                     if start_abs not in file_stats:
                         try:

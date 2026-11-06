@@ -360,10 +360,9 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             return
 
         sort_ready = _exif_sort_ready()
-        if not sort_ready:
-            # v2.5: toggle is a no-op until capture-time sort finishes.
-            # v3: still enters on provisional order ??try toggle below anyway.
-            if state["enter_attempts"] % 25 == 0:
+        # v2.5: toggle is a no-op until capture-time sort finishes.
+        # v3: still enters on provisional order — try toggle below anyway.
+        if not sort_ready and state["enter_attempts"] % 25 == 0:
                 safe_print(
                     f"[GALLERYTEST] waiting for EXIF sort (files={n_files} "
                     f"elapsed_s={waited:.1f})",

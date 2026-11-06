@@ -243,11 +243,10 @@ def _apply_external_gallery_caps(
                 min(max_tasks, tasks),
                 min(active_cap, cap),
             )
-        if not moderate_external_cap_enabled():
+        if not moderate_external_cap_enabled() and sys.platform != "win32":
             # Stability without throttling: cap fast external on Windows only (GL crash
             # was mode-switch teardown, not this concurrency). macOS keeps full budget.
-            if sys.platform != "win32":
-                return max_widgets, max_tasks, active_cap
+            return max_widgets, max_tasks, active_cap
     except Exception:
         return max_widgets, max_tasks, active_cap
     # Fast external (e.g. USB3/TB probing >120 MB/s).

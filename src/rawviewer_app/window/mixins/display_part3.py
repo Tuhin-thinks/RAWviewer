@@ -679,8 +679,7 @@ class DisplayPart3:
         gv = getattr(self, "gpu_view", None)
         pm = getattr(self, "current_pixmap", None)
         if gv is not None and pm is not None and not pm.isNull():
-            if self._pending_zoom_ready_for_pixmap(pm, file_path):
-                if self._apply_pending_gpu_point_zoom_in_place(pm, gv):
+            if self._pending_zoom_ready_for_pixmap(pm, file_path) and self._apply_pending_gpu_point_zoom_in_place(pm, gv):
                     return
             if getattr(self, "_focus_zoom_anchor_active", False) or getattr(
                 self, "_pending_zoom_focus_subject", False
