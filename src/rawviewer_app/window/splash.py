@@ -21,6 +21,8 @@ __all__ = [
     "_schedule_startup_splash_dismiss",
 ]
 
+_startup_splash = None  # module-level reference, set by _schedule_startup_splash_dismiss
+
 
 def _load_branded_qicon() -> "QIcon | None":
     """Load multi-resolution branded icon for window / taskbar chrome."""
