@@ -5,20 +5,20 @@ from __future__ import annotations
 import os
 import tempfile
 import xml.etree.ElementTree as ET
-from typing import Dict
 
+from .apply import _format_xmp_value
+from .checks import is_default_adjustments_for_sidecar, tone_curve_serial_is_active, wb_reference_temperature
 from .defaults import (
     CRS_NS,
     DEFAULT_ADJUSTMENTS,
     RDF_NS,
     RELEVANT_ADJUSTMENT_KEYS,
-    XMP_NS,
     X_NS,
+    XMP_NS,
     _xmp_write_lock,
 )
 from .xmp_read import editing_features_enabled, resolve_xmp_path
-from .apply import _format_xmp_value
-from .checks import is_default_adjustments_for_sidecar, tone_curve_serial_is_active, wb_reference_temperature
+
 
 def _parse_rating_value(raw: object) -> int:
     if raw is None:
@@ -169,7 +169,7 @@ def write_rating_for_file(image_path: str, rating: int) -> None:
         raise ValueError("Invalid image path")
     write_xmp_rating(xmp_path, rating)
 
-def write_xmp_adjustments(xmp_path: str, adj: Dict[str, float]) -> None:
+def write_xmp_adjustments(xmp_path: str, adj: dict[str, float]) -> None:
     """Merge Lightroom-compatible crs sliders into an XMP sidecar.
 
     Updates only RAWviewer-owned ``crs:`` attributes / child elements and
@@ -319,7 +319,7 @@ def _write_xmp_tree_atomic(root: ET.Element, xmp_path: str) -> None:
         raise
 
 
-def _write_xmp_adjustments_locked(xmp_path: str, adj: Dict[str, float]) -> None:
+def _write_xmp_adjustments_locked(xmp_path: str, adj: dict[str, float]) -> None:
     existing_rating = parse_xmp_rating(xmp_path)
     merged = dict(DEFAULT_ADJUSTMENTS)
     merged.update(adj or {})
@@ -438,7 +438,6 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: Dict[str, float]) -> None:
         LUT_AMOUNT_KEY,
         LUT_NAME_KEY,
         LUT_SPACE_DEFAULT,
-        LUT_SPACE_KEY,
         lut_working_space,
     )
 
@@ -453,7 +452,7 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: Dict[str, float]) -> None:
     _write_xmp_tree_atomic(root, xmp_path)
 
 
-def write_xmp_adjustments_for_file(image_path: str, adj: Dict[str, float]) -> None:
+def write_xmp_adjustments_for_file(image_path: str, adj: dict[str, float]) -> None:
     if not editing_features_enabled():
         return
     xmp_path = resolve_xmp_path(image_path)

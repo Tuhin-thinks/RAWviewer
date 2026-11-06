@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
+
+import numpy as np
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QImage
-import numpy as np
 
 from .helpers import (
     _LIBRAW_UNSUPPORTED_PATHS,
@@ -19,7 +19,7 @@ from .helpers import (
 
 class UnifiedPart5:
     def process_thumbnail(self, file_path: str, allow_heavy_fallback: bool = True,
-                          target_size: Optional[QSize] = None) -> Optional[np.ndarray]:
+                          target_size: QSize | None = None) -> np.ndarray | None:
         """處理縮圖（統一接口）"""
         if self.cache.is_libraw_preview(file_path):
             prev = self.cache.get_preview(file_path)
@@ -129,11 +129,11 @@ class UnifiedPart5:
             )
         else:
             thumbnail = self.thumbnail_extractor.extract_thumbnail_from_image(
-                file_path, 
+                file_path,
                 max_size=MAX_THUMB_DIM,
                 target_size=target_size
             )
-        
+
         if thumbnail is None:
             if allow_heavy_fallback and is_raw:
                 # Fallback: If no embedded thumbnail found, or it was rejected as too small,
@@ -142,19 +142,18 @@ class UnifiedPart5:
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.debug(f"No usable thumbnail for {file_path}, falling back to fast RAW decode")
-                    
+
                     # Use OptimizedRAWProcessor for a fast decode
                     params = self.raw_processor.get_optimized_processing_params(file_path, None)
                     params['half_size'] = True
                     params['user_flip'] = 0 # Handle orientation manually
-                    
-                    import rawpy
-                    from enhanced_raw_processor import _rawpy_global_lock, _heavy_fallback_semaphore
+
+
+                    from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
                     with _rawpy_global_lock:
                         raw_ctx = rawpy_imread_warm(file_path)
-                    with raw_ctx as raw:
-                        with _heavy_fallback_semaphore:
-                            thumbnail = raw.postprocess(**params)
+                    with raw_ctx as raw, _heavy_fallback_semaphore:
+                        thumbnail = raw.postprocess(**params)
                 except Exception as e:
                     import logging
                     logger = logging.getLogger(__name__)
@@ -181,14 +180,12 @@ class UnifiedPart5:
         if exif_data is None or exif_data.get("minimal_preview_exif"):
             if single_view_preview and self._is_raw_file(file_path):
                 try:
-                    import rawpy
 
                     from enhanced_raw_processor import _rawpy_global_lock
-                    with _rawpy_global_lock:
-                        with rawpy_imread_warm(file_path) as raw:
-                            exif_data = self.exif_extractor.build_minimal_raw_exif(
-                                file_path, raw
-                            )
+                    with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
+                        exif_data = self.exif_extractor.build_minimal_raw_exif(
+                            file_path, raw
+                        )
                 except Exception:
                     exif_data = None
             else:
@@ -208,13 +205,13 @@ class UnifiedPart5:
             thumbnail = self._apply_orientation_correction(thumbnail, orientation, exif_data)
         if exif_data and exif_data.get("minimal_preview_exif"):
             self.cache.put_exif(file_path, exif_data, persist_disk=False)
-        
+
         # Apply XMP adjustments if they exist and are not default
         try:
             from raw_adjustments import (
-                load_adjustments_for_file,
-                is_default_adjustments,
                 apply_adjustments_to_rgb,
+                is_default_adjustments,
+                load_adjustments_for_file,
                 sidecar_adjustments_enabled,
             )
             if sidecar_adjustments_enabled() and thumbnail is not None:
@@ -234,17 +231,17 @@ class UnifiedPart5:
             logging.getLogger(__name__).warning(
                 f"Failed to apply sidecar adjustments to thumbnail for {file_path}: {e}"
             )
-        
+
         try:
+
             from PIL import Image
-            import io
-            
+
             if not isinstance(thumbnail, np.ndarray):
                 return thumbnail
-                
+
             if thumbnail.dtype != np.uint8:
                 thumbnail = thumbnail.astype(np.uint8)
-            
+
             if len(thumbnail.shape) == 2:
                 pil_img = Image.fromarray(thumbnail, 'L').convert('RGB')
             elif len(thumbnail.shape) == 3:
@@ -304,7 +301,7 @@ class UnifiedPart5:
             if single_view_preview:
                 return np.array(preview_pil)
             return np.array(grid_pil)
-            
+
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)

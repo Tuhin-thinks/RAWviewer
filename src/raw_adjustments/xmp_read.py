@@ -1,3 +1,4 @@
+from typing import Dict
 """XMP sidecar path resolution, parse helpers, and adjustment load logic."""
 
 from __future__ import annotations
@@ -5,19 +6,16 @@ from __future__ import annotations
 import os
 import xml.etree.ElementTree as ET
 
-import numpy as np
-
+from .checks import read_as_shot_temperature
 from .defaults import (
+    _PROFILE_STALE_WARNED,
     AS_SHOT_TEMP_KEY,
     CRS_NS,
     DEFAULT_ADJUSTMENTS,
-    RELEVANT_ADJUSTMENT_KEYS,
     RDF_NS,
-    X_NS,
-    XMP_NS,
-    _PROFILE_STALE_WARNED,
+    RELEVANT_ADJUSTMENT_KEYS,
 )
-from .checks import read_as_shot_temperature
+
 
 # --- path resolution & feature toggles
 def resolve_xmp_path(image_path: str) -> str:
@@ -340,13 +338,13 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
     try:
         tree = ET.parse(xmp_path)
         root = tree.getroot()
-        
+
         ns = {
             'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
             'x': 'adobe:ns:meta/',
             'crs': 'http://adobe.com/camera-raw-settings/1.0/'
         }
-        
+
         # 1. Search attributes on rdf:Description elements
         for desc in root.findall('.//rdf:Description', ns):
             for key, val in desc.attrib.items():
@@ -359,12 +357,12 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
                     prefix, local_key = key.split(':', 1)
                     if prefix != 'crs':
                         continue
-                
+
                 try:
                     adjustments[local_key] = float(val)
                 except ValueError:
                     pass
-                    
+
         # 2. Search child elements in crs namespace under rdf:Description
         for desc in root.findall('.//rdf:Description', ns):
             for child in desc:
@@ -385,7 +383,7 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
                         pass
     except Exception:
         pass
-    
+
     relevant_keys = RELEVANT_ADJUSTMENT_KEYS
     out = {k: v for k, v in adjustments.items() if k in relevant_keys}
     if "Defringe" not in out:

@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
-from PyQt6.QtCore import QSize
+from typing import Any, Tuple
+
 import numpy as np
+from PyQt6.QtCore import QSize
 
 from .helpers import (
     _LIBRAW_UNSUPPORTED_PATHS,
@@ -36,7 +37,7 @@ class UnifiedPart4:
 
     def _raw_thumbnail_extract_max_size(
         self,
-        target_size: Optional[QSize],
+        target_size: QSize | None,
         *,
         allow_heavy_fallback: bool,
     ) -> int:
@@ -49,7 +50,7 @@ class UnifiedPart4:
             return memory_preview_max_edge()
         return disk_preview_max_edge()
 
-    def _single_view_display_thumbnail(self, target_size: Optional[QSize], allow_heavy_fallback: bool) -> bool:
+    def _single_view_display_thumbnail(self, target_size: QSize | None, allow_heavy_fallback: bool) -> bool:
         return target_size is None and bool(allow_heavy_fallback)
 
     def _cached_preview_meets_display_tier(self, cached_thumb) -> bool:
@@ -69,7 +70,7 @@ class UnifiedPart4:
         self,
         file_path: str,
         thumbnail: np.ndarray,
-        exif_data: Optional[Dict[str, Any]] = None,
+        exif_data: dict[str, Any] | None = None,
     ) -> None:
         """Memory-cache display-tier preview for preview-first warm opens only.
 
@@ -104,7 +105,7 @@ class UnifiedPart4:
         file_path: str,
         thumbnail,
         *,
-        exif_data: Optional[Dict[str, Any]] = None,
+        exif_data: dict[str, Any] | None = None,
     ) -> None:
         """Backfill preview/grid/thumbnail tiers so gallery/film strip/semantic share one decode.
 
@@ -126,45 +127,43 @@ class UnifiedPart4:
     def _extract_raw_preview_before_full_exiftool(
         self,
         file_path: str,
-        cached_exif: Optional[Dict[str, Any]],
+        cached_exif: dict[str, Any] | None,
         cached_thumb,
-    ) -> Optional[Tuple[Optional[Dict[str, Any]], Optional[np.ndarray]]]:
+    ) -> Tuple[dict[str, Any] | None, np.ndarray | None] | None:
         """Single rawpy open: embedded preview first, defer exiftool to a follow-up task."""
         if cached_exif is not None and self._cached_preview_meets_display_tier(cached_thumb):
             return cached_exif, cached_thumb
-        import rawpy
 
         try:
             from enhanced_raw_processor import _rawpy_global_lock
-            with _rawpy_global_lock:
-                with rawpy_imread_warm(file_path) as raw:
-                    max_size_val = self._raw_thumbnail_extract_max_size(
-                        None, allow_heavy_fallback=True
+            with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
+                max_size_val = self._raw_thumbnail_extract_max_size(
+                    None, allow_heavy_fallback=True
+                )
+                thumb = cached_thumb
+                if not self._cached_preview_meets_display_tier(thumb):
+                    thumb = self.thumbnail_extractor.extract_thumbnail_from_raw(
+                        file_path,
+                        max_size=max_size_val,
+                        allow_scan_fallback=True,
+                        raw_object=raw,
                     )
-                    thumb = cached_thumb
-                    if not self._cached_preview_meets_display_tier(thumb):
-                        thumb = self.thumbnail_extractor.extract_thumbnail_from_raw(
-                            file_path,
-                            max_size=max_size_val,
-                            allow_scan_fallback=True,
-                            raw_object=raw,
-                        )
-                    if thumb is None:
-                        return None
-                    exif = cached_exif
-                    if exif is None or exif.get("minimal_preview_exif"):
-                        exif = self.exif_extractor.build_minimal_raw_exif(file_path, raw)
-                    if exif and exif.get("orientation", 1) != 1:
-                        thumb = self._apply_orientation_correction(
-                            thumb, exif["orientation"], exif
-                        )
-                    return exif, thumb
+                if thumb is None:
+                    return None
+                exif = cached_exif
+                if exif is None or exif.get("minimal_preview_exif"):
+                    exif = self.exif_extractor.build_minimal_raw_exif(file_path, raw)
+                if exif and exif.get("orientation", 1) != 1:
+                    thumb = self._apply_orientation_correction(
+                        thumb, exif["orientation"], exif
+                    )
+                return exif, thumb
         except Exception:
             return None
 
     def ensure_display_tier_preview(
-        self, file_path: str, thumbnail: Optional[np.ndarray]
-    ) -> Optional[np.ndarray]:
+        self, file_path: str, thumbnail: np.ndarray | None
+    ) -> np.ndarray | None:
         """Upgrade sub-1400px worker thumbs to ~1920 embedded preview when possible."""
         if thumbnail is None or not self._is_raw_file(file_path):
             return thumbnail
@@ -267,7 +266,7 @@ class UnifiedPart4:
             pass
         return 0
 
-    def try_half_size_display_preview(self, file_path: str) -> Optional[np.ndarray]:
+    def try_half_size_display_preview(self, file_path: str) -> np.ndarray | None:
         """Fast LibRaw half-size decode when embedded JPEG tiers are unusable."""
         if not self._is_raw_file(file_path):
             return None
@@ -303,16 +302,14 @@ class UnifiedPart4:
                     if rgb is not None:
                         self._stash_unpacked_raw(file_path, unpacked)
             if rgb is None:
-                import rawpy
 
-                with _rawpy_global_lock:
-                    with rawpy_imread_warm(file_path) as raw:
-                        rgb = raw.postprocess(
-                            half_size=True,
-                            use_camera_wb=True,
-                            no_auto_bright=False,
-                            output_bps=8,
-                        )
+                with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
+                    rgb = raw.postprocess(
+                        half_size=True,
+                        use_camera_wb=True,
+                        no_auto_bright=False,
+                        output_bps=8,
+                    )
             if rgb is None or rgb.size == 0:
                 return None
             from PIL import Image

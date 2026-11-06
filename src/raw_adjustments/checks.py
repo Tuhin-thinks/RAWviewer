@@ -4,19 +4,23 @@ from __future__ import annotations
 
 import os
 from collections import OrderedDict
-from typing import Dict, Optional
 
 import numpy as np
+
 from rawpy_gil import rawpy_imread_warm
 
 from .defaults import (
-    AS_SHOT_TEMP_KEY,
-    DEFAULT_ADJUSTMENTS,
-    RECOVERY_BASELINE_KEY,
     _EXPORT_ONLY_DENOISE_KEYS,
     _PV2012_RECOVERY_EXCLUSIVE_KEYS,
+    _PV2012_TONE_SLIDER_KEYS,
+    AS_SHOT_TEMP_KEY,
+    DEFAULT_ADJUSTMENTS,
+    RECOVERY_BASELINE_HIGHLIGHTS2012,
+    RECOVERY_BASELINE_KEY,
+    RECOVERY_BASELINE_SHADOWS2012,
     _kelvin_to_rgb,
 )
+
 
 def tone_curve_serial_is_active(serial: object) -> bool:
     """True when a tone-curve serial encodes a non-identity edit."""
@@ -65,7 +69,7 @@ def recovery_baseline_slider_hints() -> dict[str, float]:
 def is_pv2012_tone_slider(key: str) -> bool:
     return key in _PV2012_TONE_SLIDER_KEYS
 
-_AS_SHOT_TEMP_CACHE: "OrderedDict[str, float]" = OrderedDict()
+_AS_SHOT_TEMP_CACHE: OrderedDict[str, float] = OrderedDict()
 _AS_SHOT_TEMP_CACHE_MAX = 2048
 
 
@@ -109,7 +113,6 @@ def read_as_shot_temperature(image_path: str) -> float:
         pass
     if not resolved:
         try:
-            import rawpy
 
             from enhanced_raw_processor import _rawpy_global_lock
 
@@ -129,13 +132,13 @@ def read_as_shot_temperature(image_path: str) -> float:
     _as_shot_temp_cache_put(cache_key, result)
     return result
 
-def wb_reference_temperature(adj: Dict[str, float] | None) -> float:
+def wb_reference_temperature(adj: dict[str, float] | None) -> float:
     if not adj:
         return DEFAULT_ADJUSTMENTS["Temperature"]
     return float(adj.get(AS_SHOT_TEMP_KEY, DEFAULT_ADJUSTMENTS["Temperature"]))
 
 
-def is_neutral_wb(adj: Dict[str, float] | None) -> bool:
+def is_neutral_wb(adj: dict[str, float] | None) -> bool:
     if not adj:
         return True
     ref = wb_reference_temperature(adj)
@@ -193,12 +196,12 @@ def solve_white_balance_from_sample(
     tint = max(-150.0, min(150.0, tint))
     return temperature, tint
 
-def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
+def is_default_adjustments(adj: dict[str, float] | None) -> bool:
     if not adj:
         return True
     from raw_dodge_burn import MASK_KEY
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
     from raw_lut import LUT_AMOUNT_KEY, LUT_NAME_KEY
+    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
     from raw_tone_curve import CHANNEL_CURVE_KEYS, TONE_CURVE_SERIAL_KEY
 
     # Identity serials ("0,0;255,255") are visually a no-op; treat them as
@@ -252,7 +255,7 @@ def is_default_adjustments(adj: Dict[str, float] | None) -> bool:
     return True
 
 
-def is_default_adjustments_for_sidecar(adj: Dict[str, float] | None) -> bool:
+def is_default_adjustments_for_sidecar(adj: dict[str, float] | None) -> bool:
     """Like is_default_adjustments, but does NOT ignore export-only denoise knobs.
 
     is_default_adjustments() deliberately skips DenoiseDetail / AIDenoiseAmount
@@ -278,7 +281,7 @@ def is_default_adjustments_for_sidecar(adj: Dict[str, float] | None) -> bool:
     return True
 
 
-def adjustments_equal(a: Dict[str, float], b: Dict[str, float]) -> bool:
+def adjustments_equal(a: dict[str, float], b: dict[str, float]) -> bool:
     from raw_lut import LUT_NAME_KEY, LUT_SPACE_KEY, lut_working_space
 
     if str(a.get(LUT_NAME_KEY, "") or "").strip() != str(b.get(LUT_NAME_KEY, "") or "").strip():

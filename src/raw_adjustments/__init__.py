@@ -3,7 +3,6 @@ Applies Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Sat
 """
 
 from . import apply, checks, defaults, saved_edits, xmp_read, xmp_write
-
 from .apply import (
     _apply_adjustments_to_srgb,
     _apply_adjustments_to_srgb_banded,
@@ -40,6 +39,7 @@ from .checks import (
     wb_reference_temperature,
 )
 from .defaults import (
+    _PROFILE_STALE_WARNED,
     ANAMORPHIC_DESQUEEZE_PRESETS,
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,
@@ -49,9 +49,8 @@ from .defaults import (
     RECOVERY_BASELINE_SHADOWS2012,
     RELEVANT_ADJUSTMENT_KEYS,
     SLIDER_SPECS,
-    SliderSpec,
     WB_PRESETS,
-    _PROFILE_STALE_WARNED,
+    SliderSpec,
 )
 from .saved_edits import (
     apply_saved_edits_for_display,

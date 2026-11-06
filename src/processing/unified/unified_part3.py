@@ -1,8 +1,10 @@
 """Unified mixin part 3 of 7 for UnifiedImageProcessor."""
 from __future__ import annotations
 
-import logging, os
-from typing import Any, Optional
+import logging
+import os
+from typing import Any
+
 import numpy as np
 
 from .helpers import (
@@ -26,10 +28,10 @@ class UnifiedPart3:
     def decode_raw_edit_base(
         self,
         file_path: str,
-        executor: Optional[Any] = None,
+        executor: Any | None = None,
         use_full_resolution: bool = False,
         apply_lens_correction: bool = False,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Edit-panel working base for a RAW file.
 
@@ -121,10 +123,10 @@ class UnifiedPart3:
         self,
         file_path: str,
         skip_key: str,
-        executor: Optional[Any] = None,
+        executor: Any | None = None,
         use_full_resolution: bool = False,
         apply_lens_correction: bool = False,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         from common_image_loader import dng_prefers_embedded_preview_first
         from raw_tone_recovery import edit_base_decode_params
 
@@ -137,10 +139,9 @@ class UnifiedPart3:
                 half_size=half_size, demosaic="AHD", for_file=file_path
             )
 
-            rgb_image: Optional[np.ndarray] = None
+            rgb_image: np.ndarray | None = None
             if skip_key not in _LIBRAW_UNSUPPORTED_PATHS:
                 try:
-                    import rawpy
                     from enhanced_raw_processor import (
                         _heavy_fallback_semaphore,
                         _rawpy_global_lock,

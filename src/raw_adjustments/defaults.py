@@ -6,13 +6,9 @@ Applies Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Sat
 from __future__ import annotations
 
 import os
-from rawpy_gil import rawpy_imread_warm
-import tempfile
 import threading
-import xml.etree.ElementTree as ET
-from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Dict
 
 import numpy as np
 
@@ -28,7 +24,7 @@ import numpy as np
 # hold a reference to it would defeat the whole point -- a second thread
 # creating a fresh Lock for the same path after eviction would no longer be
 # synchronized with the first.
-_xmp_write_locks: Dict[str, threading.Lock] = {}
+_xmp_write_locks: dict[str, threading.Lock] = {}
 _xmp_write_locks_guard = threading.Lock()
 
 
@@ -42,7 +38,7 @@ def _xmp_write_lock(xmp_path: str) -> threading.Lock:
         return lock
 
 
-DEFAULT_ADJUSTMENTS: Dict[str, float] = {
+DEFAULT_ADJUSTMENTS: dict[str, float] = {
     "Exposure2012": 0.0,
     "Contrast2012": 0.0,
     "Highlights2012": 0.0,

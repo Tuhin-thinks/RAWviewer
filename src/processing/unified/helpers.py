@@ -2,38 +2,22 @@
 from __future__ import annotations
 
 import os
-from rawpy_gil import rawpy_imread_warm
 from collections import OrderedDict
+from typing import Any
 
 import numpy as np
-from typing import Optional, Dict, Any, Union, Tuple
-from PyQt6.QtCore import QSize, QLoggingCategory
-from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtCore import QLoggingCategory
+
+from rawpy_gil import rawpy_imread_warm
+
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats*=false")
 
 import logging
+
 logging.getLogger("exifread").setLevel(logging.ERROR)
 # PIL Image, rawpy, and exifread will be imported lazily to avoid import delays
 
-from image_cache import (
-    disk_preview_max_edge,
-    get_image_cache,
-    memory_preview_max_edge,
-)
-from enhanced_raw_processor import (
-    ThumbnailExtractor, 
-    EXIFExtractor, 
-    OptimizedRAWProcessor
-)
-from common_image_loader import (
-    array_matches_exif_display,
-    image_covers_sensor_resolution,
-    is_raw_file,
-    load_pixmap_safe,
-    use_full_embedded_raw_preview,
-    use_libraw_consistent_preview_first,
-)
 
 
 def _verbose_orientation_logs() -> bool:
@@ -333,15 +317,13 @@ def trim_edit_base_lru(max_items: int | None = None) -> int:
     return freed
 
 
-def decode_raw_file(file_path: str, params: Dict[str, Any]) -> np.ndarray:
+def decode_raw_file(file_path: str, params: dict[str, Any]) -> np.ndarray:
     """
     Helper function for process pool to decode RAW files.
     Must be at top level for pickling.
     """
-    import rawpy
-    from enhanced_raw_processor import _rawpy_global_lock, _heavy_fallback_semaphore
+    from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
     with _rawpy_global_lock:
         raw_ctx = rawpy_imread_warm(file_path)
-    with raw_ctx as raw:
-        with _heavy_fallback_semaphore:
-            return raw.postprocess(**params)
+    with raw_ctx as raw, _heavy_fallback_semaphore:
+        return raw.postprocess(**params)

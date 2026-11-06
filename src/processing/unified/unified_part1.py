@@ -2,14 +2,10 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
+
 import numpy as np
 
 from .helpers import (
-    EXIFExtractor,
-    OptimizedRAWProcessor,
-    ThumbnailExtractor,
-    get_image_cache,
     _ADJUSTED_FULL_LOCK,
     _ADJUSTED_FULL_SLOTS,
     _ADJUSTED_INFLIGHT,
@@ -18,7 +14,11 @@ from .helpers import (
     _ASYNC_CACHE_GEN_MAX,
     _UNPACKED_RAW_LOCK,
     _UNPACKED_RAW_SLOTS,
+    EXIFExtractor,
+    OptimizedRAWProcessor,
+    ThumbnailExtractor,
     _unpack_stash_max_slots,
+    get_image_cache,
 )
 
 
@@ -137,7 +137,7 @@ class UnifiedPart1:
 
     def _peek_adjusted_full(
         self, file_path: str, adj: dict, shape
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """Return a warm full-res adjusted buffer, or None. Non-blocking."""
         if adj is None or shape is None:
             return None

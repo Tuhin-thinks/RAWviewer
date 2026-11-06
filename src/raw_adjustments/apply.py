@@ -7,9 +7,10 @@ import os
 
 import numpy as np
 
-from .defaults import DEFAULT_ADJUSTMENTS, _kelvin_to_rgb
 from .checks import is_default_adjustments, uses_recovery_tone_map, wb_reference_temperature
+from .defaults import DEFAULT_ADJUSTMENTS, _kelvin_to_rgb
 from .saved_edits import _decode_srgb_uint8_to_linear
+
 
 def _format_xmp_value(key: str, value: float) -> str:
     if key == "Exposure2012":
@@ -142,7 +143,6 @@ def band_ranges(h: int, n_workers: int, pad_px: int = 0) -> list:
     every banded pipeline (a boundary off-by-one fixed here fixes all of
     them; previously three near-identical copies existed).
     """
-    import math
 
     band_h = math.ceil(h / max(1, n_workers))
     bands = []

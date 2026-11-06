@@ -1,8 +1,10 @@
 """Unified mixin part 2 of 7 for UnifiedImageProcessor."""
 from __future__ import annotations
 
-import logging, os
-from typing import Any, Optional
+import logging
+import os
+from typing import Any
+
 import numpy as np
 
 
@@ -10,10 +12,10 @@ class UnifiedPart2:
     def _apply_sidecar_if_needed(
         self,
         file_path: str,
-        rgb_image: Optional[np.ndarray],
+        rgb_image: np.ndarray | None,
         *,
         force: bool = False,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """Apply XMP sidecar adjustments on top of a base (unadjusted) RGB buffer.
 
         Memoized per (file, adjustment fingerprint, base buffer shape): see
@@ -127,11 +129,11 @@ class UnifiedPart2:
     def apply_sidecar_progressive(
         self,
         file_path: str,
-        rgb_image: Optional[np.ndarray],
+        rgb_image: np.ndarray | None,
         *,
-        cancel_check: Optional[Any] = None,
-        on_interim: Optional[Any] = None,
-    ) -> Optional[np.ndarray]:
+        cancel_check: Any | None = None,
+        on_interim: Any | None = None,
+    ) -> np.ndarray | None:
         """Apply XMP edits with an optional preview-sized interim callback.
 
         For large bases (above ``memory_preview_max_edge``), downscale + apply

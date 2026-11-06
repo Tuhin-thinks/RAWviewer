@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
-from PyQt6.QtGui import QPixmap
+from typing import Any, Union
+
 import numpy as np
+from PyQt6.QtGui import QPixmap
 
 from .helpers import (
     _verbose_orientation_logs,
@@ -15,10 +16,10 @@ from .helpers import (
 
 
 class UnifiedPart6:
-    def process_full_image(self, file_path: str, 
+    def process_full_image(self, file_path: str,
                           use_full_resolution: bool = False,
-                          executor: Optional[Any] = None,
-                          apply_sidecar_adjustments: Optional[bool] = None) -> Optional[Union[np.ndarray, QPixmap]]:
+                          executor: Any | None = None,
+                          apply_sidecar_adjustments: bool | None = None) -> Union[np.ndarray, QPixmap] | None:
         """處理完整圖像（統一接口）"""
         if apply_sidecar_adjustments is None:
             from raw_adjustments import sidecar_adjustments_enabled
@@ -28,7 +29,7 @@ class UnifiedPart6:
         # CRITICAL: For RAW files, only check full_image cache, not pixmap cache
         # This ensures RAW files always go through proper processing with orientation correction
         is_raw = self._is_raw_file(file_path)
-        
+
         if use_full_resolution:
             cached_image = self.cache.get_full_image(file_path)
             if cached_image is not None:
@@ -38,7 +39,7 @@ class UnifiedPart6:
                 if exif_data is None:
                     exif_data = self.exif_extractor.extract_exif_data(file_path)
                 orientation = exif_data.get('orientation', 1) if exif_data else 1
-                
+
                 if hasattr(cached_image, 'shape'):
                     h, w = cached_image.shape[:2]
 
@@ -87,7 +88,7 @@ class UnifiedPart6:
                 else:
                     return cached_image
 
-        
+
         # Only check pixmap cache for non-RAW files
         if not is_raw:
             cached_pixmap = self.cache.get_pixmap(file_path)
@@ -109,7 +110,7 @@ class UnifiedPart6:
             if _verbose_orientation_logs():
                 # print(f"[ORIENTATION] RAW file {os.path.basename(file_path)} - skipping pixmap cache, will process as RAW")
                 pass
-        
+
         # 處理圖像
         if is_raw:
             base = self._process_raw_image(file_path, use_full_resolution, executor=executor)
@@ -141,8 +142,8 @@ class UnifiedPart6:
             return True
 
     def _try_full_embedded_raw_preview(
-        self, file_path: str, exif_data: Optional[Dict[str, Any]]
-    ) -> Optional[np.ndarray]:
+        self, file_path: str, exif_data: dict[str, Any] | None
+    ) -> np.ndarray | None:
         """
         Return oriented embedded JPEG when it covers sensor resolution; cache as preview + full.
         """
@@ -189,12 +190,12 @@ class UnifiedPart6:
                 pass
 
         import concurrent.futures
-        
+
         # Lazy initialization of module-level executor to prevent unbounded thread churn
         global _preview_executor
         if '_preview_executor' not in globals():
             _preview_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="preview-tier")
-            
+
         _preview_executor.submit(_populate_preview_tier_async, embedded)
 
         import logging

@@ -8,7 +8,6 @@ import weakref
 
 import numpy as np
 
-from .defaults import DEFAULT_ADJUSTMENTS
 from .checks import is_default_adjustments
 from .xmp_read import edited_previews_enabled, load_adjustments_for_file, resolve_xmp_path
 
@@ -42,8 +41,6 @@ def _decode_srgb_uint8_to_linear(arr: np.ndarray) -> np.ndarray:
     return _SRGB_DECODE_LUT[arr]
 
 
-import threading
-import weakref
 
 # id(arr) -> weakref to that exact array.
 #
@@ -57,7 +54,7 @@ import weakref
 # The weakref settles identity (a recycled address cannot match, because the
 # referent is dead or different) and the finalizer keeps the map from growing,
 # which removes the need to evict live entries at all.
-_already_adjusted_ids: "dict[int, weakref.ref]" = {}
+_already_adjusted_ids: dict[int, weakref.ref] = {}
 _already_adjusted_lock = threading.Lock()
 
 
