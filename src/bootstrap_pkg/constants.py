@@ -1,18 +1,6 @@
 """Constants and imports for the bootstrap/installer package."""
-import atexit
-import errno
 import os
-import re
-import shutil
-import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
-import winreg
-import zipfile
-
-from app_version import APP_VERSION
 
 # Pin the Windows installer pixi binary so a future upstream release cannot
 # break installs mid-flight (do not use .../releases/latest/...).

@@ -14,6 +14,7 @@ from .constants import (
     PIXI_DOWNLOAD_URL,
     PIXI_VERSION,
 )
+from .gui import InstallerGUI
 from .helpers import (
     _apply_installer_process_icon,
     _check_disk_space,
@@ -26,8 +27,8 @@ from .helpers import (
     _estimated_size_kb,
     _file_association_extensions,
     _human_bytes,
-    _installer_icon_path,
     _installed_app_icon_path,
+    _installer_icon_path,
     _is_lite_installer,
     _kill_running_app_processes,
     _map_model_download_progress,
@@ -41,12 +42,12 @@ from .helpers import (
     _user_cache_dir,
 )
 from .worker import InstallWorker
-from .gui import InstallerGUI
 
 
 def main() -> None:
     """Entry point for the installer application."""
     import sys
+
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)

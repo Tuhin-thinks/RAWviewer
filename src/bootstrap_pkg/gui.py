@@ -2,31 +2,30 @@
 from __future__ import annotations
 
 import os
-import sys
+import subprocess
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QThread, Qt, QTimer
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QRadioButton,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
-from .constants import BUNDLE_DIR, EXE_DIR
 from .helpers import (
     _apply_installer_process_icon,
     _installer_icon_path,
-    _installed_app_icon_path,
-    _user_cache_dir,
 )
 from .worker import InstallWorker
 
@@ -79,13 +78,13 @@ class InstallerGUI(QMainWindow):
         self.setCentralWidget(self.main_container)
         layout = QVBoxLayout(self.main_container)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # Custom Title Bar
         title_bar = QWidget()
         title_bar.setFixedHeight(40)
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(20, 0, 10, 0)
-        
+
         win_title = QLabel("RAWVIEWER SETUP")
         win_title.setStyleSheet(f"font-size: 11px; font-weight: 800; letter-spacing: 1px; color: {_INK_MUTED};")
         icon_path = _installer_icon_path()
@@ -97,54 +96,54 @@ class InstallerGUI(QMainWindow):
             title_layout.addWidget(title_icon)
         title_layout.addWidget(win_title)
         title_layout.addStretch()
-        
+
         btn_close = QPushButton("✕")
         btn_close.setFixedSize(30, 30)
         btn_close.setObjectName("btn_close")
         btn_close.clicked.connect(self.request_close)
         title_layout.addWidget(btn_close)
         layout.addWidget(title_bar)
-        
+
         self.stack = QStackedWidget()
-        
+
         # Page 1: Welcome
         self.page_welcome = QWidget()
         self.init_welcome_page()
         self.stack.addWidget(self.page_welcome)
-        
+
         # Page 2: Progress
         self.page_progress = QWidget()
         self.init_progress_page()
         self.stack.addWidget(self.page_progress)
-        
+
         # Page 3: Success
         self.page_success = QWidget()
         self.init_success_page()
         self.stack.addWidget(self.page_success)
-        
+
         layout.addWidget(self.stack)
-        
+
         # Bottom Bar
         self.bottom_bar = QFrame()
         self.bottom_bar.setObjectName("bottom_bar")
         self.bottom_bar.setFixedHeight(80)
         bottom_layout = QHBoxLayout(self.bottom_bar)
         bottom_layout.setContentsMargins(40, 0, 40, 0)
-        
+
         self.btn_cancel = QPushButton("CANCEL")
         self.btn_cancel.setObjectName("btn_cancel")
         self.btn_cancel.setFixedSize(120, 40)
         self.btn_cancel.clicked.connect(self.request_close)
-        
+
         self.btn_next = QPushButton("INSTALL")
         self.btn_next.setObjectName("btn_next")
         self.btn_next.setFixedSize(140, 40)
         self.btn_next.clicked.connect(self.start_install)
-        
+
         bottom_layout.addStretch()
         bottom_layout.addWidget(self.btn_cancel)
         bottom_layout.addWidget(self.btn_next)
-        
+
         layout.addWidget(self.bottom_bar)
 
     def load_styles(self):
@@ -253,11 +252,11 @@ class InstallerGUI(QMainWindow):
     def init_welcome_page(self):
         layout = QVBoxLayout(self.page_welcome)
         layout.setContentsMargins(40, 20, 40, 20)
-        
+
         title = QLabel("Ready to Install")
         title.setObjectName("title")
         layout.addWidget(title)
-        
+
         desc_text = (
             "RAWviewer helps you review and cull RAW and JPEG photos quickly.\n\n"
             "Choose your edition below. "
@@ -303,22 +302,22 @@ class InstallerGUI(QMainWindow):
         )
         self.clear_cache_cb.setChecked(False)
         layout.addWidget(self.clear_cache_cb)
-        
+
         path_label = QLabel("Installation Directory:")
         path_label.setStyleSheet(f"color: {_INK_MUTED}; font-weight: bold; margin-top: 15px;")
         layout.addWidget(path_label)
-        
+
         row = QHBoxLayout()
         self.path_edit = QLineEdit()
         app_data = os.environ.get('LOCALAPPDATA') or os.path.expanduser('~')
         default_path = os.path.join(app_data, "RAWviewer")
         self.path_edit.setText(default_path)
-        
+
         btn_browse = QPushButton("Browse...")
         btn_browse.setFixedSize(80, 36)
         btn_browse.setStyleSheet(f"background: {_RAISED}; border: 1px solid {_LINE}; color: {_INK};")
         btn_browse.clicked.connect(self.browse_path)
-        
+
         row.addWidget(self.path_edit)
         row.addWidget(btn_browse)
         layout.addLayout(row)
@@ -331,7 +330,7 @@ class InstallerGUI(QMainWindow):
     def init_progress_page(self):
         layout = QVBoxLayout(self.page_progress)
         layout.setContentsMargins(40, 20, 40, 20)
-        
+
         title = QLabel("Installing...")
         title.setObjectName("title")
         layout.addWidget(title)
@@ -344,7 +343,7 @@ class InstallerGUI(QMainWindow):
         self.progress_bar.setFixedHeight(12)
         self.progress_bar.setFormat("%p%")
         layout.addWidget(self.progress_bar)
-        
+
         self.log_box = QPlainTextEdit()
         self.log_box.setReadOnly(True)
         layout.addWidget(self.log_box)
@@ -352,12 +351,12 @@ class InstallerGUI(QMainWindow):
     def init_success_page(self):
         layout = QVBoxLayout(self.page_success)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         title = QLabel("Success!")
         title.setObjectName("title")
         title.setStyleSheet(f"font-size: 40px; color: {_EMBER};")
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignCenter)
-        
+
         desc = QLabel(self._SUCCESS_DESC_BASE)
         desc.setObjectName("desc")
         desc.setWordWrap(True)
@@ -368,14 +367,14 @@ class InstallerGUI(QMainWindow):
         target_dir = self.path_edit.text().strip()
         if not target_dir:
             return
-            
+
         if self.radio_cuda.isChecked():
             mode = "cuda"
         elif self.radio_lite.isChecked():
             mode = "lite"
         else:
             mode = "directml"
-            
+
         self._install_in_progress = True
         self._awaiting_cancel = False
         self.stack.setCurrentIndex(1)
@@ -384,7 +383,7 @@ class InstallerGUI(QMainWindow):
         self.btn_cancel.setText("CANCEL")
         self.log_box.clear()
         self.install_step_label.setText("")
- 
+
         self.thread = QThread()
         self.worker = InstallWorker(
             target_dir, mode, clear_cache=self.clear_cache_cb.isChecked()
@@ -498,7 +497,6 @@ class InstallerGUI(QMainWindow):
                     stderr=subprocess.DEVNULL,
                 )
         # Let Qt unwind briefly before the onefile bootloader deletes _MEI*.
-        from PyQt6.QtCore import QTimer
 
         QTimer.singleShot(400, self.close)
 

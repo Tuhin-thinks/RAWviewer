@@ -1,13 +1,18 @@
 """Module-level helper functions for the bootstrap installer."""
 from __future__ import annotations
 
-import ctypes
-import logging
+import errno
+import os
+import re
+import shutil
 import ssl
+import subprocess
+import sys
 import time
+import urllib.request
+import winreg
 
 from .constants import (
-    APP_VERSION,
     BUNDLE_DIR,
     DOWNLOAD_RETRIES,
     EXE_DIR,
@@ -17,10 +22,9 @@ from .constants import (
     MIN_FREE_BYTES_LITE,
     MODEL_DOWNLOAD_PROGRESS_END,
     MODEL_DOWNLOAD_PROGRESS_START,
-    PIXI_DOWNLOAD_URL,
-    PIXI_VERSION,
     RETRY_DELAY_SEC,
 )
+
 
 def _is_lite_installer() -> bool:
     try:
@@ -219,9 +223,8 @@ def _download_file_with_retry(url: str, dest_path: str, log) -> bool:
             return False
         try:
             log(f"Downloading (attempt {attempt}/{DOWNLOAD_RETRIES})...")
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                with open(dest_path, "wb") as out:
-                    shutil.copyfileobj(resp, out)
+            with urllib.request.urlopen(req, timeout=120) as resp, open(dest_path, "wb") as out:
+                shutil.copyfileobj(resp, out)
             return True
         except Exception as exc:
             log(f"Download failed: {_describe_download_error(exc)}")
@@ -440,13 +443,8 @@ def _installed_app_icon_path(install_dir: str) -> str | None:
         return ico
     return _installer_icon_path()
 
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QLineEdit, QProgressBar, QPlainTextEdit,
-    QStackedWidget, QFileDialog, QFrame, QDialog, QRadioButton, QCheckBox
-)
-from PyQt6.QtGui import QIcon, QFont, QColor, QPalette
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication
 
 
 def _apply_installer_process_icon() -> None:

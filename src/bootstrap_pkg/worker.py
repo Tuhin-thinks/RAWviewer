@@ -6,16 +6,19 @@ import shutil
 import subprocess
 import sys
 import time
+import zipfile
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
+import winreg
+
+from app_version import APP_VERSION
+
 from .constants import (
     BUNDLE_DIR,
-    DOWNLOAD_RETRIES,
-    EXE_DIR,
-    INSTALLER_PROGRESS_PREFIX,
     MIN_FREE_BYTES,
     MIN_FREE_BYTES_LITE,
+    MODEL_DOWNLOAD_PROGRESS_START,
     PIXI_DOWNLOAD_URL,
     PIXI_VERSION,
 )
@@ -23,19 +26,19 @@ from .helpers import (
     _check_disk_space,
     _cleanup_partial_install,
     _clear_existing_user_cache,
-    _delete_reg_tree,
+    _describe_download_error,
+    _download_file_with_retry,
     _estimated_size_kb,
     _human_bytes,
-    _installer_icon_path,
     _installed_app_icon_path,
     _kill_running_app_processes,
     _map_model_download_progress,
-    _min_free_bytes_for_install,
     _patch_python_exe_branding,
     _prune_torch_link_libs,
     _register_file_associations,
     _run_subprocess_with_retry,
 )
+
 
 class InstallWorker(QObject):
     finished = pyqtSignal(bool, str)
