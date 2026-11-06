@@ -108,7 +108,7 @@ class UnifiedPart1:
         with self._unpacked_raw_lock:
             return self._unpacked_raw_slots.pop(key, None)
 
-    def _adjustment_fingerprint(adj: dict, shape) -> tuple:
+    def _adjustment_fingerprint(self, adj: dict, shape) -> tuple:
         """Fingerprint for the full-res adjusted memo and its peekers.
 
         Includes base-buffer shape so a half-size cache entry can never be

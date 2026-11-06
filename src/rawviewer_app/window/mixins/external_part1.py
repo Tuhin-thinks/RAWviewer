@@ -933,7 +933,7 @@ class ExternalPart1:
             return self._macos_share_show_airdrop_in_menu()
         return True
 
-    def _macos_share_is_airdrop_service(service) -> bool:
+    def _macos_share_is_airdrop_service(self, service) -> bool:
         try:
             title = str(service.title() or "").lower()
             if "airdrop" in title:

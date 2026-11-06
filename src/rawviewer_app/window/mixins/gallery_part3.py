@@ -860,7 +860,7 @@ class GalleryPart3:
         # Use a small delay to allow UI to update first
         QTimer.singleShot(10, load_thumbnail)
 
-    def _gallery_event_modifiers(event=None):
+    def _gallery_event_modifiers(self, event=None):
         """Reliable modifier read for gallery clicks (macOS press events often omit Cmd)."""
         from PyQt6.QtWidgets import QApplication
 
@@ -870,14 +870,14 @@ class GalleryPart3:
         mods |= QApplication.keyboardModifiers()
         return mods
 
-    def _gallery_has_extend_modifier(modifiers) -> bool:
+    def _gallery_has_extend_modifier(self, modifiers) -> bool:
         """Ctrl (Windows/Linux) or Cmd (macOS) for gallery extend-selection."""
         return bool(
             modifiers
             & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
         )
 
-    def _gallery_has_shift_modifier(modifiers) -> bool:
+    def _gallery_has_shift_modifier(self, modifiers) -> bool:
         return bool(modifiers & Qt.KeyboardModifier.ShiftModifier)
 
     def _gallery_refresh_selection_ui(self) -> None:

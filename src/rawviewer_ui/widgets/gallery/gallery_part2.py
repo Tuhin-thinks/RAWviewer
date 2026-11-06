@@ -684,7 +684,7 @@ class GalleryPart2:
             return None
         return self._display_aspect(file_path, dw / dh)
 
-    def _aspect_orientation_flag(ar: float) -> int:
+    def _aspect_orientation_flag(self, ar: float) -> int:
         """-1 portrait, 0 near-square, 1 landscape."""
         if ar <= 0:
             return 0

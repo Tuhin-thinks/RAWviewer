@@ -207,7 +207,7 @@ class UnifiedPart6:
         )
         return embedded
 
-    def _preview_tier_from_embedded(embedded: np.ndarray) -> np.ndarray:
+    def _preview_tier_from_embedded(self, embedded: np.ndarray) -> np.ndarray:
         """Store a memory-budget preview tier separately from the sensor-sized buffer."""
         max_edge = memory_preview_max_edge()
         h, w = embedded.shape[:2]

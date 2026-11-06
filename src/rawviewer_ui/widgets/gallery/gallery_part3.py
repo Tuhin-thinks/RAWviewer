@@ -143,7 +143,7 @@ class GalleryPart3:
             return meta_ar
         return 1.5
 
-    def _layout_aspect_needs_rebuild(old_aspect: float, new_aspect: float) -> bool:
+    def _layout_aspect_needs_rebuild(self, old_aspect: float, new_aspect: float) -> bool:
         """True when tile geometry must change (including portrait ↔ landscape flip)."""
         old_o = JustifiedGallery._aspect_orientation_flag(old_aspect)
         new_o = JustifiedGallery._aspect_orientation_flag(new_aspect)

@@ -908,7 +908,7 @@ class AdjustPart4:
             panel.set_spot_heal_mask_present(mask is not None)
         self._sync_dodge_burn_mask_overlay()
 
-    def _adjustments_match(a: dict, b: dict) -> bool:
+    def _adjustments_match(self, a: dict, b: dict) -> bool:
         """Whether two adjustment dicts describe the same edit.
 
         Live objects (keys ending in ``_obj``) are excluded: they are rebuilt

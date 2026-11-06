@@ -96,7 +96,7 @@ class GpuImageViewPart1:
             return
         self.update_dodge_burn_mask(mask)
         self._mask_item.show()
-    def _dodge_burn_overlay_rgba(data, is_heal: bool):
+    def _dodge_burn_overlay_rgba(self, data, is_heal: bool):
         """uint8 RGBA overlay for a (sub-)region of mask.data (float32)."""
         import numpy as np
 
