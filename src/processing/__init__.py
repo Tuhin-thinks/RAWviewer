@@ -1,24 +1,6 @@
-"""Processing module package facade.
+"""Processing package facade.
 
-Provides re-exports of all processing operations organized by domain:
-- :mod:`processing.raw`   - RAW image processing operations
-- :mod:`processing.image` - Generic image processing operations
+Provides access to the unified RAW/JPEG processing pipeline.
+"""
 
-from processing.unified import *
-from processing.raw import *
-from processing.image import *
-
-__all__ = [
-    # Facade re-exports
-    "unified_image_processor",
-    # RAW operations
-    "demosaic",
-    "color",
-    "tone",
-    "detail",
-    "effects",
-    # Image operations
-    "resize",
-    "transform",
-    "effects2",
-    "composite",]
+from processing.unified import *  # noqa: F401,F403
