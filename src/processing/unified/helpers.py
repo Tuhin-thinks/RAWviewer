@@ -11,7 +11,7 @@ from PyQt6.QtCore import QLoggingCategory
 from rawpy_gil import rawpy_imread_warm
 
 # Re-exports from sibling and external packages
-from cache.keys import memory_preview_max_edge  # noqa: F401
+from cache.keys import disk_preview_max_edge, memory_preview_max_edge  # noqa: F401
 from common_image_loader import (  # noqa: F401
     array_matches_exif_display,
     image_covers_sensor_resolution,
