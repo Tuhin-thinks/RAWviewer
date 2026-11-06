@@ -162,7 +162,7 @@ if _IS_GUI_MAIN_PROCESS:
     try:
         from PyQt6.QtWidgets import QApplication, QSplashScreen
         from PyQt6.QtGui import QPixmap, QColor, QPainter, QPen, QIcon
-        from PyQt6.QtCore import Qt, QEvent, QSize, QPoint, QLoggingCategory
+        from PyQt6.QtCore import Qt, QEvent, QSize, QPoint, QLoggingCategory, QTimer
 
         # Silence qt.imageformats warnings, particularly for RAW files structured as TIFFs
         QLoggingCategory.setFilterRules(
