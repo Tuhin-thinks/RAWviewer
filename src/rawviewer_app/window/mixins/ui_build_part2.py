@@ -1,4 +1,4 @@
-"""ui_build mixin, part 2 of 3 (1 methods, 1229 lines)."""
+"""ui_build mixin, part 2 of 3 (11 methods, split init_ui into helpers)."""
 from __future__ import annotations
 
 import sys
@@ -23,11 +23,7 @@ lazy.register(sys.modules[__name__])
 
 
 class UiBuildPart2:
-    def init_ui(self):
-        """Initialize the user interface"""
-        # qtawesome doesn't require initialization - can be used directly
-
-        # Set window to frameless for custom title bar only on Windows
+    def _init_window_chrome(self):
         if platform.system() == 'Windows':
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setWindowTitle('RAWviewer')
@@ -113,6 +109,8 @@ class UiBuildPart2:
         self.edit_loading_overlay = LoadingOverlay(self)
         self.edit_loading_overlay.hide()
 
+
+    def _init_content(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
@@ -242,7 +240,8 @@ class UiBuildPart2:
         cast(Any, self.image_label).mouseDoubleClickEvent = self.image_double_click_event
         self.scroll_area.setWidget(self.image_label)
 
-        # Install event filter on scroll area to handle wheel events for navigation
+
+    def _init_harness_and_overlays(self):
         self.scroll_area.viewport().setMouseTracking(True)
         self.scroll_area.viewport().installEventFilter(self)
 
@@ -441,6 +440,8 @@ class UiBuildPart2:
                 )
                 self.gpu_view = None
 
+
+    def _init_splitter_and_status_bar(self):
         self.single_view_container = SingleImageViewOverlay(
             self.scroll_area, self.single_image_histogram, viewer=self,
             gpu_view=self.gpu_view, map_widget=self.single_image_location_map)
@@ -492,7 +493,8 @@ class UiBuildPart2:
             }}
         """)
 
-        # Create custom status bar widget with horizontal layout
+
+    def _init_status_bar(self):
         status_widget = QWidget()
         status_widget.setObjectName("status_widget")  # Set object name for finding it later
         status_layout = QHBoxLayout(status_widget)
@@ -543,6 +545,8 @@ class UiBuildPart2:
         """
         bottom_icon_btn_style = bottom_icon_only_btn_style
 
+
+    def _init_bottom_actions(self):
         def _style_bottom_icon_button(btn: QPushButton) -> None:
             btn.setFlat(True)
             btn.setAutoDefault(False)
@@ -713,10 +717,8 @@ class UiBuildPart2:
         self.rotate_bottom_button.hide()
         left_buttons_layout.addWidget(self.rotate_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
-        # Adjust (develop) entry point -- the E shortcut's visible, discoverable
-        # twin. Routed through _toggle_adjust_panel so unsupported files get
-        # the same explanatory notice as the keyboard path. Icon goes EMBER
-        # while the panel is open (theme: EMBER = currently active).
+
+    def _init_more_buttons(self):
         self.adjust_bottom_button = QPushButton()
         self.adjust_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.adjust_bottom_button.setIcon(_qta_icon("fa5s.sliders-h", color=theme.INK_MUTED))
@@ -838,9 +840,8 @@ class UiBuildPart2:
         self.search_bottom_button.hide()
         left_buttons_layout.addWidget(self.search_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
-        # Search panel: floated onto status_bar_widget (see construction below).
-        # Must not join left_buttons_layout -- in-row width animation reflows
-        # trailing status icons every frame.
+
+    def _init_search_ui(self):
         self.search_expand_container = QWidget()
         self.search_expand_container.setFixedHeight(28)
         self.search_expand_container.setSizePolicy(
@@ -925,16 +926,9 @@ class UiBuildPart2:
         self.search_expand_layout.addWidget(self.gallery_search_panel)
         self.search_expand_layout.setCurrentWidget(self.gallery_search_panel)
         self._gallery_search_status_full = ""
-        self._search_input_width_idle = 300
-        self._search_input_width_max = 500
-        self._search_panel_target_width = 310
-        self._search_panel_target_width_idle = 310
-        self._search_panel_expanded = False
-        self._search_panel_animation = None
-        self._search_panel_anim_content_width = 0
-        self._pending_search_index_corpus = None
-        # Floated onto status_bar_widget after the bar is built -- must NOT live
-        # in left_buttons_layout or opening search reflows the trailing icons.
+
+
+    def _init_semantic_and_status_flags(self):
         self.search_expand_container.hide()
         # Index progress in the search field only after the user opens search (not folder load).
         self._gallery_search_show_index_progress = False
@@ -1097,6 +1091,9 @@ class UiBuildPart2:
 
         # Track mouse over client area so edge cursors / grip appear without clicking first.
         self.setMouseTracking(True)
+
+
+    def _init_shortcuts_and_wiring(self):
         cw = self.centralWidget()
         if cw is not None:
             cw.setMouseTracking(True)
@@ -1252,3 +1249,17 @@ class UiBuildPart2:
 
         if platform.system() == "Darwin":
             QTimer.singleShot(0, self._apply_macos_titlebar_appearance)
+
+    def init_ui(self):
+        """Initialize the user interface"""
+        # qtawesome doesn't require initialization - can be used directly
+        self._init_window_chrome()
+        self._init_content()
+        self._init_harness_and_overlays()
+        self._init_splitter_and_status_bar()
+        self._init_status_bar()
+        self._init_bottom_actions()
+        self._init_more_buttons()
+        self._init_search_ui()
+        self._init_semantic_and_status_flags()
+        self._init_shortcuts_and_wiring()
