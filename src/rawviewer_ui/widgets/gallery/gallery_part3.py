@@ -153,10 +153,8 @@ class GalleryPart3:
 
     def _layout_aspect_needs_rebuild(self, old_aspect: float, new_aspect: float) -> bool:
         """True when tile geometry must change (including portrait ↔ landscape flip)."""
-        from .justified_gallery import JustifiedGallery
-
-        old_o = JustifiedGallery._aspect_orientation_flag(old_aspect)
-        new_o = JustifiedGallery._aspect_orientation_flag(new_aspect)
+        old_o = self._aspect_orientation_flag(old_aspect)
+        new_o = self._aspect_orientation_flag(new_aspect)
         if old_o != 0 and new_o != 0 and old_o != new_o:
             return True
         return abs(old_aspect - new_aspect) > 0.05

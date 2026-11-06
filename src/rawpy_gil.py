@@ -19,6 +19,7 @@ buffers are retained, cold-I/O amplification is capped at WARM_BYTES.
 
 import os
 import sys
+from typing import Any
 
 
 # LibRaw's open/parse reads only the container headers (a few hundred KB), so
@@ -40,7 +41,7 @@ def _warm_bytes() -> int:
     return max(0, int(mb * 1024 * 1024))
 
 
-def rawpy_imread_warm(file_path):
+def rawpy_imread_warm(file_path: str) -> Any:
     """rawpy.imread with a GIL-releasing page-cache warm of the file head."""
     import rawpy
 
