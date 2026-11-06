@@ -1,19 +1,31 @@
+from typing import Callable
 """Adjust mixin part 4 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
-import theme
-from typing import Dict
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
-from raw_adjustments import AS_SHOT_TEMP_KEY, CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, RECOVERY_BASELINE_KEY, SLIDER_SPECS, is_pv2012_tone_slider, recovery_baseline_slider_hints
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH, STRENGTH_KEY as DB_STRENGTH_KEY
+
+import theme
+from raw_adjustments import (
+    AS_SHOT_TEMP_KEY,
+    CHROMA_NR_ON_VALUE,
+    DEFAULT_ADJUSTMENTS,
+    RECOVERY_BASELINE_KEY,
+    SLIDER_SPECS,
+    is_pv2012_tone_slider,
+    recovery_baseline_slider_hints,
+)
+from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+from raw_dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
 from raw_hsl import HSL_COLOR_NAMES
-from .helpers import CollapsibleSection, _CHANNEL_CURVE_KEYS_BY_NAME, _qta_icon_safe, normalize_adjust_dock
+
+from .helpers import _CHANNEL_CURVE_KEYS_BY_NAME, CollapsibleSection, _qta_icon_safe, normalize_adjust_dock
+
 
 class AdjustPart4:
 
-    def get_adjustments(self) -> Dict[str, float]:
+    def get_adjustments(self) -> dict[str, float]:
         out = dict(DEFAULT_ADJUSTMENTS)
         out[AS_SHOT_TEMP_KEY] = float(
             getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"])

@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
-from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QEvent, QMimeData, QUrl, QObject
-from PyQt6.QtGui import QKeyEvent, QPixmap, QPainter, QColor, QPen, QDrag, QBrush, QImage, QTransform
-from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsObject, QLabel, QApplication
+from PyQt6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRectF, Qt, QUrl
+from PyQt6.QtGui import QDrag, QImage, QKeyEvent, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+)
 
 from rawviewer_ui.widgets import stamp_rawviewer_export_drag
-from rawviewer_ui.widgets.gpu.gpu_state import _env_true, gpu_cuda_gl_enabled, gpu_gl_tex_enabled
+from rawviewer_ui.widgets.gpu.gpu_state import _env_true
 
 
 class GpuImageViewPart2:
@@ -300,6 +301,7 @@ class GpuImageViewPart2:
                 return
         try:
             import numpy as np
+
             from raw_dodge_burn import circular_brush_falloff
 
             ri = max(2, int(np.ceil(r)))
@@ -607,7 +609,7 @@ class GpuImageViewPart2:
                     self._start_drag()
             event.accept()
             return
-            
+
         if (event.buttons() & Qt.MouseButton.LeftButton) and not self._fit_mode and getattr(self, "_manual_pan_start", None) is not None:
             delta = event.position().toPoint() - self._manual_pan_start
             self.horizontalScrollBar().setValue(self._manual_pan_scroll_h - delta.x())

@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import os
-from collections import OrderedDict
-from typing import Callable, Dict
-
 from PyQt6.QtCore import (
     QObject,
     QRectF,
@@ -13,8 +9,6 @@ from PyQt6.QtCore import (
     QSettings,
     QSize,
     Qt,
-    QThreadPool,
-    QTimer,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -26,26 +20,25 @@ from PyQt6.QtGui import (
     QImage,
     QLinearGradient,
     QPainter,
-    QPalette,
     QPen,
     QPixmap,
 )
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QListWidget, QPushButton, QSizePolicy, QSlider, QSplitter, QStyle, QStyleOptionSlider, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QPushButton,
+    QSizePolicy,
+    QSlider,
+    QSplitter,
+    QStyle,
+    QStyleOptionSlider,
+    QVBoxLayout,
+    QWidget,
+)
 
 import theme
-from raw_adjustments import (
-    AS_SHOT_TEMP_KEY,
-    CHROMA_NR_ON_VALUE,
-    DEFAULT_ADJUSTMENTS,
-    RECOVERY_BASELINE_KEY,
-    SLIDER_SPECS,
-    WB_PRESETS,
-    is_pv2012_tone_slider,
-    recovery_baseline_slider_hints,
-)
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
-from raw_dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
-from raw_hsl import HSL_COLOR_NAMES
 from raw_tone_curve import (
     TONE_CURVE_BLUE_KEY,
     TONE_CURVE_GREEN_KEY,
@@ -137,7 +130,7 @@ _SHOW_HSL_UI = True
 _SHOW_DODGE_BURN_UI = True
 
 if _SHOW_TONE_CURVE_UI:
-    from rawviewer_ui.widgets.tone_curve_widget import ToneCurveEditorRow, ToneCurveWidget
+    pass
 
 _PARAMETRIC_TONE_KEYS = frozenset(
     {
@@ -540,12 +533,12 @@ class CollapsibleSection(QWidget):
             border: none;
         """)
         header_layout.addWidget(self.title_lbl, 1)
-        
+
         # Enable clicking on header (left toggles; right-click is section order)
         self.header.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.header.mousePressEvent = self._on_header_pressed
-        
+
         main_layout.addWidget(self.header)
 
         # Content container — opaque Surface so macOS light-mode scroll

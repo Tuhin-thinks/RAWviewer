@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import logging
-import os, time
-from typing import Any, Dict, List, Optional
+import os
+import time
+from typing import Any
+
+import numpy as np
 from PyQt6.QtCore import QSize, QTimer
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
-import numpy as np
+
 from .helpers import _env_int, _focus_gallery_switch_logs, _orient_debug_enabled
 
 logger = logging.getLogger(__name__)
@@ -77,7 +80,7 @@ class GalleryPart2:
         self._last_build_ts = time.time()
         self._request_load_visible_images(30)
 
-    def _current_image_layout_index(self) -> Optional[int]:
+    def _current_image_layout_index(self) -> int | None:
         """Layout index for the viewer's current single-view / navigation file."""
         pv = getattr(self, "parent_viewer", None)
         if pv is None:
@@ -93,7 +96,7 @@ class GalleryPart2:
             return None
         return indices[0]
 
-    def _layout_index_at_scroll_y(self, anchor_y: int) -> Optional[int]:
+    def _layout_index_at_scroll_y(self, anchor_y: int) -> int | None:
         items = self._gallery_layout_items
         if not items:
             return None
@@ -110,7 +113,7 @@ class GalleryPart2:
             return None
         return idx
 
-    def _gallery_prefetch_center_index(self, scroll_y: int, viewport_h: int) -> Optional[int]:
+    def _gallery_prefetch_center_index(self, scroll_y: int, viewport_h: int) -> int | None:
         """Center for bidirectional JPEG prefetch: current image, else viewport center."""
         current_idx = self._current_image_layout_index()
         viewport_idx = self._layout_index_at_scroll_y(scroll_y + max(1, viewport_h) // 2)
@@ -131,7 +134,7 @@ class GalleryPart2:
             return current_idx
         return viewport_idx
 
-    def _entry_anchor_path(self) -> Optional[str]:
+    def _entry_anchor_path(self) -> str | None:
         """File path used to restore scroll when entering gallery."""
         pending = getattr(self, "_pending_scroll_to_path", None)
         if pending:
@@ -146,7 +149,7 @@ class GalleryPart2:
                 return target
         return None
 
-    def _entry_anchor_layout_index(self) -> Optional[int]:
+    def _entry_anchor_layout_index(self) -> int | None:
         if not self._gallery_layout_items:
             return None
         path = self._entry_anchor_path()
@@ -160,12 +163,12 @@ class GalleryPart2:
             return None
         return indices[0]
 
-    def _layout_indices_near(self, center_idx: int, radius: int) -> List[int]:
+    def _layout_indices_near(self, center_idx: int, radius: int) -> list[int]:
         n = len(self._gallery_layout_items)
         if n <= 0:
             return []
         center_idx = max(0, min(int(center_idx), n - 1))
-        ordered: List[int] = []
+        ordered: list[int] = []
         seen: set[int] = set()
         for offset in range(int(radius) + 1):
             for idx in (center_idx + offset, center_idx - offset):
@@ -181,7 +184,7 @@ class GalleryPart2:
         return self._gallery_center_prefetch_radius()
 
     def _entry_prefetch_active(
-        self, anchor_idx: Optional[int], scroll_y: int, viewport_h: int
+        self, anchor_idx: int | None, scroll_y: int, viewport_h: int
     ) -> bool:
         """True when scroll has not yet reached the entry thumbnail neighborhood."""
         if anchor_idx is None:
@@ -196,7 +199,7 @@ class GalleryPart2:
         view_bottom = scroll_y + viewport_h + margin
         return rect.bottom() < view_top or rect.top() > view_bottom
 
-    def _prioritize_entry_paths(self, paths: List[str], cap: Optional[int] = None) -> List[str]:
+    def _prioritize_entry_paths(self, paths: list[str], cap: int | None = None) -> list[str]:
         """Order paths so EXIF/layout work near the entry file runs first."""
         if not paths:
             return []
@@ -213,7 +216,7 @@ class GalleryPart2:
 
         path_set = set(paths)
         seed_radius = min(max(self.BUILD_EXIF_PREFETCH_MAX // 2, 16), 96)
-        ordered: List[str] = []
+        ordered: list[str] = []
         seen: set[str] = set()
         for offset in range(seed_radius + 1):
             for idx in (anchor_list_idx + offset, anchor_list_idx - offset):
@@ -257,7 +260,7 @@ class GalleryPart2:
             stages.add("exif")
         return stages
 
-    def _path_layout_distance(self, path: str, center_idx: Optional[int]) -> int:
+    def _path_layout_distance(self, path: str, center_idx: int | None) -> int:
         if center_idx is None or not path:
             return 1_000_000
         indices = self._path_to_indices.get(path)
@@ -267,8 +270,8 @@ class GalleryPart2:
 
     def set_images(
         self,
-        images: List[str],
-        bulk_metadata: Optional[Dict[str, Any]] = None,
+        images: list[str],
+        bulk_metadata: dict[str, Any] | None = None,
         *,
         force_rebuild: bool = False,
     ):
@@ -441,7 +444,7 @@ class GalleryPart2:
                     norm = os.path.normcase(img)
                 self._normalized_to_canonical[norm] = img
 
-    def _resolve_gallery_path(self, file_path: Optional[str]) -> Optional[str]:
+    def _resolve_gallery_path(self, file_path: str | None) -> str | None:
         """Match file_path to the canonical path string used in ``self.images``."""
         if not file_path or not self.images:
             return None
@@ -466,7 +469,7 @@ class GalleryPart2:
                 return img
         return None
 
-    def scroll_to_file(self, file_path: Optional[str]):
+    def scroll_to_file(self, file_path: str | None):
         """Scroll so file_path is visible after the justified layout is built."""
         if not file_path:
             return
@@ -670,7 +673,7 @@ class GalleryPart2:
             return 1.0 / base_aspect
         return base_aspect
 
-    def _metadata_display_aspect(self, file_path: str) -> Optional[float]:
+    def _metadata_display_aspect(self, file_path: str) -> float | None:
         """Layout aspect from EXIF display dimensions (matches index thumbnail pixels)."""
         m = self._metadata_exif_for_path(file_path)
         if not m or not m.get("original_width") or not m.get("original_height"):
@@ -701,7 +704,7 @@ class GalleryPart2:
             return 1.0 / display_ar
         return display_ar
 
-    def _raw_aspect_from_pixmap(self, file_path: str, pixmap: QPixmap) -> Optional[float]:
+    def _raw_aspect_from_pixmap(self, file_path: str, pixmap: QPixmap) -> float | None:
         """Measured width/height for layout, reconciled with EXIF when orientation disagrees."""
         if pixmap is None or pixmap.isNull() or pixmap.height() <= 0:
             return None
@@ -783,8 +786,8 @@ class GalleryPart2:
 
         if _orient_debug_enabled():
             from common_image_loader import (
-                exif_rotation_degrees_for_pixmap,
                 exif_pixels_display_oriented,
+                exif_rotation_degrees_for_pixmap,
                 pixmap_matches_exif_display,
             )
             ow = int(m.get("original_width") or 0)

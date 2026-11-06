@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
-
-from PyQt6.QtCore import QPoint, QPointF, Qt, pyqtSignal
+from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QCursor, QMouseEvent, QPainter, QPen
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
@@ -20,7 +18,7 @@ from raw_tone_curve import (
     serialize_tone_curve_points,
 )
 
-Point = Tuple[float, float]
+Point = tuple[float, float]
 
 
 class ToneCurveWidget(QWidget):
@@ -34,16 +32,16 @@ class ToneCurveWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._points: List[Point] = default_tone_curve_points()
-        self._drag_index: Optional[int] = None
-        self._hover_index: Optional[int] = None
+        self._points: list[Point] = default_tone_curve_points()
+        self._drag_index: int | None = None
+        self._hover_index: int | None = None
         self.setFixedHeight(108)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
 
-    def points(self) -> List[Point]:
+    def points(self) -> list[Point]:
         return list(self._points)
 
     def serialized_points(self) -> str:
@@ -78,8 +76,8 @@ class ToneCurveWidget(QWidget):
         y = (1.0 - (pos.y() - py) / ph) * 255.0
         return float(max(0.0, min(255.0, x))), float(max(0.0, min(255.0, y)))
 
-    def _hit_index(self, pos: QPointF) -> Optional[int]:
-        best: Optional[int] = None
+    def _hit_index(self, pos: QPointF) -> int | None:
+        best: int | None = None
         best_d = self._HIT_RADIUS * self._HIT_RADIUS
         for i, pt in enumerate(self._points):
             wp = self._to_widget(*pt)
@@ -120,7 +118,7 @@ class ToneCurveWidget(QWidget):
         painter.setPen(QPen(QColor(144, 202, 249), 2))
         samples = sample_point_curve_for_display(self._points, n_samples=96)
         if samples:
-            prev: Optional[QPointF] = None
+            prev: QPointF | None = None
             for x, y in samples:
                 wp = self._to_widget(x, y)
                 if prev is not None:

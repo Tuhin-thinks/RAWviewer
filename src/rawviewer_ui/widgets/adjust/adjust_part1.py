@@ -1,32 +1,33 @@
 """Adjust mixin part 1 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCursor
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 import theme
-from collections import OrderedDict
-from typing import Dict
-
-from PyQt6.QtCore import QTimer, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPalette, QCursor
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QMenu, QPushButton, QSizePolicy, QVBoxLayout, QWidget
-
 from raw_adjustments import CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, SLIDER_SPECS
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH, STRENGTH_KEY as DB_STRENGTH_KEY
-from raw_hsl import HSL_COLOR_NAMES
-from raw_tone_curve import TONE_CURVE_BLUE_KEY, TONE_CURVE_GREEN_KEY, TONE_CURVE_RED_KEY, TONE_CURVE_SERIAL_KEY
+from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+
 from .helpers import (
-    ADJUST_DOCK_DEFAULT,
-    AdjustSlider,
-    AdjustValueLabel,
-    CollapsibleSection,
-    _LutThumbSignals,
     _PARAMETRIC_TONE_KEYS,
-    _SHOW_DODGE_BURN_UI,
     _SHOW_HSL_UI,
     _SHOW_TONE_CURVE_UI,
     _SLIDER_TRACK_GRADIENTS,
     _TRANSFORM_SLIDER_KEYS,
+    AdjustSlider,
+    AdjustValueLabel,
     _adjust_combo_stylesheet,
-    _edit_settings_clipboard,
     _sanitize_section_order,
 )
 
@@ -121,18 +122,18 @@ class AdjustPart1:
         # Build tone curve editor row inside the curve section first
         if _SHOW_TONE_CURVE_UI:
             from PyQt6.QtWidgets import QStackedWidget
-            
+
             self._tone_curve_tabs = QWidget()
             tabs_layout = QVBoxLayout(self._tone_curve_tabs)
             tabs_layout.setContentsMargins(0, 0, 0, 0)
-            
+
             # Segmented control
             seg_layout = QHBoxLayout()
             seg_layout.setSpacing(0)
-            
+
             self._btn_point = QPushButton("Point")
             self._btn_param = QPushButton("Parametric")
-            
+
             seg_style = """
                 QPushButton {
                     background: #272219;
@@ -155,7 +156,7 @@ class AdjustPart1:
                     border-bottom-right-radius: 4px;
                 }
             """
-            
+
             self._btn_point.setObjectName("btn_point")
             self._btn_param.setObjectName("btn_param")
             self._btn_point.setCheckable(True)
@@ -165,41 +166,41 @@ class AdjustPart1:
             self._btn_param.setStyleSheet(seg_style)
             self._btn_point.setCursor(Qt.CursorShape.PointingHandCursor)
             self._btn_param.setCursor(Qt.CursorShape.PointingHandCursor)
-            
+
             seg_layout.addWidget(self._btn_point)
             seg_layout.addWidget(self._btn_param)
             tabs_layout.addLayout(seg_layout)
-            
+
             self._tone_curve_stack = QStackedWidget()
-            
+
             self._tone_curve_point_tab = QWidget()
             self._tone_curve_point_layout = QVBoxLayout(self._tone_curve_point_tab)
             self._tone_curve_point_layout.setContentsMargins(0, 8, 0, 0)
-            
+
             self._tone_curve_param_tab = QWidget()
             self._tone_curve_param_layout = QVBoxLayout(self._tone_curve_param_tab)
             self._tone_curve_param_layout.setContentsMargins(0, 8, 0, 0)
-            
+
             self._tone_curve_stack.addWidget(self._tone_curve_point_tab)
             self._tone_curve_stack.addWidget(self._tone_curve_param_tab)
             tabs_layout.addWidget(self._tone_curve_stack)
-            
+
             self._btn_point.clicked.connect(lambda: (self._btn_point.setChecked(True), self._btn_param.setChecked(False), self._tone_curve_stack.setCurrentIndex(0)))
             self._btn_param.clicked.connect(lambda: (self._btn_param.setChecked(True), self._btn_point.setChecked(False), self._tone_curve_stack.setCurrentIndex(1)))
-            
+
             self.sect_curve.add_widget(self._tone_curve_tabs)
 
             # Standard-mode R/G/B channel selector (Lightroom/RawTherapee
             # "Standard" style: each channel independently remapped, only
             # meaningful for the Point curve, not the Parametric sliders).
-            self._channel_curve_cache: Dict[str, str] = {
+            self._channel_curve_cache: dict[str, str] = {
                 "RGB": "",
                 "R": "",
                 "G": "",
                 "B": "",
             }
             self._current_curve_channel = "RGB"
-            self._channel_btns: Dict[str, QPushButton] = {}
+            self._channel_btns: dict[str, QPushButton] = {}
 
             channel_layout = QHBoxLayout()
             channel_layout.setSpacing(0)
@@ -240,7 +241,7 @@ class AdjustPart1:
                 self._channel_btns[name] = btn
             self._tone_curve_point_layout.addLayout(channel_layout)
 
-            from rawviewer_ui.widgets.tone_curve_widget import ToneCurveEditorRow, ToneCurveWidget
+            from rawviewer_ui.widgets.tone_curve_widget import ToneCurveEditorRow
 
             self._tone_curve_row = ToneCurveEditorRow()
             self._tone_curve_row.points_changed.connect(self._on_tone_curve_changed)
@@ -260,7 +261,7 @@ class AdjustPart1:
         for spec in SLIDER_SPECS:
             if not _SHOW_TONE_CURVE_UI and spec.key in _PARAMETRIC_TONE_KEYS:
                 continue
-                
+
             target_layout = None
             if spec.key in {"Exposure2012", "Contrast2012", "Highlights2012", "Shadows2012", "Whites2012", "Blacks2012"}:
                 target_sect = self.sect_light
@@ -298,7 +299,7 @@ class AdjustPart1:
                 target_sect = self.sect_effects
             else:
                 target_sect = None
-                
+
             if target_sect is None and target_layout is None:
                 continue
 
@@ -406,7 +407,7 @@ class AdjustPart1:
         method_lbl.setStyleSheet(f"color: {theme.INK}; font-size: 11px;")
         method_lbl.setMinimumWidth(78)
         method_row.addWidget(method_lbl)
-        
+
         self._denoise_method_combo = QComboBox()
         self._denoise_method_combo.addItems(["Off", "Bilateral filter", "Guided filter"])
         self._denoise_method_combo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -470,8 +471,8 @@ class AdjustPart1:
         self.sect_noise.add_widget(ai_widget)
         self._ai_denoise_row = ai_widget
         try:
-            from rawviewer_profile import ai_export_enabled
             from raw_edit_pipeline import ai_denoise_model_present
+            from rawviewer_profile import ai_export_enabled
 
             ai_ok = bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:
@@ -485,24 +486,24 @@ class AdjustPart1:
         # Lens correction (optics — lives with Transform / crop geometry)
         self._lens_correction_row = QHBoxLayout()
         self._lens_correction_row.setSpacing(6)
-        
+
         lbl_vbox = QVBoxLayout()
         lbl_vbox.setSpacing(1)
         lbl_vbox.setContentsMargins(0, 0, 0, 0)
-        
+
         lens_label = QLabel("Lens correction")
         lens_label.setStyleSheet(f"color: {theme.INK}; font-size: 11px;")
         lbl_vbox.addWidget(lens_label)
-        
+
         self._lens_profile_lbl = QLabel("")
         self._lens_profile_lbl.setStyleSheet(f"color: {theme.INK_FAINT}; font-size: 10px;")
         self._lens_profile_lbl.setWordWrap(True)
         lbl_vbox.addWidget(self._lens_profile_lbl)
-        
+
         lbl_container = QWidget()
         lbl_container.setLayout(lbl_vbox)
         lbl_container.setMinimumWidth(78)
-        
+
         self._lens_correction_row.addWidget(lbl_container)
         self._lens_correction_btn = QPushButton("Off")
         self._lens_correction_btn.setObjectName("adjust_nr_btn")

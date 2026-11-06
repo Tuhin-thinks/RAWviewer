@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Any
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import Qt, QPointF, QRectF, QUrl, pyqtSignal
-from PyQt6.QtGui import QColor, QCursor, QDesktopServices, QFont, QImage, QPainter, QPen, QBrush, QPixmap, QPolygonF
+from PyQt6.QtCore import QPointF, QRectF, Qt, QUrl, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QCursor, QDesktopServices, QFont, QImage, QPainter, QPen, QPixmap, QPolygonF
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -27,10 +27,10 @@ try:
 except ModuleNotFoundError:
     import theme as theme
 from color_calibration import (
-    camera_identity_for_file,
-    validate_and_detect_color_checker,
     calibrate_camera_curves_and_hsl,
+    camera_identity_for_file,
     save_camera_profile,
+    validate_and_detect_color_checker,
 )
 from dpreview_samples import dpreview_open_url
 
@@ -76,13 +76,13 @@ class ColorCheckerPreviewCanvas(QWidget):
 
     corners_changed = pyqtSignal()
 
-    def __init__(self, image: np.ndarray, parent: Optional[QWidget] = None):
+    def __init__(self, image: np.ndarray, parent: QWidget | None = None):
         super().__init__(parent)
         self.image = image
         self._pixmap = self._numpy_to_pixmap(image)
-        
+
         # 4 corners in normalized [0, 1] coordinates
-        self.corners: List[QPointF] = [
+        self.corners: list[QPointF] = [
             QPointF(0.2, 0.3),
             QPointF(0.8, 0.3),
             QPointF(0.8, 0.7),
@@ -94,7 +94,7 @@ class ColorCheckerPreviewCanvas(QWidget):
         self.setMouseTracking(True)
         self.setMinimumSize(480, 360)
 
-    def set_image(self, image: Optional[np.ndarray]) -> None:
+    def set_image(self, image: np.ndarray | None) -> None:
         """Replace the calibration reference without touching the viewer's current photo."""
         self._drag_idx = -1
         self._hover_idx = -1
@@ -168,7 +168,7 @@ class ColorCheckerPreviewCanvas(QWidget):
             logger.debug("Auto detect MCC failed: %s", exc)
         return False
 
-    def get_pixel_corners(self) -> List[Tuple[float, float]]:
+    def get_pixel_corners(self) -> list[tuple[float, float]]:
         if self.image is None or getattr(self.image, "size", 0) == 0:
             return []
         h, w = self.image.shape[:2]
@@ -192,7 +192,7 @@ class ColorCheckerPreviewCanvas(QWidget):
     def mouseMoveEvent(self, event):
         rect = self._get_image_rect()
         pos = event.position()
-        
+
         if self._drag_idx != -1:
             nx = max(0.0, min(1.0, (pos.x() - rect.left()) / rect.width()))
             ny = max(0.0, min(1.0, (pos.y() - rect.top()) / rect.height()))
@@ -281,13 +281,13 @@ class ColorCalibrationDialog(QDialog):
 
     def __init__(
         self,
-        image: Optional[np.ndarray],
+        image: np.ndarray | None,
         make: str,
         model: str,
-        iso: Optional[int] = None,
-        parent: Optional[QWidget] = None,
-        has_factory_profile: Optional[bool] = None,
-        source_file: Optional[str] = None,
+        iso: int | None = None,
+        parent: QWidget | None = None,
+        has_factory_profile: bool | None = None,
+        source_file: str | None = None,
     ):
         super().__init__(parent)
         # True  -> LibRaw ships a colour matrix for this body; calibrating
@@ -307,7 +307,7 @@ class ColorCalibrationDialog(QDialog):
         # whether the WB guardrail was active for it -- see
         # color_calibration.current_decode_signature.
         self.source_file = source_file
-        self.calibrated_profile: Optional[Dict[str, Any]] = None
+        self.calibrated_profile: dict[str, Any] | None = None
 
         iso_str = f" (ISO {iso})" if iso else ""
         self.setWindowTitle(f"Camera Color Calibration — {self.make} {self.model}{iso_str}")
@@ -416,7 +416,7 @@ class ColorCalibrationDialog(QDialog):
 
         # Controls Row
         ctrl_box = QHBoxLayout()
-        
+
         auto_btn = QPushButton("🎯 Auto-Detect Chart", self)
         auto_btn.setMinimumHeight(34)
         auto_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -625,7 +625,7 @@ class ColorCalibrationDialog(QDialog):
             return
         corners = self.canvas.get_pixel_corners()
         valid, err_msg, sampled = validate_and_detect_color_checker(img, corners)
-        
+
         if not valid or not sampled:
             self._alert(
                 "Color Checker Target Not Detected",

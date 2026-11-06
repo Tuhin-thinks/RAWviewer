@@ -4,17 +4,16 @@ from __future__ import annotations
 
 import bisect
 import os
-from typing import Dict, List, Optional, Set
 
 import numpy as np
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QUrl, QMimeData, QPoint
-from PyQt6.QtGui import QPixmap, QImage, QWheelEvent, QKeyEvent, QTransform, QDrag
+from PyQt6.QtCore import QMimeData, QPoint, QSize, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtGui import QDrag, QImage, QKeyEvent, QPixmap, QTransform, QWheelEvent
 from PyQt6.QtWidgets import (
+    QApplication,
     QFrame,
     QLabel,
     QScrollArea,
     QWidget,
-    QApplication,
 )
 
 from rawviewer_ui.widgets import stamp_rawviewer_export_drag
@@ -56,7 +55,7 @@ def _path_key(path: str) -> str:
         return path or ""
 
 
-def _thumbnail_to_pixmap(thumbnail) -> Optional[QPixmap]:
+def _thumbnail_to_pixmap(thumbnail) -> QPixmap | None:
     if thumbnail is None:
         return None
     if isinstance(thumbnail, QPixmap):
@@ -132,19 +131,19 @@ class FilmstripCell(QLabel):
     def _start_drag(self):
         if not self.file_path or not os.path.exists(self.file_path):
             return
-        
+
         drag = QDrag(self)
         mime_data = QMimeData()
         mime_data.setUrls([QUrl.fromLocalFile(self.file_path)])
         stamp_rawviewer_export_drag(mime_data)
         drag.setMimeData(mime_data)
-        
+
         px = self.pixmap()
         if px and not px.isNull():
             drag_px = px.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             drag.setPixmap(drag_px)
             drag.setHotSpot(QPoint(drag_px.width() // 2, drag_px.height() // 2))
-            
+
         drag.exec(Qt.DropAction.CopyAction)
 
 
@@ -189,24 +188,24 @@ class FilmStripBar(QFrame):
             }
             """
         )
-        self._files: List[str] = []
-        self._metadata_cache: Dict[str, dict] = {}
-        self._aspects: List[float] = []
-        self._starts: List[int] = []
-        self._widths: List[int] = []
+        self._files: list[str] = []
+        self._metadata_cache: dict[str, dict] = {}
+        self._aspects: list[float] = []
+        self._starts: list[int] = []
+        self._widths: list[int] = []
         self._inner_width = 0
         self._row_offset = 0
         self._current_index = -1
         self._pending_index = -1
-        self._cells: Dict[int, QLabel] = {}
-        self._cell_pool: List[QLabel] = []
-        self._active_paths: Set[str] = set()
-        self._thumb_gen: Dict[str, int] = {}
-        self._path_to_index: Dict[str, int] = {}
+        self._cells: dict[int, QLabel] = {}
+        self._cell_pool: list[QLabel] = []
+        self._active_paths: set[str] = set()
+        self._thumb_gen: dict[str, int] = {}
+        self._path_to_index: dict[str, int] = {}
         self._generation = 0
-        self._bookmarked_norm: Set[str] = set()
+        self._bookmarked_norm: set[str] = set()
         # Measured slot widths from decoded/scaled thumbs (survives layout rebuilds).
-        self._measured_widths: Dict[str, int] = {}
+        self._measured_widths: dict[str, int] = {}
 
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._scroll = QScrollArea(self)
@@ -267,10 +266,10 @@ class FilmStripBar(QFrame):
 
     def set_files(
         self,
-        files: List[str],
-        bulk_metadata: Optional[dict] = None,
+        files: list[str],
+        bulk_metadata: dict | None = None,
         *,
-        select_index: Optional[int] = None,
+        select_index: int | None = None,
     ) -> None:
         self._generation += 1
         # Recycle every live cell — do not just clear the dict. Orphaned QLabel
@@ -377,8 +376,8 @@ class FilmStripBar(QFrame):
     def wants_thumbnail(self, file_path: str) -> bool:
         return file_path in self._active_paths
 
-    def paths_with_displayed_thumbnails(self) -> List[str]:
-        out: List[str] = []
+    def paths_with_displayed_thumbnails(self) -> list[str]:
+        out: list[str] = []
         for idx, cell in self._cells.items():
             if idx < 0 or idx >= len(self._files):
                 continue
@@ -510,7 +509,7 @@ class FilmStripBar(QFrame):
         # Horizontal room is only for the selection border; no extra fixed box padding.
         return scaled.width() + 2 * CELL_BORDER
 
-    def _scaled_thumb_for_path(self, path: str) -> Optional[QPixmap]:
+    def _scaled_thumb_for_path(self, path: str) -> QPixmap | None:
         """Build the display-sized pixmap for a path when it is not on-screen yet."""
         viewer = self._viewer
         if viewer is None or not hasattr(viewer, "image_cache"):
@@ -683,7 +682,7 @@ class FilmStripBar(QFrame):
         sb = self._scroll.horizontalScrollBar()
         sb.setValue(sb.value() - steps * max(80, ROW_H + MIN_GAP))
 
-    def _warm_slot_widths_from_cache(self, *, center_index: Optional[int] = None) -> None:
+    def _warm_slot_widths_from_cache(self, *, center_index: int | None = None) -> None:
         """Pre-measure slot widths for any thumbnails already in the global cache."""
         files = self._files
         if not files:
@@ -867,7 +866,7 @@ class FilmStripBar(QFrame):
             if idx not in visible_set:
                 self._recycle_cell(idx)
 
-        needed_paths: List[str] = []
+        needed_paths: list[str] = []
         relayout = False
         for idx in range(first, last + 1):
             path = self._files[idx]
@@ -930,7 +929,7 @@ class FilmStripBar(QFrame):
         elif badge is not None:
             badge.hide()
 
-    def set_bookmarked_norm_paths(self, norm_paths: Set[str]) -> None:
+    def set_bookmarked_norm_paths(self, norm_paths: set[str]) -> None:
         """Show star badges on filmstrip cells that are bookmarked (norm paths)."""
         self._bookmarked_norm = set(norm_paths or set())
         self._update_selection_style()

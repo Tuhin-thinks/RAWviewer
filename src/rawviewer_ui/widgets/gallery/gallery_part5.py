@@ -2,14 +2,29 @@
 from __future__ import annotations
 
 import logging
-import os, time
+import os
+import time
+
 from PyQt6.QtCore import QRect, QSize, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
-from rawviewer_ui.widgets import ThumbnailLabel
-from image_load_manager import get_image_load_manager, Priority
+
 from common_image_loader import is_raw_file
-from .helpers import _apply_external_gallery_caps, _env_int, _focus_gallery_switch_logs, _gallery_current_active_reserve, _gallery_prefetch_screens, _gallery_scheduling_budgets, _gallery_scroll_buffer_screens, _gallery_viewport_buffer_screens, _gallery_warmup_scheduling_budgets, _orient_debug_enabled
+from image_load_manager import Priority
+from rawviewer_ui.widgets import ThumbnailLabel
+
+from .helpers import (
+    _apply_external_gallery_caps,
+    _env_int,
+    _focus_gallery_switch_logs,
+    _gallery_current_active_reserve,
+    _gallery_prefetch_screens,
+    _gallery_scheduling_budgets,
+    _gallery_scroll_buffer_screens,
+    _gallery_viewport_buffer_screens,
+    _gallery_warmup_scheduling_budgets,
+    _orient_debug_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -656,9 +671,7 @@ class GalleryPart5:
         # Schedule with budget and target-sized thumbnails for visible tiles.
         scheduled = 0
         if len(self._active_tasks) >= active_cap:
-            if has_pending_current:
-                self._evict_stale_active_tasks(drop_prefetch=True)
-            elif self._evict_stale_active_tasks(max_age_s=2.0) == 0:
+            if has_pending_current or self._evict_stale_active_tasks(max_age_s=2.0) == 0:
                 self._evict_stale_active_tasks(drop_prefetch=True)
             has_pending_current = any(
                 pri == Priority.CURRENT for _, pri, *_ in load_tasks

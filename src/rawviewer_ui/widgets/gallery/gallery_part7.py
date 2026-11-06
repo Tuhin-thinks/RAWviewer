@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
-from PyQt6.QtCore import QRect, QTimer, Qt
+
+from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QLabel
+
 from rawviewer_ui.widgets import ThumbnailLabel
+
 from .helpers import _focus_gallery_switch_logs, _orient_debug_enabled
 
 logger = logging.getLogger(__name__)
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 class GalleryPart7:
 
     def _rebuild_layout_from_image_index(
-        self, start_image_idx: int, anchor_state: Optional[dict] = None
+        self, start_image_idx: int, anchor_state: dict | None = None
     ) -> bool:
         """Recompute justified rows from *start_image_idx* onward (partial layout update)."""
         if (

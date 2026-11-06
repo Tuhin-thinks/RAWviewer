@@ -1,12 +1,15 @@
 """Adjust mixin part 2 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
-import theme
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+
+import theme
 from raw_adjustments import DEFAULT_ADJUSTMENTS, SLIDER_SPECS, WB_PRESETS
-from .helpers import AdjustSlider, AdjustValueLabel, CollapsibleSection, _adjust_combo_stylesheet, _qta_icon_safe
+
+from .helpers import CollapsibleSection, _adjust_combo_stylesheet, _qta_icon_safe
+
 
 class AdjustPart2:
     def _build_compare_button(self, row: QHBoxLayout) -> None:

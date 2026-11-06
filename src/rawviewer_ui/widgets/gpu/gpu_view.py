@@ -21,26 +21,19 @@ Environment toggles:
   ``cudaGraphicsGLRegisterImage`` (Phase 2c; falls back to GL_TEX / pixmap).
 """
 
-import os
-import sys
 from typing import Any
 
-from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, pyqtSignal, QEvent, QMimeData, QUrl
-from PyQt6.QtGui import QKeyEvent, QPixmap, QPainter, QColor, QPen, QDrag, QBrush, QImage, QTransform
+from PyQt6.QtCore import QPointF, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import (
-    QGraphicsView,
-    QGraphicsScene,
-    QGraphicsPixmapItem,
-    QGraphicsRectItem,
     QGraphicsLineItem,
-    QGraphicsEllipseItem,
-    QGraphicsObject,
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
     QLabel,
-    QApplication,
 )
 
 from rawviewer_ui.overlays.composition_grid import CompositionGridGraphicsItem
-from rawviewer_ui.widgets import stamp_rawviewer_export_drag
 from rawviewer_ui.widgets.gpu.gpu_item import CompareHandleItem, RgbGlImageItem
 from rawviewer_ui.widgets.gpu.gpu_view_part1 import GpuImageViewPart1
 from rawviewer_ui.widgets.gpu.gpu_view_part2 import GpuImageViewPart2

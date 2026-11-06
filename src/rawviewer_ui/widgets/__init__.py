@@ -1,11 +1,25 @@
 import os
-from PyQt6.QtWidgets import QLabel, QApplication, QSlider
+
 from PyQt6.QtCore import (
-    pyqtSignal, Qt, QObject, QPoint, QUrl, QMimeData, QPointF, QRect, QRectF,
+    QMimeData,
+    QObject,
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    Qt,
+    QUrl,
+    pyqtSignal,
 )
 from PyQt6.QtGui import (
-    QPixmap, QDrag, QPainter, QColor, QPolygonF, QPen,
+    QColor,
+    QDrag,
+    QPainter,
+    QPen,
+    QPixmap,
+    QPolygonF,
 )
+from PyQt6.QtWidgets import QApplication, QLabel, QSlider
 
 import theme
 
@@ -87,7 +101,7 @@ class ThumbnailLabel(QLabel):
     def _start_drag(self):
         if not self.file_path or not os.path.exists(self.file_path):
             return
-        
+
         # Check if the parent/viewer has a selection and if this thumbnail is part of it
         drag_paths = [self.file_path]
         try:
@@ -99,7 +113,7 @@ class ThumbnailLabel(QLabel):
                     pv = p
                     break
                 p = p.parent()
-            
+
             if pv is not None and hasattr(pv, "_is_gallery_path_selected") and hasattr(pv, "_gallery_selected_canonical_paths"):
                 if pv._is_gallery_path_selected(self.file_path):
                     selected = pv._gallery_selected_canonical_paths()
@@ -113,13 +127,13 @@ class ThumbnailLabel(QLabel):
         mime_data.setUrls([QUrl.fromLocalFile(p) for p in drag_paths])
         stamp_rawviewer_export_drag(mime_data)
         drag.setMimeData(mime_data)
-        
+
         px = self.pixmap()
         if px and not px.isNull():
             drag_px = px.scaled(120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
             drag.setPixmap(drag_px)
             drag.setHotSpot(QPoint(drag_px.width() // 2, drag_px.height() // 2))
-            
+
         drag.exec(Qt.DropAction.CopyAction)
 
     def set_original_pixmap(self, pixmap):
@@ -490,12 +504,12 @@ class GalleryZoomSlider(QSlider):
     def setValue(self, val):
         min_val = self.minimum()
         max_val = self.maximum()
-        
+
         # Calculate possible step values
         steps = list(range(min_val, max_val + 1, self.ZOOM_STEP))
         if not steps or steps[-1] != max_val:
             steps.append(max_val)
-            
+
         # Find closest step
         snapped = min(steps, key=lambda x: abs(x - val))
         old = self.value()
@@ -556,7 +570,7 @@ class GalleryZoomSlider(QSlider):
             QPointF(x_end, y_center + max_thick / 2.0),
             QPointF(current_x, y_center + current_thick / 2.0)
         ])
-        
+
         # Inactive color: subtle dark-mode transparent gray
         inactive_color = QColor(*theme.INK_RGB, 30)
         painter.setPen(Qt.PenStyle.NoPen)
@@ -570,7 +584,7 @@ class GalleryZoomSlider(QSlider):
             QPointF(current_x, y_center + current_thick / 2.0),
             QPointF(x_start, y_center + min_thick / 2.0)
         ])
-        
+
         # Active color: neutral ink-muted, not ember -- resizing thumbnails
         # isn't a selection or an armed tool (rule 2 stays reserved for those).
         active_color = QColor(theme.INK_MUTED)

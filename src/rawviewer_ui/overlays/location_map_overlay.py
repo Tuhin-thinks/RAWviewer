@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Callable
 
-from PyQt6.QtCore import QObject, Qt, pyqtSignal, QPoint, QRectF, QRunnable, QThreadPool, QUrl
-from PyQt6.QtGui import QCursor, QMouseEvent, QPainter, QPainterPath, QColor, QPen, QDesktopServices
-from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget, QLabel, QHBoxLayout
+from PyQt6.QtCore import QObject, QPoint, QRectF, QRunnable, Qt, QThreadPool, QUrl, pyqtSignal
+from PyQt6.QtGui import QColor, QCursor, QDesktopServices, QMouseEvent, QPainter, QPainterPath, QPen
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 import metadata_backend
 from location_map_engine import (
-    DEFAULT_ZOOM,
-    LocationMapModel,
     WIDGET_H,
     WIDGET_W,
+    LocationMapModel,
     default_map_cache_dir,
     probe_map_tiles_online,
 )
@@ -39,7 +38,7 @@ def _tag_text(tags: dict, *keys: str) -> str:
     return ""
 
 
-def _ratio_to_float(v: any) -> Optional[float]:
+def _ratio_to_float(v: any) -> float | None:
     try:
         if hasattr(v, "num") and hasattr(v, "den"):
             den = float(v.den) if float(v.den) != 0 else 1.0
@@ -53,7 +52,7 @@ def _ratio_to_float(v: any) -> Optional[float]:
         return None
 
 
-def gps_to_decimal(gps_vals: any, ref: str) -> Optional[float]:
+def gps_to_decimal(gps_vals: any, ref: str) -> float | None:
     try:
         vals = getattr(gps_vals, "values", gps_vals)
         if isinstance(vals, str):
@@ -84,7 +83,7 @@ def gps_to_decimal(gps_vals: any, ref: str) -> Optional[float]:
         return None
 
 
-def extract_gps_coordinates(file_path: str) -> Optional[tuple[float, float]]:
+def extract_gps_coordinates(file_path: str) -> tuple[float, float] | None:
     try:
         tags = metadata_backend.process_file_from_path(
             file_path,
@@ -135,14 +134,14 @@ class _MapLoadWorker(QRunnable):
         try:
             if self._cancelled:
                 return
-            
+
             # 1. Extract GPS for current file
             coords = extract_gps_coordinates(self._current_path)
             if coords is None:
                 if not self._cancelled:
                     self.signals.finished.emit(None, "no_gps")
                 return
-            
+
             if self._cancelled:
                 return
 
@@ -151,19 +150,19 @@ class _MapLoadWorker(QRunnable):
 
             if self._cancelled:
                 return
-            
+
             lat, lon = coords
-            
+
             # 2. Build LocationMapModel
             model = LocationMapModel(
                 lat,
                 lon,
                 self._cache_dir,
             )
-            
+
             if self._cancelled:
                 return
-                
+
             self.signals.finished.emit(model, "")
         except Exception as exc:
             if self._cancelled:
@@ -198,9 +197,9 @@ class _Probe(QRunnable):
 class _MapCanvas(QWidget):
     """Inner QWidget that draws the stitched map tiles and location pins."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._model: Optional[LocationMapModel] = None
+        self._model: LocationMapModel | None = None
         self._loading: bool = False
         self.setFixedSize(WIDGET_W, WIDGET_H)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -208,7 +207,7 @@ class _MapCanvas(QWidget):
         # Enable dragging the map card by clicking on the canvas as well
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
-    def set_model(self, model: Optional[LocationMapModel]) -> None:
+    def set_model(self, model: LocationMapModel | None) -> None:
         self._model = model
         self.update()
 
@@ -258,7 +257,7 @@ class _MapCanvas(QWidget):
 class MapCoordinateBadge(QWidget):
     """Clickable GPS coordinate badge overlay that opens Google Maps."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.lat = 0.0
         self.lon = 0.0
@@ -325,15 +324,15 @@ class ImageLocationMapWidget(QWidget):
     _CARD_W = WIDGET_W + 8
     _CARD_H = WIDGET_H + 8
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._model: Optional[LocationMapModel] = None
-        self._worker: Optional[_MapLoadWorker] = None
+        self._model: LocationMapModel | None = None
+        self._worker: _MapLoadWorker | None = None
         self._load_generation = 0
-        self._probe: Optional[_Probe] = None
-        self._drag_press_global: Optional[QPoint] = None
-        self._drag_pos_at_press: Optional[QPoint] = None
-        self._online: Optional[bool] = None
+        self._probe: _Probe | None = None
+        self._drag_press_global: QPoint | None = None
+        self._drag_pos_at_press: QPoint | None = None
+        self._online: bool | None = None
         self._active_signals = set()
 
         self.setFixedSize(self._CARD_W, self._CARD_H)
@@ -370,9 +369,9 @@ class ImageLocationMapWidget(QWidget):
 
     def load_for_file(
         self,
-        current_path: Optional[str],
+        current_path: str | None,
         *,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
     ) -> None:
         self._cancel_worker()
         self._model = None

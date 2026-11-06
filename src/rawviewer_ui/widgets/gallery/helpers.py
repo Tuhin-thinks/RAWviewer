@@ -1,8 +1,9 @@
 """Module-level helpers for the JustifiedGallery package (Phase 4 split)."""
 from __future__ import annotations
 
-import logging, os, sys
-from typing import Optional
+import logging
+import os
+import sys
 
 import numpy as np
 from PyQt6.QtCore import Qt
@@ -11,7 +12,6 @@ from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 import theme
 from image_load_manager import Priority
-from common_image_loader import is_external_or_network_volume, moderate_external_cap_enabled, volume_speed_tier
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class _ScrollDateBubble(QWidget):
         text: str,
         *,
         center_y: int,
-        pixmap: Optional[QPixmap] = None,
+        pixmap: QPixmap | None = None,
         file_path: str = "",
     ) -> None:
         if not text:
@@ -214,7 +214,7 @@ def _apply_external_gallery_caps(
     max_widgets: int,
     max_tasks: int,
     active_cap: int,
-    folder_path: Optional[str],
+    folder_path: str | None,
 ) -> tuple[int, int, int]:
     """Lower gallery scheduling on external/USB/network volumes (post-warmup too).
 
@@ -321,7 +321,7 @@ def _gallery_idle_load_priority() -> Priority:
         return Priority.PRELOAD_NEXT
 
 
-def _thumbnail_data_to_base_pixmap(thumbnail_data) -> Optional[QPixmap]:
+def _thumbnail_data_to_base_pixmap(thumbnail_data) -> QPixmap | None:
     """Convert manager/cache thumbnail payload to a gallery base QPixmap."""
     if thumbnail_data is None:
         return None

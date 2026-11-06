@@ -1,11 +1,22 @@
 """Adjust mixin part 5 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
-import theme
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QSettings, Qt, QThreadPool
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QMenu, QPushButton, QVBoxLayout, QWidget
-from .helpers import CollapsibleSection, _GLOBAL_SECTION_DEFAULT_ORDER, _GLOBAL_SECTION_ORDER_SETTING, _LUT_THUMB_CACHE_MAX, _LUT_THUMB_DEBOUNCE_MS, _LutThumbWorker, _u8_rgb_to_pixmap
+
+import theme
+
+from .helpers import (
+    _GLOBAL_SECTION_DEFAULT_ORDER,
+    _GLOBAL_SECTION_ORDER_SETTING,
+    _LUT_THUMB_CACHE_MAX,
+    _LUT_THUMB_DEBOUNCE_MS,
+    CollapsibleSection,
+    _LutThumbWorker,
+    _u8_rgb_to_pixmap,
+)
+
 
 class AdjustPart5:
 

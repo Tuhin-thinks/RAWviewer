@@ -1,15 +1,35 @@
 """Adjust mixin part 3 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
 
-import theme
 import os
-from typing import Dict
+
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QListWidget, QSizePolicy, QSlider, QVBoxLayout
-from raw_adjustments import AS_SHOT_TEMP_KEY, CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, RECOVERY_BASELINE_KEY, SLIDER_SPECS
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH, STRENGTH_KEY as DB_STRENGTH_KEY
+from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QSizePolicy, QSlider, QVBoxLayout
+
+import theme
+from raw_adjustments import (
+    AS_SHOT_TEMP_KEY,
+    CHROMA_NR_ON_VALUE,
+    DEFAULT_ADJUSTMENTS,
+    RECOVERY_BASELINE_KEY,
+    SLIDER_SPECS,
+)
+from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+from raw_dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
 from raw_hsl import HSL_COLOR_NAMES
-from .helpers import AdjustSlider, AdjustValueLabel, CollapsibleSection, _CHANNEL_CURVE_KEYS_BY_NAME, _FileDropFrame, _LOOKS_NAME_ROLE, _LooksRowWidget, _adjust_combo_stylesheet, _edit_settings_clipboard
+
+from .helpers import (
+    _CHANNEL_CURVE_KEYS_BY_NAME,
+    _LOOKS_NAME_ROLE,
+    AdjustSlider,
+    AdjustValueLabel,
+    CollapsibleSection,
+    _adjust_combo_stylesheet,
+    _edit_settings_clipboard,
+    _FileDropFrame,
+    _LooksRowWidget,
+)
+
 
 class AdjustPart3:
 
@@ -180,9 +200,7 @@ class AdjustPart3:
                     self._lut_thumb_rows[name] = row
                 # Prefer the just-applied .xmp highlight over an embedded .cube
                 # so click-to-apply feedback stays on the preset row.
-                if kind == "xmp" and wanted_xmp and name == wanted_xmp:
-                    select_item = item
-                elif (
+                if kind == "xmp" and wanted_xmp and name == wanted_xmp or (
                     kind == "cube"
                     and wanted_lut
                     and name == wanted_lut
@@ -398,8 +416,8 @@ class AdjustPart3:
         color_row.addWidget(self._hsl_color_combo, 1)
         layout.addLayout(color_row)
 
-        self._hsl_sliders: Dict[str, QSlider] = {}
-        self._hsl_value_labels: Dict[str, QLabel] = {}
+        self._hsl_sliders: dict[str, QSlider] = {}
+        self._hsl_value_labels: dict[str, QLabel] = {}
         for channel, label in (("Hue", "Hue"), ("Saturation", "Sat"), ("Luminance", "Lum")):
             row = QHBoxLayout()
             row.setSpacing(6)
@@ -442,7 +460,7 @@ class AdjustPart3:
         c = color or self._hsl_color_name()
         return f"{channel}Adjustment{c}"
 
-    def _load_hsl_sliders_from_adj(self, adj: Dict[str, float], color: str | None = None) -> None:
+    def _load_hsl_sliders_from_adj(self, adj: dict[str, float], color: str | None = None) -> None:
         c = color or self._hsl_color_name()
         for channel in ("Hue", "Saturation", "Luminance"):
             slider = self._hsl_sliders.get(channel)
@@ -501,7 +519,7 @@ class AdjustPart3:
             val_lbl.setText("+0")
         self._emit_preview_and_save()
 
-    def set_adjustments(self, adj: Dict[str, float]) -> None:
+    def set_adjustments(self, adj: dict[str, float]) -> None:
         self._mask_user_hidden = False
         self.disarm_dodge_burn()
         from raw_dodge_burn import MASK_KEY as _db_mask_key
@@ -598,7 +616,6 @@ class AdjustPart3:
             from raw_lut import (
                 LUT_AMOUNT_KEY,
                 LUT_NAME_KEY,
-                LUT_SPACE_KEY,
                 LUT_SPACE_REC709,
                 lut_working_space,
             )

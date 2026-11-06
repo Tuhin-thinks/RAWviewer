@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import logging
-import sys, time
-from typing import Any, Dict, List, Optional
-from PyQt6.QtCore import QTimer, Qt
+import sys
+import time
+from typing import Any
+
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
-from rawviewer_ui.widgets import ThumbnailLabel
+
 from image_cache import LRUCache
-from image_load_manager import get_image_load_manager, Priority
+from image_load_manager import Priority, get_image_load_manager
+from rawviewer_ui.widgets import ThumbnailLabel
+
 from .helpers import _env_int, _env_true
 
 logger = logging.getLogger(__name__)
@@ -49,10 +53,10 @@ class GalleryPart1:
         # Decoded-thumbnail raw aspect per path (filmstrip-style ground truth). Prefer this
         # over EXIF for tile geometry so a portrait image can't be crop-fit into a landscape
         # tile from stale metadata / an evicted pixmap. Applied through _display_aspect.
-        self._measured_raw_aspects: "dict[str, float]" = {}
+        self._measured_raw_aspects: dict[str, float] = {}
         # Paths whose EXIF was already looked up from the DB this folder (hit or miss);
         # build_gallery must not repeat main-thread bulk SQL for them on every rebuild.
-        self._metadata_fetch_attempted: "set[str]" = set()
+        self._metadata_fetch_attempted: set[str] = set()
         self._orientation_flip_paths: set[str] = set()
         self._visible_widgets = {}  # {index: ThumbnailLabel}
         self._widget_pool = []
@@ -62,14 +66,14 @@ class GalleryPart1:
         self._building = False
         self._gallery_generation = 0
         self._active_tasks = {}  # path -> (started_ts, Priority)
-        self._thumb_fail_counts: Dict[str, int] = {}
+        self._thumb_fail_counts: dict[str, int] = {}
         # Negative memo for the synchronous global-cache base fetch. A cold
         # section jump has no cached thumbnails, and the failed disk/SQLite
         # lookup costs ~5ms per tile — re-paying it for the same leading tiles
         # on every 16ms budget pass starved the rest of the viewport (blank
         # tiles until an input event triggered extra passes). Remember misses
         # briefly; async production clears the entry on thumbnail_ready.
-        self._base_fetch_miss_ts: Dict[str, float] = {}
+        self._base_fetch_miss_ts: dict[str, float] = {}
         self._metadata_cache = {}
         # Thumbnail cache: base + per-bucket scaled. Count-capped via LRUCache
         # and additionally byte-capped by _enforce_thumbnail_cache_budget().
@@ -182,8 +186,8 @@ class GalleryPart1:
         # RAWVIEWER_GALLERY_TILE_APPLY_BATCH (default 8).
         # Also coalesce deferred on_thumbnail_ready work (was one QTimer.singleShot(0)
         # per tile) into the same drain timer.
-        self._pending_tile_applies: "dict[str, bool]" = {}
-        self._pending_thumb_ready: "dict[str, object]" = {}
+        self._pending_tile_applies: dict[str, bool] = {}
+        self._pending_thumb_ready: dict[str, object] = {}
         self._tile_apply_timer = QTimer(self)
         self._tile_apply_timer.setSingleShot(True)
         self._tile_apply_timer.timeout.connect(self._drain_tile_applies)
@@ -314,7 +318,7 @@ class GalleryPart1:
         self._is_zooming = False
         self._zoom_anchor_state = None
 
-    def _layout_matches_current_images(self, images: Optional[List[str]] = None) -> bool:
+    def _layout_matches_current_images(self, images: list[str] | None = None) -> bool:
         """True when cached layout rects correspond to the current image list."""
         seq = list(images if images is not None else self.images)
         return bool(
@@ -450,9 +454,7 @@ class GalleryPart1:
         to_remove: list[str] = []
         for path in self._active_tasks:
             ts = self._active_task_started_ts(path) or now
-            if now - ts > max_age_s:
-                to_remove.append(path)
-            elif drop_prefetch and self._active_task_priority(path) != Priority.CURRENT:
+            if now - ts > max_age_s or drop_prefetch and self._active_task_priority(path) != Priority.CURRENT:
                 to_remove.append(path)
         for path in to_remove:
             self._active_tasks.pop(path, None)
@@ -540,7 +542,7 @@ class GalleryPart1:
         except Exception:
             pass
 
-    def _pixmap_matches(widget, pixmap: Optional[QPixmap]) -> bool:
+    def _pixmap_matches(self, widget, pixmap: QPixmap | None) -> bool:
         """True when the widget already displays the same pixmap instance."""
         if pixmap is None or pixmap.isNull():
             current = widget.pixmap()
@@ -575,7 +577,7 @@ class GalleryPart1:
                 return True
         return False
 
-    def _apply_pixmap_if_changed(self, widget, pixmap: Optional[QPixmap]) -> None:
+    def _apply_pixmap_if_changed(self, widget, pixmap: QPixmap | None) -> None:
         if self._pixmap_matches(widget, pixmap):
             return
         if pixmap is None or pixmap.isNull():
@@ -616,7 +618,7 @@ class GalleryPart1:
         y = max(0, (sh - th) // 2)
         return scaled.copy(x, y, tw, th)
 
-    def get_scroll_anchor_path(self) -> Optional[str]:
+    def get_scroll_anchor_path(self) -> str | None:
         """Return the file path at the top of the current viewport (for scroll restore)."""
         items = self._gallery_layout_items
         if not items:
@@ -642,7 +644,7 @@ class GalleryPart1:
             return None
         return items[idx].get("file_path")
 
-    def _capture_scroll_anchor_state(self) -> Optional[dict]:
+    def _capture_scroll_anchor_state(self) -> dict | None:
         """Capture the upper-left visible thumbnail before layout rebuild."""
         scroll = self._scroll_area_widget()
         items = self._gallery_layout_items
@@ -665,7 +667,7 @@ class GalleryPart1:
             "offset_px": int(rect.top() - scroll_y),
         }
 
-    def _scroll_anchor_state_for_rebuild(self) -> Optional[dict]:
+    def _scroll_anchor_state_for_rebuild(self) -> dict | None:
         """Capture scroll anchor for aspect/metadata layout rebuilds.
 
         Prefer the current (or pending entry) image when it is in the viewport
@@ -713,7 +715,7 @@ class GalleryPart1:
                     }
         return self._capture_scroll_anchor_state()
 
-    def _zoom_scroll_anchor_for_rebuild(self) -> Optional[dict]:
+    def _zoom_scroll_anchor_for_rebuild(self) -> dict | None:
         """Map the zoom-session anchor to build_gallery scroll-restore format."""
         state = self._zoom_anchor_state
         if not state or not state.get("file_path"):
@@ -723,7 +725,7 @@ class GalleryPart1:
             offset = state.get("offset_y_px", 0)
         return {"file_path": state["file_path"], "offset_px": int(offset)}
 
-    def _restore_scroll_anchor_state(self, state: Optional[dict]) -> bool:
+    def _restore_scroll_anchor_state(self, state: dict | None) -> bool:
         """Restore scroll so the anchored tile stays at the same viewport offset."""
         if not state:
             return False

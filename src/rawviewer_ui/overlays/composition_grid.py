@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple
 
-from PyQt6.QtCore import Qt, QRectF
+from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QPainter, QPen
 from PyQt6.QtWidgets import QGraphicsItem
 
-GRID_MODES: Tuple[str, ...] = (
+GRID_MODES: tuple[str, ...] = (
     "off",
     "thirds",
     "diagonal",
@@ -32,7 +31,7 @@ _INV_PHI = 1.0 / _PHI
 _PHI_MINOR = 1.0 - _INV_PHI
 
 
-def phi_grid_positions() -> Tuple[float, float]:
+def phi_grid_positions() -> tuple[float, float]:
     """Normalized positions (minor, major) for vertical and horizontal phi-grid lines."""
     return _PHI_MINOR, _INV_PHI
 

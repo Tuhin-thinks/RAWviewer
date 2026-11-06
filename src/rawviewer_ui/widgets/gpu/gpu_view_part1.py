@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import sys
-from typing import Any
 
-from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QEvent, QMimeData, QUrl, QObject
-from PyQt6.QtGui import QKeyEvent, QPixmap, QPainter, QColor, QPen, QDrag, QBrush, QImage, QTransform
-from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsLineItem, QGraphicsEllipseItem, QGraphicsObject, QLabel, QApplication
+from PyQt6.QtCore import QPointF, QRect, QRectF, Qt
+from PyQt6.QtGui import QColor, QImage, QPainter, QPen, QPixmap, QTransform
+from PyQt6.QtWidgets import (
+    QGraphicsRectItem,
+)
 
-from rawviewer_ui.widgets.gpu.gpu_state import _env_true, gpu_cuda_gl_enabled, gpu_gl_tex_enabled
+from rawviewer_ui.widgets.gpu.gpu_state import _env_true, gpu_cuda_gl_enabled
 
 
 class GpuImageViewPart1:

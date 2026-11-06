@@ -7,7 +7,6 @@ Scene coordinates == image pixels. Insets are fractions of width/height
 from __future__ import annotations
 
 import sys
-from typing import Optional
 
 from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
@@ -38,8 +37,8 @@ class CropOverlayItem(QGraphicsObject):
         self._right = 0.0
         self._top = 0.0
         self._bottom = 0.0
-        self._aspect: Optional[float] = None  # width/height, None = free
-        self._drag_mode: Optional[str] = None
+        self._aspect: float | None = None  # width/height, None = free
+        self._drag_mode: str | None = None
         self._drag_origin = QPointF()
         self._drag_start_insets = (0.0, 0.0, 0.0, 0.0)
         self._hover_mode = ""
@@ -65,7 +64,7 @@ class CropOverlayItem(QGraphicsObject):
     def insets(self) -> tuple[float, float, float, float]:
         return (self._left, self._right, self._top, self._bottom)
 
-    def set_aspect_ratio(self, aspect: Optional[float]) -> None:
+    def set_aspect_ratio(self, aspect: float | None) -> None:
         """``aspect`` = width/height, or None for free crop."""
         self._aspect = float(aspect) if aspect and aspect > 0 else None
         if self._aspect is not None:

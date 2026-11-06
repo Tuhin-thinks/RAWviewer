@@ -2,26 +2,12 @@
 
 from __future__ import annotations
 
-import os
-import sys
-from typing import Any
-
-from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, pyqtSignal, QEvent, QMimeData, QUrl
-from PyQt6.QtGui import QKeyEvent, QPixmap, QPainter, QColor, QPen, QDrag, QBrush, QImage, QTransform
+from PyQt6.QtCore import QPointF, QRectF
+from PyQt6.QtGui import QColor, QImage, QPainter, QPen, QTransform
 from PyQt6.QtWidgets import (
-    QGraphicsView,
-    QGraphicsScene,
-    QGraphicsPixmapItem,
-    QGraphicsRectItem,
-    QGraphicsLineItem,
     QGraphicsEllipseItem,
     QGraphicsObject,
-    QLabel,
-    QApplication,
 )
-
-from rawviewer_ui.overlays.composition_grid import CompositionGridGraphicsItem
-from rawviewer_ui.widgets import stamp_rawviewer_export_drag
 
 
 class CompareHandleItem(QGraphicsEllipseItem):
@@ -40,11 +26,11 @@ class CompareHandleItem(QGraphicsEllipseItem):
         cx = rect.center().x()
         cy = rect.center().y()
         h = rect.height()
-        
+
         # Pen for white vertical grip lines
         pen = QPen(QColor(255, 255, 255, 200), 1.2)
         painter.setPen(pen)
-        
+
         offset = 2.0
         line_h = h * 0.4
         painter.drawLine(QPointF(cx - offset, cy - line_h / 2.0), QPointF(cx - offset, cy + line_h / 2.0))
@@ -242,7 +228,6 @@ class RgbGlImageItem(QGraphicsObject):
         if slot is None:
             return
         try:
-            import ctypes
 
             def _del_tex(tex_id: int) -> None:
                 fns = self._gl_fns
@@ -280,6 +265,9 @@ class RgbGlImageItem(QGraphicsObject):
             self._cuda_upload_failed = True
             return False
         try:
+            from PyQt6.QtOpenGL import QOpenGLFunctions_2_0
+            from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+
             from gpu_gl_bridge import (
                 CudaGlTextureSlot,
                 ensure_rgba_u8,
@@ -287,8 +275,6 @@ class RgbGlImageItem(QGraphicsObject):
                 register_gl_texture,
                 upload_device_rgba_to_gl,
             )
-            from PyQt6.QtOpenGL import QOpenGLFunctions_2_0
-            from PyQt6.QtOpenGLWidgets import QOpenGLWidget
         except Exception:
             self._cuda_upload_failed = True
             return False
@@ -368,7 +354,6 @@ class RgbGlImageItem(QGraphicsObject):
 
     def _apply_painter_gl_matrices(self, painter: QPainter, fns) -> None:
         """Map item pixel space through QPainter's transform (Compatibility profile)."""
-        from PyQt6.QtGui import QTransform
 
         GL_PROJECTION = 0x1701
         GL_MODELVIEW = 0x1700

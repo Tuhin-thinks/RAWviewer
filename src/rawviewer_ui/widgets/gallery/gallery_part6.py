@@ -2,13 +2,25 @@
 from __future__ import annotations
 
 import logging
-import os, time
-from typing import List, Optional
+import os
+import time
+
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
+
 from common_image_loader import is_raw_file
-from .helpers import _batch_tile_apply_enabled, _focus_gallery_switch_logs, _gallery_idle_load_priority, _gallery_idle_preload_batch, _gallery_idle_preload_ms, _orient_debug_enabled, _thumbnail_data_to_base_pixmap, _tile_apply_batch_size
+
+from .helpers import (
+    _batch_tile_apply_enabled,
+    _focus_gallery_switch_logs,
+    _gallery_idle_load_priority,
+    _gallery_idle_preload_batch,
+    _gallery_idle_preload_ms,
+    _orient_debug_enabled,
+    _thumbnail_data_to_base_pixmap,
+    _tile_apply_batch_size,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +156,7 @@ class GalleryPart6:
             # Schedule next batch after a short delay (progressive background loading)
             self._idle_preload_timer.start(_gallery_idle_preload_ms())
 
-    def warm_thumbnails_from_global_cache(self, paths: List[str]) -> int:
+    def warm_thumbnails_from_global_cache(self, paths: list[str]) -> int:
         """Seed gallery pixmap cache from global ImageCache (e.g. after film strip)."""
         if not paths:
             return 0
@@ -712,7 +724,7 @@ class GalleryPart6:
             start = i
         return start
 
-    def _partial_rebuild_start_image_index(self, changed_paths: set[str]) -> Optional[int]:
+    def _partial_rebuild_start_image_index(self, changed_paths: set[str]) -> int | None:
         """Earliest image index whose justified row must be recomputed."""
         if not changed_paths:
             return None

@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import logging
-import os, time
-from typing import Optional
+import os
+import time
+
 from PyQt6.QtCore import QRect, QTimer
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
-from .helpers import _ScrollDateBubble, _env_int, _focus_gallery_switch_logs, _orient_debug_enabled
+
+from .helpers import _env_int, _focus_gallery_switch_logs, _orient_debug_enabled, _ScrollDateBubble
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class GalleryPart4:
                 return i
         return -1
 
-    def _scroll_preview_pixmap(self, path: str) -> Optional[QPixmap]:
+    def _scroll_preview_pixmap(self, path: str) -> QPixmap | None:
         """In-memory thumbnail at ``path``, or None. Never decodes, never hits disk.
 
         Gallery LRU first (already an oriented QPixmap). Global ImageCache only
@@ -310,7 +312,7 @@ class GalleryPart4:
             p = p.parent()
         return p.viewport().width() if p else self.width()
 
-    def _scroll_area_widget(self) -> Optional[QScrollArea]:
+    def _scroll_area_widget(self) -> QScrollArea | None:
         scroll = self._scroll_area
         if scroll is None:
             p = self.parent()
@@ -352,7 +354,7 @@ class GalleryPart4:
         if scroll is not None:
             scroll.updateGeometry()
 
-    def _apply_scroll_anchor_state(self, state: Optional[dict]) -> bool:
+    def _apply_scroll_anchor_state(self, state: dict | None) -> bool:
         """Restore viewport scroll; retry on next tick if the scrollbar range is still settling."""
         if not state:
             return False
@@ -650,7 +652,9 @@ class GalleryPart4:
             target_calls = _env_int("RAWVIEWER_SCROLL_CPROFILE_CALLS", 40, minimum=1)
             n = getattr(self, "_scroll_cprofile_calls", 0)
             if n < target_calls:
-                import cProfile, pstats, io as _io
+                import cProfile
+                import io as _io
+                import pstats
                 pr = cProfile.Profile()
                 pr.enable()
                 result = self._load_visible_images_impl()

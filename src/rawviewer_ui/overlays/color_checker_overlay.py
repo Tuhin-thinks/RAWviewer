@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Tuple
 
 from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPolygonF
@@ -24,7 +23,7 @@ class ColorCheckerOverlay(QWidget):
     _HANDLE = 8.0
     _SEED = ((0.22, 0.28), (0.78, 0.28), (0.78, 0.72), (0.22, 0.72))
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -37,13 +36,13 @@ class ColorCheckerOverlay(QWidget):
         self.corners = [QPointF(x, y) for x, y in self._SEED]
         self.update()
 
-    def set_normalized_corners(self, corners: List[Tuple[float, float]]) -> None:
+    def set_normalized_corners(self, corners: list[tuple[float, float]]) -> None:
         if len(corners) != 4:
             return
         self.corners = [QPointF(x, y) for x, y in corners]
         self.update()
 
-    def get_pixel_corners(self, width: int, height: int) -> List[Tuple[float, float]]:
+    def get_pixel_corners(self, width: int, height: int) -> list[tuple[float, float]]:
         return [(p.x() * width, p.y() * height) for p in self.corners]
 
     def _nearest_handle(self, pos, w: int, h: int) -> int:

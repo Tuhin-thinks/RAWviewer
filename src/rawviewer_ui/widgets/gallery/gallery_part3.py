@@ -3,14 +3,21 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
-from PyQt6.QtCore import QEvent, QSize, QTimer, Qt
+
+import numpy as np
+from PyQt6.QtCore import QEvent, QSize, Qt, QTimer
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
-import numpy as np
-from image_load_manager import get_image_load_manager, Priority
+
 from common_image_loader import is_raw_file
-from .helpers import _focus_gallery_switch_logs, _min_layout_pixmap_dim, _rotate_pixmap_cw, _thumbnail_data_to_base_pixmap
+from image_load_manager import Priority
+
+from .helpers import (
+    _focus_gallery_switch_logs,
+    _min_layout_pixmap_dim,
+    _rotate_pixmap_cw,
+    _thumbnail_data_to_base_pixmap,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +81,7 @@ class GalleryPart3:
         self._invalidate_scaled_thumbnails_for_path(file_path)
         return oriented
 
-    def _global_cache_to_base_pixmap(self, path: str) -> Optional[QPixmap]:
+    def _global_cache_to_base_pixmap(self, path: str) -> QPixmap | None:
         """Pull an oriented base pixmap from the global ImageCache for gallery tiles.
 
         Memory tiers only — ``get_grid``/``get_thumbnail`` fall through to disk
@@ -97,7 +104,7 @@ class GalleryPart3:
             return None
 
     def _layout_aspect_for_path(
-        self, file_path: str, pixmap: Optional[QPixmap] = None
+        self, file_path: str, pixmap: QPixmap | None = None
     ) -> float:
         """Width/height for justified rows — measured pixels are ground truth once known.
 
@@ -145,6 +152,8 @@ class GalleryPart3:
 
     def _layout_aspect_needs_rebuild(self, old_aspect: float, new_aspect: float) -> bool:
         """True when tile geometry must change (including portrait ↔ landscape flip)."""
+        from .justified_gallery import JustifiedGallery
+
         old_o = JustifiedGallery._aspect_orientation_flag(old_aspect)
         new_o = JustifiedGallery._aspect_orientation_flag(new_aspect)
         if old_o != 0 and new_o != 0 and old_o != new_o:
@@ -183,7 +192,7 @@ class GalleryPart3:
     def _base_aspect_for_path(self, file_path: str) -> float:
         return self._layout_aspect_for_path(file_path)
 
-    def _reconcile_tile_aspect(self, file_path: str, pixmap: Optional[QPixmap]) -> bool:
+    def _reconcile_tile_aspect(self, file_path: str, pixmap: QPixmap | None) -> bool:
         """Make tile geometry follow the oriented thumbnail pixels (like the filmstrip).
 
         Any code path that materializes a decoded base pixmap for a tile must call this,
@@ -346,7 +355,7 @@ class GalleryPart3:
                     gallery_thumbnail=True,
                 )
 
-    def _active_task_started_ts(self, path: str) -> Optional[float]:
+    def _active_task_started_ts(self, path: str) -> float | None:
         meta = self._active_tasks.get(path)
         if meta is None:
             return None
@@ -777,7 +786,7 @@ class GalleryPart3:
         except Exception:
             return ""
 
-    def _scroll_date_text(self, path: Optional[str] = None) -> str:
+    def _scroll_date_text(self, path: str | None = None) -> str:
         """Capture date of the photo at the top of the viewport, if known."""
         provider = getattr(self, "_capture_date_provider", None)
         if provider is None:

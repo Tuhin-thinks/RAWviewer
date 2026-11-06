@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import os
 
-from typing import Any
-
 
 def _env_true(name: str) -> bool:
     return str(os.environ.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
