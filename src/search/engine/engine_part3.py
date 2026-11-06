@@ -49,6 +49,9 @@ from search.types import ProgressCallback
 
 class EnginePart3:
 
+
+
+
     def _auto_select_semantic_batch_size(
         self,
         pending_for_semantic: Sequence[tuple[str, os.stat_result]],
@@ -268,11 +271,13 @@ class EnginePart3:
             return []
         return [self._encode_text(v) for v in variants]
 
+    @staticmethod
     def _semantic_similarity(query_vecs: Sequence[np.ndarray], image_vec: np.ndarray) -> float:
         if not query_vecs:
             return 0.0
         return max(float(np.dot(qv, image_vec)) for qv in query_vecs)
 
+    @staticmethod
     def _face_scan_worker_count(sample_path: str | None = None) -> int:
         """Parallel image-load workers for face scan. YuNet inference is serialized."""
         raw = os.environ.get("RAWVIEWER_FACE_SCAN_WORKERS", "").strip()
@@ -296,6 +301,7 @@ class EnginePart3:
         cpu = os.cpu_count() or 4
         return min(4, max(2, cpu // 2))
 
+    @staticmethod
     def _face_scan_inflight_chunk() -> int:
         raw = os.environ.get("RAWVIEWER_FACE_SCAN_CHUNK", "64").strip()
         try:
@@ -303,6 +309,7 @@ class EnginePart3:
         except ValueError:
             return 64
 
+    @staticmethod
     def _face_scan_parallel_enabled() -> bool:
         v = os.environ.get("RAWVIEWER_FACE_SCAN_PARALLEL", "").strip().lower()
         if not v:
@@ -310,6 +317,7 @@ class EnginePart3:
             return sys.platform != "win32"
         return v not in ("0", "false", "no", "off")
 
+    @staticmethod
     def _defer_face_scan_during_build() -> bool:
         """
         When true, build_index finishes after metadata + semantic embeddings.
@@ -318,11 +326,13 @@ class EnginePart3:
         v = os.environ.get("RAWVIEWER_INDEX_DEFER_FACE_SCAN", "1").strip().lower()
         return v not in ("0", "false", "no", "off")
 
+    @staticmethod
     def _thumbnail_warm_before_face_scan() -> bool:
         # Default off: warming 6k+ RAWs before face scan blocks indexing for hours.
         v = os.environ.get("RAWVIEWER_FACE_SCAN_WARM_THUMBS", "0").strip().lower()
         return v not in ("0", "false", "no", "off")
 
+    @staticmethod
     def _face_scan_warm_max_files() -> int:
         """
         Cap warm-up work so face indexing cannot appear frozen for giant albums.
@@ -336,6 +346,7 @@ class EnginePart3:
                 pass
         return 256
 
+    @staticmethod
     def _face_scan_warm_max_seconds() -> float:
         """Best-effort warm-up deadline; exceeded budget continues with face scan directly."""
         raw = os.environ.get("RAWVIEWER_FACE_SCAN_WARM_MAX_SECONDS", "25").strip()
@@ -346,6 +357,7 @@ class EnginePart3:
                 pass
         return 25.0
 
+    @staticmethod
     def face_detection_max_edge() -> int:
         """Longest edge passed to YuNet/Vision (see _load_index_source_image in _detect_face_count)."""
         raw = os.environ.get("RAWVIEWER_FACE_DETECT_MAX_EDGE", "").strip()
@@ -424,6 +436,7 @@ class EnginePart3:
         t0 = time.time()
         warmed = 0
 
+        @staticmethod
         def _warm_one(path: str) -> bool:
             try:
                 self._wait_if_paused()
@@ -486,15 +499,18 @@ class EnginePart3:
         total = len(pending)
         warmed_base = progress_indexed_base + (len(paths) - len(pending)) * 0.1
 
+        @staticmethod
         def _thumb_progress_ui_count(done: int) -> int:
             """User-visible thumbnail count (not album-weighted 10% slice)."""
             return min(total, max(0, int(done)))
 
+        @staticmethod
         def _thumb_progress_message(done: int) -> str:
             return format_index_progress(
                 "Preparing thumbnails", _thumb_progress_ui_count(done), total
             )
 
+        @staticmethod
         def _emit_thumb_progress(done: int) -> None:
             if not progress_callback:
                 return
@@ -508,6 +524,7 @@ class EnginePart3:
             else:
                 progress_callback(ui_done, total, _thumb_progress_message(done))
 
+        @staticmethod
         def _should_emit_thumb_progress(done: int) -> bool:
             if done <= 3 or done >= total:
                 return True
@@ -725,6 +742,7 @@ class EnginePart3:
             with self._metadata_backfill_lock:
                 self._metadata_backfill_running = False
 
+    @staticmethod
     def _flush_exif_backfill_batch(exif_batch: list[tuple]) -> None:
         if not exif_batch:
             return

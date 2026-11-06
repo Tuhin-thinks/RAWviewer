@@ -26,6 +26,9 @@ from search.types import ProgressCallback
 
 class EnginePart4:
 
+
+
+
     def backfill_search_metadata(
         self,
         file_paths: Sequence[str],
@@ -167,6 +170,7 @@ class EnginePart4:
         except Exception:
             pass
 
+        @staticmethod
         def _scan_one(cp: str) -> tuple:
             try:
                 im = _load_face_scan_image(cp, max_size=max_edge)
@@ -257,6 +261,7 @@ class EnginePart4:
             (dur / total_face) * 1000.0 if total_face else 0,
         )
 
+    @staticmethod
     def _raw_companion_key(fp: str) -> str:
         base = os.path.basename(fp)
         parts = base.split(".")

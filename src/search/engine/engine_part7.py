@@ -14,6 +14,9 @@ from search.types import MetadataRow, SearchHit
 
 class EnginePart7:
 
+
+
+
     def _normalize_loose_metadata_query(self, raw: str) -> str:
         """
         Accept light natural-language metadata filters without an LLM.
@@ -89,6 +92,7 @@ class EnginePart7:
 
         fmt_hints = self._FORMAT_HINT_FILENAME_TOKENS
 
+        @staticmethod
         def _loose_place_to_city(m):
             place = m.group(1).strip()
             if not re.search(r"\s", place):
@@ -97,6 +101,7 @@ class EnginePart7:
                     return f"format:{token}"
             return f"city:{'_'.join(place.split())}"
 
+        @staticmethod
         def _loose_place_to_country(m):
             place = m.group(1).strip()
             if not re.search(r"\s", place):
@@ -645,6 +650,7 @@ class EnginePart7:
         except Exception:
             pass
 
+    @staticmethod
     def _query_needs_face_detection(query: str) -> bool:
         return bool(
             re.search(

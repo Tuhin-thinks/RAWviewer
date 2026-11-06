@@ -27,6 +27,9 @@ from search.types import ProgressCallback
 
 class EnginePart5:
 
+
+
+
     def build_index(
         self,
         file_paths: Sequence[str],
@@ -116,6 +119,7 @@ class EnginePart5:
                     }
             logger.info(f"[INDEX] Pre-fetch completed in {time.time() - t0:.4f}s. Found {len(existing_meta)} matches in database.")
 
+            @staticmethod
             def needs_reindex_local(cp, st):
                 if cp not in existing_meta:
                     return True
@@ -177,6 +181,7 @@ class EnginePart5:
                 )
                 executor = _get_shared_index_executor()
                 try:
+                    @staticmethod
                     def extract_task(item):
                         self._wait_if_paused()
                         cp, st = item
