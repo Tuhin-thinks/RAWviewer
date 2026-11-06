@@ -1,13 +1,47 @@
 """Thumbnail, grid, and preview cache operations."""
 from __future__ import annotations
 
+import os
+import threading
+from typing import Any
+
 import numpy as np
+from PyQt6.QtCore import pyqtSignal
 
 from cache.keys import _jpeg_bytes_max_edge, disk_preview_max_edge
+from cache.memory import LRUCache
 
 
 class ImageCacheThumbGridPreview:
     """Thumbnail, grid, and preview get/put operations."""
+
+    # Type annotations for attributes inherited from ImageCacheCore / ImageCacheFullExifUtil
+    stats: dict[str, int]
+    thumbnail_cache: LRUCache
+    grid_cache: LRUCache
+    preview_cache: LRUCache
+    libraw_preview_paths: set[str]
+    full_image_embedded_jpeg_paths: set[str]
+    cache_hit: pyqtSignal
+    cache_miss: pyqtSignal
+    pixmap_cache: LRUCache
+    full_image_cache: LRUCache
+    _path_key: Any
+    _note_full_cache_reason: Any
+    _load_libraw_preview_paths: Any
+    _save_libraw_preview_paths: Any
+    _orient_verify_lock: threading.Lock
+    _orient_verify_thread: threading.Thread | None
+    _orient_verify_attempted: set[str]
+    _orient_verify_queue: Any
+    _orient_verify_queue_max: int
+    _orient_verify_attempted_max: int
+    _check_memory_pressure: Any
+    disk_thumbnail_cache: Any
+    disk_grid_cache: Any
+    disk_preview_cache: Any
+    persistent_cache_enabled: bool
+    _enforce_numpy_cache_byte_budget: Any
 
     def _heal_raw_orientation(self, file_path: str, arr: np.ndarray | None) -> np.ndarray | None:
         """Self-heal: return arr already in EXIF display orientation, re-orienting if not.
@@ -50,7 +84,7 @@ class ImageCacheThumbGridPreview:
         if thumbnail is not None:
             validated = _validate_raw_thumbnail(thumbnail)
             if validated is not thumbnail:
-                self.thumbnail_cache.put(key, validated.copy())
+                self.thumbnail_cache.put(key, validated.copy())  # type: ignore[union-attr]  
                 self.disk_thumbnail_cache.remove(file_path)
             self.cache_hit.emit(file_path, 'thumbnail')
             return validated
@@ -113,7 +147,7 @@ class ImageCacheThumbGridPreview:
 
                 t_jpeg = encode_tile_bytes(thumb_pil)
                 self.put_thumbnail(file_path, thumbnail, t_jpeg)
-                return thumbnail
+                return thumbnail  # type: ignore[no-any-return]
             except Exception:
                 pass
 
@@ -154,14 +188,14 @@ class ImageCacheThumbGridPreview:
 
                 t_jpeg = encode_tile_bytes(thumb_pil)
                 self.put_thumbnail(file_path, thumbnail, t_jpeg)
-                return thumbnail
+                return thumbnail  # type: ignore[no-any-return]
             except Exception:
                 pass
 
         self.cache_miss.emit(file_path, 'thumbnail')
         return None
 
-    def put_thumbnail(self, file_path: str, thumbnail: np.ndarray, jpeg_data: bytes = None) -> None:
+    def put_thumbnail(self, file_path: str, thumbnail: np.ndarray, jpeg_data: bytes | None = None) -> None:
         """Cache a thumbnail image."""
         if thumbnail is not None:
             # Ensure thumbnail is reasonable size (max 1024x1024)
@@ -179,17 +213,17 @@ class ImageCacheThumbGridPreview:
     def get_preview_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory preview only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.preview_cache.peek(key)
+        return self.preview_cache.peek(key)  # type: ignore[no-any-return]
 
     def get_grid_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory grid only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.grid_cache.peek(key)
+        return self.grid_cache.peek(key)  # type: ignore[no-any-return]
 
     def get_thumbnail_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory thumbnail only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.thumbnail_cache.peek(key)
+        return self.thumbnail_cache.peek(key)  # type: ignore[no-any-return]
 
     def has_warm_thumbnail_in_memory(self, file_path: str) -> bool:
         """True if a grid/thumbnail tier is already in the fast in-memory
@@ -227,7 +261,7 @@ class ImageCacheThumbGridPreview:
         if grid is not None:
             healed = self._heal_raw_orientation(file_path, grid)
             if healed is not grid:
-                self.grid_cache.put(key, healed.copy())
+                self.grid_cache.put(key, healed.copy())  # type: ignore[union-attr]
                 self.disk_grid_cache.remove(file_path)
             self.cache_hit.emit(file_path, 'grid')
             return healed
@@ -245,7 +279,7 @@ class ImageCacheThumbGridPreview:
                     pil_image = pil_image.convert('RGB')
                 grid = np.array(pil_image)
                 grid = self._heal_raw_orientation(file_path, grid)
-                self.grid_cache.put(key, grid.copy())
+                self.grid_cache.put(key, grid.copy())  # type: ignore[union-attr]
                 self.cache_hit.emit(file_path, 'grid')
                 return grid
             except Exception:
@@ -288,7 +322,7 @@ class ImageCacheThumbGridPreview:
 
                 g_jpeg = encode_tile_bytes(grid_pil)
                 self.put_grid(file_path, grid, g_jpeg)
-                return grid
+                return grid  # type: ignore[no-any-return]
             except Exception:
                 pass
 
@@ -322,14 +356,14 @@ class ImageCacheThumbGridPreview:
                 grid_pil = pil_img.resize((new_w, new_h), Image.Resampling.BICUBIC)
                 grid = np.array(grid_pil)
                 self.grid_cache.put(key, grid.copy())
-                return grid
+                return grid  # type: ignore[no-any-return]
             except Exception:
                 pass
 
         self.cache_miss.emit(file_path, 'grid')
         return None
 
-    def put_grid(self, file_path: str, grid: np.ndarray, jpeg_data: bytes = None) -> None:
+    def put_grid(self, file_path: str, grid: np.ndarray, jpeg_data: bytes | None = None) -> None:
         """Cache a grid image (max 512px)."""
         if grid is not None:
             key = self._path_key(file_path)
@@ -337,7 +371,7 @@ class ImageCacheThumbGridPreview:
             if grid.shape[0] > 512 or grid.shape[1] > 512:
                 return
             # Cache in memory
-            self.grid_cache.put(key, grid.copy())
+            self.grid_cache.put(key, grid.copy())  
 
             # Cache on disk
             if self.persistent_cache_enabled:
@@ -366,7 +400,7 @@ class ImageCacheThumbGridPreview:
         preview = self.preview_cache.get(key)
         if preview is not None:
             self.cache_hit.emit(file_path, 'preview')
-            return preview
+            return preview  # type: ignore[no-any-return]
 
         # Check disk cache for previews
         jpeg_data = self.disk_preview_cache.get(file_path)
@@ -393,7 +427,7 @@ class ImageCacheThumbGridPreview:
                 # Also cache in memory
                 self.preview_cache.put(key, preview)
                 self.cache_hit.emit(file_path, 'preview')
-                return preview
+                return preview  # type: ignore[no-any-return]
              except Exception:
                 self.disk_preview_cache.remove(file_path)
 
@@ -404,7 +438,7 @@ class ImageCacheThumbGridPreview:
         self,
         file_path: str,
         preview: np.ndarray,
-        jpeg_data: bytes = None,
+        jpeg_data: bytes | None = None,
         *,
         libraw_rendered: bool = False,
         copy: bool = True,

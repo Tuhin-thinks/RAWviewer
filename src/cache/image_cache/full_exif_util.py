@@ -5,21 +5,64 @@ import contextlib
 import logging
 import os
 import threading
+from collections import OrderedDict
 from typing import Any
 
 import numpy as np
+from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QPixmap
 
+from cache.disk import (
+    PersistentGridCache,
+    PersistentPreviewCache,
+    PersistentThumbnailCache,
+)
 from cache.keys import (
     _env_int,
 )
-from cache.memory import LRUCache
+from cache.memory import LRUCache, MemoryMonitor, MemoryOnlyPersistentCache
+from cache.metadata import PersistentEXIFCache
 
 logger = logging.getLogger(__name__)
 
 
 class ImageCacheFullExifUtil:
     """Full image, EXIF, pixmap, orientation verify, and utility operations."""
+
+    # Type annotations for attributes inherited from ImageCacheCore / ImageCacheThumbGridPreview
+    # (keep these in sync with the sibling parts so mypy can track cross-part usage)
+    _full_cache_reasons: OrderedDict[str, str]
+    max_memory_mb: int
+    _tier_max_memory_mb: int
+    _check_memory_pressure: Any
+    _path_key: Any
+    _prune_libraw_preview_paths: Any
+    stats: dict[str, int]
+    full_image_cache: LRUCache
+    cache_hit: pyqtSignal
+    cache_miss: pyqtSignal
+    memory_warning: pyqtSignal
+    memory_monitor: MemoryMonitor
+    persistent_cache_enabled: bool
+    cache_dir: str | None
+    thumbnail_cache: LRUCache
+    grid_cache: LRUCache
+    preview_cache: LRUCache
+    pixmap_cache: LRUCache
+    libraw_preview_paths: set[str]
+    _libraw_preview_paths_file: str | None
+    full_image_embedded_jpeg_paths: set[str]
+    exif_cache: PersistentEXIFCache | MemoryOnlyPersistentCache
+    disk_thumbnail_cache: PersistentThumbnailCache | MemoryOnlyPersistentCache
+    disk_grid_cache: PersistentGridCache | MemoryOnlyPersistentCache
+    disk_preview_cache: PersistentPreviewCache | MemoryOnlyPersistentCache
+    exif_memory_cache: LRUCache
+    _orient_verify_lock: threading.Lock
+    _orient_verify_thread: threading.Thread | None
+    _orient_verify_attempted: set[str]
+    _orient_verify_queue: Any  # queue.Queue
+    _orient_verify_queue_max: int
+    _orient_verify_attempted_max: int
 
     def _note_full_cache_reason(self, file_path: str, reason: str) -> None:
         """Record why a full image left the cache (diagnostics only)."""
@@ -39,7 +82,7 @@ class ImageCacheFullExifUtil:
         image = self.full_image_cache.get(file_path)
         if image is not None:
             self.cache_hit.emit(file_path, 'full_image')
-            return image
+            return image  # type: ignore[no-any-return]
         else:
             self.cache_miss.emit(file_path, 'full_image')
             if os.environ.get("RAWVIEWER_DEBUG_FULLCACHE"):
@@ -245,7 +288,7 @@ class ImageCacheFullExifUtil:
 
     def get_exif_memory_only(self, file_path: str) -> dict[str, Any] | None:
         """In-memory EXIF only (no SQLite) — for cache-hit emit during preview-first."""
-        return self.exif_memory_cache.get(file_path)
+        return self.exif_memory_cache.get(file_path)  # type: ignore[no-any-return]
 
     def get_exif_for_ui(self, file_path: str) -> dict[str, Any] | None:
         """UI hot path: never blocks (see get_exif's verify=False default)."""
@@ -313,7 +356,7 @@ class ImageCacheFullExifUtil:
             pass
 
         self.cache_hit.emit(file_path, 'exif')
-        return exif_data
+        return exif_data  # type: ignore[no-any-return]
 
     def _schedule_orientation_verify(
         self, file_path: str, exif_data: dict[str, Any]
@@ -412,9 +455,9 @@ class ImageCacheFullExifUtil:
         if hasattr(self.exif_cache, "flush"):
             self.exif_cache.flush()
 
-    def get_capture_times_for_sort(self, file_paths: list) -> dict[str, str]:
+    def get_capture_times_for_sort(self, file_paths: list[str]) -> dict[str, str]:
         """capture_time only, for folder sort (ignores stale mtime on network folders)."""
-        return self.exif_cache.get_capture_times_bulk(file_paths)
+        return self.exif_cache.get_capture_times_bulk(file_paths)  # type: ignore[no-any-return]
 
     def record_probed_capture_times(self, timestamps: dict[str, float]) -> None:
         """Persist sort-probe capture times so the next folder open skips re-probing.
@@ -440,9 +483,9 @@ class ImageCacheFullExifUtil:
 
     def get_capture_times_for_folder_sort(self, folder_path: str) -> dict[str, str]:
         """All capture_time rows under folder_path (normalized path keys)."""
-        return self.exif_cache.get_capture_times_for_folder(folder_path)
+        return self.exif_cache.get_capture_times_for_folder(folder_path)  # type: ignore[no-any-return]
 
-    def get_multiple_exif(self, file_paths: list, file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
+    def get_multiple_exif(self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.
 
         Orientation trust for unverified RAW records is optimistic + deferred
@@ -674,7 +717,7 @@ class ImageCacheFullExifUtil:
         except Exception:
             pass
 
-    def close(self):
+    def close(self) -> None:
         """Close all persistent cache connections."""
         self._closing = True
         self._save_libraw_preview_paths()
