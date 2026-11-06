@@ -1,12 +1,27 @@
 """Engine mixin part 5 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, threading, time
-from typing import Dict, List, Optional, Sequence
-from core.errors import IndexAborted, RAWViewerError
-from search.types import MetadataRow, ProgressCallback, SearchHit
-from search.indexer import _coerce_int, _coreml_compute_units_setting_for_indexing, _coreml_compute_units_setting_for_search, _get_shared_index_executor, _ort_get_available_providers, face_scan_enabled, format_index_progress, log_inference_acceleration_profile, resolve_onnx_execution_providers, semantic_gpu_throttle_seconds
+import os
+import threading
+import time
+from collections.abc import Sequence
+
+from core.errors import IndexAborted
 from search.backends import MobileCLIPCoreMLBackend, MobileCLIPONNXBackend, resolve_mobileclip_backend
+from search.indexer import (
+    _coerce_int,
+    _coreml_compute_units_setting_for_indexing,
+    _coreml_compute_units_setting_for_search,
+    _get_shared_index_executor,
+    _ort_get_available_providers,
+    face_scan_enabled,
+    format_index_progress,
+    log_inference_acceleration_profile,
+    resolve_onnx_execution_providers,
+    semantic_gpu_throttle_seconds,
+)
+from search.types import ProgressCallback
+
 
 class EnginePart5:
 
@@ -17,12 +32,12 @@ class EnginePart5:
         *,
         album_total: int = 0,
         album_indexed_base: int = 0,
-        run_face_scan: Optional[bool] = None,
-        run_semantic_embeddings: Optional[bool] = None,
-    ) -> Dict[str, int]:
+        run_face_scan: bool | None = None,
+        run_semantic_embeddings: bool | None = None,
+    ) -> dict[str, int]:
         import logging
-        import sys
         import sqlite3
+        import sys
         logger = logging.getLogger(__name__)
         t_start = time.time()
         if run_semantic_embeddings is None:
@@ -50,7 +65,7 @@ class EnginePart5:
         indexed = 0
         skipped = skipped_companions
         failed = 0
-        pending_for_semantic: List[tuple[str, os.stat_result]] = []
+        pending_for_semantic: list[tuple[str, os.stat_result]] = []
         progress_album_total = album_total if album_total > 0 else total
         progress_indexed_base = max(0, album_indexed_base)
 
@@ -579,7 +594,7 @@ class EnginePart5:
             "faces_pending": total_face if faces_deferred else 0,
         }
 
-    def get_index_coverage(self, file_paths: Sequence[str]) -> Dict[str, int]:
+    def get_index_coverage(self, file_paths: Sequence[str]) -> dict[str, int]:
         """
         Return index coverage for the given file set.
         Metadata-lazy version: only checks database presence, does not touch disk.
@@ -618,7 +633,7 @@ class EnginePart5:
             "ready": 1 if missing == 0 else 0,
         }
 
-    def get_semantic_embedding_coverage(self, file_paths: Sequence[str]) -> Dict[str, int]:
+    def get_semantic_embedding_coverage(self, file_paths: Sequence[str]) -> dict[str, int]:
         """Count corpus rows with real CLIP embeddings (semantic_ready=1, dim>0)."""
         indexable_paths, _ = self._filter_duplicate_raw_companions(file_paths)
         total = len(indexable_paths)

@@ -1,20 +1,35 @@
 """Engine mixin part 2 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, sqlite3, sys, time
-from typing import Any, Dict, List, Optional, Sequence
+import os
+import sqlite3
+import sys
+import time
+from collections.abc import Sequence
 from io import BytesIO
+from typing import Any
+
 import numpy as np
 from PIL.Image import Image as PilImage
+
 import metadata_backend
-from search.types import MetadataRow, ProgressCallback, SearchHit
-from search.indexer import _apply_opencv_dnn_acceleration, _coerce_float, _coerce_int, _load_index_source_image, _ort_get_available_providers, _yunet_detect_faces_bgr, resolve_onnx_execution_providers
 from search.backends import MobileCLIPONNXBackend, resolve_mobileclip_backend
+from search.indexer import (
+    _apply_opencv_dnn_acceleration,
+    _coerce_float,
+    _coerce_int,
+    _load_index_source_image,
+    _ort_get_available_providers,
+    _yunet_detect_faces_bgr,
+    resolve_onnx_execution_providers,
+)
 from search.queries import CustomReverseGeocoder
+from search.types import MetadataRow
+
 
 class EnginePart2:
 
-    def _gps_to_decimal(self, gps_vals: Any, ref: str) -> Optional[float]:
+    def _gps_to_decimal(self, gps_vals: Any, ref: str) -> float | None:
         try:
             # If gps_vals is an IfdTag/IfdTagLite, it has a .values attribute
             vals = getattr(gps_vals, "values", gps_vals)
@@ -57,10 +72,10 @@ class EnginePart2:
         self,
         file_path: str,
         include_face: bool = False,
-        file_stat: Optional[os.stat_result] = None,
+        file_stat: os.stat_result | None = None,
         *,
         persist_exif: bool = True,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         result = {
             "capture_time": "",
             "camera_model": "",
@@ -243,8 +258,8 @@ class EnginePart2:
                 try:
                     orientation = result.get("orientation") or 1
 
-                    from image_cache import get_image_cache
                     from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+                    from image_cache import get_image_cache
 
                     t_cache = time.time()
                     cache = get_image_cache()
@@ -365,13 +380,13 @@ class EnginePart2:
             Quartz.CVPixelBufferUnlockBaseAddress(pixel_buffer, 0)
         return pixel_buffer
 
-    def _vision_face_count_from_pil(im: PilImage) -> Optional[int]:
+    def _vision_face_count_from_pil(im: PilImage) -> int | None:
         """Apple Vision face count from an in-memory PIL image (no temp JPEG)."""
         try:
             import Foundation  # type: ignore[import-not-found]
+            import objc  # type: ignore[import-not-found]
             import Quartz  # type: ignore[import-not-found]
             import Vision  # type: ignore[import-not-found]
-            import objc  # type: ignore[import-not-found]
         except Exception:
             return None
 
@@ -402,7 +417,7 @@ class EnginePart2:
         except Exception:
             return None
 
-    def _detect_face_count(file_path: str, preloaded_im: Optional[PilImage] = None) -> int:
+    def _detect_face_count(file_path: str, preloaded_im: PilImage | None = None) -> int:
         try:
             if preloaded_im is not None:
                 im = preloaded_im
@@ -430,8 +445,9 @@ class EnginePart2:
 
             # 2. Windows fallback using OpenCV DNN Face Detector
             try:
-                import cv2
                 import threading
+
+                import cv2
 
                 global _FACE_DETECTOR_NET
                 global _FACE_DETECTOR_LOCK
@@ -507,7 +523,7 @@ class EnginePart2:
         except Exception:
             return 0
 
-    def _lookup_index_rows(self, file_path: str, st: Optional[os.stat_result] = None) -> List[sqlite3.Row]:
+    def _lookup_index_rows(self, file_path: str, st: os.stat_result | None = None) -> list[sqlite3.Row]:
         canonical = self._canonical_path(file_path)
         if st is None:
             st = os.stat(canonical)
@@ -603,7 +619,7 @@ class EnginePart2:
                 f"Cannot decode image for semantic index: {os.path.basename(file_path)}"
             ) from exc
 
-    def _encode_images_best_effort(self, file_paths: Sequence[str]) -> List[np.ndarray]:
+    def _encode_images_best_effort(self, file_paths: Sequence[str]) -> list[np.ndarray]:
         """
         Encode multiple images. Falls back to per-image encoding when batch path
         is unavailable or unsupported by the model graph.

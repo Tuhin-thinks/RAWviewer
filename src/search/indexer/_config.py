@@ -2,22 +2,17 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sqlite3
-import sys
 import threading
-from typing import Any, Callable, Dict, List, Optional, Sequence, TypeAlias, cast
-
-from ._shared import _bundled_resource_path, _get_shared_index_executor
-
-import metadata_backend
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from collections.abc import Callable
+from typing import Optional, TypeAlias
 
 try:
     import pycountry
 except Exception:
     pycountry = None
 
-from raw_file_extensions import RAW_FILE_EXTENSIONS
 
 try:
     import pycountry
@@ -27,10 +22,9 @@ except Exception:
 
 from core.errors import IndexAborted, RAWViewerError  # noqa: F401
 
-
 ProgressCallback = Optional[Callable[[int, int, str], None]]
 
-MetadataRow: TypeAlias = sqlite3.Row | Dict[str, object]
+MetadataRow: TypeAlias = sqlite3.Row | dict[str, object]
 
 
 def _materialize_cached_file(src: str, dst: str) -> None:
@@ -68,7 +62,7 @@ def _coerce_int(value: object, default: int = 0) -> int:
         return default
 
 
-def _coerce_float(value: object) -> Optional[float]:
+def _coerce_float(value: object) -> float | None:
     if value is None:
         return None
     try:
@@ -186,7 +180,7 @@ def _default_semantic_batch_size() -> int:
         return 12
 
 
-def semantic_batch_size_forced() -> Optional[int]:
+def semantic_batch_size_forced() -> int | None:
     """Return forced batch size when explicitly set by env, else None."""
     raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_SIZE", "").strip()
     if not raw:
@@ -225,12 +219,12 @@ def semantic_coreml_tune_sample_count() -> int:
     return max(8, min(v, 48))
 
 
-def semantic_coreml_batch_candidates() -> List[int]:
+def semantic_coreml_batch_candidates() -> list[int]:
     """Chunk sizes to benchmark for Core ML (parallel prep only; inference is per-image)."""
     raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_CHUNK_CANDIDATES", "").strip()
     cap = min(semantic_batch_max(), 32)
     if raw:
-        out: List[int] = []
+        out: list[int] = []
         for item in raw.split(","):
             item = item.strip()
             if not item:
@@ -241,7 +235,7 @@ def semantic_coreml_batch_candidates() -> List[int]:
                 continue
         if out:
             seen: set[int] = set()
-            uniq: List[int] = []
+            uniq: list[int] = []
             for v in sorted(out):
                 if v not in seen:
                     seen.add(v)
@@ -270,7 +264,7 @@ def semantic_batch_tie_ratio() -> float:
     return max(0.5, min(r, 1.0))
 
 
-def semantic_encode_prep_workers(sample_path: Optional[str] = None) -> int:
+def semantic_encode_prep_workers(sample_path: str | None = None) -> int:
     """Parallel CPU workers for resize/load before ONNX image batch."""
     raw = os.environ.get("RAWVIEWER_SEMANTIC_PREP_WORKERS", "").strip()
     if raw:
@@ -345,7 +339,7 @@ def semantic_coreml_chunk_size() -> int:
     return min(semantic_batch_max(), default)
 
 
-def semantic_coreml_chunk_forced() -> Optional[int]:
+def semantic_coreml_chunk_forced() -> int | None:
     """Explicit RAWVIEWER_SEMANTIC_COREML_CHUNK only (unset = not forced)."""
     if "RAWVIEWER_SEMANTIC_COREML_CHUNK" not in os.environ:
         return None
@@ -365,12 +359,12 @@ def semantic_warm_thumbs_before_index() -> bool:
     return raw not in ("0", "false", "no", "off")
 
 
-def semantic_batch_candidates() -> List[int]:
+def semantic_batch_candidates() -> list[int]:
     raw = os.environ.get(
         "RAWVIEWER_SEMANTIC_BATCH_CANDIDATES", "8,16,32,64,128"
     ).strip()
     cap = semantic_batch_max()
-    out: List[int] = []
+    out: list[int] = []
     for item in raw.split(","):
         item = item.strip()
         if not item:
@@ -383,7 +377,7 @@ def semantic_batch_candidates() -> List[int]:
         out = [8, 16, 32, 64, 128]
     # stable dedupe
     seen = set()
-    uniq: List[int] = []
+    uniq: list[int] = []
     for v in out:
         if v not in seen:
             seen.add(v)

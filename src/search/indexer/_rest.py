@@ -1,50 +1,17 @@
 """Thumbnail prep, ONNX/DNN/CoreML, and source image loading helpers."""
 from __future__ import annotations
 
-import concurrent.futures
-import gzip
-import hashlib
 import json
 import os
 import platform
-import re
-import shutil
-import sqlite3
 import sys
-import threading
-import time
-from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, Sequence, cast
+from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 from PIL import Image, ImageOps
 from PIL.Image import Image as PilImage
 
-from core.errors import IndexAborted
-from search.types import MetadataRow, ProgressCallback
-
-from ._shared import _bundled_resource_path, _get_shared_index_executor
-from ._config import (
-    face_scan_enabled,
-    metadata_auto_index_enabled,
-    semantic_batch_auto_enabled,
-    semantic_batch_candidates,
-    semantic_batch_max,
-    semantic_batch_size,
-    semantic_batch_tie_ratio,
-    semantic_batch_tune_sample_count,
-    semantic_coreml_batch_candidates,
-    semantic_coreml_chunk_forced,
-    semantic_coreml_chunk_size,
-    semantic_coreml_prep_chunk_size,
-    semantic_coreml_tune_early_stop_ratio,
-    semantic_coreml_tune_sample_count,
-    semantic_coreml_use_native_batch,
-    semantic_embeddings_enabled,
-    semantic_encode_prep_workers,
-    semantic_gpu_throttle_seconds,
-    semantic_warm_thumbs_before_index,
-)
 
 def _thumbnail_jpeg_bytes(arr: np.ndarray, quality: int = 85) -> bytes:
     from common_image_loader import encode_tile_bytes
@@ -90,12 +57,12 @@ def _semantic_batch_cache_path() -> str:
     )
 
 
-def _load_semantic_batch_cache() -> Dict[str, int]:
+def _load_semantic_batch_cache() -> dict[str, int]:
     try:
         p = _semantic_batch_cache_path()
         if not os.path.exists(p):
             return {}
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict):
             return {str(k): int(v) for k, v in data.items()}
@@ -104,7 +71,7 @@ def _load_semantic_batch_cache() -> Dict[str, int]:
     return {}
 
 
-def _save_semantic_batch_cache(cache: Dict[str, int]) -> None:
+def _save_semantic_batch_cache(cache: dict[str, int]) -> None:
     try:
         p = _semantic_batch_cache_path()
         os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -141,7 +108,7 @@ def _onnxruntime_availability_error() -> str:
     return ""
 
 
-def _ort_get_available_providers(ort=None) -> List[str]:
+def _ort_get_available_providers(ort=None) -> list[str]:
     if ort is None:
         ort = _import_onnxruntime()
     if ort is None:
@@ -156,8 +123,8 @@ def _ort_get_available_providers(ort=None) -> List[str]:
 
 
 def resolve_onnx_execution_providers(
-    available: Optional[Sequence[str]] = None,
-) -> List[str]:
+    available: Sequence[str] | None = None,
+) -> list[str]:
     """Pick ONNX Runtime EPs for the current OS and GPU vendor.
 
     Windows: CUDA / TensorRT first when installed (NVIDIA); DirectML next for
@@ -293,13 +260,14 @@ def _yunet_warmup() -> None:
 def _yunet_detect_faces_bgr(img_bgr) -> int:
     """Run YuNet on a BGR image using one shared detector (thread-safe, GPU-friendly)."""
     global _YUNET_SINGLETON, _YUNET_SINGLETON_MODEL_PATH
-    import cv2
     import logging
+
+    import cv2
 
     model_path = _yunet_model_path()
     h, w = img_bgr.shape[:2]
     with _YUNET_INFER_LOCK:
-        if _YUNET_SINGLETON is None or _YUNET_SINGLETON_MODEL_PATH != model_path:
+        if _YUNET_SINGLETON is None or model_path != _YUNET_SINGLETON_MODEL_PATH:
             backend_id, target_id = resolve_opencv_dnn_backend_target()
             logger = logging.getLogger(__name__)
             logger.info("[VISION] Initializing OpenCV YuNet (singleton)...")
@@ -539,7 +507,7 @@ def log_inference_acceleration_profile(force: bool = False) -> None:
     import logging
 
     logger = logging.getLogger(__name__)
-    parts: List[str] = []
+    parts: list[str] = []
 
     if sys.platform == "darwin":
         index_cu = _coreml_compute_units_setting_for_indexing()
@@ -578,7 +546,7 @@ def log_inference_acceleration_profile(force: bool = False) -> None:
 
     logger.info("[ACCEL] Inference profile: %s", "; ".join(parts))
 
-def _cached_index_source_array(cache, file_path: str) -> Optional[np.ndarray]:
+def _cached_index_source_array(cache, file_path: str) -> np.ndarray | None:
     """RGB array from ImageCache tiers usable for semantic/face indexing (gallery may warm preview/grid)."""
     for getter_name in ("get_preview", "get_grid", "get_thumbnail"):
         try:
@@ -637,7 +605,7 @@ def _index_thumbnail_needs_warm(cache, file_path: str) -> bool:
     return not _index_source_thumbnail_present(cache, file_path)
 
 
-def _load_face_scan_image(file_path: str, max_size: int) -> Optional[PilImage]:
+def _load_face_scan_image(file_path: str, max_size: int) -> PilImage | None:
     """Face detection input from ImageCache only (semantic / gallery warm-up).
 
     YuNet only needs a downscaled RGB image; reusing warmed thumbnails avoids
@@ -659,15 +627,16 @@ def _load_face_scan_image(file_path: str, max_size: int) -> Optional[PilImage]:
 
 def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage:
     try:
-        from common_image_loader import exif_display_dimensions
         from PIL import ImageOps
-        
+
+        from common_image_loader import exif_display_dimensions
+
         # verify=True: orientation here transposes indexed pixels (worker thread).
         exif_data = cache.get_exif(file_path, verify=True)
         if not exif_data:
             from enhanced_raw_processor import EXIFExtractor
             exif_data = EXIFExtractor().extract_exif_data(file_path)
-        
+
         if exif_data:
             orientation = int(exif_data.get("orientation", 1) or 1)
             if orientation in (2, 3, 4, 5, 6, 7, 8):
@@ -773,8 +742,9 @@ def _load_index_source_image(
             except Exception:
                 pass
         try:
-            from enhanced_raw_processor import ThumbnailExtractor, _thumbnail_via_qimage_reader
             from PyQt6.QtGui import QImage
+
+            from enhanced_raw_processor import ThumbnailExtractor, _thumbnail_via_qimage_reader
 
             thumb = ThumbnailExtractor().extract_thumbnail_from_raw(
                 file_path, max_size=max_size, allow_scan_fallback=True
@@ -819,6 +789,7 @@ def _load_index_source_image(
                         im = Image.fromarray(np.asarray(thumb, dtype=np.uint8)).convert("RGB")
                     else:
                         from PyQt6.QtGui import QImage
+
                         from enhanced_raw_processor import _qimage_to_rgb_array
 
                         if isinstance(thumb, QImage):

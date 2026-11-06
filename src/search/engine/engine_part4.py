@@ -1,11 +1,27 @@
 """Engine mixin part 4 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, sqlite3, sys, threading, time
-from typing import List, Optional, Sequence
+import os
+import sqlite3
+import sys
+import threading
+import time
+from collections.abc import Sequence
+
 from raw_file_extensions import RAW_FILE_EXTENSIONS
-from search.types import MetadataRow, ProgressCallback, SearchHit
-from search.indexer import _dnn_get_backend_name, _get_shared_index_executor, _index_source_thumbnail_present, _load_face_scan_image, _yunet_warmup, face_scan_enabled, format_index_progress, resolve_opencv_dnn_backend_target, semantic_encode_prep_workers
+from search.indexer import (
+    _dnn_get_backend_name,
+    _get_shared_index_executor,
+    _index_source_thumbnail_present,
+    _load_face_scan_image,
+    _yunet_warmup,
+    face_scan_enabled,
+    format_index_progress,
+    resolve_opencv_dnn_backend_target,
+    semantic_encode_prep_workers,
+)
+from search.types import ProgressCallback
+
 
 class EnginePart4:
 
@@ -64,11 +80,11 @@ class EnginePart4:
 
     def _run_parallel_face_scan(
         self,
-        face_pending: List[str],
+        face_pending: list[str],
         conn: sqlite3.Connection,
         progress_callback: ProgressCallback,
         *,
-        conn_lock: Optional[threading.Lock] = None,
+        conn_lock: threading.Lock | None = None,
         commit_every: int = 40,
         progress_album_total: int = 0,
         progress_indexed_base: int = 0,
@@ -81,7 +97,7 @@ class EnginePart4:
             return
 
         max_edge = self.face_detection_max_edge()
-        cache_misses: List[str] = []
+        cache_misses: list[str] = []
         try:
             from image_cache import get_image_cache
 
@@ -252,10 +268,10 @@ class EnginePart4:
 
     def _filter_duplicate_raw_companions(
         cls, file_paths: Sequence[str]
-    ) -> tuple[List[str], List[str]]:
+    ) -> tuple[list[str], list[str]]:
         """Return (indexable paths, skipped RAW paths with a non-raw companion)."""
-        filtered_paths: List[str] = []
-        skipped_raw: List[str] = []
+        filtered_paths: list[str] = []
+        skipped_raw: list[str] = []
         non_raw_keys: set = set()
         for fp in file_paths:
             if not fp:

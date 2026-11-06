@@ -1,15 +1,48 @@
 """Engine mixin part 3 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, sqlite3, sys, threading, time
-from typing import List, Optional, Sequence
+import os
+import sqlite3
+import sys
+import threading
+import time
+from collections.abc import Sequence
+
 import numpy as np
 from PIL import Image, ImageOps
-from core.errors import IndexAborted, RAWViewerError
-from search.types import MetadataRow, ProgressCallback, SearchHit
-from search.indexer import _cached_index_source_array, _coerce_float, _get_shared_index_executor, _index_thumbnail_needs_warm, _load_semantic_batch_cache, _save_semantic_batch_cache, _thumbnail_jpeg_bytes, face_scan_enabled, format_index_progress, metadata_auto_index_enabled, semantic_batch_auto_enabled, semantic_batch_candidates, semantic_batch_size, semantic_batch_size_forced, semantic_batch_tie_ratio, semantic_batch_tune_sample_count, semantic_coreml_batch_candidates, semantic_coreml_chunk_forced, semantic_coreml_chunk_size, semantic_coreml_prep_chunk_size, semantic_coreml_tune_early_stop_ratio, semantic_coreml_tune_sample_count, semantic_coreml_use_native_batch, semantic_encode_prep_workers, semantic_warm_thumbs_before_index
+
+from core.errors import IndexAborted
 from search.backends import MobileCLIPCoreMLBackend, MobileCLIPONNXBackend, resolve_mobileclip_backend
+from search.indexer import (
+    _cached_index_source_array,
+    _coerce_float,
+    _get_shared_index_executor,
+    _index_thumbnail_needs_warm,
+    _load_semantic_batch_cache,
+    _save_semantic_batch_cache,
+    _thumbnail_jpeg_bytes,
+    face_scan_enabled,
+    format_index_progress,
+    metadata_auto_index_enabled,
+    semantic_batch_auto_enabled,
+    semantic_batch_candidates,
+    semantic_batch_size,
+    semantic_batch_size_forced,
+    semantic_batch_tie_ratio,
+    semantic_batch_tune_sample_count,
+    semantic_coreml_batch_candidates,
+    semantic_coreml_chunk_forced,
+    semantic_coreml_chunk_size,
+    semantic_coreml_prep_chunk_size,
+    semantic_coreml_tune_early_stop_ratio,
+    semantic_coreml_tune_sample_count,
+    semantic_coreml_use_native_batch,
+    semantic_encode_prep_workers,
+    semantic_warm_thumbs_before_index,
+)
 from search.queries import CustomReverseGeocoder, _semantic_text_variants
+from search.types import ProgressCallback
+
 
 class EnginePart3:
 
@@ -225,7 +258,7 @@ class EnginePart3:
         model = self._ensure_model()
         return np.asarray(model.encode(text, normalize_embeddings=True), dtype=np.float32)
 
-    def _encode_semantic_query(self, text: str) -> List[np.ndarray]:
+    def _encode_semantic_query(self, text: str) -> list[np.ndarray]:
         """Encode semantic query with singular/plural and CLIP-style prompt variants."""
         variants = _semantic_text_variants(text)
         if not variants:
@@ -237,7 +270,7 @@ class EnginePart3:
             return 0.0
         return max(float(np.dot(qv, image_vec)) for qv in query_vecs)
 
-    def _face_scan_worker_count(sample_path: Optional[str] = None) -> int:
+    def _face_scan_worker_count(sample_path: str | None = None) -> int:
         """Parallel image-load workers for face scan. YuNet inference is serialized."""
         raw = os.environ.get("RAWVIEWER_FACE_SCAN_WORKERS", "").strip()
         if raw:
@@ -322,7 +355,7 @@ class EnginePart3:
 
     def _warm_thumbnail_cache_for_semantic_index(
         self,
-        paths: List[str],
+        paths: list[str],
         progress_callback: ProgressCallback = None,
         *,
         progress_album_total: int = 0,
@@ -342,19 +375,20 @@ class EnginePart3:
 
     def _ensure_index_thumbnails_cached(
         self,
-        paths: List[str],
+        paths: list[str],
         progress_callback: ProgressCallback = None,
         *,
         progress_album_total: int = 0,
         progress_indexed_base: int = 0,
         purpose: str = "index",
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
     ) -> int:
         """
         Fill ImageCache for paths missing preview/grid/thumbnail tiers.
         Shared by semantic encoding and deferred face scan (same warmed pixels).
         """
         import logging
+
         from image_cache import get_image_cache
 
         logger = logging.getLogger(__name__)
@@ -390,14 +424,14 @@ class EnginePart3:
         def _warm_one(path: str) -> bool:
             try:
                 self._wait_if_paused()
-                from enhanced_raw_processor import (
-                    ThumbnailExtractor,
-                    extract_embedded_jpeg_by_scan,
-                )
                 from common_image_loader import (
                     finalize_index_thumbnail_array,
                     index_thumbnail_needs_orient_fix,
                     is_raw_file,
+                )
+                from enhanced_raw_processor import (
+                    ThumbnailExtractor,
+                    extract_embedded_jpeg_by_scan,
                 )
 
                 arr = _cached_index_source_array(cache, path)
@@ -518,11 +552,11 @@ class EnginePart3:
 
     def _face_pending_paths(
         self, conn: sqlite3.Connection, canonical_paths: Sequence[str]
-    ) -> List[str]:
+    ) -> list[str]:
         """Paths in this batch that still need face_count in the DB."""
         if not canonical_paths:
             return []
-        pending: List[str] = []
+        pending: list[str] = []
         chunk_size = 900
         unique = list(dict.fromkeys(canonical_paths))
         for i in range(0, len(unique), chunk_size):
@@ -572,7 +606,7 @@ class EnginePart3:
         self,
         file_paths: Sequence[str],
         *,
-        geocode_paths: Optional[Sequence[str]] = None,
+        geocode_paths: Sequence[str] | None = None,
     ) -> None:
         """Queue missing metadata / geocode repair for a background worker."""
         if not metadata_auto_index_enabled():
@@ -614,7 +648,7 @@ class EnginePart3:
                 conn = sqlite3.connect(self.db_path, timeout=60.0)
                 conn.execute("PRAGMA journal_mode=WAL")
                 conn.execute("PRAGMA busy_timeout=60000")
-                exif_batch: List[tuple] = []
+                exif_batch: list[tuple] = []
                 commit_every = 40
                 batch_writes = 0
                 try:
@@ -690,7 +724,7 @@ class EnginePart3:
             with self._metadata_backfill_lock:
                 self._metadata_backfill_running = False
 
-    def _flush_exif_backfill_batch(exif_batch: List[tuple]) -> None:
+    def _flush_exif_backfill_batch(exif_batch: list[tuple]) -> None:
         if not exif_batch:
             return
         try:

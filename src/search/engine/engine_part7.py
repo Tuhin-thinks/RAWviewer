@@ -1,11 +1,16 @@
 """Engine mixin part 7 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, re, sqlite3
-from typing import Dict, List, Optional, Sequence, cast
-from search.types import MetadataRow, ProgressCallback, SearchHit
+import os
+import re
+import sqlite3
+from collections.abc import Sequence
+from typing import cast
+
 from search.indexer import _coerce_float, _coerce_int
 from search.queries import CustomReverseGeocoder, _normalize_location_term, _pycountry_name_index
+from search.types import MetadataRow, SearchHit
+
 
 class EnginePart7:
 
@@ -67,7 +72,7 @@ class EnginePart7:
         # Multi-word location detection pass
         # This joins known multi-word places into single tokens to prevent splitting
         _MULTI_WORD_LOCATIONS = [
-            "hong kong", "new york", "san francisco", "los angeles", "united states", 
+            "hong kong", "new york", "san francisco", "los angeles", "united states",
             "united kingdom", "south korea", "north korea", "saudi arabia", "south africa",
             "kuala Lumpur", "ho chi minh", "san diego", "las vegas", "new zealand",
             "buenos aires", "rio de janeiro", "mexico city", "cape town", "saint petersburg",
@@ -191,13 +196,13 @@ class EnginePart7:
 
     def _auto_match_metadata_keywords(
         self, rows: Sequence[MetadataRow], semantic_terms: Sequence[str]
-    ) -> tuple[List[MetadataRow], List[str]]:
+    ) -> tuple[list[MetadataRow], list[str]]:
         """
         If a free-text token appears in metadata fields, use it as a metadata filter
         and remove it from the semantic text query.
         """
         filtered = list(rows)
-        remaining: List[str] = []
+        remaining: list[str] = []
         metadata_fields = ("city", "landmark", "admin1", "country", "country_code", "camera_model", "lens_model", "file_name")
 
         import logging
@@ -235,9 +240,9 @@ class EnginePart7:
                 logger.info(f"[SEARCH] Metadata match for '{needle}' found in {len(matched_rows)} image(s)")
                 filtered = matched_rows
             else:
-                # CONTRADICTION FILTER: If this is a location name (e.g. "Korea") but 
-                # doesn't match any image in the folder, check if any images HAVE 
-                # verified location metadata. If an image says "Japan", and we search 
+                # CONTRADICTION FILTER: If this is a location name (e.g. "Korea") but
+                # doesn't match any image in the folder, check if any images HAVE
+                # verified location metadata. If an image says "Japan", and we search
                 # "Korea", we should exclude it rather than letting AI "guess".
                 if is_location and not semantic_embeddings_enabled():
                     new_filtered = []
@@ -273,7 +278,7 @@ class EnginePart7:
 
     def search_text(
         self, query: str, candidate_paths: Sequence[str], top_k: int = 200, min_score: float = 0.0
-    ) -> List[SearchHit]:
+    ) -> list[SearchHit]:
         if not semantic_embeddings_enabled():
             return []
         raw_query = (query or "").strip()
@@ -331,7 +336,7 @@ class EnginePart7:
         if not query_vecs:
             return []
 
-        scores: List[SearchHit] = []
+        scores: list[SearchHit] = []
         for r in rows:
             if not self._row_semantic_ready(r):
                 continue
@@ -371,7 +376,7 @@ class EnginePart7:
 
     def search_metadata_text(
         self, query: str, candidate_paths: Sequence[str], top_k: int = 500, sort_newest: bool = True
-    ) -> tuple[List[SearchHit], str]:
+    ) -> tuple[list[SearchHit], str]:
         """
         Metadata/EXIF-only search that works without any embedding backend.
 
@@ -411,7 +416,7 @@ class EnginePart7:
 
     def _metadata_rows_for_search(
         self, candidate_paths: Sequence[str], needs_face: bool = False
-    ) -> List[Dict[str, object]]:
+    ) -> list[dict[str, object]]:
         """Metadata rows for search, with DB-first lookup and fallback EXIF extraction."""
         if not candidate_paths:
             return []
@@ -421,13 +426,13 @@ class EnginePart7:
         # lowercase paths (_canonical_path lowercases), but the UI file list keeps
         # the original case from os.listdir(). Returning lowercase paths from search
         # causes a mismatch where the gallery cannot locate the files.
-        canonical_to_original: Dict[str, str] = {}
+        canonical_to_original: dict[str, str] = {}
         for p in candidate_paths:
             if p:
                 canonical_to_original[self._canonical_path(p)] = p
 
         # Bulk fetch all rows that exist in the index
-        rows: List[Dict[str, object]] = []
+        rows: list[dict[str, object]] = []
         db_rows = self._fetch_rows_for_paths(candidate_paths)
         found_paths: set[str] = set()
 
@@ -569,9 +574,9 @@ class EnginePart7:
 
     def _metadata_rows_from_exif_cache(
         self, file_paths: Sequence[str]
-    ) -> List[Dict[str, object]]:
+    ) -> list[dict[str, object]]:
         """Read-only EXIF cache rows for search (no disk extract on UI thread)."""
-        out: List[Dict[str, object]] = []
+        out: list[dict[str, object]] = []
         if not file_paths:
             return out
         try:
@@ -586,7 +591,7 @@ class EnginePart7:
             if not isinstance(exif, dict):
                 continue
             raw_exif_data = exif.get("exif_data")
-            exif_data: Dict[str, object] = (
+            exif_data: dict[str, object] = (
                 raw_exif_data if isinstance(raw_exif_data, dict) else {}
             )
             out.append(
@@ -615,7 +620,7 @@ class EnginePart7:
         self,
         file_path: str,
         face_count: int,
-        conn: Optional[sqlite3.Connection] = None,
+        conn: sqlite3.Connection | None = None,
         *,
         commit: bool = True,
     ) -> None:

@@ -5,14 +5,10 @@ from __future__ import annotations
 import os
 import sqlite3
 import threading
-import time
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
-from PIL import Image
-
-from search.types import MetadataRow, ProgressCallback, SearchHit
-
+import pycountry
 
 _semantic_sort_read_local = threading.local()
 
@@ -35,8 +31,8 @@ def _semantic_sort_read_conn(db_path: str) -> sqlite3.Connection:
 
 def get_semantic_capture_times_for_paths(
     paths: Sequence[str],
-    db_path: Optional[str] = None,
-) -> Dict[str, str]:
+    db_path: str | None = None,
+) -> dict[str, str]:
     """
     Thread-safe bulk read of capture_time from semantic_index.db.
 
@@ -52,8 +48,8 @@ def get_semantic_capture_times_for_paths(
     if not os.path.isfile(db_path):
         return {}
 
-    canonical_to_original: Dict[str, str] = {}
-    unique_canonical: List[str] = []
+    canonical_to_original: dict[str, str] = {}
+    unique_canonical: list[str] = []
     for p in paths:
         if not p:
             continue
@@ -65,7 +61,7 @@ def get_semantic_capture_times_for_paths(
         return {}
 
     conn = _semantic_sort_read_conn(db_path)
-    result_map: Dict[str, str] = {}
+    result_map: dict[str, str] = {}
     chunk_size = 500
     for i in range(0, len(unique_canonical), chunk_size):
         chunk = unique_canonical[i : i + chunk_size]
@@ -91,8 +87,8 @@ def get_semantic_capture_times_for_paths(
 
 def get_semantic_capture_times_for_folder(
     folder_path: str,
-    db_path: Optional[str] = None,
-) -> Dict[str, str]:
+    db_path: str | None = None,
+) -> dict[str, str]:
     """Bulk read capture_time for all indexed files under folder_path (any thread)."""
     from search.engine import SemanticImageIndex
     if not folder_path:
@@ -121,7 +117,7 @@ def get_semantic_capture_times_for_folder(
         else "lower(replace(file_path, '\\\\', '/'))"
     )
     conn = _semantic_sort_read_conn(db_path)
-    result_map: Dict[str, str] = {}
+    result_map: dict[str, str] = {}
     rows = conn.execute(
         f"""
         SELECT file_path, capture_time
@@ -144,13 +140,13 @@ def _normalize_location_term(term: str) -> str:
     return " ".join((term or "").strip().lower().split())
 
 
-def _semantic_text_variants(text: str) -> List[str]:
+def _semantic_text_variants(text: str) -> list[str]:
     """CLIP query variants for a semantic term (singular/plural + short prompt)."""
     raw = (text or "").strip()
     if not raw:
         return []
     seen: set[str] = set()
-    out: List[str] = []
+    out: list[str] = []
 
     def add(s: str) -> None:
         s = (s or "").strip()
@@ -193,8 +189,7 @@ KNOWN_LOCATION_NAMES: frozenset[str] = frozenset({
     "south korea", "north korea",
     # Major cities & capitals
     "tokyo", "seoul", "london", "paris", "berlin", "new york", "los angeles",
-    "san francisco", "hong kong", "beijing", "shanghai", "bangkok", "singapore",
-    "sydney", "melbourne", "toronto", "vancouver", "rome", "milan", "madrid",
+    "san francisco", "hong kong", "beijing", "shanghai", "bangkok", "sydney", "melbourne", "toronto", "vancouver", "rome", "milan", "madrid",
     "barcelona", "amsterdam", "vienna", "zurich", "geneva", "mumbai", "delhi",
     "bangalore", "jakarta", "manila", "ho chi minh", "hanoi", "taipei", "macao",
     "moscow", "istanbul", "dubai", "abu dhabi", "riyadh", "cairo", "nairobi",
@@ -217,7 +212,7 @@ KNOWN_LOCATION_NAMES: frozenset[str] = frozenset({
     "patagonia", "queenstown", "rotorua", "milford sound",
 })
 
-_PYCOUNTRY_NAME_INDEX: Optional[frozenset[str]] = None
+_PYCOUNTRY_NAME_INDEX: frozenset[str] | None = None
 
 
 def _pycountry_name_index() -> frozenset[str]:
@@ -244,7 +239,7 @@ class CustomReverseGeocoder:
 
     _LANDMARK_DIST_SQ = 0.0182  # ~15 km squared degree distance
 
-    def __init__(self, cities: list, landmarks: Optional[list] = None):
+    def __init__(self, cities: list, landmarks: list | None = None):
         self.cities = cities
         self.landmarks = landmarks or []
         self._city_coords = (

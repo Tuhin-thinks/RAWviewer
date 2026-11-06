@@ -2,28 +2,10 @@
 
 from __future__ import annotations
 
-import os
-import platform
-import re
-import shutil
-import sqlite3
-import sys
-import time
-import hashlib
-import json
-import gzip
-import threading
 import concurrent.futures
-from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, Sequence, cast
-
-import numpy as np
-from PIL import Image, ImageOps
-from PIL.Image import Image as PilImage
-
-from core.errors import IndexAborted
-
-from search.types import MetadataRow, ProgressCallback
+import os
+import sys
+import threading
 
 _SHARED_INDEX_EXECUTOR: concurrent.futures.ThreadPoolExecutor | None = None
 _SHARED_EXECUTOR_LOCK = threading.Lock()
@@ -50,5 +32,4 @@ def _bundled_resource_path(relative_path: str) -> str:
         base = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     return os.path.join(base, relative_path)
 
-import metadata_backend
 

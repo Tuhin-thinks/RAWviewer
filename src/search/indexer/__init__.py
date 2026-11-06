@@ -3,11 +3,8 @@
 Package split from the original ``search/indexer.py`` module.
 Re-exports the full public surface for backward compatibility.
 """
-from ._shared import (
-    _bundled_resource_path,
-    _get_shared_index_executor,
-)
 from ._config import (
+    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _coerce_float,
     _coerce_int,
     _default_semantic_batch_size,
@@ -34,7 +31,6 @@ from ._config import (
     semantic_encode_prep_workers,
     semantic_gpu_throttle_seconds,
     semantic_warm_thumbs_before_index,
-    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
 )
 from ._rest import (
     _apply_exif_rotation_to_pil,
@@ -52,8 +48,8 @@ from ._rest import (
     _load_face_scan_image,
     _load_index_source_image,
     _load_semantic_batch_cache,
-    _log_opencl_runtime_details_once,
     _log_face_backend_once,
+    _log_opencl_runtime_details_once,
     _macos_version_major,
     _maybe_persist_index_thumbnail,
     _onnxruntime_availability_error,
@@ -69,4 +65,8 @@ from ._rest import (
     log_inference_acceleration_profile,
     resolve_onnx_execution_providers,
     resolve_opencv_dnn_backend_target,
+)
+from ._shared import (
+    _bundled_resource_path,
+    _get_shared_index_executor,
 )

@@ -2,23 +2,21 @@
 
 from __future__ import annotations
 
-import json
+import hashlib
 import os
-import platform
+import re
+import shutil
 import sys
 import threading
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Callable, cast
 
+import gzip
 import numpy as np
 from PIL import Image
 
-from core.errors import IndexAborted
 
-from search.types import ProgressCallback
-
-
-def _objc_pointer_addr(ptr: Any) -> Optional[int]:
+def _objc_pointer_addr(ptr: Any) -> int | None:
     """Best-effort address from a PyObjC / ctypes pointer-like value."""
     if ptr is None:
         return None
@@ -58,7 +56,7 @@ def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
         return False
 
 
-def mlmultiarray_to_numpy_f32(multi_array: Any) -> Optional[np.ndarray]:
+def mlmultiarray_to_numpy_f32(multi_array: Any) -> np.ndarray | None:
     """Bulk-read MLMultiArray contents via ``dataPointer`` into float32.
 
     Supports Float32 / Float16 / Double outputs used by MobileCLIP. Returns None
@@ -166,7 +164,7 @@ class MobileCLIPCoreMLBackend:
         ("mobileclip2_s0_image.mlpackage", "mobileclip2_s0_text.mlpackage"),
     )
 
-    def __init__(self, model_dir: Optional[str] = None):
+    def __init__(self, model_dir: str | None = None):
         if model_dir is None:
             model_dir = self._default_model_dir()
         self.model_dir = model_dir
@@ -205,8 +203,8 @@ class MobileCLIPCoreMLBackend:
         return None
 
     @staticmethod
-    def _candidate_model_dirs() -> List[str]:
-        dirs: List[str] = []
+    def _candidate_model_dirs() -> list[str]:
+        dirs: list[str] = []
         env_dir = os.environ.get("RAWVIEWER_MOBILECLIP_MODEL_DIR")
         if env_dir:
             dirs.append(env_dir)
@@ -240,7 +238,7 @@ class MobileCLIPCoreMLBackend:
                 os.path.join(module_dir, "..", "mobileclip_coreml"),
             ]
         )
-        out: List[str] = []
+        out: list[str] = []
         for d in dirs:
             full = os.path.realpath(os.path.abspath(os.path.expanduser(d)))
             if full not in out:
@@ -264,9 +262,7 @@ class MobileCLIPCoreMLBackend:
         if not os.path.exists(self.tokenizer_path):
             return f"Missing MobileCLIP tokenizer in {self.model_dir}"
         try:
-            import CoreML  # type: ignore[import-not-found]
-            import Foundation  # type: ignore[import-not-found]
-            import Quartz  # type: ignore[import-not-found]
+            pass  # type: ignore[import-not-found]
         except Exception as exc:
             return f"Missing native Core ML runtime: {exc}"
         return ""
@@ -292,7 +288,7 @@ class MobileCLIPCoreMLBackend:
         ]
 
     def download_assets(
-        self, progress_callback: Optional[Callable[..., None]] = None
+        self, progress_callback: Callable[..., None] | None = None
     ) -> str:
         """Download MobileCLIP S2 Core ML assets into the backend model directory."""
         if sys.platform != "darwin":
@@ -382,8 +378,8 @@ class MobileCLIPCoreMLBackend:
             return
         import CoreML  # type: ignore[import-not-found]
         import Foundation  # type: ignore[import-not-found]
-        import Quartz  # type: ignore[import-not-found]
         import objc  # type: ignore[import-not-found]
+        import Quartz  # type: ignore[import-not-found]
 
         self._CoreML = CoreML
         self._Foundation = Foundation
@@ -397,24 +393,24 @@ class MobileCLIPCoreMLBackend:
 
             def _load_one(path: str, role: str):
                 url = Foundation.NSURL.fileURLWithPath_(path)
-                
+
                 # Persistent cache for compiled models to avoid O(seconds) re-compilation
                 cache_dir = os.path.expanduser("~/.rawviewer_cache/compiled_models")
                 os.makedirs(cache_dir, exist_ok=True)
-                
+
                 try:
                     st = os.stat(path)
                     mtime = int(st.st_mtime)
                 except Exception:
                     mtime = 0
-                
+
                 h = hashlib.md5(f"{path}_{mtime}".encode()).hexdigest()
                 cu = _coreml_compute_units_setting(role)
                 compiled_path = os.path.join(
                     cache_dir, f"{os.path.basename(path)}_{h}_{cu}.mlmodelc"
                 )
                 compiled_url = Foundation.NSURL.fileURLWithPath_(compiled_path)
-                
+
                 if not os.path.exists(compiled_path):
                     tmp_url, compile_error = CoreML.MLModel.compileModelAtURL_error_(url, None)
                     if compile_error is not None or tmp_url is None:
@@ -515,7 +511,7 @@ class MobileCLIPCoreMLBackend:
             )
             return self._encode_pil_image(im, CoreML, objc, image_model)
 
-    def encode_images(self, file_paths: Sequence[str]) -> List[np.ndarray]:
+    def encode_images(self, file_paths: Sequence[str]) -> list[np.ndarray]:
         """Parallel CPU prep; Core ML predict serial by default (batch opt-in via env)."""
         CoreML, Foundation, Quartz, objc, image_model, text_model = self._require_coreml_runtime()
         paths = [p for p in (file_paths or []) if p]
@@ -590,7 +586,7 @@ class MobileCLIPCoreMLBackend:
         paths: Sequence[str],
         CoreML,
         image_model,
-    ) -> List[np.ndarray]:
+    ) -> list[np.ndarray]:
         """Run Core ML batch inference; halve batch size on memory/ANE failures."""
         if not providers:
             return []
@@ -619,7 +615,7 @@ class MobileCLIPCoreMLBackend:
             )
             return left + right
 
-        embeddings: List[np.ndarray] = []
+        embeddings: list[np.ndarray] = []
         count = int(predictions.count())
         for i in range(count):
             out_provider = predictions.featuresAtIndex_(i)
@@ -791,7 +787,7 @@ class MobileCLIPONNXBackend:
     TOKENIZER_URL = "https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz"
     SUPPORTS_HUB_DOWNLOAD = True
 
-    def __init__(self, model_dir: Optional[str] = None):
+    def __init__(self, model_dir: str | None = None):
         self.variant = os.environ.get("RAWVIEWER_MOBILECLIP_VARIANT", "b").strip().lower()
         if self.variant not in ("s0", "s2", "b", "l14"):
             self.variant = "b"
@@ -808,26 +804,26 @@ class MobileCLIPONNXBackend:
         self._tokenizer = None
 
     @staticmethod
-    def _candidate_model_dirs(variant: str = "b") -> List[str]:
-        dirs: List[str] = []
+    def _candidate_model_dirs(variant: str = "b") -> list[str]:
+        dirs: list[str] = []
         env_dir = os.environ.get("RAWVIEWER_MOBILECLIP_MODEL_DIR")
         if env_dir:
             dirs.append(env_dir)
-            
+
         suffix = f"_{variant}" if variant != "b" else ""
         if getattr(sys, "frozen", False):
             # Prioritize the actual executable directory for external (non-bundled) models
             exe_dir = os.path.dirname(sys.executable)
             dirs.append(os.path.join(exe_dir, "models", f"mobileclip_onnx{suffix}"))
             dirs.append(os.path.join(exe_dir, f"mobileclip_onnx{suffix}"))
-            
+
             # Fallback to PyInstaller temporary extract directory (_MEIPASS)
             meipass = getattr(sys, "_MEIPASS", None)
             if meipass is not None:
                 dirs.append(os.path.join(meipass, "models", f"mobileclip_onnx{suffix}"))
-            
+
         dirs.append(os.path.expanduser(f"~/.rawviewer_cache/mobileclip_onnx{suffix}"))
-        
+
         module_dir = os.path.dirname(os.path.abspath(__file__))
         dirs.append(os.path.join(module_dir, "..", "models", f"mobileclip_onnx{suffix}"))
         return dirs
@@ -856,7 +852,7 @@ class MobileCLIPONNXBackend:
         return self.availability_error() == ""
 
     def download_assets(
-        self, progress_callback: Optional[Callable[..., None]] = None
+        self, progress_callback: Callable[..., None] | None = None
     ) -> str:
         from mobileclip_download_progress import make_byte_progress_tqdm, report_progress
 
@@ -989,7 +985,7 @@ class MobileCLIPONNXBackend:
         outputs = image_session.run(None, inputs)
         return self._normalize(np.asarray(outputs[0], dtype=np.float32))
 
-    def encode_images(self, file_paths: Sequence[str]) -> List[np.ndarray]:
+    def encode_images(self, file_paths: Sequence[str]) -> list[np.ndarray]:
         """Best-effort batched image encoding for ONNX backend."""
         image_session, _ = self._require_sessions()
         paths = [p for p in (file_paths or []) if p]
@@ -1045,7 +1041,7 @@ def resolve_mobileclip_backend() -> Any:
             return inst
         return inst # Return anyway for download_assets availability
 
-def _bytes_to_unicode() -> Dict[int, str]:
+def _bytes_to_unicode() -> dict[int, str]:
     bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
@@ -1096,12 +1092,12 @@ class _ClipBPETokenizer:
         if not hasattr(self, "bpe_cache"):
             import collections
             self.bpe_cache = collections.OrderedDict()
-            
+
         if token in self.bpe_cache:
             # Move to end to mark as recently used
             self.bpe_cache.move_to_end(token)
             return self.bpe_cache[token]
-            
+
         word = tuple(token[:-1]) + (token[-1] + "</w>",)
         pairs = _get_pairs(word)
         if not pairs:
@@ -1110,7 +1106,7 @@ class _ClipBPETokenizer:
             if len(self.bpe_cache) > 8192:
                 self.bpe_cache.popitem(last=False)
             return res
-            
+
         while True:
             bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf")))
             if bigram not in self.bpe_ranks:
@@ -1141,14 +1137,14 @@ class _ClipBPETokenizer:
         if len(self.bpe_cache) > 8192:
             self.bpe_cache.popitem(last=False)
         return out
-    def encode(self, text: str) -> List[int]:
-        bpe_tokens: List[int] = []
+    def encode(self, text: str) -> list[int]:
+        bpe_tokens: list[int] = []
         for token in re.findall(r"<\|startoftext\|>|<\|endoftext\|>|[\w']+|[^\s\w]", text.lower()):
             token = "".join(self.byte_encoder[b] for b in token.encode("utf-8"))
             bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(" "))
         return bpe_tokens
 
-    def encode_for_clip(self, text: str, context_length: int = 77) -> List[int]:
+    def encode_for_clip(self, text: str, context_length: int = 77) -> list[int]:
         tokens = [self.sot] + self.encode(text)[: context_length - 2] + [self.eot]
         return tokens + [0] * (context_length - len(tokens))
 

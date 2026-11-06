@@ -1,15 +1,24 @@
 """Engine mixin part 1 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import hashlib, os, re, sqlite3, sys, threading, time
-from typing import Any, Dict, List, Optional
+import hashlib
+import os
+import re
+import sqlite3
+import sys
+import threading
+import time
+from typing import Any, Callable, Literal
+
 import numpy as np
-from PIL import Image, ImageOps
-from core.errors import IndexAborted, RAWViewerError
+from PIL import Image
+
+from core.errors import IndexAborted
 from raw_file_extensions import RAW_FILE_EXTENSIONS
-from search.indexer import _bundled_resource_path, _coerce_float
 from search.backends import resolve_mobileclip_backend
+from search.indexer import _bundled_resource_path, _coerce_float
 from search.queries import CustomReverseGeocoder
+
 
 class EnginePart1:
 
@@ -63,7 +72,7 @@ class EnginePart1:
         }
     )
 
-    def __init__(self, db_path: Optional[str] = None, model_name: Optional[str] = None):
+    def __init__(self, db_path: str | None = None, model_name: str | None = None):
         if db_path is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
             os.makedirs(cache_dir, exist_ok=True)
@@ -351,7 +360,7 @@ class EnginePart1:
         return bool(getattr(backend, "SUPPORTS_HUB_DOWNLOAD", False))
 
     def download_semantic_backend_assets(
-        self, progress_callback: Optional[Callable[[str], None]] = None
+        self, progress_callback: Callable[[str], None] | None = None
     ) -> str:
         if self.model_name.startswith("mobileclip-"):
             backend = self._mobileclip_backend or resolve_mobileclip_backend()
@@ -367,8 +376,8 @@ class EnginePart1:
             if self._reverse_geocoder is not None:
                 return self._reverse_geocoder
             try:
-                import gzip
                 import csv
+                import gzip
                 import logging
 
                 db_path = _bundled_resource_path(os.path.join("icons", "cities500.csv.gz"))
@@ -490,7 +499,7 @@ class EnginePart1:
         except Exception:
             return 0
 
-    def _tag_text(tags: Dict[str, object], *names: str) -> str:
+    def _tag_text(tags: dict[str, object], *names: str) -> str:
         for name in names:
             value = tags.get(name)
             if value is None:
@@ -500,7 +509,7 @@ class EnginePart1:
                 return text
         return ""
 
-    def _tag_int(cls, tags: Dict[str, object], *names: str) -> int:
+    def _tag_int(cls, tags: dict[str, object], *names: str) -> int:
         for name in names:
             if name not in tags:
                 continue
@@ -537,7 +546,7 @@ class EnginePart1:
         return 0, 0
 
     def _clean_join(*parts: str) -> str:
-        out: List[str] = []
+        out: list[str] = []
         for part in parts:
             p = (part or "").strip()
             if p and p not in out:
@@ -560,7 +569,7 @@ class EnginePart1:
         except Exception:
             return False
 
-    def _canonical_path(file_path: str) -> str:
+    def _canonical_path(self, file_path: str) -> str:
         if not file_path:
             return ""
         try:
@@ -578,7 +587,7 @@ class EnginePart1:
                 return file_path.lower()
             return file_path
 
-    def _path_aliases(file_path: str) -> List[str]:
+    def _path_aliases(file_path: str) -> list[str]:
         # Fast string-based aliases only.
         ap = os.path.abspath(file_path)
         np = os.path.normpath(ap)
@@ -589,7 +598,7 @@ class EnginePart1:
             aliases.append(np)
         return aliases
 
-    def _upsert_metadata(self, canonical_fp: str, st: os.stat_result, meta: Dict[str, Any], conn: Optional[sqlite3.Connection] = None) -> None:
+    def _upsert_metadata(self, canonical_fp: str, st: os.stat_result, meta: dict[str, Any], conn: sqlite3.Connection | None = None) -> None:
         """Helper to insert or update metadata in the index."""
         db = conn if conn is not None else self._conn
         file_name = os.path.basename(canonical_fp)
@@ -716,7 +725,7 @@ class EnginePart1:
         except Exception:
             pass
 
-    def _ratio_to_float(v) -> Optional[float]:
+    def _ratio_to_float(v) -> float | None:
         try:
             # exifread.utils.Ratio supports num/den
             if hasattr(v, "num") and hasattr(v, "den"):

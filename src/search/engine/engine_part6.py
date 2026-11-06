@@ -1,14 +1,19 @@
 """Engine mixin part 6 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
-import os, re, sqlite3
-from typing import Any, Dict, List, Optional, Sequence
-from search.types import MetadataRow, ProgressCallback, SearchHit
+import os
+import re
+import sqlite3
+from collections.abc import Sequence
+from typing import Any
+
 from search.indexer import _coerce_float, _coerce_int
+from search.types import MetadataRow
+
 
 class EnginePart6:
 
-    def get_pending_paths(self, file_paths: Sequence[str]) -> List[str]:
+    def get_pending_paths(self, file_paths: Sequence[str]) -> list[str]:
         """
         Return paths that need indexing (missing row, semantic_ready=0, or file changed on disk).
         Completed work is persisted in semantic_index.db and survives app restarts.
@@ -32,7 +37,7 @@ class EnginePart6:
             fp = r['file_path']
             row_map[self._canonical_path(fp)] = r
 
-        pending: List[str] = []
+        pending: list[str] = []
 
         canonical_map = {self._canonical_path(p): p for p in indexable_paths if p}
         for cp, original in canonical_map.items():
@@ -80,7 +85,7 @@ class EnginePart6:
         )
         return pending
 
-    def get_metadata_extraction_pending_paths(self, file_paths: Sequence[str]) -> List[str]:
+    def get_metadata_extraction_pending_paths(self, file_paths: Sequence[str]) -> list[str]:
         """Paths that need on-disk EXIF/metadata extraction (no row or file changed).
 
         Narrower than :meth:`get_pending_paths`, which also lists files awaiting
@@ -99,7 +104,7 @@ class EnginePart6:
         for r in rows:
             row_map[self._canonical_path(r["file_path"])] = r
 
-        pending: List[str] = []
+        pending: list[str] = []
         canonical_map = {self._canonical_path(p): p for p in indexable_paths if p}
         for cp, original in canonical_map.items():
             try:
@@ -133,7 +138,7 @@ class EnginePart6:
 
         return pending
 
-    def get_pending_embedding_paths(self, file_paths: Sequence[str]) -> List[str]:
+    def get_pending_embedding_paths(self, file_paths: Sequence[str]) -> list[str]:
         """
         Return paths that have metadata in database but are missing semantic embeddings (dim = 0).
         """
@@ -150,7 +155,7 @@ class EnginePart6:
             fp = r['file_path']
             row_map[self._canonical_path(fp)] = r
 
-        pending: List[str] = []
+        pending: list[str] = []
         canonical_map = {self._canonical_path(p): p for p in indexable_paths if p}
         for cp, original in canonical_map.items():
             row = row_map.get(cp)
@@ -162,7 +167,7 @@ class EnginePart6:
 
         return pending
 
-    def _fetch_rows_for_paths(self, paths: Sequence[str]) -> List[MetadataRow]:
+    def _fetch_rows_for_paths(self, paths: Sequence[str]) -> list[MetadataRow]:
         """Bulk fetch rows for a list of paths using optimized batch queries."""
         if not paths:
             return []
@@ -217,7 +222,7 @@ class EnginePart6:
                     found_map[fp] = r
 
         # 3. Assemble results in original order, injecting mock rows for missing files
-        # This ensures that newly added files appear in search results (as unindexed) 
+        # This ensures that newly added files appear in search results (as unindexed)
         # instead of being filtered out.
         results = []
         for cp in unique_canonical:
@@ -260,7 +265,7 @@ class EnginePart6:
 
         return results
 
-    def get_layout_metadata_for_paths(self, paths: Sequence[str]) -> Dict[str, Dict[str, Any]]:
+    def get_layout_metadata_for_paths(self, paths: Sequence[str]) -> dict[str, dict[str, Any]]:
         """
         Fast synchronous fetch of layout metadata (width, height, orientation, capture_time) 
         for pre-seeding the gallery layout to avoid flashing on first render.
@@ -343,7 +348,7 @@ class EnginePart6:
     def _to_int(value: object, default: int = 0) -> int:
         return _coerce_int(value, default)
 
-    def _to_float(value: object) -> Optional[float]:
+    def _to_float(value: object) -> float | None:
         return _coerce_float(value)
 
     def _normalize_date_value(value: str) -> str:
@@ -438,7 +443,7 @@ class EnginePart6:
 
     def _apply_filters(
         self, rows: Sequence[MetadataRow], query_text: str
-    ) -> tuple[List[MetadataRow], str]:
+    ) -> tuple[list[MetadataRow], str]:
         """
         Parse a mixed query and filter rows.
 
@@ -487,7 +492,7 @@ class EnginePart6:
         logger = logging.getLogger(__name__)
         logger.info(f"[SEARCH] Raw query: '{query_text}' -> Normalized: '{raw}'")
 
-        semantic_terms: List[str] = []
+        semantic_terms: list[str] = []
         filtered = list(rows)
 
         num_pat = re.compile(r"^(iso|year|month|width|height)\s*(<=|>=|=|<|>)\s*(\d+)$", re.I)
@@ -555,7 +560,7 @@ class EnginePart6:
                 needle = t.split(":", 1)[1].strip().lower()
                 if needle:
                     filtered = [
-                        r for r in filtered 
+                        r for r in filtered
                         if self._contains_location_place(str(r["city"] or ""), needle)
                         or self._contains_location_place(str(self._row_value(r, "landmark") or ""), needle)
                     ]
@@ -632,9 +637,9 @@ class EnginePart6:
                         target_lon = float(parts[1])
                         # Filter by images within ~50km radius (approx 0.5 degrees)
                         filtered = [
-                            r for r in filtered 
-                            if r["gps_lat"] is not None and 
-                            abs((_coerce_float(r["gps_lat"]) or 0.0) - target_lat) < 0.5 and 
+                            r for r in filtered
+                            if r["gps_lat"] is not None and
+                            abs((_coerce_float(r["gps_lat"]) or 0.0) - target_lat) < 0.5 and
                             abs((_coerce_float(r["gps_lon"]) or 0.0) - target_lon) < 0.5
                         ]
                 except Exception:

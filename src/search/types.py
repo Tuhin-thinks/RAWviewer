@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Sequence, TypeAlias
-
 import sqlite3
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import TypeAlias
 
 from core.errors import IndexAborted  # re-export
 
+ProgressCallback: TypeAlias = Callable[[int, int, str], None] | None
 
-ProgressCallback: TypeAlias = Optional[Callable[[int, int, str], None]]
-
-MetadataRow: TypeAlias = sqlite3.Row | Dict[str, object]
+MetadataRow: TypeAlias = sqlite3.Row | dict[str, object]
 
 
 @dataclass
@@ -24,8 +23,8 @@ class SearchHit:
     camera_model: str = ""
     lens_model: str = ""
     iso: int = 0
-    gps_lat: Optional[float] = None
-    gps_lon: Optional[float] = None
+    gps_lat: float | None = None
+    gps_lon: float | None = None
     city: str = ""
     landmark: str = ""
     admin1: str = ""
