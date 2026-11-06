@@ -184,7 +184,7 @@ class UnifiedPart6:
 
         # Lazy initialization of module-level executor to prevent unbounded thread churn
         global _preview_executor
-        if '_preview_executor' not in globals():
+        if _preview_executor is None:
             _preview_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="preview-tier")
 
         _preview_executor.submit(_populate_preview_tier_async, embedded)
