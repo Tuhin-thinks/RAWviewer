@@ -10,6 +10,23 @@ from PyQt6.QtCore import QLoggingCategory
 
 from rawpy_gil import rawpy_imread_warm
 
+# Re-exports from sibling and external packages
+from cache.keys import memory_preview_max_edge
+from common_image_loader import (
+    array_matches_exif_display,
+    image_covers_sensor_resolution,
+    is_raw_file,
+    load_pixmap_safe,
+    use_full_embedded_raw_preview,
+    use_libraw_consistent_preview_first,
+)
+from enhanced_raw_processor import (
+    EXIFExtractor,
+    OptimizedRAWProcessor,
+    ThumbnailExtractor,
+)
+from image_cache import get_image_cache
+
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats*=false")
 

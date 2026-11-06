@@ -6,6 +6,7 @@ import shutil
 import sqlite3
 import threading
 from collections.abc import Callable
+from typing import TypeAlias
 
 try:
     import pycountry
@@ -23,7 +24,7 @@ from core.errors import IndexAborted, RAWViewerError  # noqa: F401
 
 ProgressCallback = Callable[[int, int, str], None] | None
 
-type MetadataRow = sqlite3.Row | dict[str, object]
+MetadataRow: TypeAlias = sqlite3.Row | dict[str, object]
 
 
 def _materialize_cached_file(src: str, dst: str) -> None:

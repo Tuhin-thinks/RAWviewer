@@ -5,12 +5,14 @@ from __future__ import annotations
 import os
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from image_load_manager import ImageLoadManager
 from PyQt6.QtCore import QRunnable, QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
-
-from image_load_manager import ImageLoadManager
 
 from .helpers import (
     Priority,
