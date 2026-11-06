@@ -355,6 +355,8 @@ class EnginePart6:
         return (value or "").strip().replace("-", ":").replace("/", ":")
 
     def _row_file_extension(row) -> str:
+        from search.engine.semantic_index import SemanticImageIndex
+
         fp = str(SemanticImageIndex._row_value(row, "file_path") or "")
         fn = str(SemanticImageIndex._row_value(row, "file_name") or "")
         # Prefer path basename (primary key truth); fallback to indexed file_name.

@@ -1,6 +1,7 @@
 """Engine mixin part 5 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
+import concurrent
 import os
 import threading
 import time
@@ -18,6 +19,7 @@ from search.indexer import (
     format_index_progress,
     log_inference_acceleration_profile,
     resolve_onnx_execution_providers,
+    semantic_embeddings_enabled,
     semantic_gpu_throttle_seconds,
 )
 from search.types import ProgressCallback

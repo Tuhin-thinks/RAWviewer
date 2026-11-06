@@ -11,6 +11,15 @@ from typing import cast
 import numpy as np
 from PIL import Image, ImageOps
 from PIL.Image import Image as PilImage
+from raw_file_extensions import RAW_FILE_EXTENSIONS
+
+from ._config import (
+    _dnn_get_backend_name,
+    _INDEX_THREAD_LOCAL,
+    _YUNET_INFER_LOCK,
+    _YUNET_SINGLETON,
+    _YUNET_SINGLETON_MODEL_PATH,
+)
 
 
 def _thumbnail_jpeg_bytes(arr: np.ndarray, quality: int = 85) -> bytes:

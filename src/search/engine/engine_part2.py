@@ -13,13 +13,14 @@ import numpy as np
 from PIL.Image import Image as PilImage
 
 import metadata_backend
-from search.backends import MobileCLIPONNXBackend, resolve_mobileclip_backend
+from search.backends import MobileCLIPONNXBackend, copy_bgra_into_cvpixelbuffer, resolve_mobileclip_backend
 from search.indexer import (
     _apply_opencv_dnn_acceleration,
     _coerce_float,
     _coerce_int,
     _load_index_source_image,
     _ort_get_available_providers,
+    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _yunet_detect_faces_bgr,
     resolve_onnx_execution_providers,
 )
@@ -383,6 +384,8 @@ class EnginePart2:
     def _vision_face_count_from_pil(im: PilImage) -> int | None:
         """Apple Vision face count from an in-memory PIL image (no temp JPEG)."""
         try:
+            from search.engine.semantic_index import SemanticImageIndex
+
             import Foundation  # type: ignore[import-not-found]
             import objc  # type: ignore[import-not-found]
             import Quartz  # type: ignore[import-not-found]
@@ -419,6 +422,8 @@ class EnginePart2:
 
     def _detect_face_count(file_path: str, preloaded_im: PilImage | None = None) -> int:
         try:
+            from search.engine.semantic_index import SemanticImageIndex
+
             if preloaded_im is not None:
                 im = preloaded_im
             else:

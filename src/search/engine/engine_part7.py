@@ -7,8 +7,8 @@ import sqlite3
 from collections.abc import Sequence
 from typing import cast
 
-from search.indexer import _coerce_float, _coerce_int
-from search.queries import CustomReverseGeocoder, _normalize_location_term, _pycountry_name_index
+from search.indexer import _coerce_float, _coerce_int, semantic_embeddings_enabled
+from search.queries import KNOWN_LOCATION_NAMES, CustomReverseGeocoder, _normalize_location_term, _pycountry_name_index
 from search.types import MetadataRow, SearchHit
 
 

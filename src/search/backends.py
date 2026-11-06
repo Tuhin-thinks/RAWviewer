@@ -14,6 +14,23 @@ from typing import Any, Callable, cast
 import gzip
 import numpy as np
 from PIL import Image
+from PIL.Image import Image as PilImage
+
+from search.indexer import (
+    _coreml_compute_units,
+    _coreml_compute_units_setting,
+    _get_shared_index_executor,
+    _load_index_source_image,
+    _materialize_cached_file,
+    _onnxruntime_availability_error,
+    _ort_get_available_providers,
+    _prep_mobileclip_image_chw_resized,
+    resolve_onnx_execution_providers,
+    semantic_coreml_use_native_batch,
+    semantic_encode_prep_workers,
+)
+from search.indexer._config import _COREML_PREDICTION_LOCK
+from search.indexer._rest import _log_coreml_compute_units_profile_once
 
 
 def _objc_pointer_addr(ptr: Any) -> int | None:

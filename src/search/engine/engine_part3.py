@@ -1,6 +1,7 @@
 """Engine mixin part 3 of 7 for SemanticImageIndex."""
 from __future__ import annotations
 
+import concurrent
 import os
 import sqlite3
 import sys
@@ -20,6 +21,7 @@ from search.indexer import (
     _index_thumbnail_needs_warm,
     _load_semantic_batch_cache,
     _save_semantic_batch_cache,
+    SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _thumbnail_jpeg_bytes,
     face_scan_enabled,
     format_index_progress,
