@@ -4,6 +4,7 @@ import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 from image_load_manager import yield_if_current_task_active
+from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
 class RAWProcessorPart1(QThread):
     """Thread for processing RAW images to avoid UI blocking (part 1)."""

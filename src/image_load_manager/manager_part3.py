@@ -13,7 +13,7 @@ from .helpers import (
     _skip_low_res_memory_thumb_for_display_tier,
     Priority,
 )
-from .worker import ImageLoadTask
+from .worker import ImageLoadTask, ImageLoadWorker
 
 
 class ImageLoadManagerPart3:

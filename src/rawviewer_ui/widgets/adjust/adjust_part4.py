@@ -7,6 +7,7 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 from raw_adjustments import AS_SHOT_TEMP_KEY, CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, RECOVERY_BASELINE_KEY, SLIDER_SPECS, is_pv2012_tone_slider, recovery_baseline_slider_hints
+from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH, STRENGTH_KEY as DB_STRENGTH_KEY
 from .helpers import CollapsibleSection, _CHANNEL_CURVE_KEYS_BY_NAME, _qta_icon_safe, normalize_adjust_dock
 
 class AdjustPart4:
