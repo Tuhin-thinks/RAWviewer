@@ -263,8 +263,10 @@ class PersistentEXIFCache:
                 sensor_meta_ver = row[9] if len(row) > 9 else 0
                 if sensor_meta_ver is None:
                     sensor_meta_ver = 0
-                if result_width: exif_data['original_width'] = result_width
-                if result_height: exif_data['original_height'] = result_height
+                if result_width:
+                    exif_data['original_width'] = result_width
+                if result_height:
+                    exif_data['original_height'] = result_height
 
                 return {
                     'orientation': row[2],

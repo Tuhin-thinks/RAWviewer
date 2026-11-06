@@ -654,7 +654,7 @@ class EnginePart6:
                 key, op, val_str = m.group(1), m.group(2), m.group(3)
                 val = int(val_str)
 
-                def _ok(x: int) -> bool:
+                def _ok(x: int, op=op, val=val) -> bool:
                     if x <= 0:
                         if op == "=":
                             return val == 0

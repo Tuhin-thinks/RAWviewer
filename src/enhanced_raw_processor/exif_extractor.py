@@ -138,7 +138,8 @@ class EXIFExtractor(QObject):
                                 orientation = val
                                 orientation_tag_found = tag_name
                                 break
-                    except Exception: pass
+                    except Exception:
+                        pass
 
                     # Fallback to string mapping (same as main.py)
                     orientation_str = str(tag).strip()
@@ -176,7 +177,8 @@ class EXIFExtractor(QObject):
                 try:
                     original_width = int(crop_size.values[0])
                     original_height = int(crop_size.values[1])
-                except Exception: pass
+                except Exception:
+                    pass
 
             # 2. Try DNG ActiveArea (Top, Left, Bottom, Right)
             if original_width <= 0 or original_height <= 0:
@@ -190,7 +192,8 @@ class EXIFExtractor(QObject):
                         right = int(active_area.values[3])
                         original_height = bottom - top
                         original_width = right - left
-                    except Exception: pass
+                    except Exception:
+                        pass
 
             # 3. Fallback to standard EXIF width/height
             if original_width <= 0:
@@ -199,7 +202,8 @@ class EXIFExtractor(QObject):
                         try:
                             original_width = int(tags[tag].values[0])
                             break
-                        except Exception: pass
+                        except Exception:
+                            pass
 
             if original_height <= 0:
                 for tag in ('EXIF ExifImageLength', 'Image ImageLength'):
@@ -207,7 +211,8 @@ class EXIFExtractor(QObject):
                         try:
                             original_height = int(tags[tag].values[0])
                             break
-                        except Exception: pass
+                        except Exception:
+                            pass
 
             # Second pass: If it's a RAW file, use rawpy to verify dimensions and
             # orientation (flip), and -- while the file is already open -- also
@@ -303,7 +308,8 @@ class EXIFExtractor(QObject):
                         else:
                             focal_length = f"{round(float(val))}mm"
                         break
-                    except Exception: pass
+                    except Exception:
+                        pass
 
             # Aperture
             for tag in ('EXIF FNumber', 'EXIF ApertureValue'):
@@ -316,7 +322,8 @@ class EXIFExtractor(QObject):
                         else:
                             aperture = f"f/{float(val):.1f}"
                         break
-                    except Exception: pass
+                    except Exception:
+                        pass
 
             # ISO
             for tag in ('EXIF ISOSpeedRatings', 'EXIF ISO', 'EXIF PhotographicSensitivity'):
@@ -329,7 +336,8 @@ class EXIFExtractor(QObject):
                         else:
                             iso = f"ISO {val}"
                         break
-                    except Exception: pass
+                    except Exception:
+                        pass
 
             rating = 0
             for tag in ('XMP-xmp:Rating', 'XMP Rating', 'Rating', 'EXIF Rating'):

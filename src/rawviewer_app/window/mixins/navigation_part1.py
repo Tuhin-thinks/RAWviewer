@@ -593,8 +593,10 @@ class NavigationPart1:
         # Clear any pending zoom requests for the current image
         if hasattr(self, '_pending_zoom'):
             self._pending_zoom = False
-            if hasattr(self, '_pending_zoom_center'): delattr(self, '_pending_zoom_center')
-            if hasattr(self, '_pending_zoom_thumbnail_size'): delattr(self, '_pending_zoom_thumbnail_size')
+            if hasattr(self, '_pending_zoom_center'):
+                delattr(self, '_pending_zoom_center')
+            if hasattr(self, '_pending_zoom_thumbnail_size'):
+                delattr(self, '_pending_zoom_thumbnail_size')
 
         # Check if navigation is allowed BEFORE starting navigation
         if not self.can_navigate():
@@ -701,8 +703,10 @@ class NavigationPart1:
         # Clear any pending zoom requests for the current image
         if hasattr(self, '_pending_zoom'):
             self._pending_zoom = False
-            if hasattr(self, '_pending_zoom_center'): delattr(self, '_pending_zoom_center')
-            if hasattr(self, '_pending_zoom_thumbnail_size'): delattr(self, '_pending_zoom_thumbnail_size')
+            if hasattr(self, '_pending_zoom_center'):
+                delattr(self, '_pending_zoom_center')
+            if hasattr(self, '_pending_zoom_thumbnail_size'):
+                delattr(self, '_pending_zoom_thumbnail_size')
 
         # Check processor state
         processor_state = "None"

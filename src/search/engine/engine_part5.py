@@ -127,7 +127,8 @@ class EnginePart5:
             # 1.2 Identify files that actually need metadata extraction
             to_extract = []
             for fp in filtered_paths:
-                if not fp: continue
+                if not fp:
+                    continue
                 canonical_fp = self._canonical_path(fp)
                 try:
                     st = os.stat(canonical_fp)

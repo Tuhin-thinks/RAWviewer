@@ -221,12 +221,14 @@ class ImageLoadTask(QRunnable):
                             # Remove invalid cache entry
                             cache.disk_thumbnail_cache.remove(self.file_path)
 
-                    if self.is_cancelled(): return
+                    if self.is_cancelled():
+                        return
 
                     # Disk cache miss, extract from RAW
                     raw_open_start = time.time()
                     with rawpy.imread(self.file_path) as raw:
-                        if self.is_cancelled(): return
+                        if self.is_cancelled():
+                            return
                         raw_open_time = time.time() - raw_open_start
                         logger.debug(f"[IMAGE_LOAD_TASK] RAW file opened in {raw_open_time:.3f}s: {file_basename}")
                         # Try to extract embedded JPEG thumbnail
@@ -354,7 +356,8 @@ class ImageLoadTask(QRunnable):
                                             return
                         except Exception as thumb_error:
                             logger.debug(f"[IMAGE_LOAD_TASK] Could not extract thumbnail from RAW file {os.path.basename(self.file_path)}: {thumb_error}")
-                            if self.is_cancelled(): return
+                            if self.is_cancelled():
+                                return
                             # Fall through to regular loading
 
                 except Exception as raw_error:

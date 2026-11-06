@@ -138,12 +138,17 @@ class GalleryPart3:
                         cached_exif['original_height'] = h
                         # Map rawpy flip to EXIF orientation for consistency if possible
                         # 0->1, 3->3, 6->6, 5->8 (approximate)
-                        if flip == 6: cached_exif['orientation'] = 6
-                        elif flip == 3: cached_exif['orientation'] = 3
-                        elif flip == 5: cached_exif['orientation'] = 8
-                        else: cached_exif['orientation'] = 1
+                        if flip == 6:
+                            cached_exif['orientation'] = 6
+                        elif flip == 3:
+                            cached_exif['orientation'] = 3
+                        elif flip == 5:
+                            cached_exif['orientation'] = 8
+                        else:
+                            cached_exif['orientation'] = 1
                         self.image_cache.put_exif(file_path, cached_exif)
-                    except Exception: pass
+                    except Exception:
+                        pass
                     return aspect
             except Exception:
                 pass
@@ -160,7 +165,8 @@ class GalleryPart3:
                     exif = exif_getter() if callable(exif_getter) else None
                     if isinstance(exif, dict):
                         orientation = int(exif.get(274, 1))  # 274 is Orientation tag
-                except Exception: pass
+                except Exception:
+                    pass
 
                 if h > 0:
                     real_w, real_h = (h, w) if orientation in (5, 6, 7, 8) else (w, h)

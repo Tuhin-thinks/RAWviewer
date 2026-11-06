@@ -326,7 +326,8 @@ class InstallerGUI(QMainWindow):
 
     def browse_path(self):
         path = QFileDialog.getExistingDirectory(self, "Select Folder", self.path_edit.text())
-        if path: self.path_edit.setText(os.path.normpath(path))
+        if path:
+            self.path_edit.setText(os.path.normpath(path))
 
     def init_progress_page(self):
         layout = QVBoxLayout(self.page_progress)
