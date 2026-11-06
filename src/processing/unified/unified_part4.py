@@ -257,7 +257,7 @@ class UnifiedPart4:
         skip_key = os.path.normcase(os.path.abspath(file_path))
         return skip_key in _LIBRAW_UNSUPPORTED_PATHS
 
-    def _preview_buffer_max_dim(buf) -> int:
+    def _preview_buffer_max_dim(self, buf) -> int:
         try:
             if hasattr(buf, "shape"):
                 return max(int(buf.shape[0]), int(buf.shape[1]))

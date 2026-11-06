@@ -1,6 +1,7 @@
 """ImageLoadWorker: reusable QRunnable that executes one ImageLoadTask."""
 from __future__ import annotations
 
+import os
 import time
 import threading
 
@@ -134,6 +135,7 @@ class ImageLoadWorker(QRunnable):
         worker_thread_local.priority = getattr(self.task, 'priority', None)
         worker_thread_local.task = self.task
         self.manager._mark_task_running(self.task)
+        file_path = self.task.file_path
         try:
             if self.task.priority == Priority.CURRENT:
                 import logging

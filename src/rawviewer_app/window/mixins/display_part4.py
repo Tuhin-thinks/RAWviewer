@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 import os
-from PyQt6.QtGui import QImage
+from PyQt6.QtGui import QImage, QPixmap
 from rawviewer_app.processing import PixmapConverter, RawEdrPixmapConverter
 from core.config import _norm_path, safe_print
 from ..lazy import image_covers_sensor_resolution, is_raw_file, np

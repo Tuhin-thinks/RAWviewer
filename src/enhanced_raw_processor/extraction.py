@@ -300,14 +300,15 @@ def probe_effective_raw_orientation(
     return orientation, original_width, original_height
 
 
-def cached_raw_exif_orientation_trustworthy(file_path: str) -> bool:
+def cached_raw_exif_orientation_trustworthy(file_path: str, cached: dict | None = None) -> bool:
     """Whether *file_path* has a cached EXIF row with verified orientation.
 
     Short-circuits the expensive orientation probe for files that have
-    already been verified.
+    already been verified. Accepts an optional *cached* EXIF dict from the
+    caller (avoids a redundant DB fetch when the caller already has it).
     """
     try:
-        row = metadata_backend.fetch_exif_by_path(file_path)
+        row = cached if cached is not None else metadata_backend.fetch_exif_by_path(file_path)
         if row is not None:
             meta_ver = row.get("_sensor_meta_ver", 0)
             if (
