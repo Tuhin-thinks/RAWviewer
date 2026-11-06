@@ -11,6 +11,8 @@ from core.errors import IndexAborted  # re-export
 
 ProgressCallback: TypeAlias = Callable[[int, int, str], None] | None
 
+Row: TypeAlias = sqlite3.Row
+
 MetadataRow: TypeAlias = sqlite3.Row | dict[str, object]
 
 
