@@ -18,7 +18,7 @@ lazy.register(sys.modules[__name__])
 
 
 class ExternalPart1:
-    def _share_button_platform_enabled() -> bool:
+    def _share_button_platform_enabled(self) -> bool:
         """Bottom action opens selected image(s) in another app on desktop platforms."""
         return sys.platform in ("darwin", "win32")
 
