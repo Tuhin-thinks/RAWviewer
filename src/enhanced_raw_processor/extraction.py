@@ -124,7 +124,7 @@ def _bytescan_first_enabled() -> bool:
 
 
 _rawpy_global_lock = threading.Lock()
-_embedded_scan_miss_cache: set = set()
+_embedded_scan_miss_cache: set[str] = set()
 _embedded_scan_miss_lock = threading.Lock()
 _embedded_scan_miss_cache_max = 5000
 
@@ -287,7 +287,7 @@ def probe_effective_raw_orientation(
     return orientation, original_width, original_height
 
 
-def cached_raw_exif_orientation_trustworthy(file_path: str, cached: dict | None = None) -> bool:
+def cached_raw_exif_orientation_trustworthy(file_path: str, cached: dict[str, Any] | None = None) -> bool:
     """Whether *file_path* has a cached EXIF row with verified orientation.
 
     Short-circuits the expensive orientation probe for files that have
@@ -552,7 +552,7 @@ def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> np.nda
 
             best_arr: np.ndarray | None = None
             best_pixels = 0
-            visited_ifds: set = set()
+            visited_ifds: set[int] = set()
 
             while ifd_offset > 7 and ifd_offset not in visited_ifds:
                 visited_ifds.add(ifd_offset)

@@ -38,7 +38,7 @@ class PersistentEXIFCache:
         # Reads: thread-local connections. Writes: single writer connection (WAL).
         self._local = threading.local()
         self._writer_conn: sqlite3.Connection | None = None
-        self._pending_writes: list[tuple] = []
+        self._pending_writes: list[tuple[str, Any]] = []
         self._commit_every = max(
             1,
             int(os.environ.get("RAWVIEWER_EXIF_CACHE_COMMIT_EVERY", "40")),
@@ -82,7 +82,7 @@ class PersistentEXIFCache:
         *,
         file_size: int | None = None,
         file_mtime: float | None = None,
-    ) -> tuple | None:
+    ) -> tuple[Any, ...] | None:
         if file_size is None or file_mtime is None:
             file_size, file_mtime = self._get_file_hash(file_path)
         if file_size == 0:
@@ -337,7 +337,7 @@ class PersistentEXIFCache:
         commit: bool = True,
     ) -> None:
         """Batch EXIF writes (file_path, exif_info, file_size, file_mtime)."""
-        rows: list[tuple] = []
+        rows: list[tuple[str, Any]] = []
         for file_path, exif_info, file_size, file_mtime in items:
             row = self._prepare_put_row(
                 file_path,
@@ -383,7 +383,7 @@ class PersistentEXIFCache:
             except Exception:
                 pass
 
-    def get_multiple(self, file_paths: list, file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
+    def get_multiple(self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.
 
         Args:
@@ -525,7 +525,7 @@ class PersistentEXIFCache:
             pass
         return results
 
-    def get_capture_times_bulk(self, file_paths: list) -> dict[str, str]:
+    def get_capture_times_bulk(self, file_paths: list[str]) -> dict[str, str]:
         """Read capture_time for sorting only — no size/mtime validation (fast, K:-safe)."""
         if not file_paths:
             return {}

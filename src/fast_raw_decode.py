@@ -226,7 +226,7 @@ def wb_sanity_enabled() -> bool:
 # threshold 0.5 sits in the middle of a >5x gap.
 _WB_SANITY_THRESHOLD = 0.5
 # key: normcase(abspath). Value: corrected cam_mul list, or None = checked, OK.
-_WB_CORRECTION_CACHE: dict[str, list | None] = {}
+_WB_CORRECTION_CACHE: dict[str, list[float] | None] = {}
 # Per-MODEL verdict: the WB misparse is a parser-vs-model property, so once
 # one file of a model measures clean, later files of that model skip the
 # embedded-JPEG check entirely -- it costs ~38ms of thumb extract + decode +
@@ -246,7 +246,7 @@ _WB_MODEL_VERDICT: dict[bytes, bool] = {}
 # (normcase path, mtime_ns, size) -- see unpack_raw. Re-probes if the file
 # changes on disk. Bounded by the number of distinct undecodable files a
 # session touches, which is tiny; a corrupt/exotic file is the exception.
-_UNPACK_UNSUPPORTED: set = set()
+_UNPACK_UNSUPPORTED: set[tuple[str, int, int]] = set()
 
 
 def _wb_model_key(
@@ -265,7 +265,7 @@ def _wb_model_key(
     )
 
 
-def get_corrected_camera_wb(file_path: str) -> list | None:
+def get_corrected_camera_wb(file_path: str) -> list[float] | None:
     """Session-cached corrected camera WB multipliers for ``file_path``.
 
     Non-None only when this file's as-shot WB failed the embedded-JPEG sanity
@@ -292,7 +292,7 @@ def _wb_correction_from_jpeg(
     scale_mul: np.ndarray,
     rgb_cam: np.ndarray,
     cam_mul: np.ndarray,
-) -> list | None:
+) -> list[float] | None:
     """Corrected cam_mul when the as-shot WB disagrees with the embedded JPEG.
 
     Returns None when the WB is fine, the thumb is unusable, or the solve is
@@ -313,7 +313,7 @@ def _wb_correction_from_jpeg(
         # Black-subtracted tiny CFA planes (WB-independent, computed once).
         w2 = mosaic.shape[1] // 2
         step = max(1, w2 // 192)
-        raw_planes: list = []  # (role, channel_index, plane)
+        raw_planes: list[tuple[str, int, np.ndarray]] = []  # (role, channel_index, plane)
         for (dy, dx), ci in np.ndenumerate(pattern):
             plane = mosaic[dy::2, dx::2][::step, ::step].astype(np.float64) - black[ci]
             role = "R" if ci == 0 else ("B" if ci == 2 else "G")

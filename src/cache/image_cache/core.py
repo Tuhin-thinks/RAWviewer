@@ -57,7 +57,7 @@ class ImageCacheCore(QObject):
             max_size=cache_sizes['preview_images'],
             on_evict=_note_preview_evicted,
         )
-        self._full_cache_reasons: OrderedDict = OrderedDict()
+        self._full_cache_reasons: OrderedDict[str, str] = OrderedDict()
 
         def _note_full_evicted(key):
             self._note_full_cache_reason(key, "evicted (capacity 10)")
@@ -66,13 +66,13 @@ class ImageCacheCore(QObject):
             max_size=10, on_evict=_note_full_evicted
         )
         self.pixmap_cache = LRUCache(max_size=cache_sizes['full_images'])
-        self.libraw_preview_paths: set = set()
+        self.libraw_preview_paths: set[str] = set()
         if self.cache_dir:
             self._libraw_preview_paths_file = os.path.join(self.cache_dir, "libraw_preview_paths.json")
             self._load_libraw_preview_paths()
         else:
             self._libraw_preview_paths_file = None
-        self.full_image_embedded_jpeg_paths: set = set()
+        self.full_image_embedded_jpeg_paths: set[str] = set()
         if self.persistent_cache_enabled:
             self.exif_cache = PersistentEXIFCache(cache_dir)
             self.disk_thumbnail_cache = PersistentThumbnailCache(cache_dir)
@@ -114,9 +114,9 @@ class ImageCacheCore(QObject):
         self._mem_poll_thread: threading.Thread | None = None
 
         self._orient_verify_lock = threading.Lock()
-        self._orient_verify_attempted: set = set()
+        self._orient_verify_attempted: set[str] = set()
         self._orient_verify_attempted_max = 4096
-        self._orient_verify_queue: list = []
+        self._orient_verify_queue: list[str] = []
         self._orient_verify_queue_max = 256
         self._orient_verify_thread: threading.Thread | None = None
         self._closing = False

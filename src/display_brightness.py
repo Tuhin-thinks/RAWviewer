@@ -321,7 +321,7 @@ class _WmiBackend:
         return
 
 
-def _iter_swbem(objset) -> list:
+def _iter_swbem(objset) -> list[Any]:
     try:
         return list(objset)
     except Exception:
@@ -339,7 +339,7 @@ def _iter_swbem(objset) -> list:
         return []
 
 
-def _win_hmonitors(hwnd: int | None) -> list:
+def _win_hmonitors(hwnd: int | None) -> list[Any]:
     import ctypes
     from ctypes import wintypes
 
@@ -353,7 +353,7 @@ def _win_hmonitors(hwnd: int | None) -> list:
                 return [hmon]
         except Exception:
             pass
-    found: list = []
+    found: list[Any] = []
 
     @ctypes.WINFUNCTYPE(
         wintypes.BOOL,

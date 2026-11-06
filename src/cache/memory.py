@@ -73,7 +73,7 @@ class FullImageCache:
             self.hits = 0
             self.misses = 0
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         with self.lock:
             total_requests = self.hits + self.misses
             hit_rate = self.hits / total_requests if total_requests > 0 else 0
@@ -215,13 +215,13 @@ class MemoryOnlyPersistentCache:
 
     def get_multiple(
         self,
-        file_paths: list,
+        file_paths: list[str],
         file_stats: dict[str, tuple[int, float]] | None = None,
         fast_mode: bool = True,
     ) -> dict[str, dict[str, Any]]:
         return {}
 
-    def get_capture_times_bulk(self, file_paths: list) -> dict[str, str]:
+    def get_capture_times_bulk(self, file_paths: list[str]) -> dict[str, str]:
         return {}
 
     def get_capture_times_for_folder(self, folder_path: str) -> dict[str, str]:

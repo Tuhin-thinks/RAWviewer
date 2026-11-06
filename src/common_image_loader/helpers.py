@@ -157,7 +157,7 @@ def folder_sort_key_tuple(
     newest_first: bool,
     *,
     has_capture_time: bool = True,
-) -> tuple:
+) -> tuple[Any, ...]:
     """Stable folder/gallery ordering on one chronological axis."""
     del has_capture_time  # kept for call-site compatibility
     base_name = os.path.basename(file_path).lower()
@@ -174,7 +174,7 @@ def _embedded_jpeg_workflow_setting() -> bool | None:
     """Cached QSettings read: True/False when set, None when key absent."""
     global _EMBEDDED_JPEG_WORKFLOW_MEMO
     if _EMBEDDED_JPEG_WORKFLOW_MEMO is not _EMBEDDED_JPEG_WORKFLOW_UNSET:
-        return _EMBEDDED_JPEG_WORKFLOW_MEMO  # type: ignore[return-value]
+        return _EMBEDDED_JPEG_WORKFLOW_MEMO
     try:
         from PyQt6.QtCore import QSettings
 

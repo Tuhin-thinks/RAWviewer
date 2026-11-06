@@ -30,7 +30,7 @@ class PreloadManager(QObject):
         ext = os.path.splitext(file_path)[1].lower().lstrip(".")
         return ext in RAW_FILE_EXTENSIONS
 
-    def preload_images(self, file_paths: list, priority_order: list = None):
+    def preload_images(self, file_paths: list[str], priority_order: list[str] | None = None):
         """Preload images in background threads using RAWProcessor (v0.5 style)."""
         if priority_order is None:
             priority_order = file_paths

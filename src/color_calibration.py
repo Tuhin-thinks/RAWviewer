@@ -155,7 +155,7 @@ def save_camera_profile(
 ) -> bool:
     key = normalize_camera_key(make, model, iso=iso)
     path = get_camera_profile_path()
-    registry: dict = {}
+    registry: dict[str, Any] = {}
     if os.path.isfile(path):
         try:
             with open(path, encoding="utf-8") as f:
