@@ -12,6 +12,8 @@ from PyQt6.QtGui import QImage, QPixmap
 
 from image_cache import get_image_cache
 
+from .edr import _last_load_used_edr
+
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats.warning=false\\nqt.imageformats.tiff.warning=false")
 try:

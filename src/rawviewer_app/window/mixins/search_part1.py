@@ -14,6 +14,8 @@ from core.config import _norm_path
 from .. import lazy
 from ..macos import _macos_install_line_edit_completion_guard
 
+SemanticImageIndex = None
+
 lazy.register(sys.modules[__name__])
 
 

@@ -14,6 +14,8 @@ from .helpers import (
     use_full_embedded_raw_preview,
 )
 
+_preview_executor = None
+
 
 class UnifiedPart6:
     def process_full_image(self, file_path: str,
