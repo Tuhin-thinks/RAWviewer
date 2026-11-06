@@ -1,19 +1,18 @@
-"""Semantic indexer: build pipeline, shared executor, configuration."""
-
+"""Thumbnail prep, ONNX/DNN/CoreML, and source image loading helpers."""
 from __future__ import annotations
 
+import concurrent.futures
+import gzip
+import hashlib
+import json
 import os
 import platform
 import re
 import shutil
 import sqlite3
 import sys
-import time
-import hashlib
-import json
-import gzip
 import threading
-import concurrent.futures
+import time
 from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Sequence, cast
 
@@ -22,413 +21,30 @@ from PIL import Image, ImageOps
 from PIL.Image import Image as PilImage
 
 from core.errors import IndexAborted
-
 from search.types import MetadataRow, ProgressCallback
 
-_SHARED_INDEX_EXECUTOR: concurrent.futures.ThreadPoolExecutor | None = None
-_SHARED_EXECUTOR_LOCK = threading.Lock()
-
-
-def _get_shared_index_executor() -> concurrent.futures.ThreadPoolExecutor:
-    global _SHARED_INDEX_EXECUTOR
-    if _SHARED_INDEX_EXECUTOR is None:
-        with _SHARED_EXECUTOR_LOCK:
-            if _SHARED_INDEX_EXECUTOR is None:
-                max_w = os.cpu_count() or 4
-                # Limit max workers to avoid overwhelming the system
-                max_w = min(16, max_w)
-                _SHARED_INDEX_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
-                    max_workers=max_w, thread_name_prefix="shared-index"
-                )
-    return _SHARED_INDEX_EXECUTOR
-
-
-def _bundled_resource_path(relative_path: str) -> str:
-    """Absolute path to bundled data (dev tree or PyInstaller _MEIPASS)."""
-    base = getattr(sys, "_MEIPASS", None)
-    if not base:
-        base = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    return os.path.join(base, relative_path)
-
-import metadata_backend
-
-from raw_file_extensions import RAW_FILE_EXTENSIONS
-
-try:
-    import pycountry
-except Exception:
-    pycountry = None
-
-
-from core.errors import IndexAborted, RAWViewerError  # noqa: F401
-
-
-ProgressCallback = Optional[Callable[[int, int, str], None]]
-
-MetadataRow: TypeAlias = sqlite3.Row | Dict[str, object]
-
-
-def _materialize_cached_file(src: str, dst: str) -> None:
-    """Expose a file downloaded into the shared Hugging Face cache at *dst*.
-
-    ``hf_hub_download`` is called without ``local_dir`` so files are stored once
-    in ``HF_HUB_CACHE`` (``~/.cache/huggingface/hub`` by default). Repeated runs
-    are then served from that cache instead of being downloaded again. Hard-link
-    when possible to avoid duplicating multi-hundred-MB weights; fall back to a
-    copy when the cache and destination live on different volumes.
-    """
-    parent = os.path.dirname(dst)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    if os.path.exists(dst):
-        if os.path.samefile(src, dst):
-            return
-        os.remove(dst)
-    try:
-        os.link(src, dst)
-        return
-    except OSError:
-        pass
-    tmp = f"{dst}.tmp"
-    shutil.copyfile(src, tmp)
-    os.replace(tmp, dst)
-
-
-def _coerce_int(value: object, default: int = 0) -> int:
-    if value is None:
-        return default
-    try:
-        return int(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return default
-
-
-def _coerce_float(value: object) -> Optional[float]:
-    if value is None:
-        return None
-    try:
-        return float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
-
-
-def _dnn_get_backend_name(cv2_module, backend_id: int) -> str:
-    getter = getattr(cv2_module.dnn, "getBackendName", None)
-    if callable(getter):
-        try:
-            return str(getter(backend_id))
-        except Exception:
-            pass
-    return str(backend_id)
-
-_YUNET_INFER_LOCK = threading.Lock()
-_COREML_PREDICTION_LOCK = threading.Lock()
-_INDEX_THREAD_LOCAL = threading.local()
-_YUNET_SINGLETON = None
-_YUNET_SINGLETON_MODEL_PATH = ""
-
-
-def format_index_progress(stage: str, done: int, total: int) -> str:
-    """Concise progress for the search field, e.g. 'Semantic: 12/48'."""
-    try:
-        total_i = max(0, int(total))
-        done_i = max(0, int(done))
-    except (TypeError, ValueError):
-        return stage
-    if total_i <= 0:
-        return stage
-    done_i = min(done_i, total_i)
-    return f"{stage}: {done_i}/{total_i}"
-
-
-def semantic_embeddings_enabled() -> bool:
-    """Check if semantic search embeddings are enabled via environment."""
-    flag = os.environ.get("RAWVIEWER_ENABLE_SEMANTIC_SEARCH", "0").strip().lower()
-    return flag in ("1", "true", "yes", "on")
-
-
-def face_scan_enabled() -> bool:
-    """Check if face scan/indexing is enabled via environment."""
-    flag = os.environ.get("RAWVIEWER_ENABLE_FACE_SCAN", "1").strip().lower()
-    return flag in ("1", "true", "yes", "on")
-
-
-def metadata_auto_index_enabled() -> bool:
-    """Check if auto metadata indexing is enabled via environment."""
-    flag = os.environ.get("RAWVIEWER_AUTO_METADATA_INDEX", "1").strip().lower()
-    return flag in ("1", "true", "yes", "on")
-
-
-def semantic_gpu_throttle_seconds() -> float:
-    """Optional per-image pacing for semantic pass.
-
-    Set RAWVIEWER_SEMANTIC_GPU_THROTTLE_MS to a positive value when you want
-    to reduce indexing pressure (e.g., keep UI extra responsive).
-    Default is 0ms so indexing is not artificially slowed down.
-    """
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_GPU_THROTTLE_MS", "0").strip()
-    try:
-        ms = float(raw)
-    except Exception:
-        ms = 0.0
-    ms = max(0.0, min(ms, 2000.0))
-    return ms / 1000.0
-
-
-def semantic_batch_max() -> int:
-    """Upper cap for semantic ONNX batch size (auto-tune and forced)."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_MAX", "128").strip()
-    try:
-        v = int(raw)
-    except Exception:
-        v = 128
-    return max(1, min(v, 256))
-
-
-def semantic_batch_size() -> int:
-    """Semantic ONNX batch size when auto-tune is off (default 12, tier may override)."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_SIZE", "").strip()
-    if not raw:
-        return min(semantic_batch_max(), _default_semantic_batch_size())
-    try:
-        v = int(raw)
-    except Exception:
-        v = _default_semantic_batch_size()
-    return max(1, min(v, semantic_batch_max()))
-
-
-def _default_semantic_batch_size() -> int:
-    """Platform/tier default batch (8–16) when env is unset and perf v2 is active."""
-    try:
-        from upgrade_compat import perf_v2_enabled
-
-        if not perf_v2_enabled():
-            return 1
-    except Exception:
-        return 1
-    try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
-
-        tier = classify_memory_tier(system_total_ram_gb())
-        return {
-            "low": 8,
-            "medium": 12,
-            "balanced": 8,
-            "high": 16,
-            "ultra": 16,
-        }.get(tier, 12)
-    except Exception:
-        return 12
-
-
-def semantic_batch_size_forced() -> Optional[int]:
-    """Return forced batch size when explicitly set by env, else None."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_SIZE", "").strip()
-    if not raw:
-        return None
-    try:
-        v = int(raw)
-    except Exception:
-        return 1
-    return max(1, min(v, semantic_batch_max()))
-
-
-def semantic_batch_auto_enabled() -> bool:
-    """Auto tune semantic batch size when no forced batch is provided."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_AUTO", "1").strip().lower()
-    return raw not in ("0", "false", "no", "off")
-
-
-def semantic_batch_tune_sample_count() -> int:
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_TUNE_SAMPLES", "32").strip()
-    try:
-        v = int(raw)
-    except Exception:
-        v = 32
-    return max(8, min(v, 128))
-
-
-def semantic_coreml_tune_sample_count() -> int:
-    """Core ML encodes serially — keep auto-tune short so indexing does not look stuck."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_TUNE_SAMPLES", "").strip()
-    if not raw:
-        return 24
-    try:
-        v = int(raw)
-    except Exception:
-        v = 24
-    return max(8, min(v, 48))
-
-
-def semantic_coreml_batch_candidates() -> List[int]:
-    """Chunk sizes to benchmark for Core ML (parallel prep only; inference is per-image)."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_CHUNK_CANDIDATES", "").strip()
-    cap = min(semantic_batch_max(), 32)
-    if raw:
-        out: List[int] = []
-        for item in raw.split(","):
-            item = item.strip()
-            if not item:
-                continue
-            try:
-                out.append(max(1, min(cap, int(item))))
-            except Exception:
-                continue
-        if out:
-            seen: set[int] = set()
-            uniq: List[int] = []
-            for v in sorted(out):
-                if v not in seen:
-                    seen.add(v)
-                    uniq.append(v)
-            return uniq
-    return [c for c in (4, 8, 16, 32) if c <= cap]
-
-
-def semantic_coreml_tune_early_stop_ratio() -> float:
-    """Stop trying larger chunks when throughput drops below best * ratio."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_TUNE_EARLY_STOP", "0.85").strip()
-    try:
-        r = float(raw)
-    except Exception:
-        r = 0.85
-    return max(0.5, min(r, 1.0))
-
-
-def semantic_batch_tie_ratio() -> float:
-    """On equal throughput (within this ratio of the best), prefer a larger batch."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_BATCH_TIE_RATIO", "0.92").strip()
-    try:
-        r = float(raw)
-    except Exception:
-        r = 0.92
-    return max(0.5, min(r, 1.0))
-
-
-def semantic_encode_prep_workers(sample_path: Optional[str] = None) -> int:
-    """Parallel CPU workers for resize/load before ONNX image batch."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_PREP_WORKERS", "").strip()
-    if raw:
-        try:
-            return max(1, min(int(raw), 48))
-        except Exception:
-            pass
-
-
-    try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
-
-        tier = classify_memory_tier(system_total_ram_gb())
-        tier_default = {
-            "low": 2,
-            "medium": 3,
-            "balanced": 3,
-            "high": 6,
-            "ultra": 8,
-        }.get(tier)
-        if tier_default is not None:
-            return tier_default
-    except Exception:
-        pass
-    cpu = os.cpu_count() or 4
-    return max(2, min(8, cpu // 2))
-
-
-def semantic_coreml_use_native_batch() -> bool:
-    """Use MLArrayBatchProvider batch predict (off by default on macOS — often slower than serial)."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_BATCH", "").strip().lower()
-    if raw in ("1", "true", "yes", "on"):
-        return True
-    if raw in ("0", "false", "no", "off"):
-        return False
-    return False
-
-
-def semantic_coreml_prep_chunk_size() -> int:
-    """Parallel load/resize group for Core ML indexing (predict stays serial by default)."""
-    forced = semantic_coreml_chunk_forced()
-    if forced is not None:
-        return forced
-    return max(1, min(8, semantic_encode_prep_workers()))
-
-
-def semantic_coreml_chunk_size() -> int:
-    """Core ML MLArrayBatchProvider chunk when native batch is enabled."""
-    forced = semantic_coreml_chunk_forced()
-    if forced is not None:
-        return forced
-    try:
-        from upgrade_compat import perf_v2_enabled
-
-        if not perf_v2_enabled():
-            return 8
-    except Exception:
-        return 8
-    try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
-
-        tier = classify_memory_tier(system_total_ram_gb())
-        default = {
-            "low": 8,
-            "medium": 12,
-            "balanced": 8,
-            "high": 16,
-            "ultra": 16,
-        }.get(tier, 12)
-    except Exception:
-        default = 12
-    return min(semantic_batch_max(), default)
-
-
-def semantic_coreml_chunk_forced() -> Optional[int]:
-    """Explicit RAWVIEWER_SEMANTIC_COREML_CHUNK only (unset = not forced)."""
-    if "RAWVIEWER_SEMANTIC_COREML_CHUNK" not in os.environ:
-        return None
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_COREML_CHUNK", "").strip()
-    if not raw:
-        return None
-    try:
-        v = int(raw)
-    except Exception:
-        v = 8
-    return max(1, min(v, semantic_batch_max()))
-
-
-def semantic_warm_thumbs_before_index() -> bool:
-    """Pre-extract embedded thumbnails before MobileCLIP (avoids per-file rawpy in encode)."""
-    raw = os.environ.get("RAWVIEWER_SEMANTIC_WARM_THUMBS", "1").strip().lower()
-    return raw not in ("0", "false", "no", "off")
-
-
-def semantic_batch_candidates() -> List[int]:
-    raw = os.environ.get(
-        "RAWVIEWER_SEMANTIC_BATCH_CANDIDATES", "8,16,32,64,128"
-    ).strip()
-    cap = semantic_batch_max()
-    out: List[int] = []
-    for item in raw.split(","):
-        item = item.strip()
-        if not item:
-            continue
-        try:
-            out.append(max(1, min(cap, int(item))))
-        except Exception:
-            continue
-    if not out:
-        out = [8, 16, 32, 64, 128]
-    # stable dedupe
-    seen = set()
-    uniq: List[int] = []
-    for v in out:
-        if v not in seen:
-            seen.add(v)
-            uniq.append(v)
-    return uniq
-
-
-# Bump when auto-tune defaults/logic change so ~/.rawviewer_cache picks are refreshed.
-SEMANTIC_BATCH_TUNE_CACHE_VERSION = "v8"
-
+from ._shared import _bundled_resource_path, _get_shared_index_executor
+from ._config import (
+    face_scan_enabled,
+    metadata_auto_index_enabled,
+    semantic_batch_auto_enabled,
+    semantic_batch_candidates,
+    semantic_batch_max,
+    semantic_batch_size,
+    semantic_batch_tie_ratio,
+    semantic_batch_tune_sample_count,
+    semantic_coreml_batch_candidates,
+    semantic_coreml_chunk_forced,
+    semantic_coreml_chunk_size,
+    semantic_coreml_prep_chunk_size,
+    semantic_coreml_tune_early_stop_ratio,
+    semantic_coreml_tune_sample_count,
+    semantic_coreml_use_native_batch,
+    semantic_embeddings_enabled,
+    semantic_encode_prep_workers,
+    semantic_gpu_throttle_seconds,
+    semantic_warm_thumbs_before_index,
+)
 
 def _thumbnail_jpeg_bytes(arr: np.ndarray, quality: int = 85) -> bytes:
     from common_image_loader import encode_tile_bytes
@@ -962,7 +578,6 @@ def log_inference_acceleration_profile(force: bool = False) -> None:
 
     logger.info("[ACCEL] Inference profile: %s", "; ".join(parts))
 
-
 def _cached_index_source_array(cache, file_path: str) -> Optional[np.ndarray]:
     """RGB array from ImageCache tiers usable for semantic/face indexing (gallery may warm preview/grid)."""
     for getter_name in ("get_preview", "get_grid", "get_thumbnail"):
@@ -1067,161 +682,6 @@ def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage
     except Exception:
         pass
     return im
-
-
-def _load_index_source_image(
-    file_path: str, max_size: int = 1024, *, qt_decode: bool = True
-) -> PilImage:
-    """Load a small RGB image suitable for indexing/detection, preferring app caches.
-
-    When ``qt_decode`` is False, skip QImageReader / Qt-based decoders so face scan
-    workers never touch Qt from a background thread pool (can crash the process).
-    """
-    _INDEX_THREAD_LOCAL.last_original_sizes = (0, 0)
-    from image_cache import get_image_cache
-    cache = get_image_cache()
-
-    try:
-        arr = _cached_index_source_array(cache, file_path)
-        if arr is not None:
-            from common_image_loader import (
-                finalize_index_thumbnail_array,
-                index_thumbnail_needs_orient_fix,
-            )
-
-            if index_thumbnail_needs_orient_fix(file_path, arr, cache=cache):
-                fixed = finalize_index_thumbnail_array(file_path, arr, cache=cache)
-                if fixed is not None:
-                    arr = fixed
-                    try:
-                        cache.put_thumbnail(
-                            file_path, arr, _thumbnail_jpeg_bytes(arr)
-                        )
-                    except Exception:
-                        pass
-            im = Image.fromarray(arr).convert("RGB")
-            _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
-            im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
-            tier = _index_source_cache_tier(cache, file_path)
-            if tier:
-                hits = getattr(_INDEX_THREAD_LOCAL, "index_source_cache_hits", None)
-                if hits is None:
-                    hits = {"preview": 0, "grid": 0, "thumbnail": 0}
-                    _INDEX_THREAD_LOCAL.index_source_cache_hits = hits
-                hits[tier] = int(hits.get(tier, 0)) + 1
-            return im
-    except Exception:
-        pass
-
-    try:
-        with Image.open(file_path) as im:
-            _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
-            im = ImageOps.exif_transpose(im).convert("RGB")
-            im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
-            return im.copy()
-    except Exception:
-        pass
-
-    ext = os.path.splitext(file_path)[1].lower().lstrip(".")
-    if ext in RAW_FILE_EXTENSIONS:
-        if not qt_decode:
-            try:
-                from enhanced_raw_processor import (
-                    ThumbnailExtractor,
-                    extract_embedded_jpeg_by_scan,
-                )
-
-                arr = extract_embedded_jpeg_by_scan(file_path, max_size)
-                if arr is None:
-                    thumb = ThumbnailExtractor().extract_thumbnail_from_raw(
-                        file_path,
-                        max_size=max_size,
-                        allow_scan_fallback=False,
-                    )
-                    if thumb is not None:
-                        arr = np.asarray(thumb, dtype=np.uint8)
-                if arr is not None:
-                    from common_image_loader import (
-                        finalize_index_thumbnail_array,
-                        publish_mipmap_tiers,
-                    )
-
-                    arr = finalize_index_thumbnail_array(file_path, arr, cache=cache)
-                    # Semantic/face indexing sometimes decodes a RAW before gallery or
-                    # single-view ever touches it (background indexing racing ahead).
-                    # Publish here too so that first decode isn't wasted -- gallery/
-                    # film strip can reuse these tiers instead of re-extracting.
-                    publish_mipmap_tiers(file_path, arr, cache=cache, source="semantic")
-                    im = Image.fromarray(arr).convert("RGB")
-                    _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
-                    im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
-                    return im
-            except Exception:
-                pass
-        try:
-            from enhanced_raw_processor import ThumbnailExtractor, _thumbnail_via_qimage_reader
-            from PyQt6.QtGui import QImage
-
-            thumb = ThumbnailExtractor().extract_thumbnail_from_raw(
-                file_path, max_size=max_size, allow_scan_fallback=True
-            )
-            if thumb is None and qt_decode:
-                arr = _thumbnail_via_qimage_reader(file_path, max_size)
-                if arr is not None:
-                    thumb = arr
-            if thumb is not None:
-                if isinstance(thumb, QImage):
-                    if not qt_decode:
-                        raise RuntimeError("Qt image in face-scan path")
-                    from enhanced_raw_processor import _qimage_to_rgb_array
-
-                    arr = _qimage_to_rgb_array(thumb)
-                    if arr is None:
-                        raise ValueError("QImage conversion failed")
-                else:
-                    arr = np.asarray(thumb, dtype=np.uint8)
-                from common_image_loader import (
-                    finalize_index_thumbnail_array,
-                    publish_mipmap_tiers,
-                )
-
-                arr = finalize_index_thumbnail_array(file_path, arr, cache=cache)
-                publish_mipmap_tiers(file_path, arr, cache=cache, source="semantic")
-                im = Image.fromarray(arr).convert("RGB")
-                _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
-                im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
-                return im
-        except Exception:
-            pass
-        if qt_decode:
-            try:
-                from processing.unified import UnifiedImageProcessor
-
-                thumb = UnifiedImageProcessor().process_thumbnail(
-                    file_path, allow_heavy_fallback=True
-                )
-                if thumb is not None:
-                    if isinstance(thumb, np.ndarray):
-                        im = Image.fromarray(np.asarray(thumb, dtype=np.uint8)).convert("RGB")
-                    else:
-                        from PyQt6.QtGui import QImage
-                        from enhanced_raw_processor import _qimage_to_rgb_array
-
-                        if isinstance(thumb, QImage):
-                            arr = _qimage_to_rgb_array(thumb)
-                            im = Image.fromarray(arr).convert("RGB") if arr is not None else None
-                        else:
-                            im = None
-                    if im is not None:
-                        _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
-                        im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
-                        return im
-            except Exception:
-                pass
-
-    raise RuntimeError(
-        f"Cannot decode image for semantic index: {os.path.basename(file_path)}"
-    )
 
 def _load_index_source_image(
     file_path: str, max_size: int = 1024, *, qt_decode: bool = True
