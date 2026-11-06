@@ -26,12 +26,11 @@ try:
 except ImportError:
     pycountry = None
 
-
 class EnginePart1:
 
     _RAW_FILE_EXTENSIONS = RAW_FILE_EXTENSIONS
 
-    _FORMAT_HINT_FILENAME_TOKENS: frozenset = (
+    _FORMAT_HINT_FILENAME_TOKENS: frozenset[str] = (
         frozenset(
             {
                 "jpeg",
@@ -342,6 +341,7 @@ class EnginePart1:
             "Install MobileCLIP ONNX/Core ML assets (Plus edition)."
         )
 
+    @staticmethod
     def semantic_backend_available() -> bool:
         if not semantic_embeddings_enabled():
             return False
@@ -439,6 +439,7 @@ class EnginePart1:
                 self._reverse_geocoder = False
             return self._reverse_geocoder
 
+    @staticmethod
     def _country_name_from_code(code: str) -> str:
         cc = (code or "").strip().upper()
         if not cc:
@@ -468,16 +469,19 @@ class EnginePart1:
                 pass
         return cc
 
+    @staticmethod
     def _to_blob(vec: np.ndarray) -> bytes:
         arr = np.asarray(vec, dtype=np.float32)
         return arr.tobytes()
 
+    @staticmethod
     def _from_blob(blob: bytes, dim: int) -> np.ndarray:
         arr = np.frombuffer(blob, dtype=np.float32)
         if dim > 0 and arr.size != dim:
             arr = arr[:dim]
         return arr
 
+    @staticmethod
     def _safe_int(v) -> int:
         try:
             from search.engine.semantic_index import SemanticImageIndex
@@ -504,6 +508,7 @@ class EnginePart1:
         except Exception:
             return 0
 
+    @staticmethod
     def _tag_text(tags: dict[str, object], *names: str) -> str:
         for name in names:
             value = tags.get(name)
@@ -514,6 +519,7 @@ class EnginePart1:
                 return text
         return ""
 
+    @classmethod
     def _tag_int(cls, tags: dict[str, object], *names: str) -> int:
         for name in names:
             if name not in tags:
@@ -523,6 +529,7 @@ class EnginePart1:
                 return value
         return 0
 
+    @staticmethod
     def _pil_dimensions(file_path: str) -> tuple[int, int]:
         """Fallback dimensions when EXIF tags omit width/height.
 
@@ -532,7 +539,7 @@ class EnginePart1:
         ext = os.path.splitext(file_path)[1].lower().lstrip(".")
         if ext in RAW_FILE_EXTENSIONS:
             try:
-                import rawpy  # type: ignore
+                import rawpy
 
                 with rawpy.imread(file_path) as raw:
                     w = int(raw.sizes.width)
@@ -550,6 +557,7 @@ class EnginePart1:
             pass
         return 0, 0
 
+    @staticmethod
     def _clean_join(*parts: str) -> str:
         out: list[str] = []
         for part in parts:
@@ -558,12 +566,14 @@ class EnginePart1:
                 out.append(p)
         return " ".join(out).strip()
 
+    @staticmethod
     def _legacy_int(v) -> int:
         try:
             return int(v)
         except Exception:
             return 0
 
+    @staticmethod
     def _mtime_matches(stored_mtime: float, st: os.stat_result) -> bool:
         """
         Compare mtime with tolerance to avoid cross-session float precision drift.
@@ -592,6 +602,7 @@ class EnginePart1:
                 return file_path.lower()
             return file_path
 
+    @staticmethod
     def _path_aliases(file_path: str) -> list[str]:
         # Fast string-based aliases only.
         ap = os.path.abspath(file_path)
@@ -678,12 +689,14 @@ class EnginePart1:
             ),
         )
 
+    @staticmethod
     def _mtime_ns_from_stat(st: os.stat_result) -> int:
         """Extract nanosecond mtime if available, otherwise fallback to float."""
         if hasattr(st, "st_mtime_ns"):
             return int(st.st_mtime_ns)
         return int(st.st_mtime * 1e9)
 
+    @classmethod
     def _file_signature_from_stat(cls, file_path: str, st: os.stat_result) -> str:
         """
         Stable per-file identity that survives path alias changes.
@@ -730,6 +743,7 @@ class EnginePart1:
         except Exception:
             pass
 
+    @staticmethod
     def _ratio_to_float(v) -> float | None:
         try:
             # exifread.utils.Ratio supports num/den

@@ -33,7 +33,6 @@ from search.indexer import (
 from search.indexer._config import _COREML_PREDICTION_LOCK
 from search.indexer._rest import _log_coreml_compute_units_profile_once
 
-
 def _objc_pointer_addr(ptr: Any) -> int | None:
     """Best-effort address from a PyObjC / ctypes pointer-like value."""
     if ptr is None:
@@ -49,7 +48,6 @@ def _objc_pointer_addr(ptr: Any) -> int | None:
         return ctypes.cast(ptr, ctypes.c_void_p).value
     except Exception:
         return None
-
 
 def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
     """Bulk-fill an MLMultiArray from a contiguous 1-D numpy buffer.
@@ -72,7 +70,6 @@ def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
         return True
     except Exception:
         return False
-
 
 def mlmultiarray_to_numpy_f32(multi_array: Any) -> np.ndarray | None:
     """Bulk-read MLMultiArray contents via ``dataPointer`` into float32.
@@ -111,7 +108,6 @@ def mlmultiarray_to_numpy_f32(multi_array: Any) -> np.ndarray | None:
     except Exception:
         return None
 
-
 def copy_bgra_into_cvpixelbuffer(
     base_addr: Any,
     bytes_per_row: int,
@@ -144,7 +140,6 @@ def copy_bgra_into_cvpixelbuffer(
         return True
     except Exception:
         return False
-
 
 class MobileCLIPCoreMLBackend:
     """Optional macOS Core ML backend for MobileCLIP.
@@ -280,7 +275,7 @@ class MobileCLIPCoreMLBackend:
         if not os.path.exists(self.tokenizer_path):
             return f"Missing MobileCLIP tokenizer in {self.model_dir}"
         try:
-            pass  # type: ignore[import-not-found]
+            pass
         except Exception as exc:
             return f"Missing native Core ML runtime: {exc}"
         return ""
@@ -394,10 +389,10 @@ class MobileCLIPCoreMLBackend:
     def _load_models(self):
         if self._image_model is not None and self._text_model is not None:
             return
-        import CoreML  # type: ignore[import-not-found]
-        import Foundation  # type: ignore[import-not-found]
-        import objc  # type: ignore[import-not-found]
-        import Quartz  # type: ignore[import-not-found]
+        import CoreML
+        import Foundation
+        import objc
+        import Quartz
 
         self._CoreML = CoreML
         self._Foundation = Foundation
@@ -767,7 +762,6 @@ class MobileCLIPCoreMLBackend:
         import gc
         gc.collect()
 
-
 class MobileCLIPONNXBackend:
     """Windows ONNX backend for MobileCLIP2 (supports S0, S2, B, L14 variants).
 
@@ -1023,7 +1017,6 @@ class MobileCLIPONNXBackend:
             arr = arr / norm
         return arr
 
-
     def release_gpu_sessions(self) -> None:
         """Drop ONNX sessions so a follow-up GPU pass (e.g. YuNet) can use VRAM."""
         self._image_session = None
@@ -1063,7 +1056,6 @@ def _bytes_to_unicode() -> dict[int, str]:
             n += 1
     return dict(zip(bs, [chr(n) for n in cs], strict=False))
 
-
 def _get_pairs(word):
     pairs = set()
     prev_char = word[0]
@@ -1071,7 +1063,6 @@ def _get_pairs(word):
         pairs.add((prev_char, char))
         prev_char = char
     return pairs
-
 
 class _ClipBPETokenizer:
     """Minimal OpenAI CLIP BPE tokenizer for MobileCLIP Core ML text encoder."""
@@ -1158,6 +1149,5 @@ class _ClipBPETokenizer:
     def encode_for_clip(self, text: str, context_length: int = 77) -> list[int]:
         tokens = [self.sot] + self.encode(text)[: context_length - 2] + [self.eot]
         return tokens + [0] * (context_length - len(tokens))
-
 
 _semantic_sort_read_local = threading.local()

@@ -22,7 +22,7 @@ from typing import Any, BinaryIO
 
 # pyexiv2 will be imported lazily within functions to avoid startup overhead
 _HAS_PYEXIV2 = None
-_pyexiv2 = None  # type: ignore
+_pyexiv2: Any | None = None
 
 import contextlib
 import logging

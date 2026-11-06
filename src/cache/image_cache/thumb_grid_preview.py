@@ -11,7 +11,6 @@ from PyQt6.QtCore import pyqtSignal
 from cache.keys import _jpeg_bytes_max_edge, disk_preview_max_edge
 from cache.memory import LRUCache
 
-
 class ImageCacheThumbGridPreview:
     """Thumbnail, grid, and preview get/put operations."""
 
@@ -147,7 +146,7 @@ class ImageCacheThumbGridPreview:
 
                 t_jpeg = encode_tile_bytes(thumb_pil)
                 self.put_thumbnail(file_path, thumbnail, t_jpeg)
-                return thumbnail  # type: ignore[no-any-return]
+                return thumbnail
             except Exception:
                 pass
 
@@ -188,7 +187,7 @@ class ImageCacheThumbGridPreview:
 
                 t_jpeg = encode_tile_bytes(thumb_pil)
                 self.put_thumbnail(file_path, thumbnail, t_jpeg)
-                return thumbnail  # type: ignore[no-any-return]
+                return thumbnail
             except Exception:
                 pass
 
@@ -213,17 +212,17 @@ class ImageCacheThumbGridPreview:
     def get_preview_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory preview only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.preview_cache.peek(key)  # type: ignore[no-any-return]
+        return self.preview_cache.peek(key)
 
     def get_grid_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory grid only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.grid_cache.peek(key)  # type: ignore[no-any-return]
+        return self.grid_cache.peek(key)
 
     def get_thumbnail_memory_only(self, file_path: str) -> np.ndarray | None:
         """In-memory thumbnail only -- never decodes disk tier on the calling thread."""
         key = self._path_key(file_path)
-        return self.thumbnail_cache.peek(key)  # type: ignore[no-any-return]
+        return self.thumbnail_cache.peek(key)
 
     def has_warm_thumbnail_in_memory(self, file_path: str) -> bool:
         """True if a grid/thumbnail tier is already in the fast in-memory
@@ -322,7 +321,7 @@ class ImageCacheThumbGridPreview:
 
                 g_jpeg = encode_tile_bytes(grid_pil)
                 self.put_grid(file_path, grid, g_jpeg)
-                return grid  # type: ignore[no-any-return]
+                return grid
             except Exception:
                 pass
 
@@ -356,7 +355,7 @@ class ImageCacheThumbGridPreview:
                 grid_pil = pil_img.resize((new_w, new_h), Image.Resampling.BICUBIC)
                 grid = np.array(grid_pil)
                 self.grid_cache.put(key, grid.copy())
-                return grid  # type: ignore[no-any-return]
+                return grid
             except Exception:
                 pass
 
@@ -498,4 +497,3 @@ class ImageCacheThumbGridPreview:
             self.libraw_preview_paths.discard(k)
         while len(self.libraw_preview_paths) > max_paths:
             self.libraw_preview_paths.pop()
-

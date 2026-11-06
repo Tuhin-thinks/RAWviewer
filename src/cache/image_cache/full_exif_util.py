@@ -25,7 +25,6 @@ from cache.metadata import PersistentEXIFCache
 
 logger = logging.getLogger(__name__)
 
-
 class ImageCacheFullExifUtil:
     """Full image, EXIF, pixmap, orientation verify, and utility operations."""
 
@@ -288,7 +287,7 @@ class ImageCacheFullExifUtil:
 
     def get_exif_memory_only(self, file_path: str) -> dict[str, Any] | None:
         """In-memory EXIF only (no SQLite) — for cache-hit emit during preview-first."""
-        return self.exif_memory_cache.get(file_path)  # type: ignore[no-any-return]
+        return self.exif_memory_cache.get(file_path)
 
     def get_exif_for_ui(self, file_path: str) -> dict[str, Any] | None:
         """UI hot path: never blocks (see get_exif's verify=False default)."""
@@ -356,7 +355,7 @@ class ImageCacheFullExifUtil:
             pass
 
         self.cache_hit.emit(file_path, 'exif')
-        return exif_data  # type: ignore[no-any-return]
+        return exif_data
 
     def _schedule_orientation_verify(
         self, file_path: str, exif_data: dict[str, Any]
@@ -457,7 +456,7 @@ class ImageCacheFullExifUtil:
 
     def get_capture_times_for_sort(self, file_paths: list[str]) -> dict[str, str]:
         """capture_time only, for folder sort (ignores stale mtime on network folders)."""
-        return self.exif_cache.get_capture_times_bulk(file_paths)  # type: ignore[no-any-return]
+        return self.exif_cache.get_capture_times_bulk(file_paths)
 
     def record_probed_capture_times(self, timestamps: dict[str, float]) -> None:
         """Persist sort-probe capture times so the next folder open skips re-probing.
@@ -483,7 +482,7 @@ class ImageCacheFullExifUtil:
 
     def get_capture_times_for_folder_sort(self, folder_path: str) -> dict[str, str]:
         """All capture_time rows under folder_path (normalized path keys)."""
-        return self.exif_cache.get_capture_times_for_folder(folder_path)  # type: ignore[no-any-return]
+        return self.exif_cache.get_capture_times_for_folder(folder_path)
 
     def get_multiple_exif(self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.

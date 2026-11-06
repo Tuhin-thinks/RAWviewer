@@ -28,7 +28,6 @@ from search.indexer import (
 from search.queries import CustomReverseGeocoder
 from search.types import MetadataRow
 
-
 class EnginePart2:
 
     def _gps_to_decimal(self, gps_vals: Any, ref: str) -> float | None:
@@ -335,6 +334,7 @@ class EnginePart2:
             pass
         return result
 
+    @staticmethod
     def _pil_to_cvpixelbuffer_bgra(im: PilImage, Quartz):
         """Build a BGRA CVPixelBuffer from a PIL image (no temp files)."""
         rgb = im.convert("RGB")
@@ -376,13 +376,14 @@ class EnginePart2:
             Quartz.CVPixelBufferUnlockBaseAddress(pixel_buffer, 0)
         return pixel_buffer
 
+    @staticmethod
     def _vision_face_count_from_pil(im: PilImage) -> int | None:
         """Apple Vision face count from an in-memory PIL image (no temp JPEG)."""
         try:
-            import Foundation  # type: ignore[import-not-found]
-            import objc  # type: ignore[import-not-found]
-            import Quartz  # type: ignore[import-not-found]
-            import Vision  # type: ignore[import-not-found]
+            import Foundation
+            import objc
+            import Quartz
+            import Vision
 
             from search.engine.semantic_index import SemanticImageIndex
         except Exception:
@@ -415,6 +416,7 @@ class EnginePart2:
         except Exception:
             return None
 
+    @staticmethod
     def _detect_face_count(file_path: str, preloaded_im: PilImage | None = None) -> int:
         try:
             from search.engine.semantic_index import SemanticImageIndex
@@ -561,6 +563,7 @@ class EnginePart2:
             # Backward compatibility for rows loaded before migration.
             return True
 
+    @staticmethod
     def _row_semantic_skipped(row: sqlite3.Row) -> bool:
         """Permanent skip for this file revision (decode failed); do not block index completion."""
         try:

@@ -206,7 +206,7 @@ def _describe_download_error(exc: BaseException) -> str:
             return "DNS lookup failed — check internet connection"
         return f"Network error: {reason}"
     if isinstance(exc, OSError):
-        if exc.errno in (errno.ENOSPC, 28):  # type: ignore[name-defined]
+        if exc.errno in (errno.ENOSPC, 28):
             return "Disk full while writing the download"
         if exc.errno in (errno.EACCES, errno.EPERM, 13, 5):
             return "Permission denied while writing files"

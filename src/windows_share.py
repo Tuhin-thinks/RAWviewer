@@ -145,18 +145,18 @@ else:
         try:
             from winrt.system import Object as WinrtObject
 
-            return target_type._from(WinrtObject(ptr))  # type: ignore[attr-defined]
+            return target_type._from(WinrtObject(ptr))
         except Exception:
             pass
 
         try:
-            return target_type._from(ptr)  # type: ignore[attr-defined]
+            return target_type._from(ptr)
         except Exception:
             pass
 
         unk = comtypes.cast(ptr, POINTER(IUnknown))
         try:
-            return target_type._from(unk)  # type: ignore[attr-defined]
+            return target_type._from(unk)
         except Exception as exc:
             raise TypeError(f"unable to project {target_type.__name__} from ABI pointer") from exc
 
@@ -231,4 +231,4 @@ if sys.platform != "win32":
         return False
 
 else:
-    share_file_windows = _share_file_windows  # type: ignore[misc, assignment]
+    share_file_windows = _share_file_windows

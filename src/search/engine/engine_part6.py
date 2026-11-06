@@ -10,7 +10,6 @@ from typing import Any
 from search.indexer import _coerce_float, _coerce_int
 from search.types import MetadataRow, Row
 
-
 class EnginePart6:
     # Type annotations for attributes inherited from other EnginePart siblings
     _canonical_path: Any
@@ -363,11 +362,11 @@ class EnginePart6:
 
     @staticmethod
     def _to_int(value: object, default: int = 0) -> int:
-        return _coerce_int(value, default)  # type: ignore[no-any-return]
+        return _coerce_int(value, default)
 
     @staticmethod
     def _to_float(value: object) -> float | None:
-        return _coerce_float(value)  # type: ignore[no-any-return]
+        return _coerce_float(value)
 
     @staticmethod
     def _normalize_date_value(value: str) -> str:
