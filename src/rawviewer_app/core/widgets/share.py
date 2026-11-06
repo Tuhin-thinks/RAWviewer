@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import struct
+import sys
 
 
 def _windows_shell_verb_suggests_share(verb_name: object) -> bool:

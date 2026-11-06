@@ -4,6 +4,7 @@ Fast EXIF data extractor with caching.
 from __future__ import annotations
 
 import os
+import sys
 import time
 import threading
 import warnings
@@ -13,6 +14,7 @@ import numpy as np
 import rawpy
 import exifread
 from PyQt6.QtCore import QObject
+from PyQt6.QtGui import QImageReader
 
 import metadata_backend
 from common_image_loader import (

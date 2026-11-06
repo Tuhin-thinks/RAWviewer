@@ -4,6 +4,8 @@ from __future__ import annotations
 import sys
 
 import os
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QListWidgetItem
 from core.config import _norm_path
 from ..adjust_workers import _AdjustCompareOriginalWorker, _AdjustEditBaseWorker, _AdjustMaskLoadWorker, _make_fast_preview_base
 from ..lazy import np

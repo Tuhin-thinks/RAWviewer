@@ -5,7 +5,7 @@ import sys
 
 import logging, os, time
 from PyQt6.QtCore import QPoint, QTimer
-from PyQt6.QtGui import QAction, QCursor
+from PyQt6.QtGui import QAction, QCursor, QDragEnterEvent, QDropEvent
 from PyQt6.QtWidgets import QApplication, QMenu
 from rawviewer_app.core.widgets import CustomWarningDialog
 from core.config import _env_true, _find_file_index_in_list

@@ -1,6 +1,7 @@
 """Gallery mixin part 1 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import logging
 import sys, time
 from typing import Any, Dict, List, Optional
 from PyQt6.QtCore import QTimer, Qt
@@ -10,6 +11,8 @@ from rawviewer_ui.widgets import ThumbnailLabel
 from image_cache import LRUCache
 from image_load_manager import get_image_load_manager, Priority
 from .helpers import _env_int, _env_true
+
+logger = logging.getLogger(__name__)
 
 class GalleryPart1:
 

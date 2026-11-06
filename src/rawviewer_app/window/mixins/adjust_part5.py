@@ -4,8 +4,8 @@ from __future__ import annotations
 import sys
 
 import os
-from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtGui import QTransform
+from PyQt6.QtCore import QSettings, QThreadPool, QTimer, Qt
+from PyQt6.QtGui import QPixmap, QTransform
 from core.config import _norm_path
 from ..adjust_workers import _AdjustCompareOriginalWorker, _make_fast_preview_base
 from ..qt_helpers import _get_bg_thread_pool

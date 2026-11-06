@@ -6,7 +6,7 @@ import os
 import queue
 from typing import Any, Dict, Optional
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QSize, QTimer
 
 from .helpers import (
     _gallery_memory_thumb_acceptable,

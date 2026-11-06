@@ -6,7 +6,7 @@ import sys
 import os
 import theme
 from PyQt6.QtCore import QRect, QTimer, Qt
-from PyQt6.QtGui import QColor, QTransform
+from PyQt6.QtGui import QColor, QPixmap, QTransform
 from PyQt6.QtWidgets import QLabel, QWidget
 from core.config import _norm_path
 from ..lazy import is_raw_file, use_libraw_consistent_preview_first

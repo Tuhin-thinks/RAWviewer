@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 import os, platform, threading
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtWidgets import QMessageBox
 from core.config import _norm_path, safe_print
 from ..lazy import exif_orientation_after_cw90

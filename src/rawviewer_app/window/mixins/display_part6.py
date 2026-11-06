@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 import logging
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QPoint, Qt
 from PyQt6.QtGui import QCursor
 from core.config import _norm_path, safe_print
 from ..paths import _require_str_path

@@ -4,8 +4,8 @@ from __future__ import annotations
 import sys
 
 import os
-from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QTimer, Qt
-from PyQt6.QtGui import QPainter
+from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRect, QTimer, Qt
+from PyQt6.QtGui import QPainter, QPixmap
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QLabel
 from core.config import _norm_path
 from ..lazy import check_memory_cache_for_image

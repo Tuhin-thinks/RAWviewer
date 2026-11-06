@@ -1,6 +1,7 @@
 """Gallery mixin part 2 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import logging
 import os, time
 from typing import Any, Dict, List, Optional
 from PyQt6.QtCore import QSize, QTimer
@@ -8,6 +9,8 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
 import numpy as np
 from .helpers import _env_int, _focus_gallery_switch_logs, _orient_debug_enabled
+
+logger = logging.getLogger(__name__)
 
 class GalleryPart2:
 

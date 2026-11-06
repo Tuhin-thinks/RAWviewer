@@ -5,7 +5,11 @@ import os
 import threading
 import time
 from enum import Enum
-from typing import Optional, Dict, Any, Tuple
+from typing import TYPE_CHECKING, Optional, Dict, Any, Tuple
+
+if TYPE_CHECKING:
+    from .manager import ImageLoadManager
+    from .worker import ImageLoadTask
 
 # Thread-local storage to track if current thread is executing a CURRENT priority task
 worker_thread_local = threading.local()

@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 import logging, os, platform
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QPoint, QTimer
 from core.config import _env_true, _norm_path
 from ..lazy import use_progressive_raw_loading
 from ..logging_setup import _share_log

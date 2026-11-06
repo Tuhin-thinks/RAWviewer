@@ -28,6 +28,7 @@ from .edr import (
     is_macos_edr_enabled,
     linear_edr_float_to_qpixmap,
     linear_to_srgb,
+    pq_to_linear,
     take_last_load_edr_flag,
     tone_map_reinhard,
 )

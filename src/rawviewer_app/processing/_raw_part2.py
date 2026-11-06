@@ -11,6 +11,8 @@ import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 
+from common_image_loader import use_libraw_consistent_preview_first
+from core.config import safe_print
 from image_load_manager import yield_if_current_task_active
 from ._raw_part1 import RAWProcessorPart1
 

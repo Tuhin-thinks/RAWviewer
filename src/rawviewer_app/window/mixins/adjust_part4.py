@@ -471,6 +471,8 @@ class AdjustPart4:
                     else:
                         # Degenerate mask mapping -- stamp a display-space
                         # gaussian at the cursor instead of a flat block.
+                        from raw_dodge_burn import circular_brush_falloff
+
                         r_disp = max(2.0, float(panel.dodge_burn_brush_radius()))
                         d_disp = circular_brush_falloff(
                             0, ph, 0, pw, pt.x() - px0, pt.y() - py0, r_disp

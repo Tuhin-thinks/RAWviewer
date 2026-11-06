@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 
+import logging
 import os, time
 import theme
 from PyQt6.QtCore import QPoint
@@ -14,6 +15,8 @@ from ..qt_helpers import _qta_icon
 from .. import lazy
 
 lazy.register(sys.modules[__name__])
+
+logger = logging.getLogger(__name__)
 
 
 class UiBuildPart3:

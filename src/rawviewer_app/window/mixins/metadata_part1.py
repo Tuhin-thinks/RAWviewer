@@ -4,8 +4,8 @@ from __future__ import annotations
 import sys
 
 import datetime, os
-from PyQt6.QtCore import QPoint, QTimer, Qt
-from PyQt6.QtGui import QColor, QIcon, QPen
+from PyQt6.QtCore import QPoint, QRect, QTimer, Qt
+from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from core.config import _env_int, _norm_path
 from ..lazy import process_file_from_path
 from ..paths import _require_str_path

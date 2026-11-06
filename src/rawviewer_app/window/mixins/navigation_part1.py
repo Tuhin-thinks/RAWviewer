@@ -13,6 +13,8 @@ from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
+logger = logging.getLogger(__name__)
+
 
 class NavigationPart1:
     def _sync_burst_rejected_for_current_folder(self) -> None:

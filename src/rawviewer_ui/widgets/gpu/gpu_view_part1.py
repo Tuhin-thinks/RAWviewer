@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QEvent, QMimeData, QUrl, QObject

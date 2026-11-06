@@ -5,7 +5,7 @@ import sys
 
 import os
 import theme
-from PyQt6.QtCore import QEvent, Qt
+from PyQt6.QtCore import QEvent, QPoint, QRect, Qt
 from PyQt6.QtWidgets import QMessageBox
 from rawviewer_app.core.widgets import CustomConfirmDialog
 from core.config import _norm_path, safe_print

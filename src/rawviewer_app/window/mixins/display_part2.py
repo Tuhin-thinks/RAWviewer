@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 import logging, os
-from PyQt6.QtCore import QRect
+from PyQt6.QtCore import QPoint, QRect
 from PyQt6.QtGui import QColor, QPixmap, QTransform
 from core.config import _norm_path
 from ..lazy import image_covers_sensor_resolution, is_raw_file

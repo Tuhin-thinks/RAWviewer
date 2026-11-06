@@ -14,6 +14,8 @@ from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
+logger = logging.getLogger(__name__)
+
 
 class DisplayPart3:
     def _show_single_view(self):

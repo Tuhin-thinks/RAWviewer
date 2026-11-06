@@ -1,10 +1,12 @@
 """Background RAW / pixmap processing."""
 import logging, threading, os, time, traceback
 import numpy as np
+import rawpy
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 from image_load_manager import yield_if_current_task_active
 from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
+from metadata_backend import process_file_from_path
 
 class RAWProcessorPart1(QThread):
     """Thread for processing RAW images to avoid UI blocking (part 1)."""

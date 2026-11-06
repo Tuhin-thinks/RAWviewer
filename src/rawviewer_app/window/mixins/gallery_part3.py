@@ -6,7 +6,7 @@ import sys
 import theme
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import QHBoxLayout, QSizePolicy
+from PyQt6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 from ..lazy import ThumbnailLabel, process_file_from_path
 from .. import lazy
 

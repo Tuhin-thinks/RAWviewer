@@ -8,7 +8,7 @@ import numpy as np
 from typing import Any, Dict, Optional
 
 from PyQt6.QtCore import QSettings
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QImage, QPixmap
 
 from .exif_display import apply_container_orientation_to_array
 from .helpers import _MIN_TRUSTED_SENSOR_LONG_EDGE, use_libraw_consistent_preview_first

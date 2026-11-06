@@ -1,6 +1,7 @@
 """Gallery mixin part 3 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import logging
 import time
 from typing import Optional
 from PyQt6.QtCore import QEvent, QSize, QTimer, Qt
@@ -10,6 +11,8 @@ import numpy as np
 from image_load_manager import get_image_load_manager, Priority
 from common_image_loader import is_raw_file
 from .helpers import _focus_gallery_switch_logs, _min_layout_pixmap_dim, _rotate_pixmap_cw, _thumbnail_data_to_base_pixmap
+
+logger = logging.getLogger(__name__)
 
 class GalleryPart3:
 

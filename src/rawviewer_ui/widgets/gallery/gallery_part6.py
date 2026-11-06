@@ -1,6 +1,7 @@
 """Gallery mixin part 6 of 7 for JustifiedGallery."""
 from __future__ import annotations
 
+import logging
 import os, time
 from typing import List, Optional
 from PyQt6.QtCore import QSize, Qt
@@ -8,6 +9,8 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
 from common_image_loader import is_raw_file
 from .helpers import _batch_tile_apply_enabled, _focus_gallery_switch_logs, _gallery_idle_load_priority, _gallery_idle_preload_batch, _gallery_idle_preload_ms, _orient_debug_enabled, _thumbnail_data_to_base_pixmap, _tile_apply_batch_size
+
+logger = logging.getLogger(__name__)
 
 class GalleryPart6:
 

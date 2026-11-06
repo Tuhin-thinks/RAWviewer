@@ -5,6 +5,7 @@ import os
 import sys
 
 from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QSplashScreen
 
 from . import state

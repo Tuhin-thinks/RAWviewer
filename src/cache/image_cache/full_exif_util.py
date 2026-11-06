@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 import time
@@ -9,11 +10,16 @@ from typing import Any, Optional
 
 import numpy as np
 import metadata_backend
+from PyQt6.QtGui import QPixmap
 from cache.keys import (
     _cache_path_key,
+    _env_int,
     _jpeg_bytes_max_edge,
     disk_preview_max_edge,
 )
+from cache.memory import LRUCache
+
+logger = logging.getLogger(__name__)
 
 
 class ImageCacheFullExifUtil:
