@@ -1,3 +1,4 @@
+from typing import Optional
 """Common image loader: QImage/QPixmap/PIL/HDR/EDR decode entry points."""
 
 from __future__ import annotations
@@ -6,13 +7,11 @@ import io
 import os
 
 import numpy as np
-from PyQt6.QtCore import QSize
+from PyQt6.QtCore import QLoggingCategory, QSize
 from PyQt6.QtGui import QImage, QPixmap
 
 from image_cache import get_image_cache
-from raw_file_extensions import RAW_FILE_EXTENSIONS
 
-from PyQt6.QtCore import QLoggingCategory
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats.warning=false\\nqt.imageformats.tiff.warning=false")
 try:
@@ -21,15 +20,13 @@ try:
 except ImportError:
     pass
 
-from . import exif_display
+from rawpy_gil import rawpy_imread_warm
+
 from .edr import (
-    decode_raw_edr_pixmap,
     hlg_to_linear,
     is_macos_edr_enabled,
-    linear_edr_float_to_qpixmap,
     linear_to_srgb,
     pq_to_linear,
-    take_last_load_edr_flag,
     tone_map_reinhard,
 )
 from .exif_display import (
@@ -38,16 +35,12 @@ from .exif_display import (
     mark_exif_pixels_display_oriented,
 )
 from .helpers import (
-    _EAGER_FULL_UNRELIABLE_EXTS,
-    _MIN_TRUSTED_SENSOR_LONG_EDGE,
     _regular_image_max_edge,
     is_raw_file,
     is_tiff_file,
-    use_libraw_consistent_preview_first,
 )
-from .runtime import use_progressive_raw_loading, use_raw_process_pool
 
-from rawpy_gil import rawpy_imread_warm
+
 def decode_embedded_jpeg_bytes(
     jpeg_bytes: bytes,
     max_size: int = 0,
@@ -56,7 +49,7 @@ def decode_embedded_jpeg_bytes(
     import logging
     logger = logging.getLogger(__name__)
     try:
-        from PIL import Image, ImageOps, ImageFile
+        from PIL import Image, ImageFile
         ImageFile.LOAD_TRUNCATED_IMAGES = True
 
         im = Image.open(io.BytesIO(jpeg_bytes))
@@ -130,7 +123,6 @@ def load_qimage_safe(file_path: str, max_edge: int = 0):
 
     Returns a null QImage on failure; never raises.
     """
-    from PyQt6.QtCore import QSize
     from PyQt6.QtGui import QImageReader
 
     try:
@@ -188,7 +180,7 @@ def _pil_file_to_qpixmap(file_path: str, max_edge: int = 0) -> QPixmap:
 
     logger = logging.getLogger(__name__)
     try:
-        from PIL import Image, ImageOps, ImageFile
+        from PIL import Image, ImageFile, ImageOps
 
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         Image.MAX_IMAGE_PIXELS = 200_000_000
@@ -275,7 +267,7 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
     if is_raw_file(file_path):
         preview_max = max_edge if max_edge > 0 else 2048
         return load_raw_preview_pixmap(file_path, max_size=preview_max)
-    
+
     # Check if this is an HDR HEIF/AVIF or TIFF
     hdr_pixmap = try_load_hdr_image_pixmap(file_path, max_edge=max_edge)
     if hdr_pixmap is not None:
@@ -289,12 +281,12 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
             with Image.open(file_path) as pil_image:
                 # Apply EXIF orientation correction
                 pil_image = ImageOps.exif_transpose(pil_image)
-                
+
                 if pil_image.mode not in ('RGB', 'L'):
                     pil_image = pil_image.convert('RGB')
                 if pil_image.mode == 'L':
                     pil_image = pil_image.convert('RGB')
-                
+
                 width, height = pil_image.size
                 import numpy as np
                 arr = np.asarray(pil_image)
@@ -313,7 +305,7 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
             logger.debug(f"PIL fallback failed for TIFF: {os.path.basename(file_path)}: {e}")
             # σ░ìµû╝ TIFF µûçΣ╗╢∩╝îµ░╕ΘüáΣ╕ìΦªüΣ╜┐τö¿ QPixmap(file_path)∩╝îσ¢áτé║µ£âΦº╕τÖ╝Φ¡ªσæè
             return QPixmap()
-    
+
     # σ░ìµû╝σà╢Σ╗ûµá╝σ╝Å∩╝êJPEG, PNG, etc.∩╝ë∩╝îΣ╜┐τö¿ QImageReader Σ╕ªσòƒτö¿Φç¬σïòµû╣σÉæΦ╜ëµÅ¢
     try:
         from PyQt6.QtCore import QSize
@@ -456,19 +448,19 @@ def load_raw_preview_pixmap(file_path: str, max_size: int = 2048) -> QPixmap:
 def get_image_aspect_ratio(file_path: str) -> float:
     """τì▓σÅûσ£ûσâÅσ»¼Θ½ÿµ»ö∩╝êΣ╕ìΦ╝ëσàÑσ«îµò┤σ£ûσâÅ∩╝ë"""
     cache = get_image_cache()
-    
+
     # σÿùΦ⌐ªσ╛₧ EXIF σ┐½σÅûτì▓σÅûσ░║σ»╕
     exif_data = cache.get_exif(file_path)
     if exif_data:
         original_width = exif_data.get('original_width')
         original_height = exif_data.get('original_height')
         orientation = exif_data.get('orientation', 1)
-        
+
         if original_width and original_height and original_height > 0:
             return exif_display_aspect_ratio(
                 int(original_width), int(original_height), int(orientation or 1)
             )
-    
+
     # σ░ìµû╝ RAW µûçΣ╗╢∩╝îσÿùΦ⌐ªσ╛₧σ┐½σÅûτì▓σÅûσ░║σ»╕∩╝îσÉªσëçΣ╜┐τö¿ rawpy σ┐½ΘÇƒτì▓σÅû
     if is_raw_file(file_path):
         # σä¬σàêσÿùΦ⌐ª EXIF σ┐½σÅû∩╝êµ£Çσ┐½Σ╕öσîàσÉ½µû╣σÉæ∩╝ë
@@ -480,23 +472,22 @@ def get_image_aspect_ratio(file_path: str) -> float:
                 return exif_display_aspect_ratio(
                     int(orig_w), int(orig_h), int(orient or 1)
                 )
-                
+
         try:
-            import rawpy
             # σÅ¬Φ«ÇσÅû Metadata∩╝îΣ╕ìΦÖòτÉåσ£ûσâÅ
             with rawpy_imread_warm(file_path) as raw:
                 sizes = raw.sizes
                 # Use iwidth and iheight as they already account for orientation (rotation)
                 # sizes.iwidth and iheight are internal dimensions after rotation
-                # HOWEVER, for absolute safety with all rawpy versions, 
+                # HOWEVER, for absolute safety with all rawpy versions,
                 # let's check flip and swap sensor dimensions manually if needed.
                 w = sizes.width
                 h = sizes.height
                 flip = sizes.flip
-                
+
                 if flip in (5, 6, 7, 8):
                     w, h = h, w
-                
+
                 if h > 0:
                     return w / h
                 return 1.333
@@ -513,7 +504,7 @@ def get_image_aspect_ratio(file_path: str) -> float:
                     return width / height
         except Exception:
             pass
-    
+
     # σ░ìµû╝σà╢Σ╗ûµá╝σ╝Å∩╝îσÿùΦ⌐ª QImageReader∩╝êΣ╜åΣ╕ìσîàµï¼ RAW σÆî TIFF∩╝ë
     if not is_raw_file(file_path):
         try:
@@ -522,31 +513,30 @@ def get_image_aspect_ratio(file_path: str) -> float:
             # Enable automatic EXIF orientation transformation
             reader.setAutoTransform(True)
             size = reader.size()
-            
+
             if size.isValid() and size.height() > 0:
                 width = size.width()
                 height = size.height()
-                
+
                 # Check transformation to see if dimensions need swapping
                 # QImageReader.size() returns the size *before* transformation in some versions,
                 # so we need to manually swap if the transformation involves 90 degree rotation.
                 transformation = reader.transformation()
-                from PyQt6.QtGui import QImageIOHandler
-                
+
                 # Check for 90 or 270 degree rotation
                 # QImageIOHandler.Transformation.TransformationRotate90 = 2
                 # QImageIOHandler.Transformation.TransformationRotate270 = 4
                 # We also need to consider mirrored versions if they involve 90 deg rotation
                 # TransformationMirrorAndRotate90 = 6, TransformationMirrorAndRotate270 = 8 is not a standard enum value in older Qt?
                 # Let's stick to the basic check:
-                
+
                 # Simple check: if orientation is 5, 6, 7, 8 (which correspond to rotations), we swap.
                 # However, QImageReader.transformation() returns a Transformation enum.
-                # TransformationRotate90 (2), TransformationRotate270 (4), 
+                # TransformationRotate90 (2), TransformationRotate270 (4),
                 # TransformationMirrorAndRotate90 (6), TransformationFlipAndRotate90 (6?)
-                
+
                 t_val = transformation.value
-                
+
                 # Qt::ImageTransformation:
                 # 0: None
                 # 1: Mirror
@@ -556,28 +546,29 @@ def get_image_aspect_ratio(file_path: str) -> float:
                 # 5: MirrorAndRotate90
                 # 6: FlipAndRotate90
                 # 7: Rotate270
-                
+
                 # So 4, 5, 6, 7 imply 90 degree component (swapped dimensions)
                 if t_val >= 4:
                     width, height = height, width
-                    
+
                 return width / height
-        except Exception as e:
+        except Exception:
             # import logging
             # logging.getLogger(__name__).debug(f"Aspect ratio check failed: {e}")
             pass
-    
+
     return 1.333  # Θ╗ÿΦ¬ìσ»¼Θ½ÿµ»ö (4:3)
 def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPixmap]:
     """Try to decode HEIF/AVIF/TIFF HDR images with EDR on macOS or SDR tone-mapping."""
     import os
+
     from PIL import Image
-    
+
     ext = file_path.lower()
-    
+
     is_heif_or_avif = ext.endswith(('.heic', '.heif', '.avif'))
     is_tiff = ext.endswith(('.tif', '.tiff'))
-    
+
     if not (is_heif_or_avif or is_tiff):
         return None
 
@@ -599,12 +590,12 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
             icc_profile = heif_file.info.get("icc_profile", b"")
             w, h = heif_file.size
             channels = 4 if heif_file.mode == 'RGBA' else 3
-            
+
             # Check if HDR
             is_hdr = (bit_depth > 8) or (transfer in (16, 18))
             if not is_hdr:
                 return None
-                
+
             if bit_depth > 8:
                 arr = np.frombuffer(heif_file.data, dtype=np.uint16)
                 arr = arr.reshape((h, w, channels))
@@ -624,18 +615,18 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
                         is_16bit = bits > 8
                 if not is_16bit:
                     is_16bit = pil_img.mode in ("I;16", "I;16L", "I;16B", "RGBA;16", "RGB;16")
-                
+
                 if not is_16bit:
                     return None
                 icc_profile = pil_img.info.get("icc_profile", b"")
                 w, h = pil_img.size
-                
+
             import cv2
             arr = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
             if arr is None:
                 return None
             bit_depth = 16
-            
+
             if len(arr.shape) == 3:
                 channels = arr.shape[2]
                 if channels == 3:
@@ -678,8 +669,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
         img_float = arr.astype(np.float32) / max_val
 
         from PyQt6.QtGui import QColorSpace
-        from PyQt6.QtCore import Qt
-        
+
         # 1. macOS Native EDR path
         if is_macos_edr_enabled():
             # Pad to 4 channels for QImage RGBX64 or RGBA64
@@ -735,7 +725,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
         # 2. Windows / SDR Tone-mapping path
         else:
             rgb_float = img_float[:, :, :3] if channels >= 3 else (np.stack([img_float]*3, axis=-1) if len(img_float.shape) == 2 else np.stack([img_float[:, :, 0]]*3, axis=-1))
-            
+
             # Linearize
             if transfer == 16:
                 linear = pq_to_linear(rgb_float)
@@ -743,7 +733,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> Optional[QPi
                 linear = hlg_to_linear(rgb_float)
             else:
                 linear = np.power(rgb_float, 2.2)
-                
+
             # Tone-map using Reinhard
             sdr_linear = tone_map_reinhard(linear, exposure=1.0)
             # Gamma correct to sRGB

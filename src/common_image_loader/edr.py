@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import numpy as np
-from typing import Any, Dict, Optional
-
 from PyQt6.QtCore import QSettings
 from PyQt6.QtGui import QImage, QPixmap
 
 from .exif_display import apply_container_orientation_to_array
-from .helpers import _MIN_TRUSTED_SENSOR_LONG_EDGE, use_libraw_consistent_preview_first
+from .helpers import use_libraw_consistent_preview_first
+
 _last_load_used_edr = False
 def take_last_load_edr_flag() -> bool:
     """True when the most recent load_pixmap_safe() used macOS HDR/EDR output."""
@@ -66,7 +66,6 @@ def use_raw_edr_display() -> bool:
     v = os.environ.get("RAWVIEWER_RAW_EDR", "1").strip().lower()
     if v in ("0", "false", "no", "off"):
         return False
-    from PyQt6.QtCore import QSettings
 
     settings = QSettings("RAWviewer", "RAWviewer")
     return settings.value("raw_edr_display_enabled", True, type=bool)
@@ -90,8 +89,8 @@ def linear_edr_float_to_qpixmap(
     max_edge: int = 0,
 ) -> QPixmap:
     """Convert extended display-referred float RGB to macOS EDR RGBX64 QPixmap."""
+    from PyQt6.QtCore import QSize, Qt
     from PyQt6.QtGui import QColorSpace
-    from PyQt6.QtCore import Qt, QSize
 
     from raw_tone_recovery import encode_edr_rgbx64
 
@@ -119,8 +118,8 @@ def decode_raw_edr_pixmap(
     file_path: str,
     *,
     max_edge: int = 0,
-    exif_data: Optional[Dict[str, Any]] = None,
-) -> Optional[QPixmap]:
+    exif_data: dict[str, Any] | None = None,
+) -> QPixmap | None:
     """Decode RAW with linear 16-bit pipeline and build macOS EDR QPixmap."""
     if not use_raw_edr_for_display():
         return None
@@ -143,7 +142,7 @@ def pq_to_linear(v: np.ndarray) -> np.ndarray:
     c1 = 3424.0 / 4096.0
     c2 = (2413.0 / 4096.0) * 32.0
     c3 = (2392.0 / 4096.0) * 32.0
-    
+
     v_pow = np.power(v, 1.0 / m2)
     numerator = np.maximum(v_pow - c1, 0.0)
     denominator = c2 - c3 * v_pow
@@ -155,11 +154,11 @@ def hlg_to_linear(v: np.ndarray) -> np.ndarray:
     a = 0.17883277
     b = 0.28466892
     c = 0.55991073
-    
+
     linear = np.zeros_like(v, dtype=np.float32)
     mask_low = v <= 0.5
     linear[mask_low] = (v[mask_low] ** 2) / 3.0
-    
+
     mask_high = ~mask_low
     # Avoid domain error in exp
     exponent = np.clip((v[mask_high] - c) / a, -80.0, 80.0)

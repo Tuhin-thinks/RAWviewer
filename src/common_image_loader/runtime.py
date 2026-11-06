@@ -5,10 +5,10 @@ from __future__ import annotations
 import os
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
 
 from .helpers import io_pressure_active
-_volume_speed_cache: Dict[str, float] = {}
+
+_volume_speed_cache: dict[str, float] = {}
 _volume_speed_lock = threading.Lock()
 _VOLUME_SPEED_CACHE_CEILING_MBPS = 3000.0
 def use_progressive_raw_loading() -> bool:
@@ -159,7 +159,7 @@ def _env_int_bounded(name: str, default: int, *, minimum: int = 1, maximum: int 
         return max(minimum, min(maximum, int(raw)))
     except ValueError:
         return default
-def _windows_drive_type(path: str) -> Optional[int]:
+def _windows_drive_type(path: str) -> int | None:
     """Windows GetDriveTypeW for the volume containing *path* (None if unavailable)."""
     if os.name != "nt":
         return None
@@ -200,21 +200,21 @@ def _windows_system_drive() -> str:
     if len(drive) >= 2 and drive[1] == ":":
         return drive[:2].upper()
     return "C:"
-def invalidate_volume_speed_cache(path: Optional[str]) -> None:
+def invalidate_volume_speed_cache(path: str | None) -> None:
     """Drop cached probe result for the volume containing *path* (e.g. before retry)."""
     root = _volume_root_for(path)
     if not root:
         return
     with _volume_speed_lock:
         _volume_speed_cache.pop(root, None)
-def record_volume_speed(path: Optional[str], mbps: float) -> None:
+def record_volume_speed(path: str | None, mbps: float) -> None:
     """Store a probed throughput for the volume containing *path*."""
     root = _volume_root_for(path)
     if not root or mbps <= 0:
         return
     with _volume_speed_lock:
         _volume_speed_cache[root] = float(mbps)
-def _windows_drive_is_fixed_local(path: Optional[str]) -> bool:
+def _windows_drive_is_fixed_local(path: str | None) -> bool:
     """True for non-system fixed volumes (secondary SSD/NVMe) on Windows."""
     if not path or os.name != "nt":
         return False
@@ -225,7 +225,7 @@ def _windows_drive_is_fixed_local(path: Optional[str]) -> bool:
     if letter == _windows_system_drive():
         return False
     return _windows_drive_type(norm) == 3
-def is_external_or_network_volume(path: Optional[str] = None) -> bool:
+def is_external_or_network_volume(path: str | None = None) -> bool:
     """True when *path* is on an external or network volume (not the boot fixed disk).
 
     macOS: paths under ``/Volumes/`` (the boot volume is ``/``, not under Volumes).
@@ -259,7 +259,7 @@ def is_external_or_network_volume(path: Optional[str] = None) -> bool:
             return True
     return False
 def sort_probe_worker_count(
-    sample_path: Optional[str] = None,
+    sample_path: str | None = None,
     *,
     conservative: bool = False,
 ) -> int:
@@ -299,7 +299,7 @@ def sort_probe_worker_count(
 
     # Local SSD/NVMe: I/O-bound header reads; scale past 3 workers (old hard cap under-used CPU).
     return min(12, max(4, cpu - 1))
-def index_metadata_worker_count(total_files: int, sample_path: Optional[str] = None) -> int:
+def index_metadata_worker_count(total_files: int, sample_path: str | None = None) -> int:
     """
     Parallel metadata extraction during semantic index build.
 
@@ -333,7 +333,7 @@ def index_metadata_worker_count(total_files: int, sample_path: Optional[str] = N
         except Exception:
             pass
     return count
-def _volume_root_for(path: Optional[str]) -> Optional[str]:
+def _volume_root_for(path: str | None) -> str | None:
     """Stable cache key for the volume/mount that contains *path*."""
     if not path:
         return None
@@ -353,10 +353,10 @@ def _volume_root_for(path: Optional[str]) -> Optional[str]:
         return drive + os.sep
     return os.sep
 def _measure_read_mbps(
-    path: Optional[str],
+    path: str | None,
     sample_bytes: int,
     timeout_s: float,
-) -> Optional[float]:
+) -> float | None:
     """One cold-ish read-throughput measurement (MB/s) for *path*; no caching.
 
     Reads ``sample_bytes`` starting from a pseudo-random offset rather than the
@@ -398,11 +398,11 @@ def _measure_read_mbps(
         return None
     return None
 def probe_volume_speed(
-    sample_path: Optional[str],
+    sample_path: str | None,
     *,
     sample_bytes: int = 8 * 1024 * 1024,
     timeout_s: float = 3.0,
-) -> Optional[float]:
+) -> float | None:
     """Very lightweight one-shot read-speed probe for the volume holding *sample_path*.
 
     Reads up to ``sample_bytes`` (default 4 MB) from a single file and estimates
@@ -433,7 +433,7 @@ def probe_volume_speed(
     with _volume_speed_lock:
         _volume_speed_cache[root] = mbps if mbps is not None else -1.0
     return mbps
-def volume_speed_tier(sample_path: Optional[str]) -> str:
+def volume_speed_tier(sample_path: str | None) -> str:
     """Classify a probed volume as ``"fast"``, ``"slow"`` or ``"unknown"``.
 
     A volume is only treated as ``"slow"`` once it has actually been probed and
@@ -472,7 +472,7 @@ def moderate_external_cap_enabled() -> bool:
     if raw in ("0", "false", "no", "off"):
         return False
     return sys.platform == "win32"
-def raw_concurrent_load_limit(sample_path: Optional[str] = None) -> int:
+def raw_concurrent_load_limit(sample_path: str | None = None) -> int:
     """Max concurrent LibRaw full/preview decodes in ImageLoadManager.
 
     An explicit RAWVIEWER_RAW_LOAD_LIMIT always wins. Otherwise concurrency is

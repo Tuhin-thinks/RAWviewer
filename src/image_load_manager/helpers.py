@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Dict, Any, Tuple
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .manager import ImageLoadManager
@@ -195,10 +195,10 @@ def _task_queue_weight(task: ImageLoadTask) -> int:
         return 3
     return 2
 
-_global_manager: Optional[ImageLoadManager] = None
+_global_manager: ImageLoadManager | None = None
 _manager_lock = threading.Lock()
 
-def peek_image_load_manager() -> Optional[ImageLoadManager]:
+def peek_image_load_manager() -> ImageLoadManager | None:
     """Return the manager if already constructed; never create one.
 
     Cache sizing and other early-startup helpers must use this. Calling

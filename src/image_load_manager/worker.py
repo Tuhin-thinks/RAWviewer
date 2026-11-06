@@ -1,12 +1,15 @@
+from typing import Optional
 """ImageLoadWorker: reusable QRunnable that executes one ImageLoadTask."""
 from __future__ import annotations
 
 import os
-import time
 import threading
+import time
 
 import numpy as np
 from PyQt6.QtCore import QRunnable, QSize, Qt
+
+from image_load_manager import ImageLoadManager
 from PyQt6.QtGui import QImage, QPixmap
 
 from .helpers import (
@@ -22,8 +25,8 @@ from .helpers import (
 
 class ImageLoadTask:
     """圖像加載任務"""
-    
-    def __init__(self, file_path: str, priority: Priority = Priority.CURRENT, 
+
+    def __init__(self, file_path: str, priority: Priority = Priority.CURRENT,
                  use_full_resolution: bool = False,
                  stages: Optional[set] = None,
                  thumbnail_target_size: Optional[QSize] = None,
@@ -49,17 +52,17 @@ class ImageLoadTask:
         self._counted_raw_slot = False
         self._cancelled = False
         self._lock = threading.Lock()
-    
+
     def cancel(self):
         """標記任務為已取消（非阻塞）"""
         with self._lock:
             self._cancelled = True
-    
+
     def is_cancelled(self) -> bool:
         """檢查任務是否已取消"""
         with self._lock:
             return self._cancelled
-    
+
     def __lt__(self, other):
         """Priority queue ordering: enum priority, then lighter thumbnail work first."""
         if not isinstance(other, ImageLoadTask):
@@ -74,8 +77,8 @@ class ImageLoadTask:
 
 class ImageLoadWorker(QRunnable):
     """可重用的工作線程"""
-    
-    def __init__(self, task: ImageLoadTask, manager: 'ImageLoadManager'):
+
+    def __init__(self, task: ImageLoadTask, manager: ImageLoadManager):
         super().__init__()
         self.task = task
         self.manager = manager
@@ -114,7 +117,7 @@ class ImageLoadWorker(QRunnable):
         from common_image_loader import is_raw_file
 
         return is_raw_file(task.file_path)
-    
+
     def _get_processor(self):
         """獲取處理器實例（延遲初始化）"""
         if self._processor is None:
@@ -122,7 +125,7 @@ class ImageLoadWorker(QRunnable):
             from processing.unified import UnifiedImageProcessor
             self._processor = UnifiedImageProcessor()
         return self._processor
-    
+
     def _emit_preview_failure(self, file_path: str, message: str) -> None:
         """Skip preview-only errors when a full decode stage will run in the same task."""
         if "full" in (self.task.stages or set()):
@@ -156,21 +159,21 @@ class ImageLoadWorker(QRunnable):
                 # _schedule_next_task twice under exactly the churn that
                 # produces cancelled-at-start tasks.
                 return
-            
+
             file_path = self.task.file_path
             self._yield_if_needed()
             stages = self.task.stages or set()
             if self._safe_emit() and not self.task.is_cancelled():
                 self.manager.progress_updated.emit(file_path, "Loading image...")
-            
+
             processor = self._get_processor()
-            
+
             # COMBINED OPTIMIZATION: If both exif and thumbnail are needed, do them in one pass.
             if 'exif' in stages and 'thumbnail' in stages and not self.task.is_cancelled():
                 self._yield_if_needed()
                 if self._safe_emit():
                     self.manager.progress_updated.emit(file_path, "Reading metadata & preview...")
-                
+
                 allow_heavy_fallback = self._uses_display_preview_tier(self.task)
                 exif_data, thumbnail = processor.process_metadata_and_thumbnail(
                     file_path,
@@ -235,7 +238,7 @@ class ImageLoadWorker(QRunnable):
                     elif exif_data is None and not self.task.is_cancelled():
                         if self._safe_emit():
                             self.manager.exif_data_ready.emit(file_path, {})
-                
+
                 if 'thumbnail' in stages and not self.task.is_cancelled():
                     self._yield_if_needed()
                     if self._safe_emit():
@@ -315,7 +318,7 @@ class ImageLoadWorker(QRunnable):
                         self._emit_preview_failure(
                             file_path, "Thumbnail extraction returned None"
                         )
-            
+
             # 處理完整圖像（只在需要時）
             if 'full' in stages and not self.task.is_cancelled():
                 self._yield_if_needed()
@@ -440,7 +443,7 @@ class ImageLoadWorker(QRunnable):
             # 發送完成信號
             if self._safe_emit() and not self.task.is_cancelled():
                 self.manager.progress_updated.emit(file_path, "Processing complete")
-                    
+
         except Exception as e:
             if self._safe_emit():
                 self.manager.error_occurred.emit(file_path, str(e))
@@ -479,7 +482,7 @@ class ImageLoadWorker(QRunnable):
                     if self._safe_emit():
                         self.manager.error_occurred.emit(file_path, "Created QImage was null")
                     return
-                
+
                 if self.task.thumbnail_fit == "crop":
                     scaled = qimg.scaled(tgt, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
                     x = max(0, (scaled.width() - tgt.width()) // 2)
@@ -487,7 +490,7 @@ class ImageLoadWorker(QRunnable):
                     qimg_out = scaled.copy(x, y, tgt.width(), tgt.height())
                 else:
                     qimg_out = qimg.scaled(tgt, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                
+
                 if self._safe_emit():
                     self.manager.thumbnail_ready.emit(file_path, qimg_out)
                     return

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import os
 import queue
-from typing import Any, Dict, Optional
+from typing import Any, Tuple
 
 from PyQt6.QtCore import QSize, QTimer
 
 from .helpers import (
+    Priority,
     _gallery_memory_thumb_acceptable,
     _skip_low_res_memory_thumb_for_display_tier,
-    Priority,
 )
 from .worker import ImageLoadTask, ImageLoadWorker
 
@@ -32,7 +32,7 @@ class ImageLoadManagerPart3:
             self._reconcile_raw_slots_locked()
             self._compact_work_queue()
 
-    def cancel_all_tasks_except(self, keep_path: Optional[str]) -> None:
+    def cancel_all_tasks_except(self, keep_path: str | None) -> None:
         """Cancel every queued/active task except those for ``keep_path``.
 
         Used when switching gallery -> single view: dozens of gallery thumbnail
@@ -275,7 +275,7 @@ class ImageLoadManagerPart3:
         return False
 
     def _make_task_key(self, file_path: str, use_full_resolution: bool,
-                       stages: Optional[set], thumbnail_target_size: Optional[QSize],
+                       stages: set | None, thumbnail_target_size: QSize | None,
                        thumbnail_fit: str) -> Tuple:
         """Build a stable key for de-duplicating queued/running work."""
         wanted = tuple(sorted(stages if stages is not None else {'thumbnail', 'exif', 'full'}))
@@ -294,12 +294,12 @@ class ImageLoadManagerPart3:
     def _emit_cached_result_now(signal, file_path: str, payload) -> None:
         """Emit cache hits immediately (load_image runs on UI thread)."""
         signal.emit(file_path, payload)
-    
+
     def _check_cache(
         self,
         file_path: str,
         use_full_resolution: bool,
-        stages: Optional[set] = None,
+        stages: set | None = None,
         *,
         gallery_thumbnail: bool = False,
     ) -> bool:
@@ -393,7 +393,7 @@ class ImageLoadManagerPart3:
             if exif_data is not None and not exif_data.get("minimal_preview_exif"):
                 self._emit_cached_result_later(self.exif_data_ready, file_path, exif_data)
                 # Note: EXIF hit alone doesn't terminate processing if pixels are also wanted
-        
+
         # 3) Full stage: treat in-memory RAW preview as "full" when use_full_resolution=False
         if 'full' in wanted:
             if is_raw:
@@ -519,7 +519,7 @@ class ImageLoadManagerPart3:
                 full_ok = px is not None and not px.isNull()
 
         return thumb_ok and exif_ok and full_ok
-    
+
     def _schedule_next_task(self):
         """Dispatch queued work onto the CURRENT or background pool.
 
@@ -713,7 +713,7 @@ class ImageLoadManagerPart3:
                     if not task.is_cancelled():
                         self._work_queue.put(task)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """獲取管理器統計信息"""
         with self._queue_lock:
             return {

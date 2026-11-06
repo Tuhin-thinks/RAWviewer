@@ -6,11 +6,11 @@ import logging
 import math
 import os
 import sys
-import time
 import urllib.error
 import urllib.request
+
+from PyQt6.QtGui import QPainter, QPixmap
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class TileCache:
     def path_for(self, z: int, x: int, y: int) -> Path:
         return self.cache_dir / str(z) / str(x) / f"{y}.png"
 
-    def get(self, z: int, x: int, y: int) -> Optional[Path]:
+    def get(self, z: int, x: int, y: int) -> Path | None:
         p = self.path_for(z, x, y)
         if p.is_file() and p.stat().st_size > 0:
             if p.stat().st_size <= BLANK_TILE_MAX_BYTES:
@@ -102,7 +102,7 @@ def stitch_tiles(
     x1: int,
     y1: int,
     tiles: dict[tuple[int, int], Path],
-) -> "QPixmap":
+) -> QPixmap:
     """Stitch a grid of tiles into a single QPixmap."""
     from PyQt6.QtGui import QPainter, QPixmap
 
@@ -126,7 +126,7 @@ def stitch_tiles(
 
 
 def render_world_viewport(
-    stitched: "QPixmap",
+    stitched: QPixmap,
     world_left: float,
     world_top: float,
     view_w: float,
@@ -135,7 +135,7 @@ def render_world_viewport(
     y0: int,
     out_w: int,
     out_h: int,
-) -> "QPixmap":
+) -> QPixmap:
     """Crop the stitched tiles QPixmap to match the viewport bounding box."""
     from PyQt6.QtCore import QRectF
     from PyQt6.QtGui import QPainter, QPixmap
@@ -156,7 +156,7 @@ def render_world_viewport(
 
 
 def _draw_pin(
-    painter: "QPainter",
+    painter: QPainter,
     x: float,
     y: float,
     *,
@@ -167,7 +167,7 @@ def _draw_pin(
     Solid ember fill, sharp tip on the GPS point, soft radial glow behind the
     head (current pin only). Neighbors are smaller/muted without glow.
     """
-    from PyQt6.QtCore import Qt, QPointF, QRectF
+    from PyQt6.QtCore import QPointF, QRectF, Qt
     from PyQt6.QtGui import QBrush, QColor, QPainterPath, QRadialGradient
 
     # theme.EMBER = #d9691e → (217, 105, 30)
@@ -231,31 +231,31 @@ class LocationMapModel:
         lat: float,
         lon: float,
         cache_dir: Path,
-        other_points: Optional[list[tuple[float, float]]] = None,
+        other_points: list[tuple[float, float]] | None = None,
     ):
         self.lat = lat
         self.lon = lon
         self.zoom = DEFAULT_ZOOM
         self.cache_dir = cache_dir
         self.cache = TileCache(cache_dir / "map")
-        
+
         # Center of map is the active image's location
         cx, cy = lat_lon_to_tile_xy(self.lat, self.lon, self.zoom)
         center_px = cx * TILE_SIZE
         center_py = cy * TILE_SIZE
-        
+
         # Determine top-left corner of the widget in world coordinates
         self.world_left = center_px - (WIDGET_W / 2)
         self.world_top = center_py - (WIDGET_H / 2)
         self.view_w = WIDGET_W
         self.view_h = WIDGET_H
-        
+
         # Determine bounds of tiles to fetch
         x0 = int(math.floor(self.world_left / TILE_SIZE))
         y0 = int(math.floor(self.world_top / TILE_SIZE))
         x1 = int(math.floor((self.world_left + self.view_w - 1) / TILE_SIZE))
         y1 = int(math.floor((self.world_top + self.view_h - 1) / TILE_SIZE))
-        
+
         # Fetch, stitch, and crop tiles to fit widget viewport
         tile_paths = fetch_tiles_sync(self.zoom, x0, y0, x1, y1, self.cache)
         stitched = stitch_tiles(x0, y0, x1, y1, tile_paths)
@@ -270,13 +270,13 @@ class LocationMapModel:
             WIDGET_W,
             WIDGET_H,
         )
-        
+
         # Layout pins
         self.pins: list[tuple[float, float, bool]] = []  # x, y, is_current
         # Add current pin (centered)
         self.pins.append((WIDGET_W / 2, WIDGET_H / 2, True))
 
-    def paint_pins(self, painter: "QPainter") -> None:
+    def paint_pins(self, painter: QPainter) -> None:
         """Draw all pins in viewport coordinates."""
         for x, y, is_current in self.pins:
             _draw_pin(painter, x, y, is_current=is_current)

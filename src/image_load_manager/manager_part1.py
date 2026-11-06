@@ -1,26 +1,25 @@
 """ImageLoadManager part 1: init, watchdog, throttling, GPU profile, probe."""
 from __future__ import annotations
 
-import os
-import time
-import threading
-import queue
 import concurrent.futures
+import os
+import queue
+import threading
+import time
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal, QThreadPool, QTimer
-from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtCore import QObject, QThreadPool, QTimer, pyqtSignal
+from PyQt6.QtGui import QImage, QPixmap
 
 from image_cache import get_image_cache
 
-from .helpers import _env_int, _env_true, Priority
+from .helpers import Priority, _env_int, _env_true
 from .worker import ImageLoadTask
 
 
 class ImageLoadManagerPart1(QObject):
     """統一管理所有圖像加載任務的工作隊列管理器（單例模式）"""
-    
+
     # 信號定義
     # NOTE: Can emit np.ndarray (base thumbnail) or QImage (pre-scaled/cropped) for smooth UI.
     thumbnail_ready = pyqtSignal(str, object)  # file_path, thumbnail (np.ndarray or QImage)
@@ -33,7 +32,7 @@ class ImageLoadManagerPart1(QObject):
     task_completed = pyqtSignal(str)  # file_path
     progress_updated = pyqtSignal(str, str)  # file_path, status_message
     exif_data_ready = pyqtSignal(str, dict)  # file_path, exif_data
-    
+
     def __init__(self, max_workers: int = 4):
         """初始化管理器"""
         # CRITICAL: 對於 QObject 子類，必須在最開始就調用 super().__init__()
@@ -42,14 +41,14 @@ class ImageLoadManagerPart1(QObject):
         verbose_init = _env_true("RAWVIEWER_VERBOSE_MANAGER_INIT", default=False)
         if verbose_init:
             print("[ImageLoadManager.__init__] Starting initialization...", flush=True)
-        
+
         # Ensure QApplication exists before initializing QObject
         from PyQt6.QtWidgets import QApplication
         app = QApplication.instance()
         if app is None:
             print("[ImageLoadManager.__init__] ERROR: QApplication instance not found!", file=sys.stderr, flush=True)
             raise RuntimeError("QApplication must be created before ImageLoadManager")
-        
+
         if verbose_init:
             print("[ImageLoadManager.__init__] Calling super().__init__(app)...", flush=True)
         try:
@@ -62,13 +61,13 @@ class ImageLoadManagerPart1(QObject):
             import traceback
             print(traceback.format_exc(), file=sys.stderr, flush=True)
             raise
-        
+
         # 避免重複初始化實例變量
         if hasattr(self, '_initialized') and self._initialized:
             if verbose_init:
                 print("[ImageLoadManager.__init__] Already initialized, skipping instance variables", flush=True)
             return
-        
+
         self._work_queue = queue.PriorityQueue()
         # Background / prefetch lane (PRELOAD_*, BACKGROUND).
         self._thread_pool = QThreadPool()
@@ -82,7 +81,7 @@ class ImageLoadManagerPart1(QObject):
         self._raw_slot_holders: set = set()
         self._demosaic_in_flight: set = set()
         self._running_tasks_lock = threading.Lock()
-        
+
         self._stopped = False  # Flag to stop scheduling new tasks
         self._gallery_warmup_throttle_depth = 0
         self._io_pressure_throttle_depth = 0
@@ -105,7 +104,7 @@ class ImageLoadManagerPart1(QObject):
         # An RLock so the existing nesting cannot deadlock.
         self._throttle_lock = threading.RLock()
         self._indexing_throttle_lock = self._throttle_lock
-        
+
         # Throttled workers on macOS external drives to prevent IO overload crashes
         self.update_volume_throttling(os.getcwd())
         if max_workers != 4:
@@ -117,15 +116,14 @@ class ImageLoadManagerPart1(QObject):
         # PROCESS POOL: LibRaw postprocess in worker processes (multi-core on Windows).
         from common_image_loader import (
             process_pool_worker_count,
-            raw_concurrent_load_limit,
             use_raw_process_pool,
         )
 
         use_process_pool = use_raw_process_pool()
         self._process_pool = None
         if use_process_pool:
-            import logging
             import atexit
+            import logging
 
             from common_image_loader import process_pool_mp_context
 
@@ -143,12 +141,12 @@ class ImageLoadManagerPart1(QObject):
         else:
             import logging
             logging.getLogger(__name__).info("[LOAD] LibRaw process pool disabled")
-        
-        self._active_tasks: Dict[Tuple, ImageLoadTask] = {}
+
+        self._active_tasks: dict[tuple, ImageLoadTask] = {}
         self._task_keys_by_path = defaultdict(set)
         self._cache = get_image_cache()
         self._queue_lock = threading.Lock()
-        
+
         # RAW throttling: Limit concurrent heavy RAW decodes (set by update_volume_throttling)
         self._active_raw_tasks = 0
 
@@ -177,7 +175,7 @@ class ImageLoadManagerPart1(QObject):
         except Exception:
             pass
 
-    def update_volume_throttling(self, folder_path: Optional[str]) -> None:
+    def update_volume_throttling(self, folder_path: str | None) -> None:
         """Dynamically update maximum threads and raw load limit for a new folder path."""
         from common_image_loader import (
             is_external_or_network_volume,
@@ -232,7 +230,7 @@ class ImageLoadManagerPart1(QObject):
             if not is_throttled:
                 self._thread_pool.setMaxThreadCount(default_workers)
                 self._apply_current_pool_limit(current_workers)
-            
+
             # Save baseline to be restored when throttles exit
             self._pressure_saved_max_threads = default_workers
             self._warmup_saved_max_threads = default_workers
@@ -241,7 +239,7 @@ class ImageLoadManagerPart1(QObject):
             self._warmup_saved_current_threads = current_workers
             self._indexing_saved_current_threads = current_workers
             self._current_pool_baseline = current_workers
-            
+
             from common_image_loader import raw_load_limit_aligned_to_gpu
 
             # Inside the lock: the indexing throttle saves and restores this
@@ -254,6 +252,7 @@ class ImageLoadManagerPart1(QObject):
     def apply_gpu_decode_profile(self) -> None:
         """After GPU backend import: drop process pool conflict; align RAW slots."""
         import logging
+
         from common_image_loader import (
             _gpu_demosaic_backend_in_use,
             raw_load_limit_aligned_to_gpu,
@@ -371,7 +370,7 @@ class ImageLoadManagerPart1(QObject):
                 self._running_tasks.discard(task)
 
     def prime_volume_speed_async(
-        self, folder_path: Optional[str], sample_path: Optional[str] = None
+        self, folder_path: str | None, sample_path: str | None = None
     ) -> None:
         """Run one lightweight read-speed probe for *folder_path*'s volume off the
         main thread, then re-apply throttling from the measured speed.
@@ -387,11 +386,11 @@ class ImageLoadManagerPart1(QObject):
 
         def _worker() -> None:
             from common_image_loader import (
+                _windows_drive_is_fixed_local,
                 invalidate_volume_speed_cache,
                 probe_volume_speed,
                 record_volume_speed,
                 volume_speed_tier,
-                _windows_drive_is_fixed_local,
             )
 
             # Let fast-open / sort probes finish so we measure disk not page cache.
@@ -403,7 +402,7 @@ class ImageLoadManagerPart1(QObject):
             if not candidates and sample_path and os.path.isfile(sample_path):
                 candidates = [sample_path]
 
-            best_mbps: Optional[float] = None
+            best_mbps: float | None = None
             probe_path = None
             for cand in candidates:
                 mbps = probe_volume_speed(cand)
@@ -458,9 +457,9 @@ class ImageLoadManagerPart1(QObject):
 
     @staticmethod
     def _pick_probe_samples(
-        folder_path: Optional[str],
+        folder_path: str | None,
         *,
-        exclude: Optional[str] = None,
+        exclude: str | None = None,
         limit: int = 5,
     ) -> list:
         """Pick representative files in *folder_path* to probe (cheap scandir).
@@ -506,7 +505,7 @@ class ImageLoadManagerPart1(QObject):
         return (raw_hits + other_hits)[:limit]
 
     @classmethod
-    def _pick_probe_sample(cls, folder_path: Optional[str]) -> Optional[str]:
+    def _pick_probe_sample(cls, folder_path: str | None) -> str | None:
         """Single representative file in *folder_path* (legacy helper)."""
         picks = cls._pick_probe_samples(folder_path, limit=1)
         return picks[0] if picks else None
@@ -672,7 +671,7 @@ class ImageLoadManagerPart1(QObject):
         finally:
             if lock is not None:
                 lock.release()
-    
+
     def force_exit_semantic_indexing_throttle(self) -> None:
         lock = getattr(self, "_indexing_throttle_lock", None)
         if lock is not None:

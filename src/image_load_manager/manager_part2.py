@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import os
-import time
 import queue
-from typing import Optional
+import time
 
 from PyQt6.QtCore import QSize
 
@@ -16,8 +15,8 @@ from .worker import ImageLoadTask
 class ImageLoadManagerPart2:
     def load_image(self, file_path: str, priority: Priority = Priority.CURRENT,
                    cancel_existing: bool = True, use_full_resolution: bool = False,
-                   stages: Optional[set] = None,
-                   thumbnail_target_size: Optional[QSize] = None,
+                   stages: set | None = None,
+                   thumbnail_target_size: QSize | None = None,
                    thumbnail_fit: str = "crop",
                    bypass_cache: bool = False,
                    gallery_thumbnail: bool = False):
@@ -88,7 +87,7 @@ class ImageLoadManagerPart2:
                         self._release_raw_slot_locked(task)
                 if not self._task_keys_by_path[file_path]:
                     self._task_keys_by_path.pop(file_path, None)
-        
+
         # 創建任務
         task = ImageLoadTask(
             file_path,
@@ -107,7 +106,7 @@ class ImageLoadManagerPart2:
                 return
             self._active_tasks[task_key] = task
             self._task_keys_by_path[file_path].add(task_key)
-        
+
         # 添加到工作隊列
         _li_t_queue = time.perf_counter() if _li_debug else 0.0
         self._work_queue.put(task)
@@ -127,7 +126,7 @@ class ImageLoadManagerPart2:
                     (_li_end - _li_t_queue) * 1000.0,
                     total_ms,
                 )
-    
+
     def has_active_work_for_path(self, file_path: str) -> bool:
         """True when a load task for this path is queued or running."""
         if not file_path:
@@ -166,7 +165,7 @@ class ImageLoadManagerPart2:
         return False
 
     def cancel_non_current_heavy_raw_except(
-        self, keep_path: Optional[str] = None
+        self, keep_path: str | None = None
     ) -> int:
         """Cancel PRELOAD/BACKGROUND RAW ``full`` tasks (free GPU/raw heavy slots).
 
@@ -292,7 +291,7 @@ class ImageLoadManagerPart2:
                 pass
         self._active_raw_tasks = len(holders)
 
-    def _release_raw_slot_locked(self, task: Optional["ImageLoadTask"]) -> None:
+    def _release_raw_slot_locked(self, task: ImageLoadTask | None) -> None:
         """Drop a heavy RAW slot immediately when cancelling a counted task.
 
         Must run under ``_queue_lock``. Leaving the counter until ``_task_finished``
@@ -340,7 +339,7 @@ class ImageLoadManagerPart2:
             if not self._task_keys_by_path.get(file_path):
                 self._task_keys_by_path.pop(file_path, None)
             self._compact_work_queue()
-                
+
     def cancel_non_gallery_tasks(self) -> None:
         """Cancel queued/active work that is not a gallery grid thumbnail decode."""
         with self._queue_lock:
@@ -433,5 +432,5 @@ class ImageLoadManagerPart2:
                     if not self._task_keys_by_path.get(file_path):
                         self._task_keys_by_path.pop(file_path, None)
             self._compact_work_queue()
-    
+
 

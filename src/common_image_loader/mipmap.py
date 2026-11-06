@@ -1,3 +1,4 @@
+from typing import Optional, Dict, Any
 """Mipmap tier publish/backfill helpers for the image cache."""
 
 from __future__ import annotations
@@ -139,8 +140,6 @@ def publish_mipmap_tiers(
     else:
         highest = ""
 
-    from PIL import Image
-    import io as _io
 
     arr = native_array.astype(np.uint8) if native_array.dtype != np.uint8 else native_array
     _pil_cache = []

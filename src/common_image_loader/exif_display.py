@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from PyQt6.QtGui import QImage, QPixmap
 
 from image_cache import get_image_cache
 
-from .helpers import _MIN_TRUSTED_SENSOR_LONG_EDGE, image_covers_sensor_resolution, is_raw_file
+
 def exif_display_dimensions(
     width: int,
     height: int,
     orientation: int,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Pixel width/height after EXIF orientation is applied (display size).
 
     Sensor dimensions are often stored landscape (w > h) while orientation 6/8
@@ -38,10 +38,10 @@ def exif_display_aspect_ratio(
     if dh <= 0:
         return 1.5
     return dw / dh
-def exif_pixels_display_oriented(exif_data: Optional[Dict[str, Any]]) -> bool:
+def exif_pixels_display_oriented(exif_data: dict[str, Any] | None) -> bool:
     """True when decode already baked EXIF orientation into pixel data."""
     return bool((exif_data or {}).get("pixels_display_oriented"))
-def mark_exif_pixels_display_oriented(exif_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def mark_exif_pixels_display_oriented(exif_data: dict[str, Any] | None) -> dict[str, Any]:
     """Record that container orientation is already applied to cached pixels."""
     data = dict(exif_data or {})
     data["orientation"] = 1
@@ -81,7 +81,7 @@ def pixmap_matches_exif_display(
 def array_matches_exif_display(
     pixel_width: int,
     pixel_height: int,
-    exif_data: Optional[Dict[str, Any]],
+    exif_data: dict[str, Any] | None,
     *,
     tolerance: float = 0.14,
 ) -> bool:
@@ -108,8 +108,8 @@ def array_matches_exif_display(
 def apply_container_orientation_to_array(
     image_array: np.ndarray,
     orientation: int,
-    exif_data: Optional[Dict[str, Any]] = None,
-) -> Optional[np.ndarray]:
+    exif_data: dict[str, Any] | None = None,
+) -> np.ndarray | None:
     """Apply container EXIF orientation once; skip when pixels already match display."""
     if image_array is None:
         return None
@@ -196,7 +196,7 @@ def rgb_array_to_qpixmap(rgb_image: np.ndarray) -> QPixmap:
     return QPixmap.fromImage(qimg) if not qimg.isNull() else QPixmap()
 def apply_container_orientation_to_pixmap(
     pixmap: QPixmap,
-    exif_data: Optional[Dict[str, Any]],
+    exif_data: dict[str, Any] | None,
 ) -> QPixmap:
     """Apply container EXIF orientation to a QPixmap (idempotent with display-oriented pixels)."""
     from PyQt6.QtGui import QTransform
@@ -245,7 +245,7 @@ def resolve_container_exif_for_file(
     file_path: str,
     *,
     cache=None,
-) -> tuple[Optional[Dict[str, Any]], int]:
+) -> tuple[dict[str, Any] | None, int]:
     """Return (exif_data, orientation) from ImageCache or container EXIF on disk.
 
     verify=True: this is the orientation authority for pixel rotation

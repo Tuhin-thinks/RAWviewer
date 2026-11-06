@@ -5,12 +5,11 @@ from __future__ import annotations
 import os
 import time
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
-
-import numpy as np
+from typing import Any
 
 from image_cache import get_image_cache
 from raw_file_extensions import RAW_FILE_EXTENSIONS
+
 _io_pressure_until = 0.0
 _CAPTURE_TIME_FORMATS = (
     "%H:%M:%S %Y-%m-%d",  # normalized display / cache
@@ -47,7 +46,7 @@ def note_emfile_pressure(duration_s: float = 12.0) -> None:
     _io_pressure_until = max(_io_pressure_until, time.time() + max(5.0, duration_s))
 def io_pressure_active() -> bool:
     return time.time() < _io_pressure_until
-def parse_capture_time_to_timestamp(capture_time: Optional[str]) -> float:
+def parse_capture_time_to_timestamp(capture_time: str | None) -> float:
     """Parse EXIF-style capture time strings to a Unix timestamp (0 if unknown)."""
     if not capture_time:
         return 0.0
@@ -60,7 +59,7 @@ def parse_capture_time_to_timestamp(capture_time: Optional[str]) -> float:
         except ValueError:
             continue
     return 0.0
-def normalize_capture_time_string(capture_time: Optional[str]) -> Optional[str]:
+def normalize_capture_time_string(capture_time: str | None) -> str | None:
     """Canonical form used for sorting and status display."""
     ts = parse_capture_time_to_timestamp(capture_time)
     if ts <= 0:
@@ -87,12 +86,12 @@ def probe_capture_timestamp_from_file(file_path: str) -> float:
     return 0.0
 def capture_timestamp_for_sort(
     file_path: str,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
     file_mtime: float = 0.0,
     *,
     file_birthtime: float = 0.0,
     probe_file: bool = True,
-    semantic_capture_time: Optional[str] = None,
+    semantic_capture_time: str | None = None,
 ) -> float:
     """Timestamp for folder/gallery sort (see resolve_folder_sort_timestamp)."""
     _has_capture, ts, _source = resolve_folder_sort_timestamp(
@@ -106,14 +105,14 @@ def capture_timestamp_for_sort(
     return ts
 def resolve_folder_sort_timestamp(
     file_path: str,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
     file_mtime: float = 0.0,
     *,
     file_birthtime: float = 0.0,
     probe_file: bool = True,
-    semantic_capture_time: Optional[str] = None,
+    semantic_capture_time: str | None = None,
     probed_capture_timestamp: float = 0.0,
-) -> Tuple[bool, float, str]:
+) -> tuple[bool, float, str]:
     """
     Returns (has_capture_time, sort_timestamp, sort_source).
 
@@ -174,7 +173,7 @@ def invalidate_libraw_consistent_preview_settings() -> None:
     """Clear the memoized ``use_embedded_jpeg_workflow`` QSettings value."""
     global _EMBEDDED_JPEG_WORKFLOW_MEMO
     _EMBEDDED_JPEG_WORKFLOW_MEMO = _EMBEDDED_JPEG_WORKFLOW_UNSET
-def _embedded_jpeg_workflow_setting() -> Optional[bool]:
+def _embedded_jpeg_workflow_setting() -> bool | None:
     """Cached QSettings read: True/False when set, None when key absent."""
     global _EMBEDDED_JPEG_WORKFLOW_MEMO
     if _EMBEDDED_JPEG_WORKFLOW_MEMO is not _EMBEDDED_JPEG_WORKFLOW_UNSET:
@@ -194,7 +193,7 @@ def _embedded_jpeg_workflow_setting() -> Optional[bool]:
     except Exception:
         _EMBEDDED_JPEG_WORKFLOW_MEMO = None
         return None
-def use_libraw_consistent_preview_first(file_path: Optional[str] = None) -> bool:
+def use_libraw_consistent_preview_first(file_path: str | None = None) -> bool:
     """
     When True (default), single-image RAW avoids embedded-JPEG preview paths so fit and zoom
     share the same LibRaw postprocess look. Set RAWVIEWER_LIBRAW_CONSISTENT_PREVIEW=0 to restore
@@ -248,7 +247,7 @@ def use_full_embedded_raw_preview() -> bool:
 
     v = os.environ.get("RAWVIEWER_USE_FULL_EMBEDDED_JPEG", "1").strip().lower()
     return v not in ("0", "false", "no", "off")
-def sensor_pixel_dimensions(exif_data: Optional[Dict[str, Any]]) -> Optional[Tuple[int, int]]:
+def sensor_pixel_dimensions(exif_data: dict[str, Any] | None) -> tuple[int, int] | None:
     """Sensor / full-frame pixel size from EXIF cache, if known and trustworthy."""
     if not exif_data:
         return None
@@ -268,7 +267,7 @@ def sensor_pixel_dimensions(exif_data: Optional[Dict[str, Any]]) -> Optional[Tup
 def image_covers_sensor_resolution(
     img_width: int,
     img_height: int,
-    exif_data: Optional[Dict[str, Any]],
+    exif_data: dict[str, Any] | None,
     *,
     coverage: float = FULL_EMBEDDED_SENSOR_COVERAGE,
 ) -> bool:
@@ -285,7 +284,7 @@ def image_covers_sensor_resolution(
     sensor_long = max(sw, sh)
     img_long = max(img_width, img_height)
     return img_long >= sensor_long * coverage
-def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> Tuple[Optional[Any], Optional[str]]:
+def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> tuple[Any | None, str | None]:
     """
     µ¬óµƒÑσ┐½σÅûΣ╕¡µÿ»σÉªσ¡ÿσ£¿σ£ûσâÅµêûτ¢╕Θù£µò╕µôÜπÇé
     
@@ -295,7 +294,7 @@ def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> 
     µ│¿µäÅ∩╝ÜΦïÑσÅ¬µ£ë EXIF Σ╣ƒµ£âΦªûτé║σæ╜Σ╕¡∩╝¢σû«σ£ûπÇîΘáÉΦ╝ëσâÅτ┤áπÇìΦ½ïτö¿ check_memory_cache_for_image∩╝îΘü┐σàìΦ¬ñΦ╖│ΘüÄΘáÉΦ╝ëπÇé
     """
     cache = get_image_cache()
-    
+
     # 1. σªéµ₧£Φ½ïµ▒éσà¿Φºúµ₧Éσ║ª∩╝îσä¬σàêµ¬óµƒÑσà¿σ£ûσâÅσ┐½σÅû
     if use_full_resolution:
         full_image = cache.get_full_image(file_path)
@@ -308,25 +307,25 @@ def check_cache_for_image(file_path: str, use_full_resolution: bool = False) -> 
                 h, w = preview.shape[:2]
                 if image_covers_sensor_resolution(w, h, exif_data):
                     return preview, 'full_image'
-            
+
     # 2. µ¬óµƒÑ Pixmap σ┐½σÅû (σ╕╕τö¿µû╝ QSS/Σ╕ÇΦê¼Θí»τñ║)
     pixmap = cache.get_pixmap(file_path)
     if pixmap is not None and not pixmap.isNull():
         return pixmap, 'pixmap'
-        
+
     # 3. σªéµ₧£Σ╕ìµÿ»σ┐àΘáêσà¿Φºúµ₧Éσ║ª∩╝îµ¬óµƒÑΦ¿ÿµå╢Θ½öτ╕«σ£ûσ┐½σÅû
     if not use_full_resolution:
         thumbnail = cache.get_thumbnail(file_path)
         if thumbnail is not None:
             return thumbnail, 'thumbnail'
-            
+
     # 4. µ¬óµƒÑ EXIF σàâµò╕µôÜσ┐½σÅû
     exif_data = cache.get_exif(file_path)
     if exif_data:
         return exif_data, 'exif'
-        
+
     return None, None
-def check_memory_cache_for_image(file_path: str, use_full_resolution: bool = False) -> Tuple[Optional[Any], Optional[str]]:
+def check_memory_cache_for_image(file_path: str, use_full_resolution: bool = False) -> tuple[Any | None, str | None]:
     """
     µ¬óµƒÑΦ¿ÿµå╢Θ½öσ┐½σÅûΣ╕¡µÿ»σÉªσ¡ÿσ£¿σ£ûσâÅ (Θ¥₧Θÿ╗σí₧∩╝îΣ╕ìΦ«ÇσÅûτúüτ¢ñ)πÇé
     
@@ -334,7 +333,7 @@ def check_memory_cache_for_image(file_path: str, use_full_resolution: bool = Fal
     Θí₧σ₧ïσîàµï¼: 'full_image', 'pixmap', 'thumbnail'
     """
     cache = get_image_cache()
-    
+
     # 1. σªéµ₧£Φ½ïµ▒éσà¿Φºúµ₧Éσ║ª∩╝îσä¬σàêµ¬óµƒÑσà¿σ£ûσâÅσ┐½σÅû
     if use_full_resolution:
         # τ¢┤µÄÑΦ¿¬σòÅΦ¿ÿµå╢Θ½ö LRUCache∩╝îΘü┐σàìΦº╕τÖ╝τúüτ¢ñΦ«ÇσÅû
@@ -348,12 +347,12 @@ def check_memory_cache_for_image(file_path: str, use_full_resolution: bool = Fal
                 h, w = preview.shape[:2]
                 if image_covers_sensor_resolution(w, h, exif_data):
                     return preview, 'full_image'
-            
+
     # 2. µ¬óµƒÑ Pixmap σ┐½σÅû
     pixmap = cache.pixmap_cache.get(file_path)
     if pixmap is not None and not pixmap.isNull():
         return pixmap, 'pixmap'
-        
+
     # 3. σªéµ₧£Σ╕ìµÿ»σ┐àΘáêσà¿Φºúµ₧Éσ║ª∩╝îµ¬óµƒÑΦ¿ÿµå╢Θ½öτ╕«σ£û∩╝ÅRAW ΘáÉΦª╜σ┐½σÅû∩╝êΣ╕ìΦº╕τÖ╝τúüτóƒ∩╝ë
     if not use_full_resolution:
         thumbnail = cache.thumbnail_cache.get(file_path)
@@ -385,7 +384,7 @@ def is_tiff_file(file_path: str) -> bool:
     """µ¬óµƒÑµÿ»σÉªτé║ TIFF µûçΣ╗╢∩╝êσîàµï¼Θî»Φ¬ñµô┤σ▒òσÉìτÜäµâàµ│ü∩╝ë"""
     file_ext = os.path.splitext(file_path)[1].lower()
     is_tiff = file_ext in ('.tiff', '.tif')
-    
+
     # µ¬óµƒÑµûçΣ╗╢σàºσ«╣Σ╗Ñµ¬óµ╕¼Θî»Φ¬ñµô┤σ▒òσÉìτÜä TIFF µûçΣ╗╢
     if not is_tiff:
         try:
@@ -395,7 +394,7 @@ def is_tiff_file(file_path: str) -> bool:
                     is_tiff = True
         except Exception:
             pass  # Σ╕ìµÿ» PIL σÅ»Φ«ÇµûçΣ╗╢µêûΣ╕ìµÿ» TIFF
-    
+
     return is_tiff
 def _regular_image_max_edge() -> int:
     """Safety cap when full-resolution Qt/PIL decode fails (e.g. huge panorama JPEG)."""
