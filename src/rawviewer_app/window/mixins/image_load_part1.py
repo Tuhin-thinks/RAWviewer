@@ -285,7 +285,6 @@ class ImageLoadPart1:
         # as image_ready; wait for the real sensor-resolution buffer.
         if self._full_res_only_mode():
             try:
-                from common_image_loader import image_covers_sensor_resolution
                 if hasattr(image, "shape"):
                     _h, _w = image.shape[0], image.shape[1]
                 elif hasattr(image, "width") and hasattr(image, "height"):
