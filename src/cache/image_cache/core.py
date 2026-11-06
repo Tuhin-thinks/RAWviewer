@@ -28,7 +28,7 @@ from cache.metadata import PersistentEXIFCache
 logger = logging.getLogger(__name__)
 
 
-class ImageCacheCore:
+class ImageCacheCore(QObject):
     """Core lifecycle, purge helpers, and memory management."""
 
     # Signals for cache events
