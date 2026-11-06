@@ -231,7 +231,7 @@ def export_one_file(
     try:
         from raw_adjustments import resolve_xmp_path, write_xmp_adjustments_for_file
         from raw_edit_pipeline import ExportCancelled, export_adjusted_image
-        from unified_image_processor import UnifiedImageProcessor
+        from processing.unified import UnifiedImageProcessor
 
         # Best-effort: keep the source file's sidecar in sync with what's
         # being baked/copied. This must NOT block the export itself.

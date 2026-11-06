@@ -39,7 +39,7 @@ from PyQt6.QtWidgets import (
     QApplication,
 )
 
-from rawviewer_ui.composition_grid import CompositionGridGraphicsItem
+from rawviewer_ui.overlays.composition_grid import CompositionGridGraphicsItem
 from rawviewer_ui.widgets import stamp_rawviewer_export_drag
 
 
@@ -690,7 +690,7 @@ class GpuImageView(QGraphicsView):
         self._compare_overlay_item.hide()
         self._scene.addItem(self._compare_overlay_item)
 
-        from rawviewer_ui.crop_overlay import CropOverlayItem
+        from rawviewer_ui.overlays.crop_overlay import CropOverlayItem
 
         self._crop_item = CropOverlayItem()
         self._crop_item.hide()

@@ -29,7 +29,7 @@ def _ensure_src_on_path() -> None:
 def main() -> int:
     _ensure_src_on_path()
     # Import only what decode workers need — never Qt / main window.
-    from unified_image_processor import decode_raw_file  # noqa: F401
+    from processing.unified import decode_raw_file  # noqa: F401
 
     print("libraw_pool_worker ready", flush=True)
     return 0

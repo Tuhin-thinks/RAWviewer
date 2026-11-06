@@ -72,7 +72,7 @@ DEFAULT_ADJUSTMENTS: Dict[str, float] = {
     "ParametricHighlights": 0.0,
     # Off by default -- an automatic geometry change should never apply
     # silently. Baked into the decoded edit base at decode time (see
-    # unified_image_processor.decode_raw_edit_base), not a per-tick pipeline
+    # processing.unified.decode_raw_edit_base), not a per-tick pipeline
     # adjustment -- see raw_lens_correction.py.
     "LensCorrectionEnabled": 0.0,
     "DenoiseMethod": 0.0,

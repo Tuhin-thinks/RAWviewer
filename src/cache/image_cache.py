@@ -280,7 +280,7 @@ class ImageCache(QObject):
                 except Exception:
                     pass
             try:
-                from unified_image_processor import (
+                from processing.unified import (
                     prune_libraw_unsupported_paths,
                     release_edit_base_cache,
                 )
@@ -408,18 +408,18 @@ class ImageCache(QObject):
             self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
-        # The edit-base LRU lives in unified_image_processor and is the one
+        # The edit-base LRU lives in processing.unified and is the one
         # heavy cache this purge could not previously reach, so a
         # critical-pressure purge freed everything except a couple of
         # hundred MB of float32 bases.
         try:
-            from unified_image_processor import (
+            from processing.unified import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,
             )
 
-            # All three live in unified_image_processor at module scope so they
+            # All three live in processing.unified at module scope so they
             # survive the one-shot workers that build them. That is what makes
             # them useful, and also what puts them outside every cache this
             # class owns -- a critical-pressure purge used to clear everything
@@ -1173,7 +1173,7 @@ class ImageCache(QObject):
         """Folder scope changed: free heavy RAM; leave disk thumbs for warm reopen."""
         self.clear_heavy_memory_tiers(keep_path=keep_path)
         try:
-            from unified_image_processor import prune_libraw_unsupported_paths
+            from processing.unified import prune_libraw_unsupported_paths
 
             prune_libraw_unsupported_paths(clear_all=False, max_keep=512)
         except Exception:
@@ -1469,18 +1469,18 @@ class ImageCache(QObject):
             self._note_full_cache_reason(_k, "dropped by memory-pressure purge")
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
-        # The edit-base LRU lives in unified_image_processor and is the one
+        # The edit-base LRU lives in processing.unified and is the one
         # heavy cache this purge could not previously reach, so a
         # critical-pressure purge freed everything except a couple of
         # hundred MB of float32 bases.
         try:
-            from unified_image_processor import (
+            from processing.unified import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,
             )
 
-            # All three live in unified_image_processor at module scope so they
+            # All three live in processing.unified at module scope so they
             # survive the one-shot workers that build them. That is what makes
             # them useful, and also what puts them outside every cache this
             # class owns -- a critical-pressure purge used to clear everything

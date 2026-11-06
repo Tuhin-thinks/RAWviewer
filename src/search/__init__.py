@@ -3,38 +3,46 @@
 from search.types import IndexAborted, MetadataRow, ProgressCallback, SearchHit
 from search.indexer import (
     _get_shared_index_executor,
-    format_index_progress,
-    semantic_embeddings_enabled,
     face_scan_enabled,
+    format_index_progress,
     metadata_auto_index_enabled,
-    resolve_mobileclip_backend,
-)
-from search.queries import (
-    get_semantic_capture_times_for_paths,
-    get_semantic_capture_times_for_folder,
-    CustomReverseGeocoder,
+    semantic_embeddings_enabled,
 )
 from search.backends import (
     MobileCLIPCoreMLBackend,
     MobileCLIPONNXBackend,
     _ClipBPETokenizer,
+    copy_bgra_into_cvpixelbuffer,
+    copy_numpy_into_mlmultiarray,
+    mlmultiarray_to_numpy_f32,
+    resolve_mobileclip_backend,
 )
+from search.queries import (
+    CustomReverseGeocoder,
+    get_semantic_capture_times_for_folder,
+    get_semantic_capture_times_for_paths,
+)
+from search.engine import SemanticImageIndex
 
 __all__ = [
+    "CustomReverseGeocoder",
     "IndexAborted",
     "MetadataRow",
-    "ProgressCallback",
-    "SearchHit",
-    "_get_shared_index_executor",
-    "format_index_progress",
-    "semantic_embeddings_enabled",
-    "face_scan_enabled",
-    "metadata_auto_index_enabled",
-    "resolve_mobileclip_backend",
-    "get_semantic_capture_times_for_paths",
-    "get_semantic_capture_times_for_folder",
-    "CustomReverseGeocoder",
     "MobileCLIPCoreMLBackend",
     "MobileCLIPONNXBackend",
+    "ProgressCallback",
+    "SearchHit",
+    "SemanticImageIndex",
     "_ClipBPETokenizer",
+    "_get_shared_index_executor",
+    "copy_bgra_into_cvpixelbuffer",
+    "copy_numpy_into_mlmultiarray",
+    "face_scan_enabled",
+    "format_index_progress",
+    "get_semantic_capture_times_for_folder",
+    "get_semantic_capture_times_for_paths",
+    "metadata_auto_index_enabled",
+    "mlmultiarray_to_numpy_f32",
+    "resolve_mobileclip_backend",
+    "semantic_embeddings_enabled",
 ]

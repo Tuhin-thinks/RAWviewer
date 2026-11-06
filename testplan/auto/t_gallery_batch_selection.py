@@ -236,7 +236,7 @@ def main() -> int:
 
     # --- batch_ops unit checks ----------------------------------------------
     import tempfile
-    from rawviewer_app.batch_ops import (
+    from rawviewer_app.services.batch import (
         BatchFileOpSignals, BatchFileOpWorker, BatchExportWorker,
         copy_one_file, discard_one_file, unique_destination,
     )
@@ -355,7 +355,7 @@ def main() -> int:
         )
 
         # batch export with stubbed per-file export: order + continue-on-error
-        import rawviewer_app.batch_ops as bops
+        import rawviewer_app.services.batch as bops
         real_export = bops.export_one_file
         calls = []
         bops.export_one_file = lambda src, out, adj, fmt, pool, **kw: (

@@ -467,7 +467,7 @@ class RawRecoveryWorker(QRunnable):
             os.path.basename(self.file_path),
         )
         try:
-            from unified_image_processor import UnifiedImageProcessor
+            from processing.unified import UnifiedImageProcessor
 
             processor = UnifiedImageProcessor()
 

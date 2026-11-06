@@ -25,6 +25,9 @@ from core.errors import IndexAborted
 
 from search.types import MetadataRow, ProgressCallback
 
+_SHARED_INDEX_EXECUTOR: concurrent.futures.ThreadPoolExecutor | None = None
+_SHARED_EXECUTOR_LOCK = threading.Lock()
+
 
 def _get_shared_index_executor() -> concurrent.futures.ThreadPoolExecutor:
     global _SHARED_INDEX_EXECUTOR
@@ -38,10 +41,6 @@ def _get_shared_index_executor() -> concurrent.futures.ThreadPoolExecutor:
                     max_workers=max_w, thread_name_prefix="shared-index"
                 )
     return _SHARED_INDEX_EXECUTOR
-
-import numpy as np
-from PIL import Image, ImageOps
-from PIL.Image import Image as PilImage
 
 
 def _bundled_resource_path(relative_path: str) -> str:
@@ -1196,7 +1195,7 @@ def _load_index_source_image(
             pass
         if qt_decode:
             try:
-                from unified_image_processor import UnifiedImageProcessor
+                from processing.unified import UnifiedImageProcessor
 
                 thumb = UnifiedImageProcessor().process_thumbnail(
                     file_path, allow_heavy_fallback=True
@@ -1350,7 +1349,7 @@ def _load_index_source_image(
             pass
         if qt_decode:
             try:
-                from unified_image_processor import UnifiedImageProcessor
+                from processing.unified import UnifiedImageProcessor
 
                 thumb = UnifiedImageProcessor().process_thumbnail(
                     file_path, allow_heavy_fallback=True

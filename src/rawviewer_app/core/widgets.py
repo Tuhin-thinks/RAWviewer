@@ -1692,7 +1692,7 @@ class SingleImageViewOverlay(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setMouseTracking(True)
 
-        from rawviewer_ui.filmstrip_view import FilmStripBar
+        from rawviewer_ui.widgets.filmstrip import FilmStripBar
         # Host on the main window (not beside QOpenGLWidget) so the strip overlays the image.
         film_host = viewer if viewer is not None else self
         self._filmstrip_layer = QWidget(film_host)

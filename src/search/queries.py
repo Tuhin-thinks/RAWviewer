@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import threading
 import time
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -11,6 +12,25 @@ import numpy as np
 from PIL import Image
 
 from search.types import MetadataRow, ProgressCallback, SearchHit
+
+
+_semantic_sort_read_local = threading.local()
+
+
+def _semantic_sort_read_conn(db_path: str) -> sqlite3.Connection:
+    """Per-thread read connection for capture_time lookups during background folder sort."""
+    conn = getattr(_semantic_sort_read_local, "conn", None)
+    if conn is None or getattr(_semantic_sort_read_local, "db_path", None) != db_path:
+        conn = sqlite3.connect(db_path, check_same_thread=False, timeout=30.0)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=60000")
+        try:
+            conn.execute("PRAGMA query_only=ON")
+        except sqlite3.OperationalError:
+            pass
+        _semantic_sort_read_local.conn = conn
+        _semantic_sort_read_local.db_path = db_path
+    return conn
 
 
 def get_semantic_capture_times_for_paths(
@@ -25,6 +45,7 @@ def get_semantic_capture_times_for_paths(
     """
     if not paths:
         return {}
+    from search.engine import SemanticImageIndex
     if db_path is None:
         cache_dir = os.path.expanduser("~/.rawviewer_cache")
         db_path = os.path.join(cache_dir, "semantic_index.db")
@@ -73,6 +94,7 @@ def get_semantic_capture_times_for_folder(
     db_path: Optional[str] = None,
 ) -> Dict[str, str]:
     """Bulk read capture_time for all indexed files under folder_path (any thread)."""
+    from search.engine import SemanticImageIndex
     if not folder_path:
         return {}
     if db_path is None:

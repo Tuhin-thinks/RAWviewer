@@ -469,7 +469,7 @@ class ColorCalibrationDialog(QDialog):
 
     def _alert(self, title: str, body: str) -> None:
         try:
-            from rawviewer_app.widgets import CustomWarningDialog
+            from rawviewer_app.core.widgets import CustomWarningDialog
         except ModuleNotFoundError:
             from widgets import CustomWarningDialog
         CustomWarningDialog(
@@ -564,7 +564,7 @@ class ColorCalibrationDialog(QDialog):
 
     def _load_calibration_file(self, path: str) -> None:
         try:
-            from unified_image_processor import UnifiedImageProcessor
+            from processing.unified import UnifiedImageProcessor
 
             img = UnifiedImageProcessor().decode_raw_edit_base(
                 path, use_full_resolution=False

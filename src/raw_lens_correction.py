@@ -65,7 +65,7 @@ def lens_profile_key_from_exif(exif_data: Optional[dict]) -> Optional[dict]:
     EXIFExtractor.extract_exif_data() (camera_make/camera_model/focal_length/
     aperture already parsed there; lens make/model pulled from the raw
     exif_data tag dict using the same tag-name fallback chain already used
-    for search indexing, see semantic_search.py's lens lookup).
+    for search indexing, see search.py's lens lookup).
 
     Returns None if any required field is missing -- a profile lookup can't
     be attempted without all five (camera make/model, lens model, focal

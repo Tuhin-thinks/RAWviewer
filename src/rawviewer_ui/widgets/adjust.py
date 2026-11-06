@@ -158,7 +158,7 @@ _SHOW_HSL_UI = True
 _SHOW_DODGE_BURN_UI = True
 
 if _SHOW_TONE_CURVE_UI:
-    from rawviewer_ui.tone_curve_widget import ToneCurveEditorRow, ToneCurveWidget
+    from rawviewer_ui.widgets.tone_curve_widget import ToneCurveEditorRow, ToneCurveWidget
 
 _PARAMETRIC_TONE_KEYS = frozenset(
     {
@@ -3634,7 +3634,7 @@ class ImageAdjustPanelWidget(QWidget):
         from PyQt6.QtWidgets import QDialog
 
         try:
-            from rawviewer_app.widgets import CustomConfirmDialog
+            from rawviewer_app.core.widgets import CustomConfirmDialog
         except ModuleNotFoundError:
             from widgets import CustomConfirmDialog
 

@@ -404,7 +404,7 @@ def _cap_unpack() -> None:
 
 def _trim_edit_base_lru() -> None:
     try:
-        from unified_image_processor import trim_edit_base_lru
+        from processing.unified import trim_edit_base_lru
 
         trim_edit_base_lru(1)
     except Exception:

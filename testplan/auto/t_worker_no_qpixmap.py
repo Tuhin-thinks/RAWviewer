@@ -40,7 +40,7 @@ _app = QApplication.instance() or QApplication([])
 def main() -> int:
     import cv2
 
-    import unified_image_processor as uip
+    import processing.unified as uip
     from common_image_loader import load_qimage_safe
 
     with tempfile.TemporaryDirectory() as d:

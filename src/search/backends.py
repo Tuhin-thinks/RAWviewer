@@ -18,6 +18,118 @@ from core.errors import IndexAborted
 from search.types import ProgressCallback
 
 
+def _objc_pointer_addr(ptr: Any) -> Optional[int]:
+    """Best-effort address from a PyObjC / ctypes pointer-like value."""
+    if ptr is None:
+        return None
+    try:
+        addr = int(ptr)
+        return addr if addr else None
+    except (TypeError, ValueError):
+        pass
+    try:
+        import ctypes
+
+        return ctypes.cast(ptr, ctypes.c_void_p).value
+    except Exception:
+        return None
+
+
+def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
+    """Bulk-fill an MLMultiArray from a contiguous 1-D numpy buffer.
+
+    Uses ``dataPointer`` + ``memmove`` instead of per-element
+    ``setObject_atIndexedSubscript_`` (hundreds of thousands of ObjC calls for
+    a 1×3×256×256 float image tensor). Returns False so callers can fall back.
+    """
+    try:
+        import ctypes
+
+        src = np.ascontiguousarray(flat).reshape(-1)
+        nbytes = int(src.nbytes)
+        if nbytes <= 0:
+            return False
+        addr = _objc_pointer_addr(multi_array.dataPointer())
+        if not addr:
+            return False
+        ctypes.memmove(addr, src.ctypes.data, nbytes)
+        return True
+    except Exception:
+        return False
+
+
+def mlmultiarray_to_numpy_f32(multi_array: Any) -> Optional[np.ndarray]:
+    """Bulk-read MLMultiArray contents via ``dataPointer`` into float32.
+
+    Supports Float32 / Float16 / Double outputs used by MobileCLIP. Returns None
+    when the pointer path is unavailable so callers can use ``numberArray()``.
+    """
+    try:
+        import ctypes
+
+        count = int(multi_array.count())
+        if count <= 0:
+            return np.zeros((0,), dtype=np.float32)
+        dtype = int(multi_array.dataType())
+        # Apple MLMultiArrayDataType: Float16=16, Float32=65568, Double=65552
+        if dtype == 65568:
+            np_dtype: Any = np.float32
+            itemsize = 4
+        elif dtype == 65552:
+            np_dtype = np.float64
+            itemsize = 8
+        elif dtype == 16:
+            np_dtype = np.float16
+            itemsize = 2
+        else:
+            return None
+        addr = _objc_pointer_addr(multi_array.dataPointer())
+        if not addr:
+            return None
+        buf_type = ctypes.c_char * (count * itemsize)
+        raw = buf_type.from_address(addr)
+        arr = np.frombuffer(raw, dtype=np_dtype, count=count).astype(
+            np.float32, copy=True
+        )
+        return np.ascontiguousarray(arr)
+    except Exception:
+        return None
+
+
+def copy_bgra_into_cvpixelbuffer(
+    base_addr: Any,
+    bytes_per_row: int,
+    bgra: np.ndarray,
+    height: int = 256,
+    width: int = 256,
+) -> bool:
+    """Bulk-write a contiguous BGRA HxWx4 array into a locked CVPixelBuffer.
+
+    When ``bytes_per_row`` matches tightly packed rows, one ``memmove`` replaces
+    a Python per-row loop. Returns False to fall back to row copies.
+    """
+    try:
+        import ctypes
+
+        packed = int(width) * 4
+        src = np.ascontiguousarray(bgra, dtype=np.uint8)
+        if src.shape != (height, width, 4):
+            return False
+        addr = _objc_pointer_addr(base_addr)
+        if not addr:
+            return False
+        if int(bytes_per_row) == packed:
+            ctypes.memmove(addr, src.ctypes.data, height * packed)
+            return True
+        # Strided destination: still avoid tobytes() per row.
+        row_src = src.reshape(height, packed)
+        for y in range(height):
+            ctypes.memmove(addr + y * int(bytes_per_row), row_src[y].ctypes.data, packed)
+        return True
+    except Exception:
+        return False
+
+
 class MobileCLIPCoreMLBackend:
     """Optional macOS Core ML backend for MobileCLIP.
 

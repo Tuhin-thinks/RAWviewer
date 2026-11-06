@@ -319,7 +319,7 @@ class ImageLoadWorker(QRunnable):
         """獲取處理器實例（延遲初始化）"""
         if self._processor is None:
             # Lazy import to avoid circular import issues
-            from unified_image_processor import UnifiedImageProcessor
+            from processing.unified import UnifiedImageProcessor
             self._processor = UnifiedImageProcessor()
         return self._processor
     

@@ -181,7 +181,7 @@ def _infer_values_from_printable(printable: str) -> list[Any]:
 
 
 def _gps_rational_values(s: str) -> list[Any] | None:
-    """Build [deg, min, sec] as Ratio list for semantic_search._gps_to_decimal."""
+    """Build [deg, min, sec] as Ratio list for search._gps_to_decimal."""
     try:
         from exifread.utils import Ratio
     except Exception:

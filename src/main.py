@@ -1386,7 +1386,7 @@ def _lazy_import_heavy_modules(splash=None):
     
     # GPU RAW backend import is deferred until after the window is shown
     # (torch_bootstrap). Semantic search is also deferred: importing
-    # semantic_search.py pulls a large ONNX/Core ML stack that is unused on
+    # search.py pulls a large ONNX/Core ML stack that is unused on
     # Standard and unused on Plus until the user opens Search -- keep it off
     # the splash critical path (_get_semantic_index imports on first use).
 
@@ -1430,15 +1430,15 @@ def _lazy_import_heavy_modules(splash=None):
 
     _update_splash("Loading UI components...")
     from rawviewer_ui.widgets import ThumbnailLabel as _ThumbnailLabel
-    from rawviewer_ui.gallery_view import JustifiedGallery as _ExternalJustifiedGallery
-    from rawviewer_ui.location_map_overlay import ImageLocationMapWidget as _ImageLocationMapWidget
+    from rawviewer_ui.widgets.gallery import JustifiedGallery as _ExternalJustifiedGallery
+    from rawviewer_ui.overlays.location_map_overlay import ImageLocationMapWidget as _ImageLocationMapWidget
     ThumbnailLabel = _ThumbnailLabel
     ExternalJustifiedGallery = _ExternalJustifiedGallery
     ImageLocationMapWidget = _ImageLocationMapWidget
     from raw_adjustments import editing_features_enabled as _editing_features_enabled
 
     if _editing_features_enabled():
-        from rawviewer_ui.adjust_panel import ImageAdjustPanelWidget as _ImageAdjustPanelWidget
+        from rawviewer_ui.widgets.adjust import ImageAdjustPanelWidget as _ImageAdjustPanelWidget
 
         ImageAdjustPanelWidget = _ImageAdjustPanelWidget
     else:
@@ -1988,7 +1988,7 @@ from rawviewer_app.signals import (
     SemanticSearchResortSignals,
     WebpDecodeSignals,
 )
-from rawviewer_app.widgets import (
+from rawviewer_app.core.widgets import (
     CustomConfirmDialog,
     CustomTitleBar,
     CustomWarningDialog,
@@ -2301,7 +2301,7 @@ class _AdjustEditBaseWorker(QRunnable):
         has_lens_profile = False
         lens_profile_name = ""
         try:
-            from unified_image_processor import UnifiedImageProcessor
+            from processing.unified import UnifiedImageProcessor
 
             processor = UnifiedImageProcessor()
             base = processor.decode_raw_edit_base(
@@ -2359,7 +2359,7 @@ class _AdjustExportWorker(QRunnable):
         self.done_event = _threading.Event()
 
     def run(self) -> None:
-        from rawviewer_app.batch_ops import export_one_file
+        from rawviewer_app.services.batch import export_one_file
 
         def emit_progress(percent: int, stage: str = "") -> None:
             try:
@@ -2879,7 +2879,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             if draw_exif_subj and subj is not None:
                 self._draw_focus_subject_outline_on_base_painter(p, base, subj)
             if draw_grid:
-                from rawviewer_ui.composition_grid import draw_composition_grid
+                from rawviewer_ui.overlays.composition_grid import draw_composition_grid
 
                 draw_composition_grid(p, ow, oh, grid_mode)
             if draw_clipping:
@@ -4442,7 +4442,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         vm = getattr(self, "view_mode", "single")
         if vm not in ("single", "compare"):
             return False
-        from rawviewer_ui.composition_grid import grid_mode_label, next_grid_mode
+        from rawviewer_ui.overlays.composition_grid import grid_mode_label, next_grid_mode
 
         current = getattr(self, "_composition_grid_mode", "off")
         new_mode = next_grid_mode(current)
@@ -5173,7 +5173,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     # --- Burst grouping + compare (H) -----------------------------------------
     def _init_compare_view(self, main_layout) -> None:
         from PyQt6.QtWidgets import QHBoxLayout
-        from rawviewer_ui.gpu_image_view import GpuImageView
+        from rawviewer_ui.widgets.gpu import GpuImageView
 
         container = QWidget()
         container.setObjectName("rawviewer_compare_container")
@@ -7567,7 +7567,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             self._compare_upgrade_view_image(file_path, thumbnail)
             return
 
-        # In gallery mode, thumbnail rendering is handled by rawviewer_ui.gallery_view.
+        # In gallery mode, thumbnail rendering is handled by rawviewer_ui.widgets.gallery.
         # Ignore single-view manager callbacks to prevent cross-mode repaint churn.
         if getattr(self, "_suppress_single_manager_callbacks", False):
             return
@@ -7664,7 +7664,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 self, "_preview_upgrade_attempted_paths", set()
             )
             try:
-                from unified_image_processor import UnifiedImageProcessor
+                from processing.unified import UnifiedImageProcessor
 
                 up = UnifiedImageProcessor()
                 upgraded = up.ensure_display_tier_preview(file_path, cast(Any, thumbnail))
@@ -8532,7 +8532,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # cannot demosaic this file's RAW compression) with an embedded-JPEG
             # fallback already in flight for the same "full" request -- that
             # fallback routinely lands ~0.5-1s later and displays the image
-            # fine (see unified_image_processor's preview-tier fallback chain).
+            # fine (see processing.unified's preview-tier fallback chain).
             # Showing the modal immediately produced a spurious "unsupported or
             # corrupt" dialog for files that then rendered correctly moments
             # later. Give the fallback a grace period and re-check before
@@ -9183,7 +9183,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self.gpu_view = None
         if _env_true("RAWVIEWER_GPU_VIEW", default=True):
             try:
-                from rawviewer_ui.gpu_image_view import GpuImageView
+                from rawviewer_ui.widgets.gpu import GpuImageView
                 self.gpu_view = GpuImageView()
                 # Reuse the legacy instruction screen text as the empty-state placeholder.
                 self.gpu_view.set_placeholder_text(self.image_label.text())
@@ -10118,7 +10118,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     ) -> bool:
         """Return True when the user chose Not Now (or dismissed), False after Open Download Page."""
         from release_update import RELEASE_PAGE_URL
-        from rawviewer_ui.release_update_dialog import ReleaseUpdateDialog
+        from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
 
         url = (release_url or RELEASE_PAGE_URL).strip() or RELEASE_PAGE_URL
         dialog = ReleaseUpdateDialog(
@@ -10168,7 +10168,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         global SemanticImageIndex
         if SemanticImageIndex is None:
             try:
-                from semantic_search import SemanticImageIndex as _SemanticImageIndex
+                from search import SemanticImageIndex as _SemanticImageIndex
 
                 SemanticImageIndex = _SemanticImageIndex
             except Exception as exc:
@@ -10433,7 +10433,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # Avoid a 1k+ path DB scan on the UI thread during gallery first paint.
             return True, False
         try:
-            from semantic_search import semantic_embeddings_enabled
+            from search import semantic_embeddings_enabled
 
             index = self._get_semantic_index()
             if semantic_embeddings_enabled() and not index.semantic_backend_available():
@@ -10453,7 +10453,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     def _gallery_search_idle_tooltip(self) -> str:
         """Default search-field tooltip when no indexing progress is in the placeholder."""
         try:
-            from semantic_search import semantic_embeddings_enabled
+            from search import semantic_embeddings_enabled
 
             if semantic_embeddings_enabled():
                 return ""
@@ -10555,7 +10555,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             ):
                 return bool(cache.get("ready", False))
 
-        from semantic_search import face_scan_enabled, semantic_embeddings_enabled
+        from search import face_scan_enabled, semantic_embeddings_enabled
 
         ready = False
         if not semantic_embeddings_enabled():
@@ -10593,7 +10593,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self, corpus_files, *, face_pending: int | None = None
     ) -> None:
         """Start face scan after semantic pass -- search field stays locked until done."""
-        from semantic_search import face_scan_enabled
+        from search import face_scan_enabled
 
         if not face_scan_enabled():
             self._finish_gallery_search_unlock(corpus_files)
@@ -10642,7 +10642,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self._gallery_search_status_full = ""
         inp = getattr(self, "gallery_search_input", None)
         if inp is not None:
-            from semantic_search import semantic_embeddings_enabled
+            from search import semantic_embeddings_enabled
 
             if semantic_embeddings_enabled():
                 inp.setPlaceholderText("Search gallery")
@@ -11284,7 +11284,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
         if needs_semantic:
             user_semantic = self._user_wants_semantic_embeddings_now()
-            from semantic_search import semantic_embeddings_enabled
+            from search import semantic_embeddings_enabled
 
             self._start_semantic_index_build_background(
                 corpus_files,
@@ -11585,7 +11585,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
     def _format_index_progress(self, stage: str, done: int, total: int) -> str:
         try:
-            from semantic_search import format_index_progress
+            from search import format_index_progress
 
             return format_index_progress(stage, done, total)
         except Exception:
@@ -11812,7 +11812,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         import time
 
         logger = logging.getLogger(__name__)
-        from semantic_search import face_scan_enabled
+        from search import face_scan_enabled
         if not face_scan_enabled():
             logger.info("[INDEX][FACE] Skip start: face scan is disabled")
             self._face_indexing_in_progress = False
@@ -12026,7 +12026,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         self.status_bar.showMessage(f"Semantic indexing failed: {error}", 5000)
 
     def _mobileclip_models_missing(self) -> bool:
-        from semantic_search import semantic_embeddings_enabled
+        from search import semantic_embeddings_enabled
 
         if not semantic_embeddings_enabled():
             return False
@@ -12048,7 +12048,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if getattr(self, "_mobileclip_download_dismissed_this_session", False):
             return False
 
-        from rawviewer_ui.mobileclip_download_dialog import MobileCLIPDownloadDialog
+        from rawviewer_ui.dialogs.mobileclip_download_dialog import MobileCLIPDownloadDialog
 
         dialog = MobileCLIPDownloadDialog(self)
         self._mobileclip_download_dialog = dialog
@@ -12220,7 +12220,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             bool(getattr(self, "_semantic_index_prep_in_progress", False)),
         )
 
-        from semantic_search import semantic_embeddings_enabled
+        from search import semantic_embeddings_enabled
 
         if not getattr(self, "_defer_semantic_after_metadata", False):
             if self._is_gallery_semantic_search_ready(corpus_files):
@@ -12342,7 +12342,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if getattr(self, "_defer_semantic_after_metadata", False):
             self._defer_semantic_after_metadata = False
 
-        from semantic_search import semantic_embeddings_enabled
+        from search import semantic_embeddings_enabled
 
         if not semantic_embeddings_enabled():
             self._notify_semantic_embeddings_disabled()
@@ -12618,7 +12618,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                         top_k=max(1, len(base_files)),
                         sort_newest=sort_newest,
                     )
-                    from semantic_search import semantic_embeddings_enabled
+                    from search import semantic_embeddings_enabled
 
                     used_semantic_backend = False
                     status_message = ""
@@ -13247,7 +13247,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             
         if needs_semantic:
             if self._user_wants_semantic_embeddings_now():
-                from semantic_search import semantic_embeddings_enabled
+                from search import semantic_embeddings_enabled
 
                 self._start_semantic_index_build_background(
                     corpus_files,
@@ -14811,7 +14811,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # Hide it initially - it will be shown by _show_gallery_view() when needed
         gallery_container.hide()
 
-        # NOTE: rawviewer_ui.gallery_view.JustifiedGallery already wires scrollbar events
+        # NOTE: rawviewer_ui.widgets.gallery.JustifiedGallery already wires scrollbar events
         # internally (valueChanged + sliderPressed/Released). Avoid duplicate connections
         # here; they can trigger redundant scheduling and visible scroll lag.
 
@@ -16234,7 +16234,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     #     """Create a single gallery item with thumbnail"""
     #     pass  # Gallery functionality disabled
         from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
-        from rawviewer_app.widgets import BottomRatingWidget
+        from rawviewer_app.core.widgets import BottomRatingWidget
         from PyQt6.QtCore import Qt
         
         item = QWidget()
@@ -17338,7 +17338,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             return
         self._stop_slideshow()
 
-        from rawviewer_app.widgets import BatchExportDialog, _norm_dir_key
+        from rawviewer_app.core.widgets import BatchExportDialog, _norm_dir_key
 
         source_dir_keys = {
             _norm_dir_key(os.path.dirname(os.path.abspath(p))) for p in paths
@@ -17396,10 +17396,10 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         kind 'discard'   → BatchFileOpWorker(mode='discard') (used by Phase 3)
         kind 'edited'    → BatchExportWorker
         """
-        from rawviewer_app.batch_ops import (
+        from rawviewer_app.services.batch import (
             BatchExportWorker, BatchFileOpSignals, BatchFileOpWorker,
         )
-        from rawviewer_app.widgets import TaskProgressDialog
+        from rawviewer_app.core.widgets import TaskProgressDialog
 
         self._batch_op_worker = None
         signals = BatchFileOpSignals()
@@ -21388,7 +21388,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if not use_libraw_consistent_preview_first(path):
             return False
         try:
-            from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
 
             if os.path.normcase(os.path.abspath(path)) in _LIBRAW_UNSUPPORTED_PATHS:
                 return False
@@ -21558,7 +21558,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         when the GPU view is missing or the buffer is not contiguous RGB888.
         """
         try:
-            from rawviewer_ui.gpu_image_view import gpu_gl_tex_enabled
+            from rawviewer_ui.widgets.gpu import gpu_gl_tex_enabled
 
             if not gpu_gl_tex_enabled():
                 return False
@@ -21636,7 +21636,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         """Phase 2c: CUDA DeviceRgb → GL texture (no D2H for display)."""
         try:
             from gpu_gl_bridge import DeviceRgb, cuda_gl_enabled
-            from rawviewer_ui.gpu_image_view import gpu_cuda_gl_enabled
+            from rawviewer_ui.widgets.gpu import gpu_cuda_gl_enabled
 
             if not (cuda_gl_enabled() or gpu_cuda_gl_enabled()):
                 return False
@@ -22439,7 +22439,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                         except Exception:
                             pass
                 try:
-                    from unified_image_processor import release_edit_base_cache
+                    from processing.unified import release_edit_base_cache
 
                     release_edit_base_cache()
                 except Exception:
@@ -22492,7 +22492,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
     def _adjust_panel_dock_side(self) -> str:
         """Persisted Adjust panel edge: ``left`` or ``right`` (default)."""
         try:
-            from rawviewer_ui.adjust_panel import (
+            from rawviewer_ui.widgets.adjust import (
                 ADJUST_DOCK_DEFAULT,
                 ADJUST_DOCK_SETTINGS_KEY,
                 normalize_adjust_dock,
@@ -22513,7 +22513,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if panel is None or splitter is None or container is None:
             return
         try:
-            from rawviewer_ui.adjust_panel import apply_adjust_splitter_dock
+            from rawviewer_ui.widgets.adjust import apply_adjust_splitter_dock
         except Exception:
             return
         applied = apply_adjust_splitter_dock(splitter, container, panel, side)
@@ -22524,7 +22524,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
     def _on_adjust_panel_dock_requested(self, side: str) -> None:
         try:
-            from rawviewer_ui.adjust_panel import (
+            from rawviewer_ui.widgets.adjust import (
                 ADJUST_DOCK_SETTINGS_KEY,
                 normalize_adjust_dock,
             )
@@ -22604,7 +22604,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         if not file_path:
             return False
         try:
-            from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
 
             return os.path.normcase(os.path.abspath(file_path)) in _LIBRAW_UNSUPPORTED_PATHS
         except Exception:
@@ -22612,12 +22612,12 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
     def _mark_path_libraw_unsupported(self, file_path: str) -> None:
         try:
-            from unified_image_processor import _mark_libraw_unsupported
+            from processing.unified import _mark_libraw_unsupported
 
             _mark_libraw_unsupported(os.path.normcase(os.path.abspath(file_path)))
         except Exception:
             try:
-                from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
+                from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
 
                 _LIBRAW_UNSUPPORTED_PATHS.add(os.path.normcase(os.path.abspath(file_path)))
             except Exception:
@@ -22957,7 +22957,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             ):
                 # Cached base: immediately fetch and display lens status
                 try:
-                    from unified_image_processor import UnifiedImageProcessor
+                    from processing.unified import UnifiedImageProcessor
                     processor = UnifiedImageProcessor()
                     has_profile = processor.lens_profile_available(path)
                     profile_name = ""
@@ -23397,7 +23397,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
             # Mark it so browse skips a doomed LibRaw retry, then move on
             # instead of leaving the editor stuck.
             try:
-                from unified_image_processor import _LIBRAW_UNSUPPORTED_PATHS
+                from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
 
                 _LIBRAW_UNSUPPORTED_PATHS.add(os.path.normcase(os.path.abspath(file_path)))
             except Exception:
@@ -24055,8 +24055,8 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         source_file = None
 
         try:
-            from unified_image_processor import UnifiedImageProcessor
-            from rawviewer_ui.color_calibration_dialog import ColorCalibrationDialog
+            from processing.unified import UnifiedImageProcessor
+            from rawviewer_ui.dialogs.color_calibration_dialog import ColorCalibrationDialog
             from PyQt6.QtWidgets import QDialog
 
             if target_path and os.path.isfile(target_path):
@@ -25941,7 +25941,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         # matching CustomConfirmDialog (stock QProgressDialog was OS-native
         # title bar + an indeterminate marquee with no real percentage).
         try:
-            from rawviewer_app.widgets import TaskProgressDialog
+            from rawviewer_app.core.widgets import TaskProgressDialog
 
             dlg = TaskProgressDialog(
                 self, title="Export", message=f"Exporting {os.path.basename(output_path)}…"
@@ -29039,7 +29039,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         Exception, distinct from the reverted behavior above: when the
         embedded-JPEG workflow is on (use_full_embedded_raw_preview), the
         "full" stage's own first move is to return the camera's embedded
-        JPEG if it covers sensor resolution (~38ms, unified_image_processor
+        JPEG if it covers sensor resolution (~38ms, processing.unified
         _try_full_embedded_raw_preview) -- only falling through to a LibRaw
         decode for images where that preview doesn't cover sensor res. That
         makes eager "full" cheap in the common case, unlike the LibRaw-first
@@ -29644,7 +29644,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 )
             except Exception:
                 pass
-        from semantic_search import metadata_auto_index_enabled
+        from search import metadata_auto_index_enabled
         if metadata_auto_index_enabled():
             if not self._semantic_indexing_in_progress and not getattr(self, "_semantic_index_prep_in_progress", False):
                 if not getattr(self, "_metadata_index_run_done", False):
@@ -29653,7 +29653,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
 
     def _schedule_silent_metadata_index(self) -> None:
         """Defer silent metadata indexing after folder load (no search UI)."""
-        from semantic_search import metadata_auto_index_enabled
+        from search import metadata_auto_index_enabled
 
         if not metadata_auto_index_enabled():
             return
@@ -30990,7 +30990,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
         try:
             from PyQt6.QtWidgets import QApplication
 
-            from rawviewer_ui.adjust_panel import AdjustSlider
+            from rawviewer_ui.widgets.adjust import AdjustSlider
 
             w = QApplication.focusWidget()
             if isinstance(w, AdjustSlider) and w.isVisible():
@@ -31187,7 +31187,7 @@ class RAWImageViewer(SessionMixin, QMainWindow):
                 elif key == Qt.Key.Key_V:
                     panel = getattr(self, "single_image_adjust_panel", None)
                     if panel is not None:
-                        from rawviewer_ui.adjust_panel import _edit_settings_clipboard
+                        from rawviewer_ui.widgets.adjust import _edit_settings_clipboard
                         if _edit_settings_clipboard() is not None:
                             panel._on_paste_settings_clicked()
                             if hasattr(self, "status_bar") and self.status_bar:
