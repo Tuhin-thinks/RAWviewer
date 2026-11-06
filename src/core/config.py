@@ -75,8 +75,17 @@ def safe_print(*args: Any, **kwargs: Any) -> None:
     if sys.stdout is not None:
         try:
             print(*args, **kwargs)
-        except (OSError, AttributeError):
-            pass
+        except (OSError, AttributeError, UnicodeEncodeError):
+            # Retry with error-character substitution (e.g. ❌ on cp1252)
+            try:
+                args2 = tuple(
+                    a.encode(sys.stdout.encoding, "replace").decode(sys.stdout.encoding)
+                    if isinstance(a, str) else a
+                    for a in args
+                )
+                print(*args2, **kwargs)
+            except (OSError, AttributeError, UnicodeEncodeError):
+                pass
 
 
 def safe_print_err(*args: Any, **kwargs: Any) -> None:
