@@ -878,7 +878,7 @@ class MobileCLIPONNXBackend:
         try:
             from huggingface_hub import hf_hub_download as _hf_hub_download
         except ImportError:
-            raise RuntimeError("MobileCLIP download requires 'huggingface_hub' (pip install huggingface_hub)")
+            raise RuntimeError("MobileCLIP download requires 'huggingface_hub' (pip install huggingface_hub)") from None
         hf_hub_download = cast(Any, _hf_hub_download)
 
         files_to_download = [

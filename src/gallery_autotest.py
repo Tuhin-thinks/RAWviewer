@@ -292,7 +292,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             if dump_path:
                 import faulthandler
 
-                state["stack_dump_fh"] = open(dump_path, "w")
+                state["stack_dump_fh"] = open(dump_path, "w")  # noqa: SIM115  # Intentional: must stay open for faulthandler
                 faulthandler.dump_traceback_later(
                     0.4, repeat=True, file=state["stack_dump_fh"]
                 )

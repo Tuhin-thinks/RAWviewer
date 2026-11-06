@@ -1,6 +1,7 @@
 """gallery mixin, part 3 of 5 (8 methods, 881 lines)."""
 from __future__ import annotations
 
+import contextlib
 import sys
 
 from PyQt6.QtCore import QSize, Qt
@@ -85,12 +86,7 @@ class GalleryPart3:
                     try:
                         val = tags['Image Orientation'].values[0]
                         # Handle both integer and string orientation values
-                        if isinstance(val, int):
-                            orientation = val
-                        else:
-                            # Map common string orientations to numbers if necessary
-                            # Most exifread results for 'Orientation' are already integers in values[0]
-                            orientation = int(str(val))
+                        orientation = val if isinstance(val, int) else int(str(val))
                     except Exception:
                         pass
 
@@ -706,10 +702,8 @@ class GalleryPart3:
                     # Store in gallery cache
                     self.gallery_pixmaps[file_path] = pixmap
                     # Also cache in global image cache for smooth switching between views
-                    try:
+                    with contextlib.suppress(Exception):
                         self.image_cache.put_pixmap(file_path, pixmap)
-                    except Exception:
-                        pass  # Cache might be full, continue anyway
                     # Update aspect cache
                     aspect = pixmap.width() / pixmap.height() if pixmap.height() > 0 else 4.0 / 3.0
                     self.gallery_aspect_cache[file_path] = aspect

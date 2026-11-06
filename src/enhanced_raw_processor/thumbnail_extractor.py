@@ -75,7 +75,7 @@ class ThumbnailExtractor(QObject):
                 thumb = self._extract_from_raw_obj(raw_object, file_path, max_size)
             else:
                 yield_if_current_task_active()
-                with _rawpy_global_lock:
+                with _rawpy_global_lock:  # noqa: SIM117  # Intentional: nested with to avoid deadlock (see comment above)
                     # NEVER call yield_if_current_task_active() while holding
                     # _rawpy_global_lock: it sleep-loops until no CURRENT task is
                     # active, so a background (non-CURRENT) worker would sleep here

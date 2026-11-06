@@ -745,7 +745,6 @@ class DisplayPart5:
 
         # Handle pending zoom from double-click on thumbnail
         # Check actual pixmap size to be extra safe
-        max(pixmap.width(), pixmap.height()) < 3000
         pending_thumb_size = getattr(self, "_pending_zoom_thumbnail_size", None)
         old_max = max(pending_thumb_size.width(), pending_thumb_size.height()) if pending_thumb_size is not None else 0
         new_max = max(pixmap.width(), pixmap.height())

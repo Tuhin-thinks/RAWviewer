@@ -131,7 +131,7 @@ def _redirect_stdio_to_file_if_needed():
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         path = os.path.join(log_dir, f"rawviewer_console_{ts}.log")
-        f = open(path, "a", encoding="utf-8", buffering=1)  # line-buffered
+        f = open(path, "a", encoding="utf-8", buffering=1)  # noqa: SIM115  # Intentional: reassigned as sys.stdout
         if sys.stdout is None:
             sys.stdout = f
         if sys.stderr is None:
@@ -181,7 +181,7 @@ def _enable_fatal_crash_dump_if_needed():
             dump_path = os.path.join(dump_dir, f"fatal_dump_{ts}.log")
             mode = "a"
 
-        f = open(dump_path, mode, encoding="utf-8", buffering=1)
+        f = open(dump_path, mode, encoding="utf-8", buffering=1)  # noqa: SIM115  # Intentional: for faulthandler
         # enable() already installs handlers for SIGSEGV/SIGFPE/SIGABRT/SIGBUS/SIGILL;
         # register()-ing SIGABRT again raises RuntimeError and was silently swallowed
         # by the except below, so SIGUSR1 registration below never actually ran.

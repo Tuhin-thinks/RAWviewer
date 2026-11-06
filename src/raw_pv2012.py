@@ -263,16 +263,7 @@ def _apply_highlights_shadows(y: np.ndarray, highlights: float, shadows: float) 
     out = y.copy()
     if abs(sh) > 1e-6:
         sw = _region_weight_shadows(out)
-        if sh > 0:
-            # Coefficient capped at 0.15 (not the more intuitive-looking 0.42): the
-            # shadow-lift weight's slope reaches ~5.85 at its steepest (y~0.11), so
-            # any coefficient above ~0.17 makes d(out)/dy go negative there --
-            # a real, verified tone-curve inversion (banding) that showed up at
-            # Shadows>=~45 with the old 0.42. 0.15 keeps a full-range monotonic
-            # curve at Shadows=100 with margin to spare.
-            out = out + sw * sh * (1.0 - out) * 0.15
-        else:
-            out = out + sw * sh * out * 0.38
+        out = out + sw * sh * (1.0 - out) * 0.15 if sh > 0 else out + sw * sh * out * 0.38
     if abs(hi) > 1e-6:
         if hi < 0:
             # Highlight recovery as a blend between identity and a fixed

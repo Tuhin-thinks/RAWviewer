@@ -684,12 +684,7 @@ class GalleryPart1:
                         pending_resolved and pending_resolved == resolved
                     )
                 if intersects or pending_match:
-                    if intersects:
-                        offset_px = int(rect.top() - scroll_y)
-                    else:
-                        # Entry scroll not finished yet — keep the target near
-                        # the top of the viewport after rebuild.
-                        offset_px = 12
+                    offset_px = int(rect.top() - scroll_y) if intersects else 12
                     return {
                         "file_path": item.get("file_path") or preferred,
                         "offset_px": offset_px,

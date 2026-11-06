@@ -65,8 +65,8 @@ class BatchPart1:
             writable_check=self._directory_looks_writable,
         )
         dlg.pick_directory = (
-            lambda title="Choose Destination Folder", start=dlg.destination_edit.text():
-            self._pick_directory_dialog(title, start)
+            lambda title="Choose Destination Folder", start=None:  # noqa: B008
+            self._pick_directory_dialog(title, start or dlg.destination_edit.text())
         )
         dlg.exec()
         if not dlg.result_value or not dlg.result_config:

@@ -1,5 +1,3 @@
-from typing import Any
-
 """metadata mixin, part 2 of 2 (30 methods, 708 lines)."""
 from __future__ import annotations
 
@@ -8,6 +6,7 @@ import os
 import platform
 import sys
 import threading
+from typing import Any
 
 from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtWidgets import QMessageBox

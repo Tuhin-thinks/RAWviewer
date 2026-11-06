@@ -352,11 +352,9 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                     }
                     # Add performance optimizations if available
-                    try:
+                    with contextlib.suppress(AttributeError, TypeError):
                         # Use fastest demosaicing algorithm for speed (if supported)
                         postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                    except (AttributeError, TypeError):
-                        pass  # Parameter not available in this rawpy version
                     rgb_image = raw.postprocess(**postprocess_params)
                     # Check again after postprocess
                     if self._should_stop:
@@ -438,11 +436,9 @@ class RAWProcessorPart1(QThread):
                         'user_flip': 0
                     }
                     # Add performance optimizations if available
-                    try:
+                    with contextlib.suppress(AttributeError, TypeError):
                         # Use fastest demosaicing algorithm for speed (if supported)
                         postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
-                    except (AttributeError, TypeError):
-                        pass  # Parameter not available in this rawpy version
                     rgb_image = raw.postprocess(**postprocess_params)
                     if self._should_stop:
                         return None

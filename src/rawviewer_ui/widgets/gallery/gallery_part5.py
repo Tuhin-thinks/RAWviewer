@@ -109,7 +109,7 @@ class GalleryPart5:
             logger.debug(
                 "[MODESWITCH] gallery.load_visible_images visible=%d cached_tasks=%d",
                 len(visible_indices_items),
-                block_visible_indices := len(self._active_tasks),
+                len(self._active_tasks),
             )
         visible_indices_set = {idx for idx, item in visible_indices_items}
 

@@ -758,11 +758,7 @@ class GalleryPart4:
         # Don't show thumbnail if we're restoring zoom state to 100%
         if getattr(self, "_restore_zoom_center", None) is not None:
             return False
-        if getattr(self, "_restore_zoom_level", None) is not None:
-            return False
-
-        # Show thumbnail in fit-to-window mode for quick overview
-        return True
+        return getattr(self, "_restore_zoom_level", None) is None
 
     def _gallery_slideshow_scope(self) -> list[str]:
         if getattr(self, "_gallery_bookmark_filter_active", False):

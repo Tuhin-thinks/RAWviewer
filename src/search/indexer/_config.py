@@ -6,7 +6,6 @@ import shutil
 import sqlite3
 import threading
 from collections.abc import Callable
-from typing import Optional
 
 try:
     import pycountry
@@ -22,7 +21,7 @@ except Exception:
 
 from core.errors import IndexAborted, RAWViewerError  # noqa: F401
 
-ProgressCallback = Optional[Callable[[int, int, str], None]]
+ProgressCallback = Callable[[int, int, str], None] | None
 
 type MetadataRow = sqlite3.Row | dict[str, object]
 

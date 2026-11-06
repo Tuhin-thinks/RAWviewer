@@ -306,9 +306,6 @@ def _run_subprocess_with_retry(cmd, cwd, log, label, cancelled, progress_hook=No
     return last_code
 
 
-FILE_ASSOC_PROGID = "RAWviewer.Image"
-
-
 def _file_association_extensions() -> list[str]:
     try:
         src_dir = os.path.join(BUNDLE_DIR, "src")

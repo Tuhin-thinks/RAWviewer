@@ -1,7 +1,7 @@
-from collections.abc import Callable
-
 """Adjust mixin part 4 of 5 for ImageAdjustPanelWidget."""
 from __future__ import annotations
+
+from collections.abc import Callable
 
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
@@ -316,11 +316,7 @@ class AdjustPart4:
         if slider is None or not wheel_delta:
             return
         dy = int(wheel_delta)
-        if abs(dy) >= 120:
-            amount = (dy // 120) * 8
-        else:
-            # Trackpad pixel deltas: ~1 size unit per 4px of scroll.
-            amount = int(round(dy / 4.0))
+        amount = (dy // 120) * 8 if abs(dy) >= 120 else int(round(dy / 4.0))
         if amount == 0:
             amount = 1 if dy > 0 else -1
         slider.setValue(
