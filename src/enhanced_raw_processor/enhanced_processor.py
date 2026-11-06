@@ -4,16 +4,18 @@ Enhanced RAW processor with progressive loading and caching.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any
+from typing import Any
 
 import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from image_cache import get_image_cache
 from raw_file_extensions import RAW_FILE_EXTENSIONS
-from .thumbnail_extractor import ThumbnailExtractor
+
 from .exif_extractor import EXIFExtractor
 from .optimized_processor import OptimizedRAWProcessor
+from .thumbnail_extractor import ThumbnailExtractor
+
 
 class EnhancedRAWProcessor(QThread):
     """Enhanced RAW processor with progressive loading and caching."""
@@ -115,14 +117,14 @@ class EnhancedRAWProcessor(QThread):
             # No thumbnail available, will wait for full processing
             pass
 
-    def _process_full_image(self, exif_data: Dict[str, Any]):
+    def _process_full_image(self, exif_data: dict[str, Any]):
         """Process full resolution image."""
         if self.is_raw_file:
             self._process_raw_image(exif_data)
         else:
             self._process_regular_image(exif_data)
 
-    def _process_raw_image(self, exif_data: Dict[str, Any]):
+    def _process_raw_image(self, exif_data: dict[str, Any]):
         """Process RAW image file."""
         self.processing_progress.emit("Processing RAW image...")
 
@@ -198,7 +200,7 @@ class EnhancedRAWProcessor(QThread):
                 self.error_occurred.emit(
                     f"Error processing RAW file:\n{error_msg}")
 
-    def _process_regular_image(self, exif_data: Dict[str, Any]):
+    def _process_regular_image(self, exif_data: dict[str, Any]):
         """Process regular image file (JPEG, TIFF, etc.)."""
         self.processing_progress.emit("Loading image...")
 
@@ -206,7 +208,7 @@ class EnhancedRAWProcessor(QThread):
         # This is more efficient for regular image formats
         self.image_processed.emit(None)
 
-    def _apply_orientation_correction(self, image_array: np.ndarray, orientation: int, exif_data: Dict[str, Any] = None) -> np.ndarray:
+    def _apply_orientation_correction(self, image_array: np.ndarray, orientation: int, exif_data: dict[str, Any] = None) -> np.ndarray:
         """Apply orientation correction to image array."""
         if image_array is None:
             return None
@@ -219,7 +221,7 @@ class EnhancedRAWProcessor(QThread):
             image_array, orientation, exif_data
         )
 
-    def _is_camera_pre_rotated(self, exif_data: Dict[str, Any] = None) -> bool:
+    def _is_camera_pre_rotated(self, exif_data: dict[str, Any] = None) -> bool:
         """Check if camera stores data pre-rotated."""
         if not exif_data or not exif_data.get('camera_make'):
             return False

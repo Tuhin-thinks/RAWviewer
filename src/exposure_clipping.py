@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
-
 
 DEFAULT_HI_THRESHOLD = 252
 DEFAULT_LO_THRESHOLD = 3
@@ -116,7 +113,7 @@ def clipping_overlay_pixmap(
     *,
     hi_threshold: int = DEFAULT_HI_THRESHOLD,
     lo_threshold: int = DEFAULT_LO_THRESHOLD,
-) -> Optional[QPixmap]:
+) -> QPixmap | None:
     rgba = clipping_overlay_rgba(
         rgb,
         hi_threshold=hi_threshold,
@@ -127,7 +124,7 @@ def clipping_overlay_pixmap(
     return rgba_array_to_qpixmap(rgba)
 
 
-def rgb_array_from_pixmap(pixmap: QPixmap, max_side: int = 0) -> Optional[np.ndarray]:
+def rgb_array_from_pixmap(pixmap: QPixmap, max_side: int = 0) -> np.ndarray | None:
     if pixmap is None or pixmap.isNull():
         return None
     img = pixmap.toImage().convertToFormat(QImage.Format.Format_RGB888)

@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
-import sys
 # pyright: reportOptionalMemberAccess=false
 import os
+import sys
+
 # Safety net only: the REAL fix is scripts/libraw/build_libraw_openmp.sh retargeting
 # the custom LibRaw to torch's libomp so exactly one OpenMP runtime loads
 # (two runtimes = OMP Error #15 abort, or with this flag, possible crashes /
@@ -13,125 +13,68 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 # imports), safe this early -- needed before PyQt6 import below because the
 # fallback splash-screen drawing code runs at module scope, ahead of any
 # other local import in this file.
-import theme
 
 # GPU demosaic backends (CuPy / optional torch) are deferred until after the
 # window is shown -- see torch_bootstrap.import_gpu_backend_on_main_thread().
 # Background decode threads wait for that instead of importing on their own.
-import math
-import platform
-import ctypes
-import time
 import logging
+import platform
 import traceback
-import threading
-import weakref
-from datetime import datetime
-from typing import List, Optional, Tuple, Any, cast, Set
-import threading
+from typing import Any
 
 from PIL import Image
-from cache.memory import FullImageCache
+
 # Finite decompression-bomb cap (~200 MP). None disables Pillow's check.
 Image.MAX_IMAGE_PIXELS = 200_000_000
 
 
-from startup_splash import make_splash_pixmap as _make_splash_pixmap
-from startup_splash import splash_show_status
+from core.config import (
+    _env_int,
+    _env_true,
+    _norm_path,
+    safe_print,
+    safe_print_err,
+)
+from rawviewer_app.window import lazy, state
 from rawviewer_app.window.bootstrap import (
     _IS_GUI_MAIN_PROCESS,
-    _consume_file_log_argv,
-    _debug_log_marker_path,
     _enable_fatal_crash_dump_if_needed,
-    _file_logging_requested,
-    _is_multiprocessing_worker_process,
     _redirect_stdio_to_file_if_needed,
-    _runtime_log_dir,
+)
+from rawviewer_app.window.lazy import (
+    _lazy_import_heavy_modules,
+    image_covers_sensor_resolution,
 )
 from rawviewer_app.window.logging_setup import (
-    FocusGallerySwitchFilter,
-    NoisyInfoFilter,
-    global_exception_handler,
     setup_logging,
 )
 from rawviewer_app.window.macos import (
-    _applescript_escape,
     _disable_macos_app_nap,
     _run_applescript,
 )
 from rawviewer_app.window.paths import (
-    _SUBFOLDER_FALLBACK_MAX_DIRS,
     _SUBFOLDER_FALLBACK_SKIP,
-    _branded_icon_resource_path,
     _is_in_folder_scope,
-    _require_str_path,
     resource_path,
 )
 from rawviewer_app.window.platform_win import (
-    _WINDOWS_APP_USER_MODEL_ID,
     _apply_windows_native_window_icon,
     _is_windows_installed_app,
     _set_windows_app_user_model_id,
 )
 from rawviewer_app.window.qt_helpers import (
-    _get_bg_thread_pool,
     _qt_app,
-    _qta_icon,
-    _qt_scroll_bar,
 )
+from rawviewer_app.window.raw_image_viewer import RAWImageViewer
 from rawviewer_app.window.splash import (
     _dismiss_startup_splash,
-    _force_hide_startup_splash,
     _load_branded_qicon,
     _schedule_startup_splash_dismiss,
     _should_show_startup_splash,
     close_native_splash,
 )
-from rawviewer_app.window.windows_shell import (
-    _filmstrip_ui_env_int,
-    _open_windows_open_with_dialog,
-    _share_windows_clipboard_cf_hdrop,
-    _share_windows_clipboard_cf_hdrop_paths,
-    _share_windows_clipboard_file_via_powershell,
-    _share_windows_via_helper,
-    _share_windows_via_winrt,
-    _windows_shell_verb_suggests_share,
-)
-from rawviewer_app.window import lazy, state
-from rawviewer_app.window.lazy import (
-    ExternalJustifiedGallery,
-    ImageAdjustPanelWidget,
-    ImageHistogramWidget,
-    ImageLocationMapWidget,
-    PreloadManager,
-    Priority,
-    ThumbnailLabel,
-    check_memory_cache_for_image,
-    exif_orientation_after_cw90,
-    get_image_cache,
-    get_image_load_manager,
-    image_covers_sensor_resolution,
-    is_raw_file,
-    metadata_index_idle_delay_ms,
-    np,
-    process_file_from_path,
-    qta,
-    rawpy,
-    use_libraw_consistent_preview_first,
-    use_progressive_raw_loading,
-)
-from rawviewer_app.window.lazy import _lazy_import_heavy_modules
-from rawviewer_app.window.raw_image_viewer import RAWImageViewer
-from core.config import (
-    _env_int,
-    _env_true,
-    _find_file_index_in_list,
-    _is_primary_process,
-    _norm_path,
-    _share_logger,
-    safe_print,
-    safe_print_err,
-)
+from startup_splash import make_splash_pixmap as _make_splash_pixmap
+from startup_splash import splash_show_status
 
 try:
     from rawviewer_app.env import configure_gui_process
@@ -160,9 +103,8 @@ if _IS_GUI_MAIN_PROCESS:
     except Exception:
         pass
     try:
+        from PyQt6.QtCore import QEvent, QLoggingCategory, Qt, QTimer
         from PyQt6.QtWidgets import QApplication, QSplashScreen
-        from PyQt6.QtGui import QPixmap, QColor, QPainter, QPen, QIcon
-        from PyQt6.QtCore import Qt, QEvent, QSize, QPoint, QLoggingCategory, QTimer
 
         # Silence qt.imageformats warnings, particularly for RAW files structured as TIFFs
         QLoggingCategory.setFilterRules(
@@ -268,7 +210,6 @@ __all__ = [
 
 def main():
     """Main function to run the application"""
-    import logging
     import traceback
 
     # GIL responsiveness: thumbnail/metadata workers run long pure-Python
@@ -360,7 +301,7 @@ def main():
 
     # Print to console immediately (before logging might be ready)
     safe_print("main() function called", flush=True)
-    
+
     # Logging should already be setup in if __name__ == '__main__'
     # But check if it's configured, if not, setup it
     logger = logging.getLogger(__name__)
@@ -406,7 +347,7 @@ def main():
                     platform_result[1] = platform.release()
                 except Exception:
                     pass
-            
+
             thread = threading.Thread(target=get_platform_info, daemon=True)
             thread.start()
             thread.join(timeout=0.1)  # Wait max 100ms
@@ -418,7 +359,7 @@ def main():
                 safe_print(f"[MAIN] Using fallback platform info: {platform_system} {platform_release}", flush=True)
         except Exception as e:
             safe_print(f"[MAIN] Error getting platform info, using fallback: {e}", flush=True)
-        
+
         safe_print("[MAIN] Calling logger.info for platform...", flush=True)
         logger.info(f"Platform: {platform_system} {platform_release}")
         safe_print(f"[MAIN] Platform logged: {platform_system} {platform_release}", flush=True)
@@ -426,23 +367,22 @@ def main():
         safe_print(f"[MAIN] Working directory logged: {os.getcwd()}", flush=True)
         logger.info("=" * 80)
         safe_print("[MAIN] All platform info logged, setting up Windows exception handler...", flush=True)
-    
+
     # Set up Windows exception handler to catch access violations
     # Use platform_system variable to avoid calling platform.system() again
     is_windows = (platform_system == 'Windows')
     if is_windows:
         safe_print("  [Windows] Importing ctypes...", flush=True)
-        import ctypes
         safe_print("  [Windows] ctypes imported", flush=True)
         safe_print("  [Windows] Importing wintypes...", flush=True)
         safe_print("  [Windows] wintypes imported", flush=True)
-        
+
         # Define exception handler function
         def exception_handler(exception_info):
             """Handle Windows exceptions (access violations, etc.)"""
             exception_code = exception_info[0].ExceptionRecord[0].ExceptionCode
             exception_address = exception_info[0].ExceptionRecord[0].ExceptionAddress
-            
+
             # 0xC0000005 is ACCESS_VIOLATION
             if exception_code == 0xC0000005:
                 error_msg = f"Access Violation (0xC0000005) at address {exception_address}"
@@ -455,13 +395,13 @@ def main():
                 safe_print_err(f"{'='*80}\n")
                 return 1  # EXCEPTION_EXECUTE_HANDLER
             return 0  # EXCEPTION_CONTINUE_SEARCH
-        
+
         # Note: Setting up structured exception handling in Python is complex
         # We'll rely on Python's exception handling and add more defensive checks
         safe_print("  [Windows] Exception handler setup complete", flush=True)
     else:
         safe_print("  [Non-Windows] Skipping Windows exception handler", flush=True)
-    
+
     safe_print("Entering main try block...", flush=True)
     try:
         splash = state._startup_splash
@@ -527,10 +467,10 @@ def main():
             safe_print("Creating RAWImageViewer...", flush=True)
             viewer = RAWImageViewer()
             safe_print("RAWImageViewer created successfully", flush=True)
-            
+
             # Connect viewer to application to handle macOS file open events
             app.set_viewer(viewer)
-            
+
             # Check for file or folder argument
             if len(sys.argv) > 1:
                 path = sys.argv[1]
@@ -544,7 +484,7 @@ def main():
                 elif os.path.isdir(path):
                     # If it's a folder, load the folder
                     viewer.load_folder_images(path)
-            
+
             # Show main window and close splash screen
             viewer.show()
             if is_windows:
@@ -591,7 +531,7 @@ def main():
         # Run application
         logger.info("[MAIN] Starting Qt event loop")
         exit_code = app.exec()
-        
+
         # Check exit code for access violations
         if exit_code == -1073741819:  # 0xC0000005 - Access Violation
             logger.critical("[MAIN] Application crashed with Access Violation (0xC0000005)")
@@ -611,13 +551,13 @@ def main():
             safe_print_err("  - Signal connected to deleted slot")
             safe_print_err("\nCheck the log file for detailed information.")
             safe_print_err(f"{'='*80}\n")
-        
+
         logger.info(f"[MAIN] Application exited with code: {exit_code}")
         # Use os._exit to force kill any lingering background threads (like database connections or rawpy)
         # sys.exit() only raises SystemExit and waits for non-daemon threads
         logger.info(f"[MAIN] Force exiting process with os._exit({exit_code})")
         os._exit(exit_code)
-        
+
     except KeyboardInterrupt:
         logger.info("Application interrupted by user (Ctrl+C)")
         safe_print("\n[INFO] Application interrupted by user (Ctrl+C)")
@@ -630,10 +570,10 @@ def main():
         # Catch all other exceptions and log them before crashing
         error_msg = f"FATAL ERROR: {type(e).__name__}: {e}"
         error_traceback = traceback.format_exc()
-        
+
         logger.critical(f"Fatal error: {error_msg}")
         logger.critical(f"Full traceback:\n{error_traceback}")
-        
+
         # Also print to console/stderr so it's visible even if logging fails
         safe_print_err(f"\n{'='*80}")
         safe_print_err("FATAL ERROR")
@@ -642,7 +582,7 @@ def main():
         safe_print_err("\nFull traceback:")
         safe_print_err(f"{error_traceback}")
         safe_print_err(f"{'='*80}\n")
-        
+
         # Try to show error dialog if possible
         try:
             app = QApplication.instance()
@@ -658,7 +598,7 @@ def main():
                 msg.exec()
         except Exception:
             pass  # If we cannot show dialog, at least we logged it
-        
+
         sys.exit(1)
 
 
@@ -676,7 +616,7 @@ if __name__ == '__main__' and _IS_GUI_MAIN_PROCESS:
             safe_print(f"[PROFILE] {memory_tier_startup_summary()}", flush=True)
     except Exception:
         pass
-    
+
     # Setup logging before anything else
     try:
         safe_print("Setting up logging...", flush=True)
@@ -686,7 +626,7 @@ if __name__ == '__main__' and _IS_GUI_MAIN_PROCESS:
         safe_print_err(f"ERROR: Failed to setup logging: {e}", flush=True)
         import traceback
         safe_print_err(f"Traceback: {traceback.format_exc()}", flush=True)
-    
+
     try:
         safe_print("Calling main()...", flush=True)
         main()

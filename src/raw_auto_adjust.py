@@ -11,14 +11,13 @@ here writes pixels or sidecars itself.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-def estimate_neutral_rgb(linear_rgb: np.ndarray) -> Optional[tuple]:
+def estimate_neutral_rgb(linear_rgb: np.ndarray) -> tuple | None:
     """Robust gray-world neutral estimate from a scene-linear RGB buffer.
 
     Plain gray-world (mean of everything) is famously wrecked by dominant
@@ -199,7 +198,7 @@ def _solve_ev_for_median(median_lum: float, target_y: float) -> float:
     return 0.5 * (lo + hi)
 
 
-def estimate_auto_tone(linear_rgb: np.ndarray) -> Optional[dict]:
+def estimate_auto_tone(linear_rgb: np.ndarray) -> dict | None:
     """Auto tone: the six PV2012 Light sliders from a scene-linear buffer.
 
     Takes the SAME input as Auto WB -- the un-adjusted decoded edit base
@@ -314,7 +313,7 @@ def estimate_auto_tone(linear_rgb: np.ndarray) -> Optional[dict]:
         return None
 
 
-def _to_uint8_gray(rgb: np.ndarray) -> Optional[np.ndarray]:
+def _to_uint8_gray(rgb: np.ndarray) -> np.ndarray | None:
     """Accept display uint8, float[0,1], or scene-linear float → uint8 gray."""
     if rgb is None or rgb.ndim != 3 or rgb.shape[2] < 3:
         return None
@@ -333,7 +332,7 @@ def _to_uint8_gray(rgb: np.ndarray) -> Optional[np.ndarray]:
     return gray
 
 
-def estimate_straighten_angle(display_rgb: np.ndarray) -> Optional[float]:
+def estimate_straighten_angle(display_rgb: np.ndarray) -> float | None:
     """Dominant small tilt (degrees, for CropAngle) from near-axis lines.
 
     Pipeline:
@@ -399,7 +398,7 @@ def estimate_straighten_angle(display_rgb: np.ndarray) -> Optional[float]:
                     votes.append(folded)
                     weights.append(length)
 
-        med: Optional[float] = None
+        med: float | None = None
         if len(votes) >= 2:
             v = np.asarray(votes, dtype=np.float64)
             wts = np.asarray(weights, dtype=np.float64)
@@ -424,7 +423,7 @@ def estimate_straighten_angle(display_rgb: np.ndarray) -> Optional[float]:
         return None
 
 
-def _gradient_orientation_peak(gray_u8: np.ndarray, *, tol: float = 12.0) -> Optional[float]:
+def _gradient_orientation_peak(gray_u8: np.ndarray, *, tol: float = 12.0) -> float | None:
     """Fallback: Sobel orientation histogram peak near H/V axes."""
     try:
         import cv2

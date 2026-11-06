@@ -8,17 +8,18 @@ import os
 import re
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 from app_version import APP_VERSION
+
 GITHUB_REPO = "markyip/RAWviewer"
 GITHUB_LATEST_RELEASE_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 RELEASE_PAGE_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
 
 
-def parse_version(label: str) -> Tuple[int, ...]:
+def parse_version(label: str) -> tuple[int, ...]:
     """Extract numeric version parts from a tag or version string (e.g. v2.3.0 -> (2, 3, 0))."""
     text = (label or "").strip().lstrip("vV")
     parts = re.findall(r"\d+", text)
@@ -58,7 +59,7 @@ def _is_connectivity_error(exc: BaseException) -> bool:
     return False
 
 
-def fetch_latest_release(*, timeout: float = 8.0) -> Dict[str, str]:
+def fetch_latest_release(*, timeout: float = 8.0) -> dict[str, str]:
     """Fetch GitHub /releases/latest metadata. Raises on network or parse failure."""
     req = urllib.request.Request(
         GITHUB_LATEST_RELEASE_API,
@@ -91,14 +92,14 @@ def fetch_latest_release(*, timeout: float = 8.0) -> Dict[str, str]:
 
 def mock_update_result(
     mock_latest: str,
-    current_version: Optional[str] = None,
+    current_version: str | None = None,
     *,
-    release_url: Optional[str] = None,
-) -> Dict[str, Any]:
+    release_url: str | None = None,
+) -> dict[str, Any]:
     """Build a successful update-check result for UI/dev testing (no network)."""
     current = (current_version or APP_VERSION).strip() or APP_VERSION
     latest = (mock_latest or "").strip()
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "current": current,
         "latest": latest,
         "is_latest": True,
@@ -119,10 +120,10 @@ def mock_update_result(
 
 
 def check_for_update(
-    current_version: Optional[str] = None,
+    current_version: str | None = None,
     *,
     timeout: float = 8.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Check whether *current_version* is the latest GitHub release.
 
@@ -136,7 +137,7 @@ def check_for_update(
         logger.info("[UPDATE] Mock mode: simulating latest=%s", mock_latest)
         return mock_update_result(mock_latest, current)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "current": current,
         "latest": "",
         "is_latest": True,

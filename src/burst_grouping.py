@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional, Set, Tuple
 
 from common_image_loader import parse_capture_time_to_timestamp
 
@@ -44,8 +43,8 @@ def _norm(path: str) -> str:
 
 
 def _capture_times_lookup(
-    path: str, capture_times: Dict[str, str]
-) -> Optional[str]:
+    path: str, capture_times: dict[str, str]
+) -> str | None:
     if path in capture_times:
         return capture_times[path]
     key = _norm(path)
@@ -57,7 +56,7 @@ def _capture_times_lookup(
     return None
 
 
-def timestamp_for_path(path: str, capture_times: Dict[str, str]) -> float:
+def timestamp_for_path(path: str, capture_times: dict[str, str]) -> float:
     ct = _capture_times_lookup(path, capture_times)
     if ct:
         ts = parse_capture_time_to_timestamp(ct)
@@ -67,9 +66,9 @@ def timestamp_for_path(path: str, capture_times: Dict[str, str]) -> float:
 
 
 def sort_paths_by_capture_time(
-    paths: List[str],
-    capture_times: Dict[str, str],
-) -> List[str]:
+    paths: list[str],
+    capture_times: dict[str, str],
+) -> list[str]:
     indexed = list(enumerate(paths))
     indexed.sort(
         key=lambda item: (
@@ -81,13 +80,13 @@ def sort_paths_by_capture_time(
 
 
 def burst_groups_for_folder(
-    paths: List[str],
-    capture_times: Dict[str, str],
+    paths: list[str],
+    capture_times: dict[str, str],
     *,
     gap_sec: float = DEFAULT_BURST_GAP_SECONDS,
     min_count: int = BURST_MIN_COUNT,
-    rejected: Optional[Set[str]] = None,
-) -> Tuple[List[List[str]], Dict[str, List[str]], Dict[str, str]]:
+    rejected: set[str] | None = None,
+) -> tuple[list[list[str]], dict[str, list[str]], dict[str, str]]:
     """Group adjacent captures by time gap.
 
     Returns:
@@ -101,8 +100,8 @@ def burst_groups_for_folder(
         return [], {}, {}
 
     by_time = sort_paths_by_capture_time(visible, capture_times)
-    groups: List[List[str]] = []
-    current: List[str] = [by_time[0]]
+    groups: list[list[str]] = []
+    current: list[str] = [by_time[0]]
 
     for path in by_time[1:]:
         prev_ts = timestamp_for_path(current[-1], capture_times)
@@ -117,9 +116,9 @@ def burst_groups_for_folder(
             current = [path]
     groups.append(current)
 
-    path_to_group: Dict[str, List[str]] = {}
-    group_covers: Dict[str, str] = {}
-    stack_groups: List[List[str]] = []
+    path_to_group: dict[str, list[str]] = {}
+    group_covers: dict[str, str] = {}
+    stack_groups: list[list[str]] = []
 
     for members in groups:
         visible_members = [m for m in members if _norm(m) not in rejected]
@@ -135,16 +134,16 @@ def burst_groups_for_folder(
 
 
 def build_collapsed_display_paths(
-    ordered_paths: List[str],
-    path_to_group: Dict[str, List[str]],
-    group_covers: Dict[str, str],
-    rejected: Set[str],
+    ordered_paths: list[str],
+    path_to_group: dict[str, list[str]],
+    group_covers: dict[str, str],
+    rejected: set[str],
     *,
     min_count: int = BURST_MIN_COUNT,
-) -> List[str]:
+) -> list[str]:
     """One tile per burst stack (cover) plus standalone images."""
-    emitted: Set[str] = set()
-    collapsed: List[str] = []
+    emitted: set[str] = set()
+    collapsed: list[str] = []
     for path in ordered_paths:
         if not path or _norm(path) in rejected:
             continue
@@ -167,8 +166,8 @@ def build_collapsed_display_paths(
 
 def stack_count_for_cover(
     cover_path: str,
-    path_to_group: Dict[str, List[str]],
-    rejected: Set[str],
+    path_to_group: dict[str, list[str]],
+    rejected: set[str],
     *,
     min_count: int = BURST_MIN_COUNT,
 ) -> int:
@@ -181,11 +180,11 @@ def stack_count_for_cover(
 
 def visible_burst_members(
     path: str,
-    path_to_group: Dict[str, List[str]],
-    rejected: Set[str],
+    path_to_group: dict[str, list[str]],
+    rejected: set[str],
     *,
     min_count: int = BURST_MIN_COUNT,
-) -> Optional[List[str]]:
+) -> list[str] | None:
     members = path_to_group.get(_norm(path))
     if not members:
         return None
@@ -195,9 +194,9 @@ def visible_burst_members(
 
 def burst_group_id(
     path: str,
-    path_to_group: Dict[str, List[str]],
-    rejected: Set[str],
-) -> Optional[str]:
+    path_to_group: dict[str, list[str]],
+    rejected: set[str],
+) -> str | None:
     visible = visible_burst_members(path, path_to_group, rejected)
     if not visible:
         return None
@@ -205,14 +204,14 @@ def burst_group_id(
 
 
 def selection_covers_single_burst_group(
-    selected_norm_keys: Set[str],
-    path_to_group: Dict[str, List[str]],
-    rejected: Set[str],
-) -> Optional[List[str]]:
+    selected_norm_keys: set[str],
+    path_to_group: dict[str, list[str]],
+    rejected: set[str],
+) -> list[str] | None:
     """Return member paths when ``selected_norm_keys`` is exactly one burst group."""
     if len(selected_norm_keys) < BURST_MIN_COUNT:
         return None
-    group_ids: Set[str] = set()
+    group_ids: set[str] = set()
     for key in selected_norm_keys:
         gid = burst_group_id(key, path_to_group, rejected)
         if gid is None:
@@ -231,8 +230,8 @@ def selection_covers_single_burst_group(
 
 
 def burst_span_seconds(
-    members: List[str],
-    capture_times: Dict[str, str],
+    members: list[str],
+    capture_times: dict[str, str],
 ) -> float:
     """Elapsed seconds between earliest and latest capture in ``members``."""
     if not members:
@@ -248,8 +247,8 @@ def burst_span_seconds(
 
 
 def format_burst_group_status(
-    members: List[str],
-    capture_times: Dict[str, str],
+    members: list[str],
+    capture_times: dict[str, str],
 ) -> str:
     """Top metadata for burst group view, e.g. ``12 images / 2.34s`` or ``1 image``."""
     count = len(members)

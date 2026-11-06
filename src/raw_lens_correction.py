@@ -17,7 +17,6 @@ correction".
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 import numpy as np
 
@@ -44,7 +43,7 @@ def _tag_text(tags: dict, *names: str) -> str:
     return ""
 
 
-def _parse_leading_number(text: str, *, strip_prefix: str = "") -> Optional[float]:
+def _parse_leading_number(text: str, *, strip_prefix: str = "") -> float | None:
     if not text:
         return None
     t = text.strip()
@@ -59,7 +58,7 @@ def _parse_leading_number(text: str, *, strip_prefix: str = "") -> Optional[floa
         return None
 
 
-def lens_profile_key_from_exif(exif_data: Optional[dict]) -> Optional[dict]:
+def lens_profile_key_from_exif(exif_data: dict | None) -> dict | None:
     """
     Extract a lensfun lookup key from the dict returned by
     EXIFExtractor.extract_exif_data() (camera_make/camera_model/focal_length/
@@ -121,7 +120,7 @@ def _find_camera_and_lens(camera_make: str, camera_model: str, lens_make: str, l
     return cam, lenses[0]
 
 
-def has_lens_profile(exif_data: Optional[dict]) -> bool:
+def has_lens_profile(exif_data: dict | None) -> bool:
     """True if a lensfun profile matches this file's camera+lens -- gates
     whether the Adjust panel's lens-correction toggle should even be shown."""
     try:
@@ -136,7 +135,7 @@ def has_lens_profile(exif_data: Optional[dict]) -> bool:
         return False
 
 
-def get_lens_profile_name(exif_data: Optional[dict]) -> str:
+def get_lens_profile_name(exif_data: dict | None) -> str:
     """Return the matched lens model name if a lensfun profile exists, otherwise empty string."""
     try:
         key = lens_profile_key_from_exif(exif_data)
@@ -161,8 +160,8 @@ def _pixel_format_for(dtype) -> type:
 
 
 def apply_lens_correction(
-    rgb_image: Optional[np.ndarray], exif_data: Optional[dict]
-) -> Optional[np.ndarray]:
+    rgb_image: np.ndarray | None, exif_data: dict | None
+) -> np.ndarray | None:
     """
     Undistort a decoded RAW buffer (any dtype cv2.remap accepts -- uint16,
     float32, uint8) using the matched lensfun profile's geometry distortion

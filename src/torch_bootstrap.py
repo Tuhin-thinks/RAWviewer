@@ -19,14 +19,14 @@ between heavy stages so paints/timers can flush mid-import.
 """
 import os
 import threading
-from typing import Callable, Optional
+from collections.abc import Callable
 
 _ready = threading.Event()
 _import_started = threading.Event()
 
 
 def import_gpu_backend_on_main_thread(
-    pump: Optional[Callable[[], None]] = None,
+    pump: Callable[[], None] | None = None,
 ) -> None:
     """Call once, from the main/GUI thread, as soon as possible after the
     window is shown. Safe to call more than once -- a no-op after the first.

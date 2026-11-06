@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 INSTALLER_PROGRESS_PREFIX = "@RAWVIEWER_PROGRESS"
 
@@ -67,7 +67,7 @@ def make_byte_progress_tqdm(
 
 
 def report_progress(
-    progress_callback: Optional[Callable[..., None]],
+    progress_callback: Callable[..., None] | None,
     pct: int,
     *,
     installer: bool = False,

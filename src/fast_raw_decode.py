@@ -52,8 +52,9 @@ from __future__ import annotations
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -79,7 +80,7 @@ _XYZ_RGB = np.array(
 # 0.63 vs 4-7 for the other three codes); the rest follow the same shift.
 _BAYER_TO_CV2 = {"RGGB": "BG", "BGGR": "RG", "GRBG": "GB", "GBRG": "GR"}
 
-_GAMMA_LUT8: Optional[np.ndarray] = None
+_GAMMA_LUT8: np.ndarray | None = None
 
 # Keys the sensor-decode params may contain without changing color semantics.
 # Any unexpected key disables the fast path (conservative: new rawpy params
@@ -225,7 +226,7 @@ def wb_sanity_enabled() -> bool:
 # threshold 0.5 sits in the middle of a >5x gap.
 _WB_SANITY_THRESHOLD = 0.5
 # key: normcase(abspath). Value: corrected cam_mul list, or None = checked, OK.
-_WB_CORRECTION_CACHE: Dict[str, Optional[list]] = {}
+_WB_CORRECTION_CACHE: dict[str, list | None] = {}
 # Per-MODEL verdict: the WB misparse is a parser-vs-model property, so once
 # one file of a model measures clean, later files of that model skip the
 # embedded-JPEG check entirely -- it costs ~38ms of thumb extract + decode +
@@ -239,7 +240,7 @@ _WB_CORRECTION_CACHE: Dict[str, Optional[list]] = {}
 # golden set), which let the older body's clean verdict suppress the R6 III
 # correction. Matrix + visible-sensor dims + black levels + white level
 # separates them (4639x6959/black [0,35,102,69] vs 4024x6022/black 2048x4).
-_WB_MODEL_VERDICT: Dict[bytes, bool] = {}
+_WB_MODEL_VERDICT: dict[bytes, bool] = {}
 
 # Files whose fast-path unpack came back None this session, keyed on
 # (normcase path, mtime_ns, size) -- see unpack_raw. Re-probes if the file
@@ -249,7 +250,7 @@ _UNPACK_UNSUPPORTED: set = set()
 
 
 def _wb_model_key(
-    rgb_cam: Optional[np.ndarray],
+    rgb_cam: np.ndarray | None,
     mosaic: np.ndarray,
     black: np.ndarray,
     white: float,
@@ -264,7 +265,7 @@ def _wb_model_key(
     )
 
 
-def get_corrected_camera_wb(file_path: str) -> Optional[list]:
+def get_corrected_camera_wb(file_path: str) -> list | None:
     """Session-cached corrected camera WB multipliers for ``file_path``.
 
     Non-None only when this file's as-shot WB failed the embedded-JPEG sanity
@@ -284,14 +285,14 @@ def _srgb_to_linear01(arr8: np.ndarray) -> np.ndarray:
 
 def _wb_correction_from_jpeg(
     file_path: str,
-    thumb_bytes: Optional[bytes],
+    thumb_bytes: bytes | None,
     mosaic: np.ndarray,
     pattern: np.ndarray,
     black: np.ndarray,
     scale_mul: np.ndarray,
     rgb_cam: np.ndarray,
     cam_mul: np.ndarray,
-) -> Optional[list]:
+) -> list | None:
     """Corrected cam_mul when the as-shot WB disagrees with the embedded JPEG.
 
     Returns None when the WB is fine, the thumb is unusable, or the solve is
@@ -338,7 +339,7 @@ def _wb_correction_from_jpeg(
 
         def _render_and_metric(mul: np.ndarray, jpg: np.ndarray, lj: np.ndarray):
             sc = (mul / mul.min()) * 65535.0 / denom
-            acc: Dict[str, np.ndarray] = {}
+            acc: dict[str, np.ndarray] = {}
             n_g = 0
             for role, ci, p in raw_planes:
                 v = np.clip(p * sc[ci], 0, 65535)
@@ -473,7 +474,7 @@ class UnpackedRaw:
     rgb_cam: np.ndarray  # float32 3x3 camera->sRGB matrix
 
 
-def params_supported(params: Dict[str, Any], return_linear: bool = False) -> bool:
+def params_supported(params: dict[str, Any], return_linear: bool = False) -> bool:
     """True when the rawpy params match the semantics this module replicates.
 
     Accepts either ``use_camera_wb=True`` (normal as-shot) or
@@ -530,7 +531,7 @@ def params_supported(params: Dict[str, Any], return_linear: bool = False) -> boo
     return True
 
 
-def params_supported_half(params: Dict[str, Any], return_linear: bool = False) -> bool:
+def params_supported_half(params: dict[str, Any], return_linear: bool = False) -> bool:
     """Like :func:`params_supported` but for the half_size display decode."""
     if not params.get("half_size", False):
         return False
@@ -538,7 +539,7 @@ def params_supported_half(params: Dict[str, Any], return_linear: bool = False) -
     return params_supported(relaxed, return_linear=return_linear)
 
 
-_GAMMA_CURVE16: Optional[np.ndarray] = None
+_GAMMA_CURVE16: np.ndarray | None = None
 
 
 def gamma_curve16() -> np.ndarray:
@@ -579,7 +580,7 @@ def _gamma_lut8() -> np.ndarray:
     return _GAMMA_LUT8
 
 
-def _rgb_cam_from_cam_xyz(cam_xyz: np.ndarray) -> Optional[np.ndarray]:
+def _rgb_cam_from_cam_xyz(cam_xyz: np.ndarray) -> np.ndarray | None:
     """dcraw cam_xyz_coeff: row-normalize the forward matrix, then pinv.
 
     Rows of the result sum to 1 (camera white -> sRGB white); getting this
@@ -602,7 +603,7 @@ def _rgb_cam_from_cam_xyz(cam_xyz: np.ndarray) -> Optional[np.ndarray]:
         return None
 
 
-def _visible_pattern(raw: Any) -> Optional[np.ndarray]:
+def _visible_pattern(raw: Any) -> np.ndarray | None:
     """2x2 CFA channel indices at the *visible-area* origin.
 
     Uses ``raw_colors_visible`` rather than ``raw_pattern`` because odd
@@ -621,7 +622,7 @@ def _visible_pattern(raw: Any) -> Optional[np.ndarray]:
         return None
 
 
-def _pattern_string(pattern: np.ndarray) -> Optional[str]:
+def _pattern_string(pattern: np.ndarray) -> str | None:
     """RGGB-style string from a 2x2 of LibRaw channel indices (3=second green)."""
     names = {0: "R", 1: "G", 2: "B", 3: "G"}
     try:
@@ -688,7 +689,7 @@ def _resolve_black(raw: Any, cblack: np.ndarray) -> np.ndarray:
         return cblack
 
 
-def _unpack_identity(file_path: str) -> Optional[tuple]:
+def _unpack_identity(file_path: str) -> tuple | None:
     try:
         st = os.stat(file_path)
         return (os.path.normcase(os.path.abspath(file_path)), st.st_mtime_ns, st.st_size)
@@ -704,8 +705,8 @@ def _note_unpack_unsupported(file_path: str) -> None:
 
 def unpack_raw(
     file_path: str,
-    rawpy_lock: Optional[Any] = None,
-) -> Optional[UnpackedRaw]:
+    rawpy_lock: Any | None = None,
+) -> UnpackedRaw | None:
     """LibRaw open+unpack and color-metadata derivation, no pixel math.
 
     Returns None for anything the fast pixel path can't handle (X-Trans,
@@ -737,8 +738,8 @@ def unpack_raw(
 
 def _unpack_raw_impl(
     file_path: str,
-    rawpy_lock: Optional[Any] = None,
-) -> Optional[UnpackedRaw]:
+    rawpy_lock: Any | None = None,
+) -> UnpackedRaw | None:
     from perf_metrics import perf_mark
 
     _t_unpack = time.perf_counter()
@@ -865,11 +866,11 @@ def _unpack_raw_impl(
 
 def finish_full_decode(
     unpacked: UnpackedRaw,
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     return_linear: bool = False,
     *,
     prefer_gpu: bool = False,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Full-resolution pixel math (scale/demosaic/matrix/gamma) on an unpack.
 
     Returns uint8 sRGB in sensor orientation, or a ``DeviceRgb`` CUDA wrapper
@@ -995,9 +996,9 @@ def _scale_luts(unpacked: UnpackedRaw) -> list:
 
 def decode_half_from_unpacked(
     unpacked: UnpackedRaw,
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     return_linear: bool = False,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Demosaic-free half-size tier from an existing unpack (fit-view paint)."""
     from perf_metrics import perf_timer
 
@@ -1007,9 +1008,9 @@ def decode_half_from_unpacked(
 
 def _decode_half_from_unpacked_impl(
     unpacked: UnpackedRaw,
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     return_linear: bool = False,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     cv2 = _import_cv2()
     if cv2 is None:
         return None
@@ -1061,11 +1062,11 @@ def _decode_half_from_unpacked_impl(
 
 def try_fast_raw_decode(
     file_path: str,
-    params: Dict[str, Any],
-    rawpy_lock: Optional[Any] = None,
-    cancel_check: Optional[Any] = None,
+    params: dict[str, Any],
+    rawpy_lock: Any | None = None,
+    cancel_check: Any | None = None,
     return_linear: bool = False,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Full-resolution decode matching rawpy semantics for ``params``.
 
     Returns an (H, W, 3) uint8 sRGB array in sensor orientation (user_flip=0
@@ -1088,7 +1089,7 @@ def try_fast_raw_decode(
         unpacked = unpack_raw(file_path, rawpy_lock=rawpy_lock)
         if unpacked is None:
             return None
-            
+
         # If half_size is requested, try to run the fast half-size decode
         if params.get("half_size", False):
             # GPU half-size isn't implemented yet, so use CPU
@@ -1167,7 +1168,7 @@ def try_fast_raw_decode(
         return None
 
 
-def halfsize_reference_decode(file_path: str) -> Optional[np.ndarray]:
+def halfsize_reference_decode(file_path: str) -> np.ndarray | None:
     """Demosaic-free half-size decode for the parity gate (tests only).
 
     2x2-bins the mosaic exactly like rawpy's half_size mode (greens averaged),

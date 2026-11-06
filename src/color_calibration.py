@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import cv2
 import numpy as np
@@ -31,7 +31,7 @@ def get_camera_profile_path() -> str:
     return os.path.join(app_dir, "camera_profiles.json")
 
 
-def camera_identity_from_exif(exif: Optional[Dict[str, Any]]) -> Tuple[str, str, Optional[int]]:
+def camera_identity_from_exif(exif: dict[str, Any] | None) -> tuple[str, str, int | None]:
     tags = exif or {}
 
     def _first(*names: str) -> str:
@@ -45,7 +45,7 @@ def camera_identity_from_exif(exif: Optional[Dict[str, Any]]) -> Tuple[str, str,
 
     make = _first("Image Make", "Make", "EXIF Make")
     model = _first("Image Model", "Model", "EXIF Model")
-    iso_val: Optional[int] = None
+    iso_val: int | None = None
     raw_iso = _first(
         "EXIF ISOSpeedRatings", "ISOSpeedRatings", "EXIF ISO", "ISO",
         "EXIF PhotographicSensitivity",
@@ -60,7 +60,7 @@ def camera_identity_from_exif(exif: Optional[Dict[str, Any]]) -> Tuple[str, str,
     return make, model, iso_val
 
 
-def camera_identity_for_file(path: str) -> Tuple[str, str, Optional[int]]:
+def camera_identity_for_file(path: str) -> tuple[str, str, int | None]:
     if not path:
         return ("", "", None)
     try:
@@ -72,7 +72,7 @@ def camera_identity_for_file(path: str) -> Tuple[str, str, Optional[int]]:
         return ("", "", None)
 
 
-def normalize_camera_key(make: str, model: str, iso: Optional[int] = None) -> str:
+def normalize_camera_key(make: str, model: str, iso: int | None = None) -> str:
     make_clean = (make or "").strip().lower()
     model_clean = (model or "").strip().lower()
     raw = f"{make_clean}_{model_clean}".strip("_")
@@ -95,8 +95,8 @@ def _sanitize_for_json(obj: Any) -> Any:
     return obj
 
 
-def current_decode_signature(file_path: Optional[str] = None) -> Dict[str, Any]:
-    sig: Dict[str, Any] = {"libraw": None, "wb_corrected": None}
+def current_decode_signature(file_path: str | None = None) -> dict[str, Any]:
+    sig: dict[str, Any] = {"libraw": None, "wb_corrected": None}
     try:
         import rawpy
 
@@ -116,7 +116,7 @@ def current_decode_signature(file_path: Optional[str] = None) -> Dict[str, Any]:
     return sig
 
 
-def _compare_signatures(saved: Dict[str, Any], now: Dict[str, Any]) -> Optional[str]:
+def _compare_signatures(saved: dict[str, Any], now: dict[str, Any]) -> str | None:
     saved_libraw, now_libraw = saved.get("libraw"), now.get("libraw")
     if saved_libraw and now_libraw and saved_libraw != now_libraw:
         return (
@@ -138,8 +138,8 @@ def _compare_signatures(saved: Dict[str, Any], now: Dict[str, Any]) -> Optional[
 
 
 def profile_decode_mismatch(
-    profile: Optional[Dict[str, Any]], file_path: Optional[str] = None
-) -> Optional[str]:
+    profile: dict[str, Any] | None, file_path: str | None = None
+) -> str | None:
     if not isinstance(profile, dict):
         return None
     saved = profile.get("decode_signature")
@@ -149,15 +149,15 @@ def profile_decode_mismatch(
 
 
 def save_camera_profile(
-    make: str, model: str, profile_data: Dict[str, Any],
-    iso: Optional[int] = None, source_file: Optional[str] = None,
+    make: str, model: str, profile_data: dict[str, Any],
+    iso: int | None = None, source_file: str | None = None,
 ) -> bool:
     key = normalize_camera_key(make, model, iso=iso)
     path = get_camera_profile_path()
     registry: dict = {}
     if os.path.isfile(path):
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 registry = json.load(f)
         except Exception:
             registry = {}
@@ -179,13 +179,13 @@ def save_camera_profile(
         return False
 
 
-def get_camera_profile(make: str, model: str, iso: Optional[int] = None) -> Optional[Dict[str, Any]]:
+def get_camera_profile(make: str, model: str, iso: int | None = None) -> dict[str, Any] | None:
     base_key = normalize_camera_key(make, model, iso=None)
     path = get_camera_profile_path()
     if not os.path.isfile(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             registry = json.load(f)
         if iso is not None and iso > 0:
             exact_key = f"{base_key}_iso{iso}"
@@ -207,13 +207,13 @@ def get_camera_profile(make: str, model: str, iso: Optional[int] = None) -> Opti
         return None
 
 
-def delete_camera_profile(make: str, model: str, iso: Optional[int] = None) -> bool:
+def delete_camera_profile(make: str, model: str, iso: int | None = None) -> bool:
     key = normalize_camera_key(make, model, iso=iso)
     path = get_camera_profile_path()
     if not os.path.isfile(path):
         return False
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             registry = json.load(f)
     except Exception:
         return False
@@ -229,8 +229,8 @@ def delete_camera_profile(make: str, model: str, iso: Optional[int] = None) -> b
 
 
 def describe_camera_profile(
-    make: str, model: str, iso: Optional[int] = None, file_path: Optional[str] = None,
-) -> Optional[str]:
+    make: str, model: str, iso: int | None = None, file_path: str | None = None,
+) -> str | None:
     prof = get_camera_profile(make, model, iso=iso)
     if not prof:
         return None
@@ -241,7 +241,7 @@ def describe_camera_profile(
     return f"{label} — {reason}" if reason else label
 
 
-def has_factory_color_profile(file_path: str) -> Optional[bool]:
+def has_factory_color_profile(file_path: str) -> bool | None:
     try:
         import rawpy
 
@@ -255,8 +255,8 @@ def has_factory_color_profile(file_path: str) -> Optional[bool]:
 
 
 def extract_patch_colors(
-    image: np.ndarray, corners: List[Tuple[float, float]]
-) -> List[Tuple[float, float, float]]:
+    image: np.ndarray, corners: list[tuple[float, float]]
+) -> list[tuple[float, float, float]]:
     if len(corners) != 4 or image is None or image.size == 0:
         return []
     pts_src = np.array(corners, dtype=np.float32)
@@ -279,8 +279,8 @@ def extract_patch_colors(
 
 
 def validate_and_detect_color_checker(
-    image: np.ndarray, corners: Optional[List[Tuple[float, float]]] = None
-) -> Tuple[bool, str, List[Tuple[float, float, float]]]:
+    image: np.ndarray, corners: list[tuple[float, float]] | None = None
+) -> tuple[bool, str, list[tuple[float, float, float]]]:
     if image is None or image.size == 0:
         return False, "Invalid or empty image buffer for color calibration.", []
     if not corners or len(corners) != 4:
@@ -318,8 +318,8 @@ def _normalize_exposure(sampled: np.ndarray) -> np.ndarray:
 
 
 def calibrate_camera_curves_and_hsl(
-    sampled_rgb: List[Tuple[float, float, float]], wb_mode: str = "auto"
-) -> Dict[str, Any]:
+    sampled_rgb: list[tuple[float, float, float]], wb_mode: str = "auto"
+) -> dict[str, Any]:
     if len(sampled_rgb) != 24:
         raise ValueError(f"Expected 24 sampled RGB patches, got {len(sampled_rgb)}")
     sampled = np.array(sampled_rgb, dtype=np.float32)
@@ -343,7 +343,7 @@ def calibrate_camera_curves_and_hsl(
         6: "Orange", 7: "Blue", 8: "Red", 9: "Purple", 10: "Yellow", 11: "Yellow",
         12: "Blue", 13: "Green", 14: "Red", 15: "Yellow", 16: "Magenta", 17: "Aqua",
     }
-    acc: Dict[str, List[Tuple[float, float, float]]] = {b: [] for b in color_bands}
+    acc: dict[str, list[tuple[float, float, float]]] = {b: [] for b in color_bands}
     for idx, band in patch_band_map.items():
         s_rgb = np.uint8([[np.clip(display[idx], 0, 255)]])
         r_rgb = np.uint8([[COLORCHECKER_24_REF[idx]]])
@@ -357,9 +357,9 @@ def calibrate_camera_curves_and_hsl(
         ds = (float(r_hsv[1]) - float(s_hsv[1])) / 255.0 * 20.0
         dl = (float(r_hsv[2]) - float(s_hsv[2])) / 255.0 * 20.0
         acc[band].append((dh, ds, dl))
-    hue_shifts = {b: 0.0 for b in color_bands}
-    sat_shifts = {b: 0.0 for b in color_bands}
-    lum_shifts = {b: 0.0 for b in color_bands}
+    hue_shifts = dict.fromkeys(color_bands, 0.0)
+    sat_shifts = dict.fromkeys(color_bands, 0.0)
+    lum_shifts = dict.fromkeys(color_bands, 0.0)
     for band, deltas in acc.items():
         if not deltas:
             continue

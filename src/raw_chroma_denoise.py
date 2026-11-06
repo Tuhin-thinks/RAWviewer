@@ -52,29 +52,29 @@ def apply_guided_filter(guide: np.ndarray, src: np.ndarray, r: int, eps: float) 
     Fast O(N) Guided Filter using float32 cv2.boxFilter.
     """
     import cv2
-    
+
     r = int(round(r))
     if r < 1:
         return src
-        
+
     g_f32 = guide.astype(np.float32)
     s_f32 = src.astype(np.float32)
-    
+
     ksize = (2 * r + 1, 2 * r + 1)
     mean_I = cv2.boxFilter(g_f32, -1, ksize)
     mean_p = cv2.boxFilter(s_f32, -1, ksize)
     mean_Ip = cv2.boxFilter(g_f32 * s_f32, -1, ksize)
     cov_Ip = mean_Ip - mean_I * mean_p
-    
+
     mean_II = cv2.boxFilter(g_f32 * g_f32, -1, ksize)
     var_I = mean_II - mean_I * mean_I
-    
+
     a = cov_Ip / (var_I + eps)
     b = mean_p - a * mean_I
-    
+
     mean_a = cv2.boxFilter(a, -1, ksize)
     mean_b = cv2.boxFilter(b, -1, ksize)
-    
+
     return mean_a * g_f32 + mean_b
 
 

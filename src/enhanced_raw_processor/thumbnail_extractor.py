@@ -5,13 +5,11 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Optional, Union
 
 import numpy as np
 import rawpy
-from PyQt6.QtCore import QObject, QSize
+from PyQt6.QtCore import QObject, QSize, Qt
 from PyQt6.QtGui import QImage, QImageReader
-from PyQt6.QtCore import Qt
 
 from common_image_loader import (
     decode_embedded_jpeg_bytes,
@@ -19,13 +17,15 @@ from common_image_loader import (
 )
 from image_load_manager import yield_if_current_task_active
 from rawpy_gil import rawpy_imread_warm
+
 from .extraction import (
-    _bytescan_first_enabled,
     _BYTESCAN_FIRST_EXTS,
+    _bytescan_first_enabled,
     _rawpy_global_lock,
     _thumbnail_via_qimage_reader,
     extract_embedded_jpeg_by_scan,
 )
+
 
 class ThumbnailExtractor(QObject):
     """Fast thumbnail extractor for immediate display."""
@@ -35,7 +35,7 @@ class ThumbnailExtractor(QObject):
 
     def extract_thumbnail_from_raw(self, file_path: str, max_size: int = 1024,
                                    allow_scan_fallback: bool = True,
-                                   raw_object: Optional[rawpy.RawPy] = None) -> Optional[np.ndarray]:
+                                   raw_object: rawpy.RawPy | None = None) -> np.ndarray | None:
         """Extract embedded thumbnail from RAW file and resize to max_size."""
         thumb = None
 
@@ -116,15 +116,16 @@ class ThumbnailExtractor(QObject):
                 try:
                     import subprocess
                     import tempfile
+
                     from PIL import Image
                     tmp_name = None
                     try:
                         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
                             tmp_name = tmp.name
-                        
+
                         result = subprocess.run(['sips', '-Z', str(max_size), '-s', 'format', 'jpeg', file_path, '--out', tmp_name],
                                      capture_output=True)
-                        
+
                         if os.path.exists(tmp_name) and os.path.getsize(tmp_name) > 0:
                             jpeg_image = Image.open(tmp_name)
                             if jpeg_image.mode != 'RGB':
@@ -134,18 +135,18 @@ class ThumbnailExtractor(QObject):
                         else:
                             import logging
                             logging.getLogger(__name__).debug(f"[SIPS] Failed to generate thumbnail for {file_path}. Exit code: {result.returncode}, Error: {result.stderr.decode('utf-8', 'ignore')}")
-                            
+
                             # Fallback to QuickLook (qlmanage)
                             try:
                                 ql_dir = tempfile.mkdtemp()
                                 subprocess.run(['qlmanage', '-t', '-s', str(max_size), '-o', ql_dir, file_path], capture_output=True)
-                                
+
                                 ql_out = None
                                 for f in os.listdir(ql_dir):
                                     if f.endswith('.png'):
                                         ql_out = os.path.join(ql_dir, f)
                                         break
-                                        
+
                                 if ql_out and os.path.exists(ql_out) and os.path.getsize(ql_out) > 0:
                                     ql_image = Image.open(ql_out)
                                     if ql_image.mode != 'RGB':
@@ -218,7 +219,7 @@ class ThumbnailExtractor(QObject):
             return None
 
     def extract_preview_from_raw(self, file_path: str, max_size: int = 2048,
-                                 allow_scan_fallback: bool = True) -> Optional[np.ndarray]:
+                                 allow_scan_fallback: bool = True) -> np.ndarray | None:
         """Extract high-quality preview from RAW file (embedded JPEG)."""
         # Reuse thumbnail logic but with larger size
         return self.extract_thumbnail_from_raw(
@@ -229,7 +230,7 @@ class ThumbnailExtractor(QObject):
 
     def extract_embedded_native_preview(
         self, file_path: str, allow_scan_fallback: bool = True
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """Extract embedded JPEG at native resolution (max_size=0 disables downscaling)."""
         return self.extract_thumbnail_from_raw(
             file_path,
@@ -238,7 +239,7 @@ class ThumbnailExtractor(QObject):
         )
 
     def extract_thumbnail_from_image(self, file_path: str, max_size: int = 1024,
-                                     target_size: Optional[QSize] = None) -> Optional[Union[np.ndarray, QImage]]:
+                                     target_size: QSize | None = None) -> np.ndarray | QImage | None:
         """Extract thumbnail from regular image file. Returns QImage (preferred) or np.ndarray."""
         try:
             reader = QImageReader(file_path)
@@ -246,7 +247,7 @@ class ThumbnailExtractor(QObject):
             size = reader.size()
             if size.isValid() and size.width() > 0 and size.height() > 0:
                 w, h = size.width(), size.height()
-                
+
                 # OPTIMIZATION: If we have a target_size, scale directly to it during decode.
                 # Use KeepAspectRatioByExpanding so we have enough pixels to crop later
                 # without stretching (which happens if we just set target_size directly).
@@ -267,7 +268,7 @@ class ThumbnailExtractor(QObject):
                         reader.setScaledSize(QSize(new_w, new_h))
                     else:
                         reader.setScaledSize(QSize(max(1, int(w * scale)), max(1, int(h * scale))))
-            
+
             image = reader.read()
             if not image.isNull():
                 if image.format() != QImage.Format.Format_RGB888:
@@ -278,7 +279,7 @@ class ThumbnailExtractor(QObject):
                         image = image.scaled(target_size, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
                 elif image.width() > max_size or image.height() > max_size:
                     image = image.scaled(max_size, max_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                
+
                 return image
         except Exception:
             pass
@@ -291,7 +292,7 @@ class ThumbnailExtractor(QObject):
                     img.thumbnail((target_size.width(), target_size.height()), Image.Resampling.HAMMING)
                 else:
                     img.thumbnail((max_size, max_size), Image.Resampling.HAMMING)
-                
+
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 return np.array(img)

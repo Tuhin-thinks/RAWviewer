@@ -23,7 +23,6 @@ import base64
 import inspect
 import threading
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -38,7 +37,7 @@ INPAINT_RADIUS = 5  # OpenCV inpaint neighborhood radius (pixels at buffer res)
 # Area (pixels) above which Navier-Stokes tends to keep edges better than Telea.
 _INPAINT_NS_AREA = 900
 
-_FALLOFF_HAS_FEATHER: Optional[bool] = None
+_FALLOFF_HAS_FEATHER: bool | None = None
 
 
 def _heal_brush_falloff(
@@ -64,13 +63,13 @@ def _heal_brush_falloff(
     return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
 
-def mask_stage_fingerprint(mask: "HealMask") -> str:
+def mask_stage_fingerprint(mask: HealMask) -> str:
     """Cheap stage-cache key: shape + mutation version (no PNG encode)."""
     h, w = mask.data.shape[:2]
     return f"mem:{int(h)}x{int(w)}:v{int(mask.version)}"
 
 
-def resolve_mask_from_adj(adj: dict | None) -> Optional["HealMask"]:
+def resolve_mask_from_adj(adj: dict | None) -> HealMask | None:
     """Prefer live mask object; fall back to XMP/base64 serial."""
     if not adj:
         return None
@@ -97,7 +96,7 @@ class HealMask:
     _geom_cache: object = field(default=None, repr=False, compare=False)
 
     @classmethod
-    def empty(cls, h: int, w: int) -> "HealMask":
+    def empty(cls, h: int, w: int) -> HealMask:
         return cls(np.zeros((int(h), int(w)), dtype=np.float32))
 
     @property
@@ -183,7 +182,7 @@ def resize_mask_to(mask: HealMask, h: int, w: int) -> np.ndarray:
 
 def apply_spot_heal(
     img: np.ndarray,
-    mask: Optional[HealMask],
+    mask: HealMask | None,
     *,
     inpaint_radius: int = INPAINT_RADIUS,
     row_offset: int = 0,
@@ -221,6 +220,7 @@ def apply_spot_heal(
     # settles it: if the array the key was built from is gone, or is not
     # this array, the entry cannot match.
     import weakref as _weakref
+
     import cv2
 
     # Everything the cache key needs is derived from the MASK, not the image,
@@ -336,7 +336,7 @@ def apply_spot_heal(
     return out
 
 
-def serialize_mask(mask: Optional[HealMask]) -> str:
+def serialize_mask(mask: HealMask | None) -> str:
     """Encode as base64 PNG (8-bit coverage)."""
     if mask is None or mask.is_empty:
         return ""
@@ -349,7 +349,7 @@ def serialize_mask(mask: Optional[HealMask]) -> str:
     return base64.b64encode(buf.tobytes()).decode("ascii")
 
 
-def deserialize_mask(serial: str) -> Optional[HealMask]:
+def deserialize_mask(serial: str) -> HealMask | None:
     if not serial:
         return None
     try:
@@ -371,7 +371,7 @@ _DESERIALIZE_CACHE_MAX = 4
 _DESERIALIZE_CACHE_LOCK = threading.Lock()
 
 
-def _deserialize_mask_cached(serial: str) -> Optional[HealMask]:
+def _deserialize_mask_cached(serial: str) -> HealMask | None:
     """Read-only deserialize for the render pipeline (do not mutate result)."""
     if not serial:
         return None

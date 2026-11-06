@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import numpy as np
-
-from exposure_clipping import clipping_counts
-from PyQt6.QtCore import Qt, QRect, QRectF
+from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
+from exposure_clipping import clipping_counts
 
-def _qimage_to_rgb_array(image: QImage) -> Optional[np.ndarray]:
+
+def _qimage_to_rgb_array(image: QImage) -> np.ndarray | None:
     img = image.convertToFormat(QImage.Format.Format_RGB888)
     w, h = img.width(), img.height()
     if w < 1 or h < 1:
@@ -49,7 +47,7 @@ def _qimage_to_rgb_array(image: QImage) -> Optional[np.ndarray]:
     return np.ascontiguousarray(arr[:, : w * 3].reshape(h, w, 3))
 
 
-def _histograms_from_rgb(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _histograms_from_rgb(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     r = rgb[:, :, 0].ravel()
     g = rgb[:, :, 1].ravel()
     b = rgb[:, :, 2].ravel()
@@ -79,10 +77,10 @@ class ImageHistogramWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._hr: Optional[np.ndarray] = None
-        self._hg: Optional[np.ndarray] = None
-        self._hb: Optional[np.ndarray] = None
-        self._hl: Optional[np.ndarray] = None
+        self._hr: np.ndarray | None = None
+        self._hg: np.ndarray | None = None
+        self._hb: np.ndarray | None = None
+        self._hl: np.ndarray | None = None
         self._hi_clip = 0
         self._lo_clip = 0
         self._clip_total = 0

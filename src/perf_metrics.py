@@ -42,7 +42,6 @@ import logging
 import os
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 _logger = logging.getLogger("rawviewer.perf")
 
@@ -56,7 +55,7 @@ def perf_enabled() -> bool:
     }
 
 
-def perf_mark(metric: str, ms: float, file_path: Optional[str] = None, **kv) -> None:
+def perf_mark(metric: str, ms: float, file_path: str | None = None, **kv) -> None:
     """Emit one uniform [PERF] line. Cheap; safe to call from any thread."""
     if not perf_enabled():
         return
@@ -72,7 +71,7 @@ def perf_mark(metric: str, ms: float, file_path: Optional[str] = None, **kv) -> 
 
 
 @contextmanager
-def perf_timer(metric: str, file_path: Optional[str] = None, **kv):
+def perf_timer(metric: str, file_path: str | None = None, **kv):
     """Time a block and emit its [PERF] line on exit (also on exception)."""
     t0 = time.perf_counter()
     try:

@@ -9,8 +9,8 @@ from typing import Any
 import numpy as np
 
 from cache.image_cache.core import ImageCacheCore
-from cache.image_cache.thumb_grid_preview import ImageCacheThumbGridPreview
 from cache.image_cache.full_exif_util import ImageCacheFullExifUtil
+from cache.image_cache.thumb_grid_preview import ImageCacheThumbGridPreview
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class ImageCache(ImageCacheCore, ImageCacheThumbGridPreview, ImageCacheFullExifU
 
 # ========== Module-level singleton ==========
 
-_global_cache: "ImageCache | None" = None
+_global_cache: ImageCache | None = None
 _cache_initialized = False
 _legacy_cache_cleanup_done = False
 _exif_cache_atexit_registered = False
@@ -59,7 +59,7 @@ def _register_exif_cache_atexit() -> None:
     atexit.register(_flush_exif_on_exit)
 
 
-def get_image_cache() -> "ImageCache":
+def get_image_cache() -> ImageCache:
     """Get the singleton ImageCache instance, creating it if needed."""
     global _global_cache
     if _global_cache is None:
@@ -75,7 +75,7 @@ def get_image_cache() -> "ImageCache":
     return _global_cache
 
 
-def initialize_cache(cache_dir: str = None, persistent_cache_enabled: bool = False) -> "ImageCache":
+def initialize_cache(cache_dir: str = None, persistent_cache_enabled: bool = False) -> ImageCache:
     """Initialize the image cache explicitly with given parameters."""
     global _global_cache
     if _global_cache is not None:

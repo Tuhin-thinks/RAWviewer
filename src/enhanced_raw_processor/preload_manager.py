@@ -4,14 +4,14 @@ Manages preloading of adjacent images for fast navigation.
 from __future__ import annotations
 
 import os
-import threading
-from typing import Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject
 
 from image_cache import get_image_cache
 from raw_file_extensions import RAW_FILE_EXTENSIONS
+
 from .enhanced_processor import EnhancedRAWProcessor
+
 
 class PreloadManager(QObject):
     """Manages preloading of adjacent images for fast navigation using RAWProcessor (v0.5 style)."""
@@ -66,10 +66,10 @@ class PreloadManager(QObject):
                         file_path, use_quality_processing=False)
                     thread.image_processed.connect(
                         lambda img, fp=file_path: self._on_preload_complete(fp, img))
-                
+
                 thread.finished.connect(
                     lambda fp=file_path: self._cleanup_thread(fp))
-                
+
                 self.active_threads[file_path] = thread
                 thread.start()
 
@@ -95,10 +95,10 @@ class PreloadManager(QObject):
         """Cancel all active preload threads."""
         import logging
         logger = logging.getLogger(__name__)
-        
+
         threads_to_cleanup = list(self.active_threads.items())
         logger.debug(f"cancel_all_preloads(): Cancelling {len(threads_to_cleanup)} preload threads")
-        
+
         for file_path, thread in threads_to_cleanup:
             try:
                 file_basename = os.path.basename(file_path)
@@ -112,7 +112,7 @@ class PreloadManager(QObject):
                     logger.debug(f"cancel_all_preloads(): Using stop_processing() for {file_basename}")
                     if hasattr(thread, 'stop_processing'):
                         thread.stop_processing()
-                    
+
                     # OPTIMIZED: Use shorter initial wait, but allow longer if needed
                     # Preload threads are lower priority, so we can be more aggressive
                     if hasattr(thread, 'wait'):
@@ -128,9 +128,9 @@ class PreloadManager(QObject):
                                 thread.wait(50)  # Short wait after terminate
             except Exception as e:
                 logger.warning(f"cancel_all_preloads(): Error cleaning up thread for {os.path.basename(file_path)}: {e}", exc_info=True)
-        
+
         self.active_threads.clear()
-        logger.debug(f"cancel_all_preloads(): All preload threads cancelled")
+        logger.debug("cancel_all_preloads(): All preload threads cancelled")
 
     def _cleanup_thread(self, file_path: str):
         """Clean up finished thread."""

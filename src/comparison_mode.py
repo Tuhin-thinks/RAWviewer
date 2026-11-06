@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Set
 
 
 class CompareEntry(Enum):
@@ -16,15 +15,15 @@ class CompareEntry(Enum):
 class ComparisonSession:
     """Dual-pane compare session: fixed Select (left) / Candidate (right)."""
 
-    members: List[str]
+    members: list[str]
     entry: CompareEntry
     select: str = ""
     candidate: str = ""
-    queue: List[str] = field(default_factory=list)
-    rejected: Set[str] = field(default_factory=set)
+    queue: list[str] = field(default_factory=list)
+    rejected: set[str] = field(default_factory=set)
     complete: bool = False
 
-    def visible_members(self) -> List[str]:
+    def visible_members(self) -> list[str]:
         return [path for path in self.members if path not in self.rejected]
 
     def restart_round(self) -> None:
@@ -40,7 +39,7 @@ class ComparisonSession:
             self.queue = []
             self.complete = True
 
-    def _others(self) -> List[str]:
+    def _others(self) -> list[str]:
         return [path for path in self.visible_members() if path != self.select]
 
     def step_candidate(self, delta: int) -> None:

@@ -17,7 +17,6 @@ import os
 import re
 import shutil
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -105,7 +104,7 @@ def parse_cube_file(path: str) -> CubeLUT:
     dmin = np.array([0.0, 0.0, 0.0], dtype=np.float32)
     dmax = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     rows: list[list[float]] = []
-    with open(path, "r", encoding="utf-8", errors="replace") as f:
+    with open(path, encoding="utf-8", errors="replace") as f:
         for raw in f:
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -144,7 +143,7 @@ def parse_cube_file(path: str) -> CubeLUT:
     return CubeLUT(title=title, size=size, data=data, domain_min=dmin, domain_max=dmax)
 
 
-def load_managed_lut(name: str) -> Optional[CubeLUT]:
+def load_managed_lut(name: str) -> CubeLUT | None:
     path = managed_lut_path(name)
     if not name or not os.path.isfile(path):
         return None

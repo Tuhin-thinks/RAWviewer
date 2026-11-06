@@ -7,20 +7,18 @@ import ctypes
 import os
 import sys
 import threading
+from collections.abc import Callable
 from ctypes import (
     HRESULT,
     POINTER,
     Structure,
-    WINFUNCTYPE,
     byref,
-    c_uint,
     c_uint32,
     c_ulong,
     c_ushort,
     c_void_p,
     c_wchar_p,
 )
-from typing import Callable, Optional
 
 if sys.platform != "win32":
     _share_file_windows = None  # type: ignore[misc, assignment]
@@ -44,7 +42,7 @@ else:
         ]
 
         @classmethod
-        def from_str(cls, value: str) -> "_WinGuid":
+        def from_str(cls, value: str) -> _WinGuid:
             import uuid
 
             u = uuid.UUID(value)
@@ -82,12 +80,12 @@ else:
             self.hwnd = hwnd
             self.path = ""
             self.token = None
-            self.handler: Optional[Callable] = None
+            self.handler: Callable | None = None
             self.dtm = None
 
     _SESSIONS: dict[int, _ShareSession] = {}
     _SESSIONS_LOCK = threading.Lock()
-    _INTEROP_CACHE: Optional[object] = None
+    _INTEROP_CACHE: object | None = None
 
     def _ensure_winrt_apartment() -> None:
         global _WINRT_INITIALIZED

@@ -12,16 +12,16 @@ Callers must restore any saved value when leaving Adjust.
 from __future__ import annotations
 
 import sys
-from typing import Optional, Protocol
+from typing import Protocol
 
 _core_display = None
 _cg = None
 _mac_ready = False
-_active_backend: Optional["_BrightnessBackend"] = None
+_active_backend: _BrightnessBackend | None = None
 
 
 class _BrightnessBackend(Protocol):
-    def get(self) -> Optional[float]:
+    def get(self) -> float | None:
         ...
 
     def set(self, value: float) -> bool:
@@ -35,7 +35,7 @@ def _clamp01(value: float) -> float:
     return max(0.0, min(1.0, float(value)))
 
 
-def _from_min_max(current: int, mn: int, mx: int) -> Optional[float]:
+def _from_min_max(current: int, mn: int, mx: int) -> float | None:
     if mx <= mn:
         return None
     return _clamp01((int(current) - int(mn)) / float(int(mx) - int(mn)))
@@ -58,7 +58,7 @@ IOCTL_VIDEO_SET_DISPLAY_BRIGHTNESS = _ctl_code(0x23, 0x127)
 DISPLAYPOLICY_BOTH = 3
 
 
-def _close_backend(backend: Optional[_BrightnessBackend]) -> None:
+def _close_backend(backend: _BrightnessBackend | None) -> None:
     if backend is None:
         return
     closer = getattr(backend, "close", None)
@@ -69,7 +69,7 @@ def _close_backend(backend: Optional[_BrightnessBackend]) -> None:
             pass
 
 
-def _set_active_backend(backend: Optional[_BrightnessBackend]) -> None:
+def _set_active_backend(backend: _BrightnessBackend | None) -> None:
     global _active_backend
     if _active_backend is backend:
         return
@@ -107,7 +107,7 @@ def _ensure_mac_loaded() -> bool:
         return False
 
 
-def main_display_id() -> Optional[int]:
+def main_display_id() -> int | None:
     if not _ensure_mac_loaded():
         return None
     try:
@@ -117,15 +117,15 @@ def main_display_id() -> Optional[int]:
 
 
 class _MacBackend:
-    def __init__(self, display_id: Optional[int] = None) -> None:
+    def __init__(self, display_id: int | None = None) -> None:
         self._display_id = display_id
 
-    def _did(self) -> Optional[int]:
+    def _did(self) -> int | None:
         if self._display_id is not None:
             return int(self._display_id)
         return main_display_id()
 
-    def get(self) -> Optional[float]:
+    def get(self) -> float | None:
         did = self._did()
         if did is None:
             return None
@@ -167,7 +167,7 @@ class _Dxva2Backend:
         self._mn = 0
         self._mx = 100
 
-    def get(self) -> Optional[float]:
+    def get(self) -> float | None:
         try:
             import ctypes
             from ctypes import wintypes
@@ -213,7 +213,7 @@ class _LcdIoctlBackend:
     def __init__(self, handle) -> None:
         self._handle = handle
 
-    def get(self) -> Optional[float]:
+    def get(self) -> float | None:
         try:
             import ctypes
             from ctypes import wintypes
@@ -296,7 +296,7 @@ class _WmiBackend:
         self._monitor = monitor
         self._keep = keep  # locator + service must outlive the query objects
 
-    def get(self) -> Optional[float]:
+    def get(self) -> float | None:
         try:
             pct = int(self._monitor.CurrentBrightness)
             if pct < 0 or pct > 100:
@@ -340,7 +340,7 @@ def _iter_swbem(objset) -> list:
         return []
 
 
-def _win_hmonitors(hwnd: Optional[int]) -> list:
+def _win_hmonitors(hwnd: int | None) -> list:
     import ctypes
     from ctypes import wintypes
 
@@ -374,7 +374,7 @@ def _win_hmonitors(hwnd: Optional[int]) -> list:
     return found
 
 
-def _try_dxva2(hwnd: Optional[int]) -> Optional[_Dxva2Backend]:
+def _try_dxva2(hwnd: int | None) -> _Dxva2Backend | None:
     try:
         import ctypes
         from ctypes import wintypes
@@ -416,7 +416,7 @@ def _try_dxva2(hwnd: Optional[int]) -> Optional[_Dxva2Backend]:
     return None
 
 
-def _try_lcd_ioctl() -> Optional[_LcdIoctlBackend]:
+def _try_lcd_ioctl() -> _LcdIoctlBackend | None:
     try:
         import ctypes
         from ctypes import wintypes
@@ -458,7 +458,7 @@ def _try_lcd_ioctl() -> Optional[_LcdIoctlBackend]:
     return None
 
 
-def _try_wmi() -> Optional[_WmiBackend]:
+def _try_wmi() -> _WmiBackend | None:
     try:
         import comtypes.client
     except Exception:
@@ -495,7 +495,7 @@ def _try_wmi() -> Optional[_WmiBackend]:
     return None
 
 
-def _win_pick_backend(hwnd: Optional[int] = None) -> Optional[_BrightnessBackend]:
+def _win_pick_backend(hwnd: int | None = None) -> _BrightnessBackend | None:
     for factory in (
         lambda: _try_dxva2(hwnd),
         _try_lcd_ioctl,
@@ -511,8 +511,8 @@ def _win_pick_backend(hwnd: Optional[int] = None) -> Optional[_BrightnessBackend
 
 
 def get_brightness(
-    display_id: Optional[int] = None, hwnd: Optional[int] = None
-) -> Optional[float]:
+    display_id: int | None = None, hwnd: int | None = None
+) -> float | None:
     """Return current user brightness in 0..1, or None if unavailable."""
     if sys.platform == "darwin":
         if not _ensure_mac_loaded():
@@ -539,8 +539,8 @@ def get_brightness(
 
 def set_brightness(
     value: float,
-    display_id: Optional[int] = None,
-    hwnd: Optional[int] = None,
+    display_id: int | None = None,
+    hwnd: int | None = None,
 ) -> bool:
     """Set user brightness to ``value`` (clamped 0..1). Returns True on success."""
     v = _clamp01(value)

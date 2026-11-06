@@ -52,6 +52,5 @@ def urlretrieve(
         ctx = ssl.create_default_context(cafile=certifi.where())
     except ImportError:
         pass
-    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-        with open(dest_path, "wb") as out:
-            shutil.copyfileobj(resp, out)
+    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp, open(dest_path, "wb") as out:
+        shutil.copyfileobj(resp, out)

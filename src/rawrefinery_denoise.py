@@ -8,7 +8,6 @@ and one ISO conditioning value (ISO / 6400).
 import logging
 import os
 import threading
-from typing import Optional
 
 import numpy as np
 
@@ -39,7 +38,7 @@ def model_available() -> bool:
 def _get_session(path: str):
     global _SESSION, _SESSION_PATH
     with _SESSION_LOCK:
-        if _SESSION is not None and _SESSION_PATH == path:
+        if _SESSION is not None and path == _SESSION_PATH:
             return _SESSION
         import onnxruntime as ort
 

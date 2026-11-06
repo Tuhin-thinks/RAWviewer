@@ -5,32 +5,31 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from typing import Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 _scunet_availability_logged = False
 
+from core.errors import ExportCancelled, RAWViewerError  # noqa: F401
 from raw_adjustments import (
     DEFAULT_ADJUSTMENTS,
     RECOVERY_BASELINE_KEY,
     is_default_adjustments,
     uses_recovery_tone_map,
 )
-from raw_transform import TRANSFORM_KEYS as _TRANSFORM_KEYS
 from raw_chroma_denoise import apply_chroma_denoise, apply_luma_denoise, chroma_denoise_enabled
 from raw_dodge_burn import DEFAULT_STRENGTH as _DB_DEFAULT_STRENGTH
 from raw_dodge_burn import MASK_KEY as _DB_MASK_KEY
 from raw_dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
 from raw_dodge_burn import STRENGTH_KEY as _DB_STRENGTH_KEY
 from raw_dodge_burn import resolve_mask_from_adj as _resolve_db_mask
+from raw_pv2012 import apply_pv2012_tone_rgb
 from raw_spot_heal import MASK_KEY as _HEAL_MASK_KEY
 from raw_spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
 from raw_spot_heal import resolve_mask_from_adj as _resolve_heal_mask
-from raw_pv2012 import apply_pv2012_tone_rgb
 from raw_tone_curve import TONE_CURVE_SERIAL_KEY
-from core.errors import ExportCancelled, RAWViewerError  # noqa: F401
+from raw_transform import TRANSFORM_KEYS as _TRANSFORM_KEYS
 
 
 def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
@@ -202,7 +201,7 @@ def process_linear_edit_buffer(
     adj: dict[str, float],
     *,
     preview: bool = False,
-    chroma_denoise: Optional[bool] = None,
+    chroma_denoise: bool | None = None,
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
@@ -280,7 +279,7 @@ def _process_linear_edit_pre_ai(
     merged: dict[str, float],
     *,
     preview: bool,
-    chroma_denoise: Optional[bool],
+    chroma_denoise: bool | None,
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
@@ -326,7 +325,7 @@ def _apply_legacy_chroma_denoise(
     img: np.ndarray,
     merged: dict[str, float],
     *,
-    chroma_denoise: Optional[bool],
+    chroma_denoise: bool | None,
     preview: bool,
 ) -> np.ndarray:
     do_denoise = chroma_denoise if chroma_denoise is not None else chroma_denoise_enabled()
@@ -480,7 +479,7 @@ def _process_linear_edit_buffer_banded(
     n_workers: int,
     *,
     preview: bool = False,
-    chroma_denoise: Optional[bool] = None,
+    chroma_denoise: bool | None = None,
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
@@ -537,7 +536,7 @@ def _process_linear_edit_tail(
     merged: dict[str, float],
     *,
     preview: bool,
-    chroma_denoise: Optional[bool],
+    chroma_denoise: bool | None,
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
@@ -707,10 +706,10 @@ def _stage_key(merged: dict, keys: tuple) -> tuple:
 def process_linear_edit_buffer_staged(
     rgb_image: np.ndarray,
     adj: dict[str, float],
-    cache: "PreviewStageCache",
+    cache: PreviewStageCache,
     *,
     preview: bool = True,
-    chroma_denoise: Optional[bool] = None,
+    chroma_denoise: bool | None = None,
     preview_lite: bool = False,
     settle_fast: bool = False,
 ) -> np.ndarray:
@@ -855,7 +854,7 @@ def process_linear_edit_buffer_staged(
 
 
 def _apply_display_stage_staged(
-    img: np.ndarray, merged: dict[str, float], cache: "PreviewStageCache"
+    img: np.ndarray, merged: dict[str, float], cache: PreviewStageCache
 ) -> np.ndarray:
     """Cached equivalent of _apply_display_stage for the preview path."""
     from raw_detail_enhance import apply_detail_enhancements
@@ -888,7 +887,7 @@ def _apply_display_stage_staged(
 def render_adjust_preview_uint8(
     rgb_image: np.ndarray,
     adj: dict[str, float],
-    cache: "PreviewStageCache",
+    cache: PreviewStageCache,
     *,
     preview_lite: bool = False,
     settle_fast: bool = False,
@@ -967,7 +966,7 @@ def _apply_display_color_adjustments(
     return out
 
 
-_dither_tile_cache: Optional[np.ndarray] = None
+_dither_tile_cache: np.ndarray | None = None
 
 
 def _dither_tile() -> np.ndarray:
@@ -1115,7 +1114,7 @@ def _process_for_export(
     )
 
 
-def _xmp_extratags(embed_xmp_path: Optional[str]) -> list:
+def _xmp_extratags(embed_xmp_path: str | None) -> list:
     if not embed_xmp_path or not os.path.isfile(embed_xmp_path):
         return []
     with open(embed_xmp_path, "rb") as f:
@@ -1127,7 +1126,7 @@ def _write_16bit_rgb_tiff(
     output_path: str,
     rgb_uint16: np.ndarray,
     *,
-    embed_xmp_path: Optional[str] = None,
+    embed_xmp_path: str | None = None,
 ) -> None:
     """
     Write a genuine 16-bit-per-channel, 3-sample RGB TIFF via ``tifffile``.
@@ -1162,7 +1161,7 @@ def export_adjusted_tiff16(
     adj: dict[str, float],
     output_path: str,
     *,
-    embed_xmp_path: Optional[str] = None,
+    embed_xmp_path: str | None = None,
     use_ai_denoise: bool = False,
     cancel_check=None,
     progress_cb=None,
@@ -1261,9 +1260,9 @@ def export_adjusted_image(
     export_format: str,
     *,
     output_path: str,
-    rgb_linear: Optional[np.ndarray],
+    rgb_linear: np.ndarray | None,
     adj: dict[str, float],
-    embed_xmp_path: Optional[str] = None,
+    embed_xmp_path: str | None = None,
     cancel_check=None,
     progress_cb=None,
     use_ai_denoise: bool = False,

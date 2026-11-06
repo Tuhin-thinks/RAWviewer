@@ -1,11 +1,8 @@
 """Thumbnail, grid, and preview cache operations."""
 from __future__ import annotations
 
-import io
-from typing import Optional
-
 import numpy as np
-from PIL import Image, ImageOps
+
 from cache.keys import _jpeg_bytes_max_edge, disk_preview_max_edge
 
 

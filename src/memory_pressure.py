@@ -18,7 +18,7 @@ import os
 import sys
 import threading
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -34,19 +34,19 @@ _latched: PressureLevel = "none"
 _applied: PressureLevel = "none"
 _thumb_scale = 1.0
 _full_image_scale = 1.0
-_preload_cap: Optional[int] = None
-_env_originals: dict[str, Optional[str]] = {}
+_preload_cap: int | None = None
+_env_originals: dict[str, str | None] = {}
 
 
 @dataclass(frozen=True)
 class MemorySample:
     """One OS memory snapshot. Any field may be None if that probe failed."""
 
-    total_bytes: Optional[int] = None
-    available_bytes: Optional[int] = None
-    percent_used: Optional[float] = None
-    windows_memory_load: Optional[int] = None
-    macos_available_bytes: Optional[int] = None
+    total_bytes: int | None = None
+    available_bytes: int | None = None
+    percent_used: float | None = None
+    windows_memory_load: int | None = None
+    macos_available_bytes: int | None = None
 
 
 def backoff_enabled() -> bool:
@@ -79,7 +79,7 @@ def full_image_budget_scale() -> float:
     return _full_image_scale
 
 
-def adjacent_preload_cap() -> Optional[int]:
+def adjacent_preload_cap() -> int | None:
     """None = no extra cap (use the installed-tier / class default)."""
     return _preload_cap
 
@@ -114,7 +114,7 @@ def _env_float(name: str, default: float, *, minimum: float, maximum: float) -> 
         return default
 
 
-def _windows_memory_status() -> Optional[tuple[int, int, int]]:
+def _windows_memory_status() -> tuple[int, int, int] | None:
     """Return (total_phys, avail_phys, dwMemoryLoad) via GlobalMemoryStatusEx."""
     if sys.platform != "win32":
         return None
@@ -144,7 +144,7 @@ def _windows_memory_status() -> Optional[tuple[int, int, int]]:
         return None
 
 
-def _macos_os_proc_available_memory() -> Optional[int]:
+def _macos_os_proc_available_memory() -> int | None:
     """Bytes the process may still allocate before jetsam; 0 / missing → unknown."""
     if sys.platform != "darwin":
         return None
@@ -160,7 +160,7 @@ def _macos_os_proc_available_memory() -> Optional[int]:
         return None
 
 
-def _fallback_virtual_memory() -> Optional[tuple[int, int, float]]:
+def _fallback_virtual_memory() -> tuple[int, int, float] | None:
     try:
         from image_cache import _safe_virtual_memory
 
@@ -270,7 +270,7 @@ def classify_sample(sample: MemorySample) -> PressureLevel:
     return "none"
 
 
-def observe(sample: Optional[MemorySample] = None) -> PressureLevel:
+def observe(sample: MemorySample | None = None) -> PressureLevel:
     """Debounced, session-sticky latch. Never auto-upgrades mid-session."""
     global _latched
     if not backoff_enabled():
@@ -416,21 +416,13 @@ def _pause_viewer_preload(viewer: object) -> None:
     if cap is not None:
         if hasattr(viewer, "_PRELOAD_NEXT_COUNT"):
             try:
-                setattr(
-                    viewer,
-                    "_PRELOAD_NEXT_COUNT",
-                    min(int(getattr(viewer, "_PRELOAD_NEXT_COUNT")), cap),
-                )
+                viewer._PRELOAD_NEXT_COUNT = min(int(viewer._PRELOAD_NEXT_COUNT), cap)
             except Exception:
                 pass
         prev_cap = 1 if cap <= 1 else max(1, cap - 1)
         if hasattr(viewer, "_PRELOAD_PREV_COUNT"):
             try:
-                setattr(
-                    viewer,
-                    "_PRELOAD_PREV_COUNT",
-                    min(int(getattr(viewer, "_PRELOAD_PREV_COUNT")), prev_cap),
-                )
+                viewer._PRELOAD_PREV_COUNT = min(int(viewer._PRELOAD_PREV_COUNT), prev_cap)
             except Exception:
                 pass
 
@@ -457,7 +449,7 @@ def _pause_viewer_preload(viewer: object) -> None:
         enforce(force=True)
     except TypeError:
         try:
-            setattr(gv, "_thumb_cache_puts_since_check", 10**6)
+            gv._thumb_cache_puts_since_check = 10 ** 6
             enforce()
         except Exception:
             logger.debug("thumb budget enforce failed", exc_info=True)
@@ -500,7 +492,7 @@ def apply_backoff(level: PressureLevel, *, viewer: object | None = None) -> Pres
 
 
 def poll_and_apply(
-    *, viewer: object | None = None, sample: Optional[MemorySample] = None
+    *, viewer: object | None = None, sample: MemorySample | None = None
 ) -> PressureLevel:
     """Idle-timer entry: observe one sample, apply backoff if the latch rose."""
     if not backoff_enabled():

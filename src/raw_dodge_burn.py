@@ -36,7 +36,6 @@ from __future__ import annotations
 import base64
 import threading
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 
@@ -47,13 +46,13 @@ DEFAULT_STRENGTH = 1.75  # stops at mask value +/-1.0
 MASK_CLIP = 1.5
 
 
-def mask_stage_fingerprint(mask: "DodgeBurnMask") -> str:
+def mask_stage_fingerprint(mask: DodgeBurnMask) -> str:
     """Cheap stage-cache key: shape + mutation version (no PNG encode)."""
     h, w = mask.data.shape[:2]
     return f"mem:{int(h)}x{int(w)}:v{int(mask.version)}"
 
 
-def resolve_mask_from_adj(adj: dict | None) -> Optional["DodgeBurnMask"]:
+def resolve_mask_from_adj(adj: dict | None) -> DodgeBurnMask | None:
     """Prefer live mask object; fall back to XMP/base64 serial (not mem: fingerprints)."""
     if not adj:
         return None
@@ -83,11 +82,11 @@ class DodgeBurnMask:
 
     data: np.ndarray  # float32, (H, W), range [-MASK_CLIP, MASK_CLIP]
     version: int = field(default=0, compare=False, repr=False)
-    _empty_cache: Optional[tuple] = field(default=None, compare=False, repr=False)
-    _gain_cache: Optional[tuple] = field(default=None, compare=False, repr=False)
+    _empty_cache: tuple | None = field(default=None, compare=False, repr=False)
+    _gain_cache: tuple | None = field(default=None, compare=False, repr=False)
 
     @classmethod
-    def empty(cls, height: int, width: int) -> "DodgeBurnMask":
+    def empty(cls, height: int, width: int) -> DodgeBurnMask:
         return cls(np.zeros((height, width), dtype=np.float32))
 
     def touch(self) -> None:
@@ -122,7 +121,7 @@ def _edge_assist_gate(
     cy: float,
     *,
     luma_tol: float = 0.10,
-    chroma: Optional[np.ndarray] = None,
+    chroma: np.ndarray | None = None,
 ) -> np.ndarray:
     """Per-pixel [0,1] weight: keep paint on the seed's connected subject.
 
@@ -305,12 +304,12 @@ def stamp_brush(
     strength: float,
     dodge: bool,
     *,
-    luminance: Optional[np.ndarray] = None,
-    chroma: Optional[np.ndarray] = None,
+    luminance: np.ndarray | None = None,
+    chroma: np.ndarray | None = None,
     edge_assist: bool = True,
     luma_tol: float = 0.10,
-    stroke_baseline: Optional[np.ndarray] = None,
-    max_stroke_delta: Optional[float] = None,
+    stroke_baseline: np.ndarray | None = None,
+    max_stroke_delta: float | None = None,
 ) -> tuple[int, int, int, int]:
     """Add one soft circular stamp to ``mask`` in place.
 
@@ -379,8 +378,8 @@ def erase_brush(
     radius: float,
     strength: float,
     *,
-    luminance: Optional[np.ndarray] = None,
-    chroma: Optional[np.ndarray] = None,
+    luminance: np.ndarray | None = None,
+    chroma: np.ndarray | None = None,
     edge_assist: bool = True,
     luma_tol: float = 0.10,
 ) -> tuple[int, int, int, int]:
@@ -477,7 +476,7 @@ def resize_mask_to(mask: DodgeBurnMask, height: int, width: int) -> np.ndarray:
 
 
 def apply_dodge_burn(
-    img: np.ndarray, mask: Optional[DodgeBurnMask], stops: float
+    img: np.ndarray, mask: DodgeBurnMask | None, stops: float
 ) -> np.ndarray:
     """Scene-linear per-pixel exposure multiplier: img * 2**(mask * stops).
 
@@ -501,8 +500,9 @@ def apply_dodge_burn(
         gain = cached[1]
     else:
         try:
-            from perf_metrics import perf_mark
             import time as _time
+
+            from perf_metrics import perf_mark
 
             t0 = _time.perf_counter()
             m = resize_mask_to(mask, h, w)
@@ -529,7 +529,7 @@ def apply_dodge_burn(
     return _multiply_by_2d_factor(img, gain)
 
 
-def serialize_mask(mask: Optional[DodgeBurnMask]) -> str:
+def serialize_mask(mask: DodgeBurnMask | None) -> str:
     """Encode as base64 PNG (8-bit, mask value = (px/255)*2*CLIP - CLIP)."""
     if mask is None or mask.is_empty:
         return ""
@@ -544,7 +544,7 @@ def serialize_mask(mask: Optional[DodgeBurnMask]) -> str:
     return base64.b64encode(buf.tobytes()).decode("ascii")
 
 
-def deserialize_mask(serial: str) -> Optional[DodgeBurnMask]:
+def deserialize_mask(serial: str) -> DodgeBurnMask | None:
     if not serial:
         return None
     try:
@@ -570,7 +570,7 @@ _DESERIALIZE_CACHE_MAX = 4
 _DESERIALIZE_CACHE_LOCK = threading.Lock()
 
 
-def _deserialize_mask_cached(serial: str) -> Optional[DodgeBurnMask]:
+def _deserialize_mask_cached(serial: str) -> DodgeBurnMask | None:
     """Read-only variant of deserialize_mask() for the render pipeline.
 
     process_linear_edit_buffer(_staged) and _apply_adjustments_to_srgb call

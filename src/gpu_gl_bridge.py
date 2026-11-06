@@ -21,7 +21,7 @@ import logging
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ _CUDART = None
 _CUDART_FAIL = False
 
 
-def _cudart_path() -> Optional[str]:
+def _cudart_path() -> str | None:
     try:
         import torch
 
@@ -440,10 +440,11 @@ def gl_tex_image_2d_rgba_empty(width: int, height: int) -> None:
     )
 
 
-def download_for_pixmap_path(rgb_device: Any, *, as_uint16: bool = False) -> Optional[Any]:
+def download_for_pixmap_path(rgb_device: Any, *, as_uint16: bool = False) -> Any | None:
     """Pinned D2H helper mirroring the ISP download path (numpy owned copy)."""
     try:
         import torch
+
         from gpu_raw_processor import _download_device_rgb, _workspace_for
 
         if not isinstance(rgb_device, torch.Tensor):

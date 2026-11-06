@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Dict
 
 
 def presets_dir() -> str:
@@ -68,7 +67,7 @@ def remove_managed_preset(name: str) -> None:
         os.remove(path)
 
 
-def load_preset_adjustments(name: str) -> Dict[str, float]:
+def load_preset_adjustments(name: str) -> dict[str, float]:
     """Load global edit settings from a managed preset basename."""
     from raw_adjustments import load_adjustments_from_xmp
 

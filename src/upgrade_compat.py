@@ -12,7 +12,7 @@ import json
 import os
 import sys
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 _CACHE_DIR = os.path.expanduser("~/.rawviewer_cache")
 _STATE_PATH = os.path.join(_CACHE_DIR, "upgrade_state.json")
@@ -26,10 +26,10 @@ _LEGACY_MARKERS = (
 UPGRADE_STATE_VERSION = 1
 
 
-def _load_state() -> Dict[str, Any]:
+def _load_state() -> dict[str, Any]:
     try:
         if os.path.isfile(_STATE_PATH):
-            with open(_STATE_PATH, "r", encoding="utf-8") as f:
+            with open(_STATE_PATH, encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, dict):
                 return data
@@ -38,7 +38,7 @@ def _load_state() -> Dict[str, Any]:
     return {}
 
 
-def _save_state(state: Dict[str, Any]) -> None:
+def _save_state(state: dict[str, Any]) -> None:
     try:
         os.makedirs(_CACHE_DIR, exist_ok=True)
         state.setdefault("version", UPGRADE_STATE_VERSION)

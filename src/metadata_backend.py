@@ -16,21 +16,23 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, BinaryIO, Mapping
+from typing import Any, BinaryIO
 
 # pyexiv2 will be imported lazily within functions to avoid startup overhead
 _HAS_PYEXIV2 = None
 _pyexiv2 = None  # type: ignore
 
 import logging
+
 logging.getLogger("exifread").setLevel(logging.ERROR)
 
 def _ensure_pyexiv2():
     global _HAS_PYEXIV2, _pyexiv2
     if _HAS_PYEXIV2 is not None:
         return _HAS_PYEXIV2
-    
+
     try:
         import pyexiv2 as _p
         _pyexiv2 = _p

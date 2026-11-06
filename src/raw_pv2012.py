@@ -8,8 +8,6 @@ perceptual space. Tone work is luminance-only to preserve hue.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from raw_tone_curve import apply_tone_curve_perceptual
@@ -120,7 +118,7 @@ def _highlight_mask_scene_linear(lum: np.ndarray) -> np.ndarray:
 
 def apply_regional_linear_exposure(
     img: np.ndarray, shadows: float, highlights: float
-) -> tuple[np.ndarray, Optional[np.ndarray]]:
+) -> tuple[np.ndarray, np.ndarray | None]:
     """Exposure-like regional gain in scene-linear RGB.
 
     Returns ``(rgb, gain_map)``. ``gain_map`` is None when the op is a no-op
@@ -159,8 +157,9 @@ def _damp_chroma_after_lift(
     lift_frac: np.ndarray,
 ) -> np.ndarray:
     """Edge-aware HF chroma damp after a luminance lift (shared by ratio + linear paths)."""
-    from raw_chroma_denoise import _luma_edge_weight, apply_guided_filter
     import cv2
+
+    from raw_chroma_denoise import _luma_edge_weight, apply_guided_filter
 
     smooth_luma = apply_guided_filter(luma_2d, luma_2d, 10, 0.003)
     edge_w = _luma_edge_weight(smooth_luma.astype(np.float32), soft=0.008)

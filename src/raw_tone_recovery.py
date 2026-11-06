@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 
@@ -394,9 +395,9 @@ def decode_and_recover_raw(
     file_path: str,
     *,
     max_edge: int = RECOVERY_MAX_EDGE,
-    apply_orientation: Optional[Callable[[np.ndarray, int, Any], np.ndarray]] = None,
-    exif_data: Optional[dict] = None,
-) -> Optional[np.ndarray]:
+    apply_orientation: Callable[[np.ndarray, int, Any], np.ndarray] | None = None,
+    exif_data: dict | None = None,
+) -> np.ndarray | None:
     """Decode RAW linear with highlight reconstruction, tone-map, return uint8 RGB."""
     import rawpy
 
@@ -405,9 +406,8 @@ def decode_and_recover_raw(
     try:
         from enhanced_raw_processor import _rawpy_global_lock
 
-        with _rawpy_global_lock:
-            with rawpy.imread(file_path) as raw:
-                rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
+        with _rawpy_global_lock, rawpy.imread(file_path) as raw:
+            rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
     except Exception as exc:
         logger.warning(
             "RAW recovery decode failed for %s: %s",
@@ -435,9 +435,9 @@ def decode_raw_for_edr_rgb(
     *,
     max_edge: int = 0,
     peak_display: float = _EDR_PEAK_DISPLAY,
-    apply_orientation: Optional[Callable[[np.ndarray, int, Any], np.ndarray]] = None,
-    exif_data: Optional[dict] = None,
-) -> Optional[np.ndarray]:
+    apply_orientation: Callable[[np.ndarray, int, Any], np.ndarray] | None = None,
+    exif_data: dict | None = None,
+) -> np.ndarray | None:
     """Decode RAW linear 16-bit and tone-map for macOS EDR display (float32 RGB)."""
     import rawpy
 
@@ -446,9 +446,8 @@ def decode_raw_for_edr_rgb(
     try:
         from enhanced_raw_processor import _rawpy_global_lock
 
-        with _rawpy_global_lock:
-            with rawpy.imread(file_path) as raw:
-                rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
+        with _rawpy_global_lock, rawpy.imread(file_path) as raw:
+            rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
     except Exception as exc:
         logger.warning(
             "RAW EDR decode failed for %s: %s",

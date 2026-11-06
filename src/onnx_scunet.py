@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 import threading
-from typing import Optional
 
 import numpy as np
 

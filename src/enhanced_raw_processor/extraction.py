@@ -4,33 +4,20 @@ state for the enhanced RAW processor package.
 """
 from __future__ import annotations
 
-import io
-import os
-import sys
-import time
 import logging
+import os
 import threading
 import warnings
-from typing import Optional, Dict, Any, Tuple, Union
 
 import numpy as np
-import rawpy
-from PIL import Image
-from PyQt6.QtCore import QThread, pyqtSignal, QObject, QSize, QLoggingCategory
-from PyQt6.QtGui import QPixmap, QImage, QImageReader
+from PyQt6.QtCore import QLoggingCategory, QSize
+from PyQt6.QtGui import QImage, QImageReader
 
-import exifread
 import metadata_backend
-from rawpy_gil import rawpy_imread_warm
-from raw_file_extensions import RAW_FILE_EXTENSIONS
-from image_cache import get_image_cache
-from image_load_manager import yield_if_current_task_active
 from common_image_loader import (
     decode_embedded_jpeg_bytes,
-    normalize_capture_time_string,
-    orientation_from_embedded_jpeg_bytes,
-    is_slow_storage_path,
 )
+from rawpy_gil import rawpy_imread_warm
 
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats*=false")
@@ -144,7 +131,7 @@ _embedded_scan_miss_cache_max = 5000
 
 # ========== QImage helpers ==========
 
-def _qimage_to_rgb_array(image: QImage) -> Optional[np.ndarray]:
+def _qimage_to_rgb_array(image: QImage) -> np.ndarray | None:
     """Convert a QImage to an RGB numpy array (HxWx3 uint8)."""
     try:
         if image.isNull():
@@ -166,7 +153,7 @@ def _qimage_to_rgb_array(image: QImage) -> Optional[np.ndarray]:
 
 # ========== JPEG helpers ==========
 
-def get_jpeg_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
+def get_jpeg_dimensions(data: bytes) -> tuple[int, int] | None:
     """Parse JPEG SOF marker to get image dimensions without full decode."""
     if not data or len(data) < 4:
         return None
@@ -195,7 +182,7 @@ def get_jpeg_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
 
 # ========== Embedded JPEG extraction ==========
 
-def _largest_jpeg_from_blob(blob: bytes, max_size: int) -> Optional[np.ndarray]:
+def _largest_jpeg_from_blob(blob: bytes, max_size: int) -> np.ndarray | None:
     """Find the largest embedded JPEG in *blob* and decode+resize it.
 
     ``blob`` is a raw binary chunk (a file or an IFD ``Strip`` /
@@ -207,7 +194,7 @@ def _largest_jpeg_from_blob(blob: bytes, max_size: int) -> Optional[np.ndarray]:
     """
     if not blob or len(blob) < 4:
         return None
-    best: Optional[np.ndarray] = None
+    best: np.ndarray | None = None
     best_pixels = 0
     i = 0
     while i < len(blob) - 1:
@@ -236,7 +223,7 @@ def _largest_jpeg_from_blob(blob: bytes, max_size: int) -> Optional[np.ndarray]:
     return best
 
 
-def _extract_bmff_uuid_embedded_jpeg(file_path: str, max_size: int) -> Optional[np.ndarray]:
+def _extract_bmff_uuid_embedded_jpeg(file_path: str, max_size: int) -> np.ndarray | None:
     """CR3-specific: scan BMFF structure for ``crx_preview`` / ``P prp`` UUID box.
 
     ISO Base Media File Format (BMFF) used by Canon CR3 wraps the embedded
@@ -275,7 +262,7 @@ def _extract_bmff_uuid_embedded_jpeg(file_path: str, max_size: int) -> Optional[
 
 def probe_effective_raw_orientation(
     file_path: str,
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """Return ``(orientation, original_width, original_height)`` for *file_path*.
 
     Uses LibRaw's ``sizes.flip`` as the authoritative sensor orientation,
@@ -323,7 +310,7 @@ def cached_raw_exif_orientation_trustworthy(file_path: str, cached: dict | None 
 
 def _orientation_from_embedded_preview(
     file_path: str,
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """Fallback: determine orientation from embedded JPEG preview dimensions.
 
     Returns ``(orientation, original_width, original_height)``.
@@ -346,7 +333,7 @@ def _orientation_from_embedded_preview(
 
 def _thumbnail_via_qimage_reader(
     file_path: str, max_size: int, auto_transform: bool = True
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Decode thumbnail using QImageReader, returning an RGB ndarray."""
     try:
         reader = QImageReader(file_path)
@@ -476,7 +463,7 @@ def _scan_for_jpeg_segments(data: bytes) -> list[bytes]:
 
 # ========== NEF HE compression detection ==========
 
-def _detect_nef_he_compression(file_path: str) -> Optional[bool]:
+def _detect_nef_he_compression(file_path: str) -> bool | None:
     """Proactively detect Nikon HE / HE* compressed NEF before processing.
 
     HE (High Efficiency) NEF files need extra half-size handling because
@@ -520,7 +507,7 @@ def read_ifd(offset):
     pass
 
 
-def extract_embedded_jpeg_by_scan(file_path: str, max_size: int) -> Optional[np.ndarray]:
+def extract_embedded_jpeg_by_scan(file_path: str, max_size: int) -> np.ndarray | None:
     """Extract embedded JPEG from RAW by scanning for JPEG markers.
 
     High-speed path that scans the file for JPEG SOI markers and decodes
@@ -549,7 +536,7 @@ def extract_embedded_jpeg_by_scan(file_path: str, max_size: int) -> Optional[np.
         return None
 
 
-def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> Optional[np.ndarray]:
+def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> np.ndarray | None:
     """Low-level TIFF scan for embedded JPEG."""
     from struct import unpack_from
 
@@ -563,7 +550,7 @@ def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> Option
             if ifd_offset < 8:
                 return None
 
-            best_arr: Optional[np.ndarray] = None
+            best_arr: np.ndarray | None = None
             best_pixels = 0
             visited_ifds: set = set()
 
@@ -611,7 +598,6 @@ def _extract_embedded_jpeg_by_scan_impl(file_path: str, max_size: int) -> Option
                             try:
                                 f.seek(sub_off)
                                 sub_data = f.read(4096)
-                                from struct import unpack_from as uf
                                 sj = _scan_for_jpeg_segments(sub_data)
                                 for seg in sj:
                                     decoded = decode_embedded_jpeg_bytes(seg, max_size)

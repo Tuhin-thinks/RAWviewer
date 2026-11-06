@@ -30,10 +30,10 @@ with Y increasing upward; PowerShot-style Y-down is kept as a fallback.
 
 from __future__ import annotations
 
-import re
-import struct
 import functools
 import os
+import re
+import struct
 from typing import Any
 
 
@@ -655,17 +655,14 @@ def _get_focus_hint_sensor_space(path: str) -> tuple[tuple[int, int, int, int], 
         # Fallback to exifread: only SubjectArea for non-RAW to keep it fast.
         ext = os.path.splitext(path)[1].lower().lstrip(".")
         is_raw = ext in ("cr2", "cr3", "nef", "arw", "dng", "orf", "rw2", "raf")
-        
+
         try:
-            from exifread_af import (
-                pixmap_ltwh_subject_cipa_from_exifread,
-                pixmap_ltwh_af_from_exifread
-            )
+            from exifread_af import pixmap_ltwh_af_from_exifread, pixmap_ltwh_subject_cipa_from_exifread
             # Use 1000x1000 as virtual pixmap to get a normalized rect_ref
             lt_sub = pixmap_ltwh_subject_cipa_from_exifread(path, 1000, 1000)
             if lt_sub:
                 return lt_sub, "exif_subject", 1000, 1000
-            
+
             if is_raw:
                 lt_af = pixmap_ltwh_af_from_exifread(path, 1000, 1000)
                 if lt_af:
@@ -705,7 +702,7 @@ def _get_focus_hint_sensor_space(path: str) -> tuple[tuple[int, int, int, int], 
         rect_ref = _rect_ref_from_subject_area(nums, ref_w, ref_h)
         if rect_ref:
             return rect_ref, "exif_subject", ref_w, ref_h
-    
+
     sl = row.get("SubjectLocation")
     if sl is not None:
         nums = _numbers_from_tag_value(sl)
@@ -743,13 +740,13 @@ def pixmap_ltwh_focus_hint(
     """
     if not path or pixmap_w < 4 or pixmap_h < 4:
         return None
-    
+
     hint_data = _get_focus_hint_sensor_space(path)
     if not hint_data:
         return None
-    
+
     rect_ref, source, ref_w, ref_h = hint_data
-    
+
     # Rotate rect before mapping to final pixmap if display is rotated
     rect_rot = _rotate_rect(rect_ref, ref_w, ref_h, orientation)
     # Swap ref_w/ref_h if 90deg rotated

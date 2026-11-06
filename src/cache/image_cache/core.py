@@ -1,25 +1,18 @@
 """Core lifecycle, purge helpers, and memory management for ImageCache."""
 from __future__ import annotations
 
-import atexit
 import logging
 import os
-import shutil
 import threading
 import time
 from collections import OrderedDict
-from typing import Any
 
-import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtGui import QPixmap
 
 from cache.disk import PersistentGridCache, PersistentPreviewCache, PersistentThumbnailCache
 from cache.keys import (
     _cache_path_key,
     _env_int,
-    _jpeg_bytes_max_edge,
-    disk_preview_max_edge,
     libraw_runtime_stamp,
 )
 from cache.memory import LRUCache, MemoryMonitor, MemoryOnlyPersistentCache

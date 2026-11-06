@@ -1,8 +1,10 @@
 import logging
 import os
-import time
 import threading
-from typing import Any, Callable, Optional
+import time
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -20,14 +22,14 @@ logger = logging.getLogger(__name__)
 # violation" came from the custom raw ElementwiseKernel path, which is not
 # audited for concurrent launches with shared kernel objects.
 _GPU_LOCK = threading.Lock()
-_GPU_CONCURRENCY_CACHED: Optional[int] = None
-_GPU_SEMAPHORE: Optional[threading.Semaphore] = None
+_GPU_CONCURRENCY_CACHED: int | None = None
+_GPU_SEMAPHORE: threading.Semaphore | None = None
 # Debounce state for the idle-triggered allocator flush (see
 # maybe_release_gpu_memory_after_decode): a pending threading.Timer that
 # fires release_cached_gpu_memory() only once no new decode has completed
 # for RAWVIEWER_GPU_EMPTY_CACHE_S seconds, re-armed (cancel + reschedule) on
 # every decode instead of firing on a flat calendar-time cadence.
-_IDLE_FLUSH_TIMER: Optional[threading.Timer] = None
+_IDLE_FLUSH_TIMER: threading.Timer | None = None
 _IDLE_FLUSH_LOCK = threading.Lock()
 
 
@@ -46,9 +48,7 @@ def _default_gpu_concurrency() -> int:
             vram_gb = float(props.total_memory) / (1024.0 ** 3)
             if vram_gb >= 16:
                 base = 3
-            elif vram_gb >= 10:
-                base = 2
-            elif vram_gb >= 6:
+            elif vram_gb >= 10 or vram_gb >= 6:
                 base = 2
             else:
                 base = 1
@@ -99,14 +99,14 @@ def _cuda_device_str() -> str:
 
 
 # Cache detection results to avoid repeated import attempts
-_GPU_BACKEND: Optional[str] = None
+_GPU_BACKEND: str | None = None
 
 # Pre-import heavy ML libraries on the main thread.
 # Importing torch for the first time inside a background thread (e.g., QRunnable)
 # causes OpenMP (libomp.dylib) to fatally abort on macOS.
 try:
-    import torch
     import kornia
+    import torch
     _HAS_TORCH = True
 except ImportError:
     _HAS_TORCH = False
@@ -291,7 +291,7 @@ def _run_idle_gpu_flush() -> None:
 def gpu_demosaic_pytorch_unpacked(
     unpacked,
     device_str: str = "cuda",
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     return_linear: bool = False,
     *,
     retain_device: bool = False,
@@ -303,9 +303,7 @@ def gpu_demosaic_pytorch_unpacked(
     When ``retain_device`` is True (CUDA + Phase 2c), returns a ``DeviceRgb``
     instead of downloading to numpy.
     """
-    if device_str in ("cuda", "cuda:0") and os.environ.get("RAWVIEWER_CUDA_DEVICE", "").strip():
-        device_str = _cuda_device_str()
-    elif device_str == "cuda":
+    if device_str in ("cuda", "cuda:0") and os.environ.get("RAWVIEWER_CUDA_DEVICE", "").strip() or device_str == "cuda":
         device_str = _cuda_device_str()
     device = torch.device(device_str)
 
@@ -430,7 +428,7 @@ def _rgb_cam_on_device(unpacked, device) -> Any:
     return t
 
 
-def gpu_vram_snapshot(device_str: Optional[str] = None) -> dict[str, float]:
+def gpu_vram_snapshot(device_str: str | None = None) -> dict[str, float]:
     """Return CUDA memory stats in MiB (empty dict if CUDA unavailable)."""
     if not _HAS_TORCH:
         return {}
@@ -734,8 +732,8 @@ def _gpu_demosaic_pytorch_body(
     return out
 
 
-_GAMMA_LUT_CUPY: Optional[Any] = None
-_CUPY_DEMOSAIC_KERNEL: Optional[Any] = None
+_GAMMA_LUT_CUPY: Any | None = None
+_CUPY_DEMOSAIC_KERNEL: Any | None = None
 
 
 def _cupy_gamma_lut() -> Any:
@@ -810,7 +808,7 @@ def _cupy_demosaic_kernel() -> Any:
     return _CUPY_DEMOSAIC_KERNEL
 
 
-def gpu_demosaic_cupy_unpacked(unpacked, cancel_check: Optional[Callable[[], bool]] = None, return_linear: bool = False) -> np.ndarray:
+def gpu_demosaic_cupy_unpacked(unpacked, cancel_check: Callable[[], bool] | None = None, return_linear: bool = False) -> np.ndarray:
     """
     GPU-accelerated demosaicing implementation using CuPy.
     Uses CuPy elementwise/raw CUDA kernels for maximum speed.
@@ -891,10 +889,10 @@ def gpu_demosaic_cupy_unpacked(unpacked, cancel_check: Optional[Callable[[], boo
 
 def try_gpu_decode_from_unpacked(
     unpacked,
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     return_linear: bool = False,
     *,
-    retain_device: Optional[bool] = None,
+    retain_device: bool | None = None,
 ):
     """
     Attempt to decode the UnpackedRaw using the detected GPU backend.

@@ -4,7 +4,7 @@ Optimized RAW processor with format-specific optimizations.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, Optional
+from typing import Any
 
 import numpy as np
 import rawpy
@@ -12,10 +12,12 @@ from PyQt6.QtCore import QObject
 
 from image_load_manager import yield_if_current_task_active
 from rawpy_gil import rawpy_imread_warm
+
 from .extraction import (
     _heavy_fallback_semaphore,
     _rawpy_global_lock,
 )
+
 
 class OptimizedRAWProcessor(QObject):
     """Optimized RAW processor with format-specific optimizations."""
@@ -23,7 +25,7 @@ class OptimizedRAWProcessor(QObject):
     def __init__(self):
         super().__init__()
 
-    def is_canon_camera(self, file_path: str, exif_data: Dict[str, Any] = None) -> bool:
+    def is_canon_camera(self, file_path: str, exif_data: dict[str, Any] = None) -> bool:
         """Check if this is a Canon camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -36,7 +38,7 @@ class OptimizedRAWProcessor(QObject):
 
         return False
 
-    def is_fujifilm_camera(self, file_path: str, exif_data: Dict[str, Any] = None) -> bool:
+    def is_fujifilm_camera(self, file_path: str, exif_data: dict[str, Any] = None) -> bool:
         """Check if this is a Fujifilm camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -50,7 +52,7 @@ class OptimizedRAWProcessor(QObject):
 
         return False
 
-    def is_sony_camera(self, file_path: str, exif_data: Dict[str, Any] = None) -> bool:
+    def is_sony_camera(self, file_path: str, exif_data: dict[str, Any] = None) -> bool:
         """Check if this is a Sony camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -63,7 +65,7 @@ class OptimizedRAWProcessor(QObject):
 
         return False
 
-    def get_optimized_processing_params(self, file_path: str, exif_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    def get_optimized_processing_params(self, file_path: str, exif_data: dict[str, Any] = None) -> dict[str, Any]:
         """Get optimized processing parameters based on camera and file."""
         # Default fast processing parameters
         params = {
@@ -105,7 +107,7 @@ class OptimizedRAWProcessor(QObject):
             # DCB is high quality but slower - disable for fast processing
             params.update({
                 'use_camera_wb': True,
-                'dcb_enhance': False if file_size_mb > 20 else True 
+                'dcb_enhance': False if file_size_mb > 20 else True
             })
         elif self.is_sony_camera(file_path, exif_data):
             # Sony cameras
@@ -116,7 +118,7 @@ class OptimizedRAWProcessor(QObject):
 
         return params
 
-    def process_raw_fast(self, file_path: str, exif_data: Dict[str, Any] = None) -> Optional[np.ndarray]:
+    def process_raw_fast(self, file_path: str, exif_data: dict[str, Any] = None) -> np.ndarray | None:
         """Process RAW file with optimized parameters for speed."""
         try:
             yield_if_current_task_active()
@@ -129,13 +131,13 @@ class OptimizedRAWProcessor(QObject):
 
                     return rgb_image
 
-        except Exception as e:
+        except Exception:
             # Log the actual error for debugging
             # print(f"RAW processing error in process_raw_fast: {str(e)}")
             pass
             return None
 
-    def process_raw_quality(self, file_path: str, exif_data: Dict[str, Any] = None) -> Optional[np.ndarray]:
+    def process_raw_quality(self, file_path: str, exif_data: dict[str, Any] = None) -> np.ndarray | None:
         """Process RAW file with quality parameters (slower)."""
         try:
             yield_if_current_task_active()
@@ -172,7 +174,7 @@ class OptimizedRAWProcessor(QObject):
 
                 return rgb_image
 
-        except Exception as e:
+        except Exception:
             # Log the actual error for debugging
             # print(f"RAW processing error in process_raw_quality: {str(e)}")
             pass
