@@ -1,14 +1,18 @@
+from typing import List, Optional
 """batch mixin, part 1 of 1 (15 methods, 669 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
 
-import logging, os
 from PyQt6.QtCore import QTimer
+
 from core.config import _norm_path
+
+from .. import lazy
 from ..adjust_workers import _AdjustExportWorker
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -106,10 +110,12 @@ class BatchPart1:
         kind 'discard'   → BatchFileOpWorker(mode='discard') (used by Phase 3)
         kind 'edited'    → BatchExportWorker
         """
-        from rawviewer_app.services.batch import (
-            BatchExportWorker, BatchFileOpSignals, BatchFileOpWorker,
-        )
         from rawviewer_app.core.widgets import TaskProgressDialog
+        from rawviewer_app.services.batch import (
+            BatchExportWorker,
+            BatchFileOpSignals,
+            BatchFileOpWorker,
+        )
 
         self._batch_op_worker = None
         signals = BatchFileOpSignals()
@@ -493,6 +499,8 @@ class BatchPart1:
             from raw_dodge_burn import MASK_KEY, MASK_OBJ_KEY, serialize_mask
             from raw_spot_heal import (
                 MASK_KEY as HEAL_MASK_KEY,
+            )
+            from raw_spot_heal import (
                 MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
             )
             from raw_spot_heal import serialize_mask as serialize_heal_mask

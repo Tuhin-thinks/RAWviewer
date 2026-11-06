@@ -1,16 +1,20 @@
+from typing import List, Optional
 """gallery mixin, part 4 of 5 (47 methods, 813 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
 
-import logging, os
+from PyQt6.QtCore import QSize, Qt, QTimer
+
 import theme
-from PyQt6.QtCore import QSize, QTimer, Qt
 from core.config import _env_int, _norm_path
+
+from .. import lazy
 from ..lazy import is_raw_file, qta
 from ..paths import _require_str_path
 from ..qt_helpers import _qta_icon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

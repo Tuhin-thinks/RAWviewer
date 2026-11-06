@@ -1,10 +1,12 @@
 """Overlays built on the shared Qt widget layer."""
 from __future__ import annotations
 
-from PyQt6.QtCore import QAbstractAnimation, QPoint, QRect, QTimer, Qt
+from PyQt6.QtCore import QAbstractAnimation, QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy, QWidget
+
 import theme
+
 from .helpers import _filmstrip_ui_env_int
 
 
@@ -207,11 +209,11 @@ class SingleImageViewOverlay(QWidget):
     def _animate_filmstrip_opacity(self, target: float, on_finished=None) -> None:
         target = max(0.0, min(1.0, float(target)))
         self._stop_filmstrip_fade()
-        
+
         self._filmstrip_opacity.setOpacity(target)
         self._update_filmstrip_hit_testing()
         self._raise_filmstrip_chrome()
-        
+
         if on_finished is not None:
             on_finished()
 
@@ -396,7 +398,7 @@ class SingleImageViewOverlay(QWidget):
             and strip_rect.contains(pos)
         )
         strip_visible = self._filmstrip_opacity_value() > 0.35
-        
+
         # If the filmstrip is already visible and we are hovering over it, keep it visible instantly.
         is_hovering_visible_strip = strip_visible and (
             over_strip or self._filmstrip.underMouse() or (
@@ -404,7 +406,7 @@ class SingleImageViewOverlay(QWidget):
                 and self._filmstrip_layer.underMouse()
             )
         )
-        
+
         if is_hovering_visible_strip:
             self._cancel_show_filmstrip()
             self._hide_filmstrip_timer.stop()
@@ -675,25 +677,25 @@ class LoadingOverlay(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setVisible(False)
         self._message = "Loading Image..."
-        
+
     def set_message(self, message):
         self._message = message
         self.update()
-        
+
     def show_loading(self, message=None):
         if message:
             self._message = message
         self.setVisible(True)
         self.raise_()
         self.update()
-        
+
     def hide_loading(self):
         self.setVisible(False)
-        
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
+
         # Draw semi-transparent background
         painter.setBrush(QColor(*theme.VOID_RGB, 120))
         painter.setPen(Qt.PenStyle.NoPen)

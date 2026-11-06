@@ -1,18 +1,24 @@
 """lifecycle mixin, part 1 of 2 (12 methods, 825 lines)."""
 from __future__ import annotations
 
+import logging
+import os
+import platform
 import sys
+import threading
+import time
 
-import logging, os, platform, threading, time
-from PyQt6.QtCore import QPoint, QRect, QTimer, Qt
+from PyQt6.QtCore import QPoint, QRect, Qt, QTimer
+
 from cache.memory import FullImageCache
-from rawviewer_app.processing import RAWProcessor
 from core.config import _env_int, _env_true, _norm_path, safe_print
+from rawviewer_app.processing import RAWProcessor
+
+from .. import lazy
 from ..lazy import PreloadManager, get_image_cache, get_image_load_manager, np
 from ..logging_setup import _share_log
 from ..platform_win import _apply_windows_native_window_icon
 from ..qt_helpers import _qt_app
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -25,7 +31,7 @@ class LifecyclePart1:
 
         # Configure vertical scrollbars to jump directly to absolute cursor position when clicked
         try:
-            from PyQt6.QtWidgets import QApplication, QProxyStyle, QStyle
+            from PyQt6.QtWidgets import QProxyStyle, QStyle
             class ScrollBarJumpStyle(QProxyStyle):
                 def styleHint(self, hint, option=None, widget=None, returnData=None):
                     if hint == QStyle.StyleHint.SH_ScrollBar_LeftClickAbsolutePosition:
@@ -495,8 +501,8 @@ class LifecyclePart1:
     def _cleanup_current_processing(self):
         """Clean up current processing threads and resources"""
         import logging
-        import traceback
         import time
+        import traceback
         logger = logging.getLogger(__name__)
         cleanup_start = time.time()
 

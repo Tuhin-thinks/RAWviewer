@@ -168,8 +168,8 @@ def _enable_fatal_crash_dump_if_needed():
         )
         if not enabled:
             return
-        import signal
         import faulthandler
+        import signal
         from datetime import datetime
 
         dump_dir = _runtime_log_dir()

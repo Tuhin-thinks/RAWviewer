@@ -1,17 +1,19 @@
 """adjust mixin, part 1 of 5 (42 methods, 892 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
-import theme
-from PyQt6.QtCore import QRect, QTimer, Qt
+from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QPixmap, QTransform
 from PyQt6.QtWidgets import QLabel, QWidget
+
+import theme
 from core.config import _norm_path
+
+from .. import lazy
 from ..lazy import is_raw_file, use_libraw_consistent_preview_first
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -117,6 +119,7 @@ class AdjustPart1:
 
     def _init_compare_view(self, main_layout) -> None:
         from PyQt6.QtWidgets import QHBoxLayout
+
         from rawviewer_ui.widgets.gpu import GpuImageView
 
         container = QWidget()
@@ -317,6 +320,7 @@ class AdjustPart1:
                     self._compare_stop_animation(view)
         self.view_mode = "gallery"
         from PyQt6.QtCore import QTimer
+
         from comparison_mode import CompareEntry
 
         if entry == CompareEntry.BURST_GROUP:
@@ -504,7 +508,7 @@ class AdjustPart1:
         if not path or view is None or not view.has_pixmap():
             return None, None
         try:
-            from exif_subject_area import pixmap_ltwh_focus_hint, _rotate_rect
+            from exif_subject_area import _rotate_rect, pixmap_ltwh_focus_hint
 
             orientation = 1
             cached_exif = self.image_cache.get_exif(path)
@@ -766,7 +770,7 @@ class AdjustPart1:
                 "handler": handler
             }
         elif ext == ".webp":
-            from PyQt6.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
+            from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
 
             class WebpCompareSignals(QObject):
                 ready = pyqtSignal(list, list) # frames (QImage), durations

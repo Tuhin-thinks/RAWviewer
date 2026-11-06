@@ -1,16 +1,18 @@
 """display mixin, part 1 of 6 (23 methods, 893 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
-from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRect, QTimer, Qt
+from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRect, Qt, QTimer
 from PyQt6.QtGui import QPainter, QPixmap
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QLabel
+
 from core.config import _norm_path
+
+from .. import lazy
 from ..lazy import check_memory_cache_for_image
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

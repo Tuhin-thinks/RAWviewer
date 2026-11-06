@@ -1,15 +1,18 @@
 """search mixin, part 1 of 4 (49 methods, 850 lines)."""
 from __future__ import annotations
 
+import logging
 import sys
+import time
+from typing import Any, cast, List
 
-import logging, time
-from typing import Any, cast
-from PyQt6.QtCore import QPoint, QTimer, Qt
+from PyQt6.QtCore import QPoint, Qt, QTimer
 from PyQt6.QtGui import QCursor, QRegion
+
 from core.config import _norm_path
-from ..macos import _macos_install_line_edit_completion_guard
+
 from .. import lazy
+from ..macos import _macos_install_line_edit_completion_guard
 
 lazy.register(sys.modules[__name__])
 

@@ -1,14 +1,16 @@
 """adjust mixin, part 4 of 5 (19 methods, 894 lines)."""
 from __future__ import annotations
 
+import math
 import sys
+import time
 
-import math, time
 from core.config import _norm_path
+
+from .. import lazy
 from ..adjust_workers import _AdjustPreviewWorker
 from ..lazy import np
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -238,6 +240,7 @@ class AdjustPart4:
                 self._dodge_burn_mask_at_stroke_start = None
             return
         try:
+            from perf_metrics import perf_mark
             from raw_dodge_burn import (
                 DodgeBurnMask,
                 edge_snap_region,
@@ -245,7 +248,6 @@ class AdjustPart4:
                 stamp_brush,
             )
             from raw_spot_heal import erase_heal_brush
-            from perf_metrics import perf_mark
 
             mh, mw = mask_shape
             mask = getattr(self, "_dodge_burn_mask", None)
@@ -730,6 +732,8 @@ class AdjustPart4:
         )
         from raw_spot_heal import (
             MASK_KEY as HEAL_MASK_KEY,
+        )
+        from raw_spot_heal import (
             MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
         )
         from raw_spot_heal import mask_stage_fingerprint as heal_fingerprint

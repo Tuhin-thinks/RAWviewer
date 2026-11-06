@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import sys
 import time
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+
 import theme
+
 from .macos import _activate_macos_foreground_app
 
 
@@ -414,7 +417,7 @@ class CustomConfirmDialog(QDialog):
             event.accept()
             return
         super().mousePressEvent(event)
-    
+
     def mouseMoveEvent(self, event):
         """Handle dragging"""
         if hasattr(self, '_dragging') and self._dragging:
@@ -422,7 +425,7 @@ class CustomConfirmDialog(QDialog):
             event.accept()
             return
         super().mouseMoveEvent(event)
-    
+
     def mouseReleaseEvent(self, event):
         """Stop dragging"""
         if hasattr(self, '_dragging'):

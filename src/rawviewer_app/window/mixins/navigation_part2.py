@@ -1,12 +1,13 @@
 """navigation mixin, part 2 of 2 (9 methods, 336 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 from core.config import _env_true, _norm_path
-from ..paths import _SUBFOLDER_FALLBACK_MAX_DIRS, _SUBFOLDER_FALLBACK_SKIP
+
 from .. import lazy
+from ..paths import _SUBFOLDER_FALLBACK_MAX_DIRS, _SUBFOLDER_FALLBACK_SKIP
 
 lazy.register(sys.modules[__name__])
 
@@ -44,7 +45,7 @@ class NavigationPart2:
             # Validate folder
             if not os.path.isdir(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}")
-                self.show_error("Folder Not Found", 
+                self.show_error("Folder Not Found",
                               f"The folder does not exist:\n{folder_path}")
                 return
 

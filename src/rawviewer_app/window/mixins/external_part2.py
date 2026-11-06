@@ -1,17 +1,27 @@
+from typing import List
 """external mixin, part 2 of 2 (21 methods, 690 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
 
-import logging, os
-from PyQt6.QtCore import QPoint, QRect, QTimer, Qt
+from PyQt6.QtCore import QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QAction, QCursor
 from PyQt6.QtWidgets import QApplication, QMenu
+
 from core.config import _env_true, _norm_path
-from ..logging_setup import _share_log
-from ..macos import _activate_macos_foreground_app, _activate_macos_foreground_for_share, _get_macos_share_picker_delegate_class, _get_macos_sharing_service_delegate_class, _macos_share_items_array
-from ..windows_shell import _windows_shell_verb_suggests_share
+
 from .. import lazy
+from ..logging_setup import _share_log
+from ..macos import (
+    _activate_macos_foreground_app,
+    _activate_macos_foreground_for_share,
+    _get_macos_share_picker_delegate_class,
+    _get_macos_sharing_service_delegate_class,
+    _macos_share_items_array,
+)
+from ..windows_shell import _windows_shell_verb_suggests_share
 
 lazy.register(sys.modules[__name__])
 

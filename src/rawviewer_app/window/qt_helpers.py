@@ -5,7 +5,6 @@ import os
 import sys
 from typing import Any, cast
 
-from PyQt6.QtCore import QThreadPool
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QScrollArea, QScrollBar
 

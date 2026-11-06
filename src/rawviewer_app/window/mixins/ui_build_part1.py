@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import sys
 
-import theme
 from PyQt6.QtCore import QSize
+
+import theme
+
+from .. import lazy
 from ..lazy import qta
 from ..qt_helpers import _qta_icon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -19,7 +21,6 @@ class UiBuildPart1:
             return
         enabled = self._is_burst_grouping_enabled()
         try:
-            import qtawesome as qta
 
             color = theme.INK if enabled else theme.INK_FAINT
             btn.blockSignals(True)

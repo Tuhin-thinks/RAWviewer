@@ -1,15 +1,18 @@
 """adjust mixin, part 2 of 5 (37 methods, 889 lines)."""
 from __future__ import annotations
 
+import os
 import sys
+import time
 
-import os, time
 from PyQt6.QtCore import QTimer
-from rawviewer_app.core.widgets import CustomConfirmDialog
+
 from core.config import _env_int, _norm_path
+from rawviewer_app.core.widgets import CustomConfirmDialog
+
+from .. import lazy
 from ..lazy import is_raw_file
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

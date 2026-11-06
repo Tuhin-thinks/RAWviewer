@@ -1,16 +1,18 @@
 """misc mixin, part 4 of 4 (28 methods, 536 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
-import theme
 from PyQt6.QtCore import QEvent, QPoint, QRect, Qt
 from PyQt6.QtWidgets import QMessageBox
-from rawviewer_app.core.widgets import CustomConfirmDialog
+
+import theme
 from core.config import _norm_path, safe_print
-from ..paths import _require_str_path
+from rawviewer_app.core.widgets import CustomConfirmDialog
+
 from .. import lazy
+from ..paths import _require_str_path
 
 lazy.register(sys.modules[__name__])
 
@@ -365,19 +367,13 @@ class MiscPart4:
 
         if pos.x() <= border and pos.y() <= border:
             self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-        elif pos.x() >= w - border and pos.y() <= border:
-            self.setCursor(Qt.CursorShape.SizeBDiagCursor)
-        elif pos.x() <= border and pos.y() >= h - border:
+        elif pos.x() >= w - border and pos.y() <= border or pos.x() <= border and pos.y() >= h - border:
             self.setCursor(Qt.CursorShape.SizeBDiagCursor)
         elif pos.x() >= w - border and pos.y() >= h - border:
             self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-        elif pos.x() <= border:
+        elif pos.x() <= border or pos.x() >= w - border:
             self.setCursor(Qt.CursorShape.SizeHorCursor)
-        elif pos.x() >= w - border:
-            self.setCursor(Qt.CursorShape.SizeHorCursor)
-        elif pos.y() <= border:
-            self.setCursor(Qt.CursorShape.SizeVerCursor)
-        elif pos.y() >= h - border:
+        elif pos.y() <= border or pos.y() >= h - border:
             self.setCursor(Qt.CursorShape.SizeVerCursor)
         else:
             self.unsetCursor()
@@ -561,6 +557,7 @@ class MiscPart4:
     def _enter_io_pressure_mode(self, reason: str = "") -> None:
         """Reduce background I/O when the process hits EMFILE or similar pressure."""
         import logging
+
         from common_image_loader import note_emfile_pressure
 
         note_emfile_pressure()

@@ -1,17 +1,21 @@
 """search mixin, part 3 of 4 (24 methods, 873 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
 from PyQt6.QtCore import QRunnable
 from PyQt6.QtWidgets import QInputDialog, QMessageBox
+
+from core.config import safe_print
 from rawviewer_app.signals import SemanticIndexPrepSignals, SemanticSearchQuerySignals, SemanticSearchResortSignals
 from rawviewer_app.workers import SemanticAssetDownloadSignals, _SemanticIndexPrepWorker
-from core.config import safe_print
+
+from .. import lazy
 from ..paths import _require_str_path
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

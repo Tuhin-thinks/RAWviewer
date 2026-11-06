@@ -1,23 +1,52 @@
 """ui_build mixin, part 2 of 3 (11 methods, split init_ui into helpers)."""
 from __future__ import annotations
 
+import logging
+import platform
 import sys
-
-import logging, platform
 from typing import Any, cast
-import theme
-from PyQt6.QtCore import QSize, QTimer, Qt
+
+from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QCursor, QKeySequence, QRegion, QShortcut
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QLabel, QLayout, QLineEdit, QPushButton, QScrollArea, QSizePolicy, QSplitter, QStackedLayout, QStatusBar, QVBoxLayout, QWidget
-from rawviewer_app.core.widgets import CustomTitleBar, LoadingOverlay, ResizeGripIndicator, SingleImageViewOverlay, TopMetadataBar
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSplitter,
+    QStackedLayout,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+import theme
 from core.config import _env_true, safe_print
-from ..adjust_workers import _AdjustCompareOriginalSignals, _AdjustEditBaseSignals, _AdjustExportSignals, _AdjustMaskLoadSignals, _AdjustPreviewSignals
+from rawviewer_app.core.widgets import (
+    CustomTitleBar,
+    LoadingOverlay,
+    ResizeGripIndicator,
+    SingleImageViewOverlay,
+    TopMetadataBar,
+)
+
+from .. import lazy
+from ..adjust_workers import (
+    _AdjustCompareOriginalSignals,
+    _AdjustEditBaseSignals,
+    _AdjustExportSignals,
+    _AdjustMaskLoadSignals,
+    _AdjustPreviewSignals,
+)
 from ..lazy import ImageAdjustPanelWidget, ImageHistogramWidget, ImageLocationMapWidget
 from ..macos import _macos_install_line_edit_completion_guard
 from ..platform_win import _apply_windows_native_window_icon
 from ..qt_helpers import _qta_icon
 from ..splash import _load_branded_qicon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

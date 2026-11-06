@@ -1,14 +1,17 @@
 """display mixin, part 2 of 6 (32 methods, 775 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
 
-import logging, os
 from PyQt6.QtCore import QPoint, QRect
 from PyQt6.QtGui import QColor, QPixmap, QTransform
+
 from core.config import _norm_path
-from ..lazy import image_covers_sensor_resolution, is_raw_file
+
 from .. import lazy
+from ..lazy import image_covers_sensor_resolution, is_raw_file
 
 lazy.register(sys.modules[__name__])
 
@@ -653,8 +656,8 @@ class DisplayPart2:
             self.loading_overlay.hide_loading()
 
         # Check if this is actually a RAW file (shouldn't happen, but log it)
-        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                          '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
         file_ext = os.path.splitext(file_path)[1].lower()
         is_raw_file = file_ext in raw_extensions

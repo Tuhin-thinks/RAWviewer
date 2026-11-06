@@ -1,15 +1,17 @@
 """adjust mixin, part 5 of 5 (13 methods, 537 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
-from PyQt6.QtCore import QSettings, QThreadPool, QTimer, Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform
+
 from core.config import _norm_path
+
+from .. import lazy
 from ..adjust_workers import _AdjustCompareOriginalWorker, _make_fast_preview_base
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -35,6 +37,8 @@ class AdjustPart5:
             )
             from raw_spot_heal import (
                 MASK_KEY as HEAL_MASK_KEY,
+            )
+            from raw_spot_heal import (
                 MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
             )
             from raw_spot_heal import serialize_mask as serialize_heal_mask

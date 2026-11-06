@@ -1,16 +1,20 @@
 """display mixin, part 3 of 6 (21 methods, 830 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
-import theme
 from PyQt6.QtCore import QPoint, QSize, Qt
 from PyQt6.QtGui import QCursor, QImage, QPixmap
+
+import theme
 from core.config import _norm_path
+
+from .. import lazy
 from ..lazy import Priority, image_covers_sensor_resolution, np, qta
 from ..qt_helpers import _qta_icon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -21,8 +25,8 @@ class DisplayPart3:
     def _show_single_view(self):
         """Show single image view"""
         import logging
-        import time
         import os
+        import time
         logger = logging.getLogger(__name__)
         if getattr(self, "view_mode", "single") == "gallery":
             logger.debug("[VIEW_MODE] _show_single_view skipped; view_mode is gallery")

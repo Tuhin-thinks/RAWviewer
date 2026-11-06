@@ -1,15 +1,17 @@
 """shortcuts mixin, part 1 of 1 (19 methods, 574 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
-import theme
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QApplication, QMessageBox
-from ..paths import _require_str_path
+
+import theme
+
 from .. import lazy
+from ..paths import _require_str_path
 
 lazy.register(sys.modules[__name__])
 
@@ -163,7 +165,7 @@ class ShortcutsPart1:
 
     def _shortcut_blocked_by_text_input(self) -> bool:
         focused = self.focusWidget()
-        from PyQt6.QtWidgets import QLineEdit, QTextEdit, QPlainTextEdit
+        from PyQt6.QtWidgets import QLineEdit, QPlainTextEdit, QTextEdit
 
         if not focused or not isinstance(focused, (QLineEdit, QTextEdit, QPlainTextEdit)):
             return False
@@ -393,7 +395,7 @@ class ShortcutsPart1:
     def _handle_app_shortcut(self, event):
         """Handle application-wide shortcuts for better consistency and focus-resilience."""
         focused = self.focusWidget()
-        from PyQt6.QtWidgets import QLineEdit, QTextEdit, QPlainTextEdit
+        from PyQt6.QtWidgets import QLineEdit, QPlainTextEdit, QTextEdit
         if focused and isinstance(focused, (QLineEdit, QTextEdit, QPlainTextEdit)):
             return False
         # Toggle-style keys here (P, H, M, F, G, J, ...) must fire once per physical

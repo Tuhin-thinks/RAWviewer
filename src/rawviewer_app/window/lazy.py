@@ -42,7 +42,7 @@ LAZY_NAMES = (
     "process_file_from_path",
 )
 
-_BINDINGS: dict[str, Any] = {name: None for name in LAZY_NAMES}
+_BINDINGS: dict[str, Any] = dict.fromkeys(LAZY_NAMES)
 _CONSUMERS: list[Any] = []
 
 globals().update(_BINDINGS)
@@ -94,10 +94,10 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
         qta = None
 
     _update_splash("Loading metadata backend...")
-    from metadata_backend import exif_backend_mode as _ebm, \
-                                    exif_orientation_after_cw90 as _eocw, \
-                                    has_pyexiv2 as _hp2, \
-                                    process_file_from_path as _pfp
+    from metadata_backend import exif_backend_mode as _ebm
+    from metadata_backend import exif_orientation_after_cw90 as _eocw
+    from metadata_backend import has_pyexiv2 as _hp2
+    from metadata_backend import process_file_from_path as _pfp
     exif_backend_mode = _ebm
     exif_orientation_after_cw90 = _eocw
     has_pyexiv2 = _hp2
@@ -109,25 +109,26 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
         pass
 
     _update_splash("Loading core architecture...")
-    from image_cache import get_image_cache as _get_image_cache, initialize_cache as _initialize_cache
+    from image_cache import get_image_cache as _get_image_cache
+    from image_cache import initialize_cache as _initialize_cache
     get_image_cache = _get_image_cache
     initialize_cache = _initialize_cache
 
-    from enhanced_raw_processor import EnhancedRAWProcessor as _EnhancedRAWProcessor, \
-                                       PreloadManager as _PreloadManager, \
-                                       ThumbnailExtractor as _ThumbnailExtractor
+    from enhanced_raw_processor import EnhancedRAWProcessor as _EnhancedRAWProcessor
+    from enhanced_raw_processor import PreloadManager as _PreloadManager
+    from enhanced_raw_processor import ThumbnailExtractor as _ThumbnailExtractor
     EnhancedRAWProcessor = _EnhancedRAWProcessor
     PreloadManager = _PreloadManager
     ThumbnailExtractor = _ThumbnailExtractor
 
-    from image_load_manager import get_image_load_manager as _get_image_load_manager, \
-                                   Priority as _Priority
+    from image_load_manager import Priority as _Priority
+    from image_load_manager import get_image_load_manager as _get_image_load_manager
     get_image_load_manager = _get_image_load_manager
     Priority = _Priority
 
-    from common_image_loader import is_raw_file as _is_raw_file, \
-                                    load_pixmap_safe as _load_pixmap_safe, \
-                                    check_memory_cache_for_image as _check_memory_cache_for_image
+    from common_image_loader import check_memory_cache_for_image as _check_memory_cache_for_image
+    from common_image_loader import is_raw_file as _is_raw_file
+    from common_image_loader import load_pixmap_safe as _load_pixmap_safe
     is_raw_file = _is_raw_file
     load_pixmap_safe = _load_pixmap_safe
     check_memory_cache_for_image = _check_memory_cache_for_image
@@ -137,8 +138,10 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     from common_image_loader import image_covers_sensor_resolution as _image_covers_sensor_resolution
     image_covers_sensor_resolution = _image_covers_sensor_resolution
     from common_image_loader import (
-        use_progressive_raw_loading as _use_progressive_raw_loading,
         metadata_index_idle_delay_ms as _metadata_index_idle_delay_ms,
+    )
+    from common_image_loader import (
+        use_progressive_raw_loading as _use_progressive_raw_loading,
     )
     use_progressive_raw_loading = _use_progressive_raw_loading
     metadata_index_idle_delay_ms = _metadata_index_idle_delay_ms
@@ -147,9 +150,9 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     ImageHistogramWidget = _ImageHistogramWidget
 
     _update_splash("Loading UI components...")
+    from rawviewer_ui.overlays.location_map_overlay import ImageLocationMapWidget as _ImageLocationMapWidget
     from rawviewer_ui.widgets import ThumbnailLabel as _ThumbnailLabel
     from rawviewer_ui.widgets.gallery import JustifiedGallery as _ExternalJustifiedGallery
-    from rawviewer_ui.overlays.location_map_overlay import ImageLocationMapWidget as _ImageLocationMapWidget
     ThumbnailLabel = _ThumbnailLabel
     ExternalJustifiedGallery = _ExternalJustifiedGallery
     ImageLocationMapWidget = _ImageLocationMapWidget

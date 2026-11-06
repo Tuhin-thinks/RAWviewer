@@ -1,15 +1,17 @@
 """image_load mixin, part 3 of 3 (25 methods, 747 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QPixmap
-from rawviewer_app.processing import PixmapConverter
+
 from core.config import _env_int, _norm_path
-from ..lazy import Priority, check_memory_cache_for_image, image_covers_sensor_resolution, process_file_from_path
+from rawviewer_app.processing import PixmapConverter
+
 from .. import lazy
+from ..lazy import Priority, check_memory_cache_for_image, image_covers_sensor_resolution, process_file_from_path
 
 lazy.register(sys.modules[__name__])
 
@@ -538,12 +540,12 @@ class ImageLoadPart3:
             ow = oh = None
             try:
                 import rawpy
+
                 from enhanced_raw_processor import _rawpy_global_lock
 
-                with _rawpy_global_lock:
-                    with rawpy.imread(path) as raw:
-                        ow = int(raw.sizes.width)
-                        oh = int(raw.sizes.height)
+                with _rawpy_global_lock, rawpy.imread(path) as raw:
+                    ow = int(raw.sizes.width)
+                    oh = int(raw.sizes.height)
             except Exception:
                 ow = oh = None
             if not ow or not oh:

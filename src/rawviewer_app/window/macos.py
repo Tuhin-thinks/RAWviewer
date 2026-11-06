@@ -7,7 +7,7 @@ import subprocess
 import sys
 import weakref
 
-from PyQt6.QtCore import QEvent, QObject, QPoint, QTimer, Qt
+from PyQt6.QtCore import QEvent, QObject, QPoint, Qt, QTimer
 
 from core.config import _env_true
 
@@ -315,7 +315,6 @@ def _applescript_escape(value: str) -> str:
 
 def _run_applescript(script: str) -> str:
     """Run AppleScript; return stdout on success, empty string on cancel/error."""
-    import subprocess
 
     try:
         proc = subprocess.run(
@@ -401,7 +400,7 @@ def _macos_try_force_dark_titlebar_for_window(widget):
         return False
 
 
-_macos_completion_guarded_edits: "weakref.WeakSet" = weakref.WeakSet()
+_macos_completion_guarded_edits: weakref.WeakSet = weakref.WeakSet()
 
 
 def _macos_apply_ns_text_completion_off(node) -> None:
@@ -455,8 +454,9 @@ def _macos_disable_line_edit_system_completion(line_edit) -> None:
     except Exception:
         pass
     try:
-        import objc
         from ctypes import c_void_p
+
+        import objc
     except ImportError:
         return
     try:

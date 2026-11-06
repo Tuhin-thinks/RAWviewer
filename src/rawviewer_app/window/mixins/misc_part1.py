@@ -1,15 +1,19 @@
+from typing import List, Optional, Set
 """misc mixin, part 1 of 4 (31 methods, 827 lines)."""
 from __future__ import annotations
 
+import os
 import sys
+import threading
 
-import os, threading
 from PyQt6.QtCore import QPoint, QTimer
+
 from core.config import _env_true, _norm_path
+
+from .. import lazy
 from ..lazy import is_raw_file
 from ..paths import _require_str_path
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

@@ -1,15 +1,19 @@
 """navigation mixin, part 1 of 2 (22 methods, 866 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
-from PyQt6.QtCore import QRunnable, QTimer, Qt
-from rawviewer_app.signals import FolderResortSignals
+from PyQt6.QtCore import QRunnable, Qt, QTimer
+
 from core.config import _env_int, _norm_path, safe_print
+from rawviewer_app.signals import FolderResortSignals
+
+from .. import lazy
 from ..paths import _require_str_path
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -529,8 +533,8 @@ class NavigationPart1:
 
     def start_navigation(self):
         """Mark navigation as started"""
-        import time
         import logging
+        import time
         logger = logging.getLogger(__name__)
         current_time = time.time()
         old_state = getattr(self, '_navigation_in_progress', False)
@@ -577,9 +581,9 @@ class NavigationPart1:
         if getattr(self, '_is_delete_dialog_open', False):
             return
         import logging
-        import traceback
-        import time
         import os
+        import time
+        import traceback
         logger = logging.getLogger(__name__)
 
         nav_start_time = time.time()
@@ -688,9 +692,9 @@ class NavigationPart1:
         if getattr(self, '_is_delete_dialog_open', False):
             return
         import logging
+        import os
         import time
         import traceback
-        import os
         logger = logging.getLogger(__name__)
 
         nav_start_time = time.time()

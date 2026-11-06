@@ -11,7 +11,8 @@ import logging
 import os
 import shutil
 import threading
-from typing import Any, Callable, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
 
@@ -124,7 +125,7 @@ class BatchFileOpWorker(QRunnable):
 
     def __init__(
         self,
-        paths: List[str],
+        paths: list[str],
         dest_dir: str = "",
         mode: str = "copy",
         signals: BatchFileOpSignals | None = None,
@@ -147,7 +148,7 @@ class BatchFileOpWorker(QRunnable):
         ok = 0
         failed = 0
         want_cancel = False
-        detail: List[Tuple[str, Optional[str], Optional[str]]] = []
+        detail: list[tuple[str, str | None, str | None]] = []
         reserved: set = set()
         try:
             for i, src in enumerate(self.paths):
@@ -193,10 +194,10 @@ def export_one_file(
     process_pool: Any,
     *,
     cancel_event: threading.Event | None = None,
-    progress_cb: Optional[Callable] = None,  # (percent:int, stage:str)
+    progress_cb: Callable | None = None,  # (percent:int, stage:str)
     use_ai_denoise: bool = False,
-    ai_amount: Optional[float] = None,
-) -> Tuple[Optional[Exception], Optional[Exception]]:
+    ai_amount: float | None = None,
+) -> tuple[Exception | None, Exception | None]:
     """Full-res single-file export.
 
     Body moved verbatim from _AdjustExportWorker.run(): syncs the source XMP
@@ -229,9 +230,9 @@ def export_one_file(
     xmp_warning = None
     cancelled = cancel_event if cancel_event is not None else threading.Event()
     try:
+        from processing.unified import UnifiedImageProcessor
         from raw_adjustments import resolve_xmp_path, write_xmp_adjustments_for_file
         from raw_edit_pipeline import ExportCancelled, export_adjusted_image
-        from processing.unified import UnifiedImageProcessor
 
         # Best-effort: keep the source file's sidecar in sync with what's
         # being baked/copied. This must NOT block the export itself.
@@ -354,7 +355,7 @@ class BatchExportWorker(QRunnable):
 
     def __init__(
         self,
-        paths: List[str],
+        paths: list[str],
         dest_dir: str,
         export_format: str,
         process_pool: Any,
@@ -362,7 +363,7 @@ class BatchExportWorker(QRunnable):
         cancel_event: threading.Event | None = None,
         name_suffix: str = "_edited",
         use_ai_denoise: bool = False,
-        ai_amount: Optional[float] = None,
+        ai_amount: float | None = None,
     ):
         super().__init__()
         self.paths = list(paths)
@@ -389,7 +390,7 @@ class BatchExportWorker(QRunnable):
         ok = 0
         failed = 0
         want_cancel = False
-        detail: List[Tuple[str, Optional[str], Optional[str]]] = []
+        detail: list[tuple[str, str | None, str | None]] = []
         reserved: set = set()
         try:
             for i, src in enumerate(self.paths):

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import ctypes
 import os
-import platform
 import sys
 
 from .paths import resource_path

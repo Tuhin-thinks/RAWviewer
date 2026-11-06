@@ -100,14 +100,14 @@ def setup_logging():
         # Configure logging
         log_format = '%(asctime)s - %(levelname)s - [%(name)s:%(lineno)d] - %(message)s'
         date_format = '%Y-%m-%d %H:%M:%S'
-        
+
         # Create formatters
         formatter = logging.Formatter(log_format, date_format)
 
         # Configure root logger
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.DEBUG)
-        
+
         # Clear any existing handlers to avoid duplicates
         root_logger.handlers.clear()
 
@@ -115,9 +115,9 @@ def setup_logging():
         stream = sys.stdout if sys.stdout is not None else getattr(sys, "__stdout__", None)
         focus_gallery_switch = _env_true("RAWVIEWER_FOCUS_GALLERY_SWITCH", default=False)
         is_dev = os.environ.get("RAWVIEWER_DEBUG", "").strip() in ("1", "true", "True", "YES", "yes")
-        
+
         verbose_info = _env_true("RAWVIEWER_VERBOSE_INFO_LOGS", default=False) or focus_gallery_switch or is_dev
-        
+
         if stream is not None:
             console_handler = logging.StreamHandler(stream)
             if is_dev:
@@ -174,14 +174,14 @@ def setup_logging():
             return log_file
 
         return None
-        
+
     except Exception as e:
         # If logging setup fails, at least print to stderr
         error_msg = f"CRITICAL: Failed to setup logging: {e}"
         safe_print_err(error_msg)
         import traceback
         safe_print_err(f"Traceback: {traceback.format_exc()}")
-        
+
         # Try to write to a fallback log file
         try:
             # Only attempt fallback file logging if explicitly enabled.
@@ -193,14 +193,14 @@ def setup_logging():
                     f.write(f"{traceback.format_exc()}\n")
         except Exception:
             pass  # If even fallback fails, we've done our best
-        
+
         raise  # Re-raise to let caller handle it
 
 
 def global_exception_handler(exc_type, exc_value, exc_traceback):
     """Handle uncaught exceptions and write them to a crash report log file."""
-    import traceback
     import logging
+    import traceback
     from datetime import datetime
 
     # Format the traceback
@@ -215,7 +215,7 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
         logger.critical("Uncaught Exception:\n" + tb_text)
     except Exception:
         safe_print_err("Uncaught Exception:\n" + tb_text)
-    
+
     # Write to a persistent crash report file in LocalAppData
     try:
         log_dir = _runtime_log_dir()

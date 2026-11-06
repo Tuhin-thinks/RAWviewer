@@ -1,15 +1,19 @@
+from typing import List, Optional
 """metadata mixin, part 1 of 2 (29 methods, 874 lines)."""
 from __future__ import annotations
 
+import datetime
+import os
 import sys
 
-import datetime, os
-from PyQt6.QtCore import QPoint, QRect, QTimer, Qt
+from PyQt6.QtCore import QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
+
 from core.config import _env_int, _norm_path
+
+from .. import lazy
 from ..lazy import process_file_from_path
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -181,7 +185,7 @@ class MetadataPart1:
             return
 
         try:
-            from exif_subject_area import pixmap_ltwh_focus_hint, _rotate_rect
+            from exif_subject_area import _rotate_rect, pixmap_ltwh_focus_hint
 
             orientation = 1
             cached_exif = self.image_cache.get_exif(path)
@@ -374,8 +378,8 @@ class MetadataPart1:
                 exif_tags_sample = list(exif_tags_dict.keys())[:10]
                 logger.info(f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
                            f"exif_tags_count: {exif_tags_count}, sample tags: {exif_tags_sample}")
-            elif any(key.startswith('EXIF ') or key.startswith('Image ') for key in exif_data.keys()):
-                exif_tags_count = len([k for k in exif_data.keys() if k.startswith('EXIF ') or k.startswith('Image ')])
+            elif any(key.startswith('EXIF ') or key.startswith('Image ') for key in exif_data):
+                exif_tags_count = len([k for k in exif_data if k.startswith('EXIF ') or k.startswith('Image ')])
                 logger.info(f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
                            f"exif_tags_count: {exif_tags_count}, top-level keys: {list(exif_data.keys())[:10]}")
             else:
@@ -439,8 +443,8 @@ class MetadataPart1:
         # RAW files from certain cameras may be pre-rotated, but JPEG files are not
         try:
             # Check if this is a RAW file
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                              '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
             file_ext = os.path.splitext(_require_str_path(self.current_file_path))[1].lower()
 
@@ -834,13 +838,14 @@ class MetadataPart1:
         if not missing_paths:
             return probed_timestamps
 
+        import logging
         from concurrent.futures import ThreadPoolExecutor
+
         from common_image_loader import (
             io_pressure_active,
             probe_capture_timestamp_from_file,
             sort_probe_worker_count,
         )
-        import logging
 
         logger = logging.getLogger(__name__)
         hint = sample_path or missing_paths[0]
@@ -857,8 +862,9 @@ class MetadataPart1:
 
         def _probe_one(p: str) -> tuple[str, float]:
             try:
-                from image_load_manager import get_image_load_manager, Priority
                 import time
+
+                from image_load_manager import Priority, get_image_load_manager
                 manager = get_image_load_manager()
                 viewer = self
                 # Yield only while arrow-key navigation is in flight so cold

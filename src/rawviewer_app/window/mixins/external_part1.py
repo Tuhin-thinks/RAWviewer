@@ -1,18 +1,30 @@
+from typing import List, Tuple
 """external mixin, part 1 of 2 (48 methods, 882 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
 from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtGui import QAction, QCursor, QDragEnterEvent, QDropEvent
 from PyQt6.QtWidgets import QApplication, QMenu
-from rawviewer_app.core.widgets import CustomWarningDialog
+
 from core.config import _env_true, _find_file_index_in_list
+from rawviewer_app.core.widgets import CustomWarningDialog
+
+from .. import lazy
 from ..logging_setup import _share_log
 from ..macos import _macos_share_items_array
-from ..windows_shell import _open_windows_open_with_dialog, _share_windows_clipboard_cf_hdrop, _share_windows_clipboard_cf_hdrop_paths, _share_windows_clipboard_file_via_powershell, _share_windows_via_helper, _share_windows_via_winrt
-from .. import lazy
+from ..windows_shell import (
+    _open_windows_open_with_dialog,
+    _share_windows_clipboard_cf_hdrop,
+    _share_windows_clipboard_cf_hdrop_paths,
+    _share_windows_clipboard_file_via_powershell,
+    _share_windows_via_helper,
+    _share_windows_via_winrt,
+)
 
 lazy.register(sys.modules[__name__])
 
@@ -408,7 +420,7 @@ class ExternalPart1:
 
     def _copy_paths_to_clipboard(self, paths: List[str]) -> None:
         try:
-            from PyQt6.QtCore import QUrl, QMimeData
+            from PyQt6.QtCore import QMimeData, QUrl
             mime = QMimeData()
             text_val = "\n".join(os.path.abspath(p) for p in paths)
             mime.setText(text_val)
@@ -417,7 +429,7 @@ class ExternalPart1:
 
             if sys.platform == "darwin":
                 try:
-                    from AppKit import NSPasteboard, NSURL
+                    from AppKit import NSURL, NSPasteboard
                     pb = NSPasteboard.generalPasteboard()
                     pb.clearContents()
                     ns_urls = [NSURL.fileURLWithPath_(os.path.abspath(p)) for p in paths]

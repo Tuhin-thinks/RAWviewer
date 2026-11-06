@@ -1,16 +1,20 @@
 """status mixin, part 1 of 2 (20 methods, 227 lines)."""
 from __future__ import annotations
 
+import logging
+import os
+import platform
 import sys
 
-import logging, os, platform
 from PyQt6.QtCore import QPoint, QTimer
+
 from core.config import _env_true, _norm_path
+
+from .. import lazy
 from ..lazy import use_progressive_raw_loading
 from ..logging_setup import _share_log
 from ..paths import _require_str_path
 from ..qt_helpers import _qt_app
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

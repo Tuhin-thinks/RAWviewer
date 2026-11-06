@@ -1,15 +1,18 @@
 """display mixin, part 5 of 6 (4 methods, 891 lines)."""
 from __future__ import annotations
 
+import os
 import sys
+import time
 
-import os, time
 from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtGui import QPixmap
+
 from core.config import _norm_path
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution, metadata_index_idle_delay_ms
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -259,8 +262,8 @@ class DisplayPart5:
                 if new_file and (nav_preserve or zoomed_in):
                     pm_max_dim = max(pixmap.width(), pixmap.height())
                     is_raw = os.path.splitext(cur_path or "")[-1].lower() in {
-                        '.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+                        '.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                         '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
                     is_pixmap_half_size = (pm_max_dim < 3000) and is_raw
                     if is_pixmap_half_size:
@@ -517,7 +520,7 @@ class DisplayPart5:
                 # Zoom to the recorded point instead of center
                 click_pos = self._pending_zoom_pos
                 delattr(self, '_pending_zoom_pos')
-                # Need to wait until label layout is done to compute ratios reliably, 
+                # Need to wait until label layout is done to compute ratios reliably,
                 # but we can try to guess or simply center for now if layout hasn't run.
                 # Just call toggle_zoom() for spacebar or center, it's safer.
                 # Actually, we can just use the toggle_zoom logic.
@@ -584,8 +587,8 @@ class DisplayPart5:
                 # Check if this is a half_size image - if so, temporarily show fit-to-window
                 # and wait for full resolution before applying zoom
                 pixmap_max_dim = max(pixmap.width(), pixmap.height())
-                raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                            '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+                raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                            '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                             '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
                 is_raw = os.path.splitext(getattr(self, "current_file_path", ""))[-1].lower() in raw_exts
                 is_pixmap_half_size = (pixmap_max_dim < 3000) and is_raw
@@ -622,8 +625,8 @@ class DisplayPart5:
 
             # If restoring zoom and currently displaying half_size, load full resolution FIRST
             pixmap_max_dim = max(pixmap.width(), pixmap.height())
-            raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+            raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                         '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
             is_raw = os.path.splitext(getattr(self, "current_file_path", ""))[-1].lower() in raw_exts
             is_pixmap_half_size = (pixmap_max_dim < 3000) and is_raw

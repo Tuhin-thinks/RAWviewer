@@ -1,13 +1,15 @@
 """settings mixin, part 1 of 1 (21 methods, 474 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 from PyQt6.QtCore import QSettings, QTimer
+
 from core.config import _env_int, _env_true, _norm_path
-from ..lazy import check_memory_cache_for_image, is_raw_file
+
 from .. import lazy
+from ..lazy import check_memory_cache_for_image, is_raw_file
 
 lazy.register(sys.modules[__name__])
 

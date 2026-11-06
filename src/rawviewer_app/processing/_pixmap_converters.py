@@ -1,16 +1,15 @@
 '''PixmapConverter and RawEdrPixmapConverter.'''
 from __future__ import annotations
 
-import os
-import traceback
-
 import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
+
+
 class PixmapConverter(QThread):
     """Background thread to convert numpy array to QPixmap and cache it"""
     pixmap_ready = pyqtSignal(str, QPixmap)  # file_path, pixmap
-    
+
     def __init__(self, file_path, rgb_image, image_cache):
         super().__init__()
         self.file_path = file_path
@@ -63,14 +62,14 @@ class PixmapConverter(QThread):
                     self.rgb_image = np.clip(self.rgb_image, 0, 255).astype(np.uint8)
 
             bytes_per_line = channels * width
-            
+
             # Ensure the data is contiguous
             if not self.rgb_image.flags['C_CONTIGUOUS']:
                 self.rgb_image = np.ascontiguousarray(self.rgb_image)
-            
+
             if self._should_stop:
                 return
-            
+
             # Create QImage directly from numpy array without copying memory
             q_format = QImage.Format.Format_RGB888
             if channels == 1:
@@ -82,18 +81,18 @@ class PixmapConverter(QThread):
                              bytes_per_line, q_format)
             q_image.ndarr = self.rgb_image  # Keep numpy array alive
             pixmap = QPixmap.fromImage(q_image)
-            
+
             if self._should_stop:
                 return
-            
+
             # Cache the pixmap
             if self.image_cache:
                 self.image_cache.put_pixmap(self.file_path, pixmap)
-            
+
             # Emit signal if not stopped
             if not self._should_stop:
                 self.pixmap_ready.emit(self.file_path, pixmap)
-                
+
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)

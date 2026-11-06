@@ -1,3 +1,4 @@
+from typing import List
 """Windows shell integration: open-with and share helpers."""
 from __future__ import annotations
 
@@ -50,7 +51,6 @@ def _windows_shell_verb_suggests_share(verb_name: object) -> bool:
 
 def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
     """Show the native Windows 'Open with' dialog for a file."""
-    import subprocess
     from ctypes import Structure, byref, c_long, wintypes
 
     abs_path = os.path.abspath(path)
@@ -166,7 +166,6 @@ def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
 
 def _share_windows_clipboard_cf_hdrop(path: str) -> bool:
     """Place file(s) on clipboard as CF_HDROP (native Windows file clipboard)."""
-    import struct
 
     try:
         import win32clipboard  # type: ignore
@@ -198,7 +197,6 @@ def _share_windows_clipboard_cf_hdrop(path: str) -> bool:
 
 def _share_windows_clipboard_cf_hdrop_paths(file_paths: List[str]) -> bool:
     """Place multiple files on the clipboard as CF_HDROP."""
-    import struct
 
     try:
         import win32clipboard  # type: ignore
@@ -234,7 +232,6 @@ def _share_windows_clipboard_cf_hdrop_paths(file_paths: List[str]) -> bool:
 
 def _share_windows_clipboard_file_via_powershell(path: str) -> bool:
     """Put the file object on the clipboard (Windows) so the user can paste into Mail, Teams, Explorer, etc."""
-    import subprocess
 
     abs_path = os.path.abspath(path)
     if not os.path.isfile(abs_path):
@@ -288,7 +285,6 @@ def _resolve_windows_share_helper_exe():
 
 def _share_windows_via_helper(path: str, owner_hwnd: int) -> bool:
     """Launch the .NET helper that wraps IDataTransferManagerInterop."""
-    import subprocess
     import time
 
     helper = _resolve_windows_share_helper_exe()

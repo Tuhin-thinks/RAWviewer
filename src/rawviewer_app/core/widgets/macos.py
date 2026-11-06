@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+
 from rawviewer_app.env import _env_true
 
 

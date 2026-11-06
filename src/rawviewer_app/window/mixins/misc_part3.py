@@ -1,17 +1,21 @@
+from typing import List, Optional
 """misc mixin, part 3 of 4 (22 methods, 849 lines)."""
 from __future__ import annotations
 
+import os
 import sys
+import time
 
-import os, time
-import theme
 from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication
+
+import theme
 from core.config import _env_int, _find_file_index_in_list, _norm_path, safe_print
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution, np
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -534,8 +538,8 @@ class MiscPart3:
             self.loading_overlay.hide_loading()
 
         import logging
-        import traceback
         import time
+        import traceback
         logger = logging.getLogger(__name__)
 
         process_start = time.time()
@@ -582,8 +586,8 @@ class MiscPart3:
         try:
             if rgb_image is None:
                 # Check if this is a RAW file - QPixmap cannot load RAW files directly
-                raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                                 '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+                raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                                 '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                                  '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
                 file_ext = os.path.splitext(_require_str_path(self.current_file_path))[1].lower()
                 if file_ext in raw_extensions:

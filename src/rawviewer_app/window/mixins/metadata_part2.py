@@ -1,15 +1,20 @@
+from typing import Any, Optional
 """metadata mixin, part 2 of 2 (30 methods, 708 lines)."""
 from __future__ import annotations
 
+import os
+import platform
 import sys
+import threading
 
-import os, platform, threading
 from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtWidgets import QMessageBox
+
 from core.config import _norm_path, safe_print
+
+from .. import lazy
 from ..lazy import exif_orientation_after_cw90
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -40,8 +45,8 @@ class MetadataPart2:
         avoids both clobbering _gallery_bulk_metadata and suppressing that lazy
         fetch.
         """
-        import time
         import logging
+        import time
         logger = logging.getLogger(__name__)
 
         if not file_paths:
@@ -115,7 +120,7 @@ class MetadataPart2:
 
         # 4. Perform the sort using pre-calculated keys
         sorted_files = sorted(
-            file_paths, 
+            file_paths,
             key=lambda fp: sort_keys[fp],
             reverse=newest_first
         )
@@ -346,9 +351,10 @@ class MetadataPart2:
         source_file = None
 
         try:
+            from PyQt6.QtWidgets import QDialog
+
             from processing.unified import UnifiedImageProcessor
             from rawviewer_ui.dialogs.color_calibration_dialog import ColorCalibrationDialog
-            from PyQt6.QtWidgets import QDialog
 
             if target_path and os.path.isfile(target_path):
                 make, model, iso_val = self._camera_identity_for_file(target_path)

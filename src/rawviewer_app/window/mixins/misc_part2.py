@@ -1,17 +1,22 @@
+from typing import List, Optional
 """misc mixin, part 2 of 4 (31 methods, 880 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
-import theme
-from PyQt6.QtCore import QPoint, QSize, QTimer, Qt
+from PyQt6.QtCore import QPoint, QSize, Qt, QTimer
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QFileDialog
+
+import theme
 from core.config import _norm_path
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution, is_raw_file
 from ..paths import _is_in_folder_scope, _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -768,8 +773,8 @@ class MiscPart2:
 
     def _is_raw_file(self, file_path):
         """Check if file is RAW format"""
-        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                          '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
         file_ext = os.path.splitext(file_path)[1].lower()
         return file_ext in raw_extensions

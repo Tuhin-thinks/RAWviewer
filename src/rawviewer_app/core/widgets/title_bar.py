@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import os
 import sys
+
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton
+
 import theme
 
 
@@ -15,7 +17,7 @@ class CustomTitleBar(QFrame):
         super().__init__(parent)
         self.parent = parent
         self.setFixedHeight(40)  # Smaller height
-        
+
         # Use the same background color as image viewing area (theme.VOID)
         self.setStyleSheet(f"""
             QFrame {{
@@ -27,13 +29,13 @@ class CustomTitleBar(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 0, 0, 0)
         layout.setSpacing(0)
-        
+
         # Logo Icon (Favicon)
         self.icon_label = QLabel()
         self.icon_label.setFixedSize(24, 24)  # Smaller icon
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.icon_label.setStyleSheet("background-color: transparent; border: none;")
-        
+
         # Load branded favicon / appicon (repo icons/ in dev; _MEIPASS when frozen).
         # widgets.py lives at src/rawviewer_app/ — do NOT use that as the icons root.
         if getattr(sys, "frozen", False):
@@ -93,7 +95,7 @@ class CustomTitleBar(QFrame):
         # Reserved for API compatibility; title bar shows icon only (no app name/version).
         self.title_label = QLabel("")
         self.title_label.hide()
-        
+
         layout.addStretch(1)
 
         self.metadata_label = QLabel("")
@@ -116,10 +118,10 @@ class CustomTitleBar(QFrame):
         layout.addWidget(self.metadata_label, 0, alignment=Qt.AlignmentFlag.AlignCenter)
 
         layout.addStretch(1)
-        
+
         # Window Controls - Smaller buttons
         import qtawesome as qta
-        
+
         control_btn_style = """
             QPushButton {
                 background-color: transparent;
@@ -133,28 +135,28 @@ class CustomTitleBar(QFrame):
                 background-color: rgba(255, 255, 255, 0.1); 
             }
         """
-        
+
         self.min_btn = QPushButton()
         self.min_btn.setIcon(qta.icon('fa5s.minus', color=theme.INK))
         self.min_btn.setIconSize(QSize(12, 12))
         self.min_btn.setStyleSheet(control_btn_style)
         self.min_btn.clicked.connect(self.parent.showMinimized)
         layout.addWidget(self.min_btn)
-        
+
         self.max_btn = QPushButton()
         self.max_btn.setIcon(qta.icon('fa5.square', color=theme.INK))
         self.max_btn.setIconSize(QSize(12, 12))
         self.max_btn.setStyleSheet(control_btn_style)
         self.max_btn.clicked.connect(self._toggle_maximize)
         layout.addWidget(self.max_btn)
-        
+
         self.close_btn = QPushButton()
         self.close_btn.setIcon(qta.icon('fa5s.times', color=theme.INK))
         self.close_btn.setIconSize(QSize(12, 12))
         self.close_btn.setStyleSheet(control_btn_style + "QPushButton:hover { background-color: #f44336; }")
         self.close_btn.clicked.connect(self.parent.close)
         layout.addWidget(self.close_btn)
-        
+
         self._is_maximized = False
         self._dragging = False
         self._drag_pos = None
@@ -176,7 +178,7 @@ class CustomTitleBar(QFrame):
         else:
             self.parent.showMaximized()
         self._sync_maximize_state()
-        
+
         # Trigger gallery layout update after maximize/restore
         if hasattr(self.parent, 'view_mode') and self.parent.view_mode == 'gallery':
             if hasattr(self.parent, 'gallery_justified') and self.parent.gallery_justified:
@@ -220,7 +222,7 @@ class CustomTitleBar(QFrame):
         if event.button() == Qt.MouseButton.LeftButton:
             self._toggle_maximize()
             event.accept()
-    
+
     def set_title(self, title):
         """No-op: custom title bar displays icon only (window title uses setWindowTitle)."""
         return

@@ -1,3 +1,4 @@
+from typing import List
 """Windows share helpers for the shared widget layer."""
 from __future__ import annotations
 
@@ -29,8 +30,8 @@ def _windows_shell_verb_suggests_share(verb_name: object) -> bool:
 
 def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
     """Show the native Windows 'Open with' dialog for a file."""
-    import subprocess
     import ctypes
+    import subprocess
     from ctypes import Structure, byref, c_long, wintypes
 
     abs_path = os.path.abspath(path)
@@ -146,7 +147,6 @@ def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
 
 def _share_windows_clipboard_cf_hdrop(path: str) -> bool:
     """Place file(s) on clipboard as CF_HDROP (native Windows file clipboard)."""
-    import struct
 
     try:
         import win32clipboard  # type: ignore
@@ -178,7 +178,6 @@ def _share_windows_clipboard_cf_hdrop(path: str) -> bool:
 
 def _share_windows_clipboard_cf_hdrop_paths(file_paths: List[str]) -> bool:
     """Place multiple files on the clipboard as CF_HDROP."""
-    import struct
 
     try:
         import win32clipboard  # type: ignore

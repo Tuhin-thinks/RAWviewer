@@ -1,14 +1,16 @@
 """display mixin, part 6 of 6 (14 methods, 408 lines)."""
 from __future__ import annotations
 
+import logging
 import sys
 
-import logging
 from PyQt6.QtCore import QPoint, Qt
 from PyQt6.QtGui import QCursor
+
 from core.config import _norm_path, safe_print
-from ..paths import _require_str_path
+
 from .. import lazy
+from ..paths import _require_str_path
 
 lazy.register(sys.modules[__name__])
 

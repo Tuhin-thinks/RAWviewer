@@ -1,14 +1,15 @@
 """status mixin, part 2 of 2 (1 methods, 695 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 import theme
+
+from .. import lazy
 from ..lazy import is_raw_file, process_file_from_path
 from ..paths import _require_str_path
 from ..qt_helpers import _qta_icon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -266,9 +267,7 @@ class StatusPart2:
             _oh_sb = original_height if original_height else 0
             _om_sb = max(_ow_sb, _oh_sb) if (_ow_sb and _oh_sb) else 0
             _needs_sensor_exif = False
-            if not original_width or not original_height:
-                _needs_sensor_exif = True
-            elif (
+            if not original_width or not original_height or (
                 getattr(self, "_is_half_size_displayed", False)
                 and _dm_sb > 0
                 and _om_sb > 0
@@ -555,7 +554,7 @@ class StatusPart2:
                         logger.info(f"[STATUS] Added capture time from fallback: {exif_data['capture_time']}")
 
                     # If we got new data, try to update cache for future use
-                    if exif_data and any([exif_data.get('focal_length'), exif_data.get('aperture'), 
+                    if exif_data and any([exif_data.get('focal_length'), exif_data.get('aperture'),
                                          exif_data.get('iso'), exif_data.get('capture_time')]):
                         logger.info("[STATUS] Fallback extraction found metadata, updating cache")
                         # Try to merge with existing cache or create new entry

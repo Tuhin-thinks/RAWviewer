@@ -1,14 +1,16 @@
 """gallery mixin, part 5 of 5 (3 methods, 236 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 from PyQt6.QtCore import QRunnable
-from rawviewer_app.signals import FolderSortRefineSignals
+
 from core.config import _env_int, _norm_path
-from ..qt_helpers import _get_bg_thread_pool
+from rawviewer_app.signals import FolderSortRefineSignals
+
 from .. import lazy
+from ..qt_helpers import _get_bg_thread_pool
 
 lazy.register(sys.modules[__name__])
 
@@ -55,6 +57,7 @@ class GalleryPart5:
                 except Exception as e:
                     import logging
                     import traceback
+
                     from common_image_loader import is_emfile_error, note_emfile_pressure
 
                     logging.getLogger(__name__).error(

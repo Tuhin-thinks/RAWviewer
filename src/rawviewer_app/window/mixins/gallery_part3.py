@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import sys
 
-import theme
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
-from ..lazy import ThumbnailLabel, process_file_from_path
+
+import theme
+
 from .. import lazy
+from ..lazy import ThumbnailLabel, process_file_from_path
 
 lazy.register(sys.modules[__name__])
 
@@ -19,8 +21,8 @@ class GalleryPart3:
         Get aspect ratio for a file without loading the full image.
         Optimized to use cache, then EXIF tags, then RAW metadata.
         """
-        import os
         import logging
+        import os
         logger = logging.getLogger(__name__)
 
         # 1. Check in-memory cache
@@ -47,7 +49,7 @@ class GalleryPart3:
 
         # 3. Extract dimensions and orientation directly from file
         ext = os.path.splitext(file_path)[1].lower()
-        raw_extensions = {'.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw', 
+        raw_extensions = {'.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw',
                         '.pef', '.x3f', '.3fr', '.fff', '.iiq', '.cap', '.erf', '.mef', '.mos', '.nrw', '.srf'}
         is_raw = ext in raw_extensions
 
@@ -172,8 +174,8 @@ class GalleryPart3:
 
     def _get_gallery_pixmap(self, file_path):
         """Get pixmap for gallery view, loading if necessary - optimized for performance"""
-        import os
         import logging
+        import os
         logger = logging.getLogger(__name__)
 
         # Check cache first (fastest)
@@ -464,9 +466,10 @@ class GalleryPart3:
     # def _load_gallery_thumbnail_async_justified(self, file_path, thumb_label, target_width, target_height, delay=10):
     #     """Load thumbnail for justified gallery item asynchronously"""
     #     pass  # Gallery functionality disabled
-        import time
         import logging
         import os
+        import time
+
         from PyQt6.QtCore import QTimer
         logger = logging.getLogger(__name__)
 
@@ -597,10 +600,11 @@ class GalleryPart3:
     # def _load_gallery_pixmap_async(self, file_path):
     #     """Load pixmap asynchronously and update specific thumbnail when ready"""
     #     pass  # Gallery functionality disabled
-        import time
         import logging
-        from PyQt6.QtCore import QTimer
+        import time
+
         from PIL import Image
+        from PyQt6.QtCore import QTimer
         logger = logging.getLogger(__name__)
 
         # Track loading start time if not already tracked
@@ -802,9 +806,9 @@ class GalleryPart3:
     # def _create_gallery_item(self, file_path, thumb_width=200):
     #     """Create a single gallery item with thumbnail"""
     #     pass  # Gallery functionality disabled
-        from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
-        from rawviewer_app.core.widgets import BottomRatingWidget
         from PyQt6.QtCore import Qt
+        from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
 
         item = QWidget()
         item.setStyleSheet(f"""

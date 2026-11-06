@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import sys
-import time
-from PyQt6.QtCore import QTimer, Qt, pyqtSignal
+
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QApplication, QDialog, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
+
 import theme
+
 from .confirm_dialog import _ConfirmDialogButton
 from .macos import _activate_macos_foreground_app
 

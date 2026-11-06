@@ -1,22 +1,31 @@
 """image_load mixin, part 2 of 3 (3 methods, 883 lines)."""
 from __future__ import annotations
 
+import os
+import platform
 import sys
 
-import os, platform
 from PyQt6.QtCore import Qt
-from rawviewer_app.processing import RAWProcessor
+
 from core.config import _env_int, _norm_path, safe_print
-from ..lazy import Priority, image_covers_sensor_resolution, is_raw_file, use_libraw_consistent_preview_first, use_progressive_raw_loading
+from rawviewer_app.processing import RAWProcessor
+
 from .. import lazy
+from ..lazy import (
+    Priority,
+    image_covers_sensor_resolution,
+    is_raw_file,
+    use_libraw_consistent_preview_first,
+    use_progressive_raw_loading,
+)
 
 lazy.register(sys.modules[__name__])
 
 
 class ImageLoadPart2:
     def load_raw_image(self, file_path, force_reload=False):
-        import time
         import logging
+        import time
         import traceback
         logger = logging.getLogger(__name__)
 
@@ -191,8 +200,8 @@ class ImageLoadPart2:
 
             # Reset flags when loading new image
             # Assume preview-first until a full-resolution buffer is confirmed on-screen, but ONLY for RAW files
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                              '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
             is_raw = os.path.splitext(requested_file_path)[1].lower() in raw_extensions
             self._is_half_size_displayed = False
@@ -574,8 +583,8 @@ class ImageLoadPart2:
 
             # Check if we have a cached pixmap for non-RAW files ONLY
             # CRITICAL: Only check pixmap cache for non-RAW files to avoid loading JPEG when RAW is requested
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', 
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq', 
+            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
                              '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
             file_ext = os.path.splitext(file_path)[1].lower()
             is_raw_ext = file_ext in raw_extensions

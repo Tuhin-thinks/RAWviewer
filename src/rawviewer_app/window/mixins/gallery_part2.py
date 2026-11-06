@@ -1,19 +1,21 @@
 """gallery mixin, part 2 of 5 (17 methods, 872 lines)."""
 from __future__ import annotations
 
-import sys
-
 import platform
+import sys
 from typing import Any, cast
-import theme
+
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QSizePolicy
-from rawviewer_app.signals import GalleryMetadataSignals
+
+import theme
 from core.config import _norm_path
+from rawviewer_app.signals import GalleryMetadataSignals
+
+from .. import lazy
 from ..lazy import ExternalJustifiedGallery, ThumbnailLabel
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -108,6 +110,7 @@ class GalleryPart2:
         import os
         import sys
         import time
+
         from PyQt6.QtCore import QTimer
         logger = logging.getLogger(__name__)
         self._suppress_single_manager_callbacks = True
@@ -366,7 +369,11 @@ class GalleryPart2:
         if getattr(self, "gallery_widget", None) is not None:
             return
         from PyQt6.QtWidgets import (
-            QWidget, QVBoxLayout, QScrollArea, QPushButton, QLabel,
+            QLabel,
+            QPushButton,
+            QScrollArea,
+            QVBoxLayout,
+            QWidget,
         )
 
         # Create gallery widget container
@@ -623,6 +630,7 @@ class GalleryPart2:
             """Update gallery view - using JustifiedGallery"""
             import logging
             import time
+
             from PyQt6.QtCore import QTimer
             logger = logging.getLogger(__name__)
             if getattr(self, "view_mode", "") != "gallery":
@@ -683,7 +691,6 @@ class GalleryPart2:
                                             meta.get("orientation") or 1
                                         )
                                     else:
-                                        from common_image_loader import exif_display_dimensions
 
                                         w = int(meta.get("width") or 0)
                                         h = int(meta.get("height") or 0)
@@ -766,7 +773,7 @@ class GalleryPart2:
                 folder_at_request = getattr(self, "current_folder", None)
                 files_snapshot = list(self.image_files)
 
-                from PyQt6.QtCore import QRunnable, QThreadPool
+                from PyQt6.QtCore import QRunnable
 
                 # Create signal carrier for this specific fetch
                 signals = GalleryMetadataSignals()
@@ -818,7 +825,7 @@ class GalleryPart2:
 
     def _add_gallery_row(self, row_items, available_width, content_width, row_height, row_spacing):
             """Add a single row - based on reference code add_row method"""
-            from PyQt6.QtWidgets import QWidget, QHBoxLayout
+            from PyQt6.QtWidgets import QHBoxLayout, QWidget
 
             row_widget = QWidget()
             row_layout = QHBoxLayout(row_widget)

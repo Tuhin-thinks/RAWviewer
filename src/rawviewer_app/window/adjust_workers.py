@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import os
 import sys
-import threading
-import time
 from typing import Any
 
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
@@ -117,8 +115,9 @@ class _AdjustPreviewWorker(QRunnable):
     def run(self) -> None:
         out = None
         try:
-            from perf_metrics import perf_mark
             import time as _time
+
+            from perf_metrics import perf_mark
 
             t0 = _time.perf_counter()
             dtype_name = str(getattr(self.base_rgb, "dtype", ""))

@@ -4,7 +4,6 @@ from __future__ import annotations
 import os
 import platform
 import sys
-from typing import Any
 
 from core.config import _find_file_index_in_list, _norm_path
 

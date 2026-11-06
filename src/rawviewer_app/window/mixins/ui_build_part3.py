@@ -1,18 +1,21 @@
 """ui_build mixin, part 3 of 3 (8 methods, 229 lines)."""
 from __future__ import annotations
 
-import sys
-
 import logging
-import os, time
-import theme
+import os
+import sys
+import time
+
 from PyQt6.QtCore import QPoint
 from PyQt6.QtGui import QAction, QKeySequence
+
+import theme
 from core.config import _env_int, _norm_path
+
+from .. import lazy
 from ..macos import _macos_try_force_dark_titlebar, _macos_try_force_dark_titlebar_for_window
 from ..paths import _is_in_folder_scope
 from ..qt_helpers import _qta_icon
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -199,7 +202,6 @@ class UiBuildPart3:
         if btn is None:
             return
         try:
-            import qtawesome as qta
             if playing:
                 btn.setIcon(_qta_icon("fa5s.pause", color=theme.INK_MUTED))
             else:

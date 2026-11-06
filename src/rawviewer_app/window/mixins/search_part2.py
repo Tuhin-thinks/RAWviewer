@@ -1,15 +1,18 @@
 """search mixin, part 2 of 4 (17 methods, 898 lines)."""
 from __future__ import annotations
 
+import logging
 import sys
+import time
 
-import logging, time
 from PyQt6.QtCore import QEasingCurve, QRunnable, QTimer
+
+from core.config import _env_int, _env_true
 from rawviewer_app.signals import SemanticIndexPrepSignals, SemanticIndexSignals
 from rawviewer_app.workers import _SemanticIndexPrepWorker
-from core.config import _env_int, _env_true
-from ..qt_helpers import _get_bg_thread_pool
+
 from .. import lazy
+from ..qt_helpers import _get_bg_thread_pool
 
 lazy.register(sys.modules[__name__])
 

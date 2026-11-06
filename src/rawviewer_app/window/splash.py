@@ -8,9 +8,8 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QSplashScreen
 
-from . import state
 from .bootstrap import _IS_GUI_MAIN_PROCESS
-from .paths import _branded_icon_resource_path, resource_path
+from .paths import _branded_icon_resource_path
 from .platform_win import _is_windows_installed_app
 
 __all__ = [
@@ -25,7 +24,7 @@ __all__ = [
 _startup_splash = None  # module-level reference, set by _schedule_startup_splash_dismiss
 
 
-def _load_branded_qicon() -> "QIcon | None":
+def _load_branded_qicon() -> QIcon | None:
     """Load multi-resolution branded icon for window / taskbar chrome."""
     from PyQt6.QtCore import Qt
     from PyQt6.QtGui import QIcon, QPixmap

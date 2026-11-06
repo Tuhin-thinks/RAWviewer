@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import sys
 
-from PyQt6.QtCore import QEvent, QTimer, Qt
+from PyQt6.QtCore import QEvent, Qt, QTimer
 from PyQt6.QtWidgets import QApplication
+
 from core.config import _env_int, safe_print
-from ..paths import _require_str_path
+
 from .. import lazy
+from ..paths import _require_str_path
 
 lazy.register(sys.modules[__name__])
 
@@ -112,9 +114,7 @@ class LifecyclePart2:
             if (
                 getattr(self, "_search_panel_expanded", False)
                 and self._is_gallery_search_indexing_active()
-            ):
-                self._set_gallery_search_status(full, animate=False)
-            elif full and not self._should_show_search_index_progress(full):
+            ) or full and not self._should_show_search_index_progress(full):
                 self._set_gallery_search_status(full, animate=False)
             elif full:
                 self._clear_stale_gallery_search_index_progress()

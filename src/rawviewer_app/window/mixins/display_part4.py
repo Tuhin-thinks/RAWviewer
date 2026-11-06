@@ -1,15 +1,18 @@
+from typing import List
 """display mixin, part 4 of 6 (14 methods, 859 lines)."""
 from __future__ import annotations
 
+import os
 import sys
 
-import os
 from PyQt6.QtGui import QImage, QPixmap
-from rawviewer_app.processing import PixmapConverter, RawEdrPixmapConverter
+
 from core.config import _norm_path, safe_print
+from rawviewer_app.processing import PixmapConverter, RawEdrPixmapConverter
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution, is_raw_file, np
 from ..paths import _require_str_path
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

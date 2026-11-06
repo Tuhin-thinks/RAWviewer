@@ -4,7 +4,9 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+
 import theme
+
 from .confirm_dialog import _ConfirmDialogButton
 
 
@@ -208,14 +210,14 @@ class CustomWarningDialog(QDialog):
             event.accept()
             return
         super().mousePressEvent(event)
-    
+
     def mouseMoveEvent(self, event):
         if hasattr(self, '_dragging') and self._dragging:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
-    
+
     def mouseReleaseEvent(self, event):
         if hasattr(self, '_dragging'):
             self._dragging = False

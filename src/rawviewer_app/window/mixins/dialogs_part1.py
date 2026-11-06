@@ -1,21 +1,32 @@
+from typing import List
 """dialogs mixin, part 1 of 1 (40 methods, 852 lines)."""
 from __future__ import annotations
 
+import logging
+import os
 import sys
+import time
 
-import logging, os, time
-from PyQt6.QtCore import QPoint, QTimer, QUrl, Qt
+from PyQt6.QtCore import QPoint, Qt, QTimer, QUrl
 from PyQt6.QtGui import QCursor, QDesktopServices
 from PyQt6.QtWidgets import QDialog, QFileDialog
-from rawviewer_app.signals import ReleaseUpdateCheckSignals
-from rawviewer_app.core.widgets import CustomConfirmDialog, CustomWarningDialog
-from rawviewer_app.workers import _ReleaseUpdateCheckWorker
+
 from core.config import _env_true, _norm_path, safe_print
+from rawviewer_app.core.widgets import CustomConfirmDialog, CustomWarningDialog
+from rawviewer_app.signals import ReleaseUpdateCheckSignals
+from rawviewer_app.workers import _ReleaseUpdateCheckWorker
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution
 from ..logging_setup import _share_log
-from ..macos import _activate_macos_foreground_app, _applescript_escape, _get_macos_share_picker_delegate_class, _macos_share_items_array, _run_applescript
+from ..macos import (
+    _activate_macos_foreground_app,
+    _applescript_escape,
+    _get_macos_share_picker_delegate_class,
+    _macos_share_items_array,
+    _run_applescript,
+)
 from ..qt_helpers import _get_bg_thread_pool, _qt_app
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 
@@ -83,8 +94,8 @@ class DialogsPart1:
         self, current: str, latest: str, release_url: str
     ) -> bool:
         """Return True when the user chose Not Now (or dismissed), False after Open Download Page."""
-        from release_update import RELEASE_PAGE_URL
         from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
+        from release_update import RELEASE_PAGE_URL
 
         url = (release_url or RELEASE_PAGE_URL).strip() or RELEASE_PAGE_URL
         dialog = ReleaseUpdateDialog(

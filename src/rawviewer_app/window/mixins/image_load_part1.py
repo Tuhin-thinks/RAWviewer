@@ -1,16 +1,19 @@
 """image_load mixin, part 1 of 3 (21 methods, 756 lines)."""
 from __future__ import annotations
 
+import os
 import sys
+import time
 
-import os, time
 from PyQt6.QtCore import QRunnable, QTimer
 from PyQt6.QtGui import QImage, QPixmap
-from rawviewer_app.signals import WebpDecodeSignals
+
 from core.config import _env_int, _norm_path
+from rawviewer_app.signals import WebpDecodeSignals
+
+from .. import lazy
 from ..lazy import image_covers_sensor_resolution, is_raw_file
 from ..qt_helpers import _get_bg_thread_pool
-from .. import lazy
 
 lazy.register(sys.modules[__name__])
 

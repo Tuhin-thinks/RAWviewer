@@ -1,15 +1,17 @@
 """gallery mixin, part 1 of 5 (35 methods, 895 lines)."""
 from __future__ import annotations
 
-import sys
-
 import os
-from typing import Any, cast
+import sys
+from typing import Any, cast, List, Optional
+
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QImage, QPixmap
+
 from core.config import _env_int, _norm_path
-from ..lazy import Priority, is_raw_file
+
 from .. import lazy
+from ..lazy import Priority, is_raw_file
 
 lazy.register(sys.modules[__name__])
 
@@ -482,7 +484,7 @@ class GalleryPart1:
         if getattr(self, "view_mode", "single") != "single":
             return
 
-        # Defer filmstrip thumbnail requests from the UI during fast-open 
+        # Defer filmstrip thumbnail requests from the UI during fast-open
         # until the first image is actually on screen.
         if not getattr(self, "_single_view_first_render_logged", False):
             if not hasattr(self, "_deferred_filmstrip_paths"):
