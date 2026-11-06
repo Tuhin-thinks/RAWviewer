@@ -113,7 +113,8 @@ class UiBuildPart2:
     def _init_content(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+        self.main_layout = QVBoxLayout(central_widget)
+        main_layout = self.main_layout
         # Reduce padding for image view
         main_layout.setContentsMargins(0, 0, 0, 0)  # Set padding to 0
         main_layout.setSpacing(0)  # Remove spacing
@@ -460,8 +461,8 @@ class UiBuildPart2:
         if self.single_image_adjust_panel is not None:
             self._apply_adjust_panel_dock(self._adjust_panel_dock_side())
 
-        main_layout.addWidget(self.single_view_splitter)
-        self._init_compare_view(main_layout)
+        self.main_layout.addWidget(self.single_view_splitter)
+        self._init_compare_view(self.main_layout)
         QTimer.singleShot(800, self._show_edr_startup_status)
         # --- Status bar with darkroom styling (see theme.py) ---
         # - Surface: theme.VOID (dark background)
@@ -543,18 +544,30 @@ class UiBuildPart2:
                 background-color: rgba(255, 255, 255, 0.1);
             }}
         """
-        bottom_icon_btn_style = bottom_icon_only_btn_style
+        # Store shared resources as instance attributes so subsequent
+        # init methods can access them (scope boundary after method split).
+        # The parent widget must also be stored here — if it is GC'd before later
+        # methods run, PyQt6 deletes its child layout C++ objects even though the
+        # Python layout wrapper is still alive (→ RuntimeError: deleted).
+        self.status_bar_widget = status_widget
+        self.status_layout = status_layout
+        self.left_buttons_widget = left_buttons_widget
+        self.left_buttons_layout = left_buttons_layout
+        self.bottom_icon_only_btn_style = bottom_icon_only_btn_style
+        self.qta = qta
+
+
+    def _style_bottom_icon_button(self, btn: QPushButton) -> None:
+        btn.setFlat(True)
+        btn.setAutoDefault(False)
+        btn.setDefault(False)
+        btn.setFixedSize(28, 28)
+        btn.setIconSize(QSize(20, 20))
+        btn.setStyleSheet(self.bottom_icon_only_btn_style)
+        btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
 
     def _init_bottom_actions(self):
-        def _style_bottom_icon_button(btn: QPushButton) -> None:
-            btn.setFlat(True)
-            btn.setAutoDefault(False)
-            btn.setDefault(False)
-            btn.setFixedSize(28, 28)
-            btn.setIconSize(QSize(20, 20))
-            btn.setStyleSheet(bottom_icon_only_btn_style)
-            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         # Open button (left side) - Using qtawesome for reliability
         self.open_button = QPushButton()
@@ -562,13 +575,13 @@ class UiBuildPart2:
         self.open_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.open_button.setToolTip("Open Image File")
         self.open_button.clicked.connect(self.open_file)
-        _style_bottom_icon_button(self.open_button)
-        left_buttons_layout.addWidget(self.open_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self._style_bottom_icon_button(self.open_button)
+        self.left_buttons_layout.addWidget(self.open_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Gallery view toggle button
         self.view_mode_button = QPushButton()
         # Use qtawesome icon if available, otherwise fallback to text
-        if qta is not None:
+        if self.qta is not None:
             try:
                 gallery_icon = _qta_icon('fa5s.th', color=theme.INK_MUTED)
                 self.view_mode_button.setIcon(gallery_icon)
@@ -580,8 +593,8 @@ class UiBuildPart2:
             self.view_mode_button.setText("Gallery")
         self.view_mode_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.view_mode_button.clicked.connect(self._on_view_mode_button_clicked)
-        _style_bottom_icon_button(self.view_mode_button)
-        left_buttons_layout.addWidget(self.view_mode_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self._style_bottom_icon_button(self.view_mode_button)
+        self.left_buttons_layout.addWidget(self.view_mode_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         self.view_mode_button.hide()  # Hidden by default until images are loaded
 
         self.share_bottom_button = QPushButton()
@@ -591,7 +604,7 @@ class UiBuildPart2:
         except Exception as e:
             safe_print(f"[WARNING] Share icon unavailable: {e}, using text fallback", flush=True)
             self.share_bottom_button.setText("Open")
-        _style_bottom_icon_button(self.share_bottom_button)
+        self._style_bottom_icon_button(self.share_bottom_button)
         self.share_bottom_button.setToolTip(
             "Open in another app" if sys.platform == "win32" else "Share"
         )
@@ -609,7 +622,7 @@ class UiBuildPart2:
         except Exception:
             # fa5r/far regular fonts are not bundled in all qtawesome builds.
             self._bookmark_star_outline_icon = _qta_icon("fa5s.star", color=theme.INK_FAINT)
-        _style_bottom_icon_button(self.batch_mark_indicator)
+        self._style_bottom_icon_button(self.batch_mark_indicator)
         self.batch_mark_indicator.clicked.connect(self._on_bookmark_slot_clicked)
         self.batch_mark_indicator.setToolTip(
             "Bookmarks retired -- use 1–5 ratings and the gallery rating-filter stars."
@@ -690,13 +703,13 @@ class UiBuildPart2:
             self.gallery_clear_filter_button.setIcon(_qta_icon("fa5s.th", color=theme.INK_MUTED))
         except Exception:
             self.gallery_clear_filter_button.setText("Gallery")
-        _style_bottom_icon_button(self.gallery_clear_filter_button)
+        self._style_bottom_icon_button(self.gallery_clear_filter_button)
         self.gallery_clear_filter_button.setToolTip("Show all images (clear filter)")
         self.gallery_clear_filter_button.clicked.connect(self._on_gallery_clear_filter_clicked)
         self.gallery_clear_filter_button.hide()
         # Sits with the other view-scope controls (left side) rather than beside the
         # rating-filter stars on the right -- it toggles gallery scope, not rating.
-        left_buttons_layout.addWidget(
+        self.left_buttons_layout.addWidget(
             self.gallery_clear_filter_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
         )
 
@@ -704,18 +717,18 @@ class UiBuildPart2:
         self.slideshow_bottom_button.setObjectName("slideshowBottomButton")
         self.slideshow_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.slideshow_bottom_button.setIcon(_qta_icon("fa5s.play", color=theme.INK_MUTED))
-        _style_bottom_icon_button(self.slideshow_bottom_button)
+        self._style_bottom_icon_button(self.slideshow_bottom_button)
         self.slideshow_bottom_button.clicked.connect(self._on_slideshow_bottom_clicked)
         self.slideshow_bottom_button.hide()
-        left_buttons_layout.addWidget(self.slideshow_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.left_buttons_layout.addWidget(self.slideshow_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         self.rotate_bottom_button = QPushButton()
         self.rotate_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.rotate_bottom_button.setIcon(_qta_icon("fa5s.redo", color=theme.INK_MUTED))
-        _style_bottom_icon_button(self.rotate_bottom_button)
+        self._style_bottom_icon_button(self.rotate_bottom_button)
         self.rotate_bottom_button.clicked.connect(self._rotate_current_image_clockwise_persist)
         self.rotate_bottom_button.hide()
-        left_buttons_layout.addWidget(self.rotate_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.left_buttons_layout.addWidget(self.rotate_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
 
     def _init_more_buttons(self):
@@ -723,10 +736,10 @@ class UiBuildPart2:
         self.adjust_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.adjust_bottom_button.setIcon(_qta_icon("fa5s.sliders-h", color=theme.INK_MUTED))
         self.adjust_bottom_button.setToolTip("Adjust -- develop this photo (E)")
-        _style_bottom_icon_button(self.adjust_bottom_button)
+        self._style_bottom_icon_button(self.adjust_bottom_button)
         self.adjust_bottom_button.clicked.connect(self._toggle_adjust_panel)
         self.adjust_bottom_button.hide()
-        left_buttons_layout.addWidget(self.adjust_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.left_buttons_layout.addWidget(self.adjust_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # RAW/JPEG Toggle button (before search so expand field stays adjacent to search icon)
         self.raw_toggle_button = QPushButton()
@@ -738,7 +751,7 @@ class UiBuildPart2:
         self.raw_toggle_button.clicked.connect(self.toggle_raw_jpeg_workflow)
         self.raw_toggle_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.raw_toggle_button.hide()
-        left_buttons_layout.addWidget(self.raw_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.left_buttons_layout.addWidget(self.raw_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # EDR display toggle (macOS only; shown beside RAW when the RAW
         # workflow is active). EDR re-decodes each RAW with LibRaw highlight
@@ -756,7 +769,7 @@ class UiBuildPart2:
             self.edr_toggle_button.clicked.connect(self.toggle_raw_edr_display)
             self.edr_toggle_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             self.edr_toggle_button.hide()
-            left_buttons_layout.addWidget(
+            self.left_buttons_layout.addWidget(
                 self.edr_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
             )
 
@@ -793,7 +806,7 @@ class UiBuildPart2:
             }}
         """)
         self.sort_toggle_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        left_buttons_layout.addWidget(
+        self.left_buttons_layout.addWidget(
             self.sort_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
         )
         self.sort_toggle_button.hide()  # Hidden by default (single view)
@@ -813,7 +826,7 @@ class UiBuildPart2:
         self.size_slider.hide()  # Hidden by default (single view)
 
         # Add to layout
-        left_buttons_layout.addWidget(
+        self.left_buttons_layout.addWidget(
             self.size_slider, 0, alignment=Qt.AlignmentFlag.AlignVCenter
         )
 
@@ -827,7 +840,7 @@ class UiBuildPart2:
         self.size_slider.sliderReleased.connect(self._on_zoom_slider_released)
 
         self.search_bottom_button = QPushButton()
-        if qta is not None:
+        if self.qta is not None:
             try:
                 self.search_bottom_button.setIcon(_qta_icon("fa5s.search", color=theme.INK_MUTED))
             except Exception:
@@ -835,10 +848,10 @@ class UiBuildPart2:
         else:
             self.search_bottom_button.setText("Search")
         self.search_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        _style_bottom_icon_button(self.search_bottom_button)
+        self._style_bottom_icon_button(self.search_bottom_button)
         self.search_bottom_button.clicked.connect(self._on_search_bottom_clicked)
         self.search_bottom_button.hide()
-        left_buttons_layout.addWidget(self.search_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.left_buttons_layout.addWidget(self.search_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
 
     def _init_search_ui(self):
@@ -941,9 +954,9 @@ class UiBuildPart2:
         self.burst_grouping_button.setToolTip(
             "Group burst sequences -- stack rapid captures into one tile"
         )
-        _style_bottom_icon_button(self.burst_grouping_button)
+        self._style_bottom_icon_button(self.burst_grouping_button)
         self.burst_grouping_button.setStyleSheet(
-            bottom_icon_only_btn_style
+            self.bottom_icon_only_btn_style
             + f"""
             QPushButton:checked,
             QPushButton:checked:flat {{
@@ -962,7 +975,7 @@ class UiBuildPart2:
         self.compare_bottom_button.setToolTip(
             "Compare side by side (C) -- one burst group or multi-selection"
         )
-        if qta is not None:
+        if self.qta is not None:
             try:
                 self.compare_bottom_button.setIcon(
                     _qta_icon("fa5s.columns", color=theme.INK_MUTED)
@@ -971,7 +984,7 @@ class UiBuildPart2:
                 self.compare_bottom_button.setText("Compare")
         else:
             self.compare_bottom_button.setText("Compare")
-        _style_bottom_icon_button(self.compare_bottom_button)
+        self._style_bottom_icon_button(self.compare_bottom_button)
         self.compare_bottom_button.clicked.connect(self._enter_compare_mode)
         self.compare_bottom_button.hide()
         self.compare_bottom_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -1063,31 +1076,28 @@ class UiBuildPart2:
         _rtl.addWidget(self.status_counter_label, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Add left buttons to main layout; EXIF/metadata lives in the top bar (center).
-        status_layout.addWidget(left_buttons_widget)
-        status_layout.addStretch(1)
-        status_layout.addWidget(self.right_status_trailing, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.status_layout.addWidget(self.left_buttons_widget)
+        self.status_layout.addStretch(1)
+        self.status_layout.addWidget(self.right_status_trailing, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         self._set_shortcuts_hint_hovered(True)
-
-        self.status_bar_widget = status_widget
-        self.left_buttons_widget = left_buttons_widget
 
         # Search field overlays the status bar to the right of the search
         # button so left/right chrome keep a fixed footprint (no icon flicker).
         if getattr(self, "search_expand_container", None) is not None:
-            self.search_expand_container.setParent(status_widget)
+            self.search_expand_container.setParent(self.status_bar_widget)
             self.search_expand_container.raise_()
             self.search_expand_container.hide()
 
         # Add custom widget to status bar
-        self.status_bar.addPermanentWidget(status_widget, 1)
+        self.status_bar.addPermanentWidget(self.status_bar_widget, 1)
 
         # Bottom-right resize grip (frameless Windows) -- raised above status bar chrome.
         self._resize_grip = ResizeGripIndicator(self)
         self._position_resize_grip()
         self.status_bar.setMouseTracking(True)
         self.status_bar.installEventFilter(self)
-        status_widget.setMouseTracking(True)
-        status_widget.installEventFilter(self)
+        self.status_bar_widget.setMouseTracking(True)
+        self.status_bar_widget.installEventFilter(self)
 
         # Track mouse over client area so edge cursors / grip appear without clicking first.
         self.setMouseTracking(True)
