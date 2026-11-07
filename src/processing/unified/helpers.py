@@ -8,8 +8,6 @@ from typing import Any
 import numpy as np
 from PyQt6.QtCore import QLoggingCategory
 
-from processing.raw_decode.gil import rawpy_imread_warm
-
 # Re-exports from sibling and external packages
 from cache.keys import disk_preview_max_edge, memory_preview_max_edge  # noqa: F401
 from common_image_loader import (  # noqa: F401
@@ -26,6 +24,7 @@ from enhanced_raw_processor import (  # noqa: F401
     ThumbnailExtractor,
 )
 from image_cache import get_image_cache  # noqa: F401
+from processing.raw_decode.gil import rawpy_imread_warm
 
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)
 QLoggingCategory.setFilterRules("qt.imageformats*=false")

@@ -1,7 +1,6 @@
 """Thumbnail, grid, and preview cache operations."""
 from __future__ import annotations
 
-import os
 import threading
 from typing import Any
 
@@ -10,6 +9,7 @@ from PyQt6.QtCore import pyqtSignal
 
 from cache.keys import _jpeg_bytes_max_edge, disk_preview_max_edge
 from cache.memory import LRUCache
+
 
 class ImageCacheThumbGridPreview:
     """Thumbnail, grid, and preview get/put operations."""
@@ -83,7 +83,7 @@ class ImageCacheThumbGridPreview:
         if thumbnail is not None:
             validated = _validate_raw_thumbnail(thumbnail)
             if validated is not thumbnail:
-                self.thumbnail_cache.put(key, validated.copy())  # type: ignore[union-attr]  
+                self.thumbnail_cache.put(key, validated.copy())  # type: ignore[union-attr]
                 self.disk_thumbnail_cache.remove(file_path)
             self.cache_hit.emit(file_path, 'thumbnail')
             return validated
@@ -370,7 +370,7 @@ class ImageCacheThumbGridPreview:
             if grid.shape[0] > 512 or grid.shape[1] > 512:
                 return
             # Cache in memory
-            self.grid_cache.put(key, grid.copy())  
+            self.grid_cache.put(key, grid.copy())
 
             # Cache on disk
             if self.persistent_cache_enabled:

@@ -11,7 +11,6 @@ from PyQt6.QtCore import QObject, QPoint, QRectF, QRunnable, Qt, QThreadPool, QU
 from PyQt6.QtGui import QColor, QCursor, QDesktopServices, QMouseEvent, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
-from metadata import backend as metadata_backend
 from core.location_map import (
     WIDGET_H,
     WIDGET_W,
@@ -19,6 +18,7 @@ from core.location_map import (
     default_map_cache_dir,
     probe_map_tiles_online,
 )
+from metadata import backend as metadata_backend
 
 logger = logging.getLogger(__name__)
 

@@ -10,6 +10,7 @@ from typing import Any
 from search.indexer import _coerce_float, _coerce_int
 from search.types import MetadataRow, Row
 
+
 class EnginePart6:
     # Type annotations for attributes inherited from other EnginePart siblings
     _canonical_path: Any

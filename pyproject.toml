@@ -19,7 +19,10 @@ select = [
     "UP",   # pyupgrade
     "SIM",  # flake8-simplify
 ]
-ignore = ["E501"]  # Line length handled by formatter
+ignore = [
+    "E501",  # Line length handled by formatter
+    "UP040", # PEP 695 `type` keyword requires Python 3.12; project supports 3.10+
+]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -34,11 +37,11 @@ indent-style = "space"
 "src/cache/image_cache/__init__.py" = ["F401"]
 "src/rawviewer_app/processing/__init__.py" = ["F401"]
 "src/main.py" = ["E402"]
-"src/raw_edit_pipeline.py" = ["E402"]
-"src/release_update.py" = ["E402"]
+"src/raw_adjustments/pipeline.py" = ["E402"]
+"src/core/release_update.py" = ["E402"]
 "src/common_image_loader/loaders.py" = ["E402"]
 "src/common_image_loader/mipmap.py" = ["E402"]
-"src/metadata_backend.py" = ["E402"]
+"src/metadata/backend.py" = ["E402"]
 "src/processing/unified/helpers.py" = ["E402"]
 "src/rawviewer_app/window/mixins/metadata_part2.py" = ["E402"]
 "src/rawviewer_ui/widgets/adjust/adjust_part4.py" = ["E402"]
@@ -101,11 +104,11 @@ disable_error_code = ["attr-defined", "misc", "operator", "no-untyped-call", "as
 # Platform-specific modules with missing stub coverage
 [[tool.mypy.overrides]]
 module = [
-    "windows_share",
-    "display_brightness",
+    "platform.windows_share",
+    "platform.display_brightness",
+    "platform.win_launcher",
     "bootstrap_pkg.worker",
     "bootstrap_pkg.constants",
-    "win_launcher",
 ]
 ignore_missing_imports = true
 disable_error_code = ["attr-defined", "misc", "assignment", "no-untyped-def"]

@@ -4,12 +4,12 @@ Applies Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Sat
 
 from . import apply, checks, defaults, saved_edits, xmp_read, xmp_write
 from .apply import (
+    _BAND_PAD_PX,
     _apply_adjustments_to_srgb,
     _apply_adjustments_to_srgb_banded,
     _apply_adjustments_to_srgb_core,
     _apply_highlights_shadows,
     _apply_masked_luminance_adjust,
-    _BAND_PAD_PX,
     _black_region_weight,
     _channel_luminance,
     _format_xmp_value,

@@ -9,7 +9,7 @@ from collections import OrderedDict
 from typing import Any
 
 import numpy as np
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QPixmap
 
 from cache.disk import (

@@ -28,6 +28,7 @@ from search.indexer import (
 from search.queries import CustomReverseGeocoder
 from search.types import MetadataRow
 
+
 class EnginePart2:
 
     def _gps_to_decimal(self, gps_vals: Any, ref: str) -> float | None:

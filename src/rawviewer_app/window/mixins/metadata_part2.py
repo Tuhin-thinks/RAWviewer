@@ -299,8 +299,8 @@ class MetadataPart2:
         must not claim a profile is in effect.
         """
         try:
-            from raw_adjustments.color_calibration import describe_camera_profile
             from raw_adjustments import resolve_xmp_path
+            from raw_adjustments.color_calibration import describe_camera_profile
 
             xmp = resolve_xmp_path(path)
             if xmp and os.path.isfile(xmp):

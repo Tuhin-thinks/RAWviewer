@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import contextlib
 import sys
-from typing import Protocol
+from typing import Any, Protocol
 
 _core_display = None
 _cg = None

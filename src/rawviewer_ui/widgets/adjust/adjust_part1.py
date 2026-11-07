@@ -471,8 +471,8 @@ class AdjustPart1:
         self.sect_noise.add_widget(ai_widget)
         self._ai_denoise_row = ai_widget
         try:
-            from raw_adjustments.pipeline import ai_denoise_model_present
             from core.profile import ai_export_enabled
+            from raw_adjustments.pipeline import ai_denoise_model_present
 
             ai_ok = bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:

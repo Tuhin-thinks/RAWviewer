@@ -8,15 +8,16 @@ import logging
 import os
 import threading
 import warnings
+from typing import Any
 
 import numpy as np
 from PyQt6.QtCore import QLoggingCategory, QSize
 from PyQt6.QtGui import QImage, QImageReader
 
-from metadata import backend as metadata_backend
 from common_image_loader import (
     decode_embedded_jpeg_bytes,
 )
+from metadata import backend as metadata_backend
 from processing.raw_decode.gil import rawpy_imread_warm
 
 # Silence qt.imageformats warnings (e.g. missing TIFF tag warnings on RAW files)

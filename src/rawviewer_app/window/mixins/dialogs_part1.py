@@ -93,8 +93,8 @@ class DialogsPart1:
         self, current: str, latest: str, release_url: str
     ) -> bool:
         """Return True when the user chose Not Now (or dismissed), False after Open Download Page."""
-        from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
         from core.release_update import RELEASE_PAGE_URL
+        from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
 
         url = (release_url or RELEASE_PAGE_URL).strip() or RELEASE_PAGE_URL
         dialog = ReleaseUpdateDialog(

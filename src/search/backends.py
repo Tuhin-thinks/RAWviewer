@@ -33,6 +33,7 @@ from search.indexer import (
 from search.indexer._config import _COREML_PREDICTION_LOCK
 from search.indexer._rest import _log_coreml_compute_units_profile_once
 
+
 def _objc_pointer_addr(ptr: Any) -> int | None:
     """Best-effort address from a PyObjC / ctypes pointer-like value."""
     if ptr is None:

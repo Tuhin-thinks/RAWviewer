@@ -23,6 +23,7 @@ from ._config import (
     _dnn_get_backend_name,
 )
 
+
 def _thumbnail_jpeg_bytes(arr: np.ndarray, quality: int = 85) -> bytes:
     from common_image_loader import encode_tile_bytes
 
