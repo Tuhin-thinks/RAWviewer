@@ -10,10 +10,23 @@ Public facade for the cache package, grouping the tier implementations:
 """
 
 from cache.disk import PersistentGridCache, PersistentPreviewCache, PersistentThumbnailCache
-from cache.image_cache import ImageCache, get_image_cache, initialize_cache
+from cache.image_cache import (
+    ImageCache,
+    _cleanup_legacy_disk_cache_once,
+    _exif_cache_atexit_registered,
+    _global_cache,
+    _legacy_cache_cleanup_done,
+    _register_exif_cache_atexit,
+    get_image_cache,
+    initialize_cache,
+)
 from cache.keys import (
     _cache_path_key,
     _capture_time_from_exif_row,
+    _darwin_memory_stats_from_vm_stat,
+    _darwin_os_proc_available_memory,
+    _darwin_page_size_bytes,
+    _darwin_total_ram_cached,
     _decode_exif_blob,
     _encode_exif_blob,
     _env_float,
@@ -28,9 +41,12 @@ from cache.keys import (
     _libraw_native_fingerprint,
     _libraw_native_search_dirs,
     _mtime_matches,
+    _parse_vm_stat_page_count,
     _preview_cache_adaptive_enabled,
+    _psutil_vm_fallback_logged,
     _safe_path_under_root,
     _safe_virtual_memory,
+    _sysctl_hw_memsize_bytes,
     disk_preview_max_edge,
     libraw_runtime_stamp,
     memory_preview_max_edge,
@@ -57,6 +73,9 @@ __all__ = [
     # Cache helpers
     "_cache_path_key",
     "_capture_time_from_exif_row",
+    "_darwin_memory_stats_from_vm_stat",
+    "_darwin_os_proc_available_memory",
+    "_darwin_page_size_bytes",
     "_decode_exif_blob",
     "_env_float",
     "_env_int",
@@ -72,11 +91,21 @@ __all__ = [
     "_libraw_native_search_dirs",
     "_mtime_matches",
     "_preview_cache_adaptive_enabled",
+    "_psutil_vm_fallback_logged",
     "_safe_path_under_root",
     "_safe_virtual_memory",
+    "_darwin_total_ram_cached",
+    "_parse_vm_stat_page_count",
+    "_sysctl_hw_memsize_bytes",
     "disk_preview_max_edge",
     "libraw_runtime_stamp",
     "memory_preview_max_edge",
     "recommended_preview_cache_items",
     "system_memory_total_bytes",
+    # Module-level cache state / lifecycle hooks
+    "_cleanup_legacy_disk_cache_once",
+    "_exif_cache_atexit_registered",
+    "_global_cache",
+    "_legacy_cache_cleanup_done",
+    "_register_exif_cache_atexit",
 ]
