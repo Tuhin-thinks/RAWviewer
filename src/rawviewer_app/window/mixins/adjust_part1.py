@@ -9,7 +9,7 @@ from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QPixmap, QTransform
 from PyQt6.QtWidgets import QLabel, QWidget
 
-import theme
+from core import theme
 from core.config import _norm_path
 
 from .. import lazy
@@ -165,8 +165,8 @@ class AdjustPart1:
         container.hide()
 
     def _burst_group_compare_plan(self):
-        from burst_grouping import BURST_MIN_COUNT, sort_paths_by_capture_time
-        from comparison_mode import CompareEntry
+        from core.burst_grouping import BURST_MIN_COUNT, sort_paths_by_capture_time
+        from core.comparison_mode import CompareEntry
 
         if not getattr(self, "_burst_group_view_active", False):
             return None
@@ -189,11 +189,11 @@ class AdjustPart1:
     def _compare_session_plan(self):
         if getattr(self, "_burst_group_view_active", False):
             return self._burst_group_compare_plan()
-        from burst_grouping import (
+        from core.burst_grouping import (
             selection_covers_single_burst_group,
             sort_paths_by_capture_time,
         )
-        from comparison_mode import CompareEntry
+        from core.comparison_mode import CompareEntry
 
         keys = self._gallery_selected_expanded_norm_keys()
         if len(keys) < 2:
@@ -245,7 +245,7 @@ class AdjustPart1:
         self._rebuild_burst_groups()
 
     def _enter_compare_mode(self) -> None:
-        from comparison_mode import ComparisonSession
+        from core.comparison_mode import ComparisonSession
 
         plan = self._compare_session_plan()
         if plan is None:
@@ -322,7 +322,7 @@ class AdjustPart1:
         self.view_mode = "gallery"
         from PyQt6.QtCore import QTimer
 
-        from comparison_mode import CompareEntry
+        from core.comparison_mode import CompareEntry
 
         if entry == CompareEntry.BURST_GROUP:
             if len(remaining) > 1:

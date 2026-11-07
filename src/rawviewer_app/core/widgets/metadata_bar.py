@@ -4,7 +4,7 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
-import theme
+from core import theme
 
 
 class TopMetadataBar(QFrame):

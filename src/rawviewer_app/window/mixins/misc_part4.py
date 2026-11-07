@@ -8,7 +8,7 @@ import sys
 from PyQt6.QtCore import QEvent, QPoint, QRect, Qt
 from PyQt6.QtWidgets import QMessageBox
 
-import theme
+from core import theme
 from core.config import _norm_path, safe_print
 from rawviewer_app.core.widgets import CustomConfirmDialog
 

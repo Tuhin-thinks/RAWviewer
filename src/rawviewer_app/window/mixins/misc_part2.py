@@ -12,7 +12,7 @@ from PyQt6.QtCore import QPoint, QSize, Qt, QTimer
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QFileDialog
 
-import theme
+from core import theme
 from core.config import _norm_path
 
 from .. import lazy
@@ -836,7 +836,7 @@ class MiscPart2:
     def _start_memory_pressure_monitor(self) -> None:
         """Idle QTimer (every few seconds). Not on thumbnail paint."""
         try:
-            from memory_pressure import backoff_enabled
+            from core.memory_pressure import backoff_enabled
 
             if not backoff_enabled():
                 return
@@ -848,7 +848,7 @@ class MiscPart2:
 
     def _on_memory_pressure_tick(self) -> None:
         try:
-            from memory_pressure import poll_and_apply
+            from core.memory_pressure import poll_and_apply
 
             poll_and_apply(viewer=self)
         except Exception:

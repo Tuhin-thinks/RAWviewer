@@ -106,7 +106,7 @@ def ensure_scunet_model_downloaded() -> bool:
     if os.path.exists(scunet_model_path()):
         return True
     try:
-        from ssl_certs import urlretrieve
+        from core.ssl_certs import urlretrieve
 
         # Download to a temp file and verify integrity before moving into place,
         # so a failed/tampered download never leaves a loadable corrupt model.

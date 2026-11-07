@@ -46,7 +46,7 @@ class SearchPart3:
             def run(self_inner):
                 try:
                     def _progress(pct, message=None):
-                        from mobileclip_download_progress import download_status_text
+                        from core.download_progress import download_status_text
 
                         pct_val = max(0, min(100, int(pct)))
                         text = (message or download_status_text(pct_val)).strip()
@@ -117,7 +117,7 @@ class SearchPart3:
         hint is only for Plus builds / dev runs where the flag is simply off.
         """
         try:
-            from rawviewer_profile import is_lite_build
+            from core.profile import is_lite_build
 
             lite = is_lite_build()
         except Exception:

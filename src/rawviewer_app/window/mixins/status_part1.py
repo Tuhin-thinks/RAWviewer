@@ -35,7 +35,7 @@ class StatusPart1:
             self.status_bar.showMessage(msg, 8000)
 
     def _burst_group_view_status_label(self) -> str:
-        from burst_grouping import format_burst_group_status, sort_paths_by_capture_time
+        from core.burst_grouping import format_burst_group_status, sort_paths_by_capture_time
 
         members = self._burst_group_view_visible_members()
         if not members:

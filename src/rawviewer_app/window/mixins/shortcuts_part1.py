@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
-import theme
+from core import theme
 
 from .. import lazy
 from ..paths import _require_str_path

@@ -451,7 +451,7 @@ class UnifiedPart7:
                         if _load_task_cancelled():
                             return None
                         rgb_image = raw.postprocess(**params)
-                from perf_metrics import perf_mark
+                from core.perf_metrics import perf_mark
 
                 perf_mark(
                     "decode_rawpy",

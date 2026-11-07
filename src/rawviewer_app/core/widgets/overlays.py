@@ -7,7 +7,7 @@ from PyQt6.QtCore import QAbstractAnimation, QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy, QWidget
 
-import theme
+from core import theme
 
 from .helpers import _filmstrip_ui_env_int
 

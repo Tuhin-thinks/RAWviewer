@@ -17,7 +17,7 @@ lazy.register(sys.modules[__name__])
 class SettingsPart1:
     def _load_burst_grouping_preference(self) -> None:
         try:
-            from burst_grouping import burst_grouping_enabled_from_settings
+            from core.burst_grouping import burst_grouping_enabled_from_settings
 
             self._burst_grouping_enabled = burst_grouping_enabled_from_settings(
                 self.get_settings()

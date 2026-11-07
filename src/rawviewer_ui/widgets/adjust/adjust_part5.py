@@ -7,7 +7,7 @@ from PyQt6.QtCore import QSettings, Qt, QThreadPool
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QMenu, QPushButton, QVBoxLayout, QWidget
 
-import theme
+from core import theme
 
 from .helpers import (
     _GLOBAL_SECTION_DEFAULT_ORDER,

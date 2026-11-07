@@ -12,7 +12,7 @@ from PyQt6.QtGui import QColor, QCursor, QDesktopServices, QMouseEvent, QPainter
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from metadata import backend as metadata_backend
-from location_map_engine import (
+from core.location_map import (
     WIDGET_H,
     WIDGET_W,
     LocationMapModel,

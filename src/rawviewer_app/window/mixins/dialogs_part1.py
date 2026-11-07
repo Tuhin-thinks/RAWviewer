@@ -94,7 +94,7 @@ class DialogsPart1:
     ) -> bool:
         """Return True when the user chose Not Now (or dismissed), False after Open Download Page."""
         from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
-        from release_update import RELEASE_PAGE_URL
+        from core.release_update import RELEASE_PAGE_URL
 
         url = (release_url or RELEASE_PAGE_URL).strip() or RELEASE_PAGE_URL
         dialog = ReleaseUpdateDialog(
@@ -126,7 +126,7 @@ class DialogsPart1:
         snoozed_version = str(settings.value("update_check/snoozed_version", "") or "").strip()
         snooze_until = float(settings.value("update_check/snooze_until_epoch", 0) or 0)
         if snoozed_version and time.time() < snooze_until:
-            from release_update import compare_version_labels
+            from core.release_update import compare_version_labels
 
             if compare_version_labels(latest, snoozed_version) <= 0:
                 return

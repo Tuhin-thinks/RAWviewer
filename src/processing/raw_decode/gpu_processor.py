@@ -562,7 +562,7 @@ def _record_gpu_isp_stages(stage_ms: dict[str, float], file_path: str = "") -> N
     LAST_GPU_ISP_STAGES = dict(stage_ms)
     total = sum(stage_ms.values())
     try:
-        from perf_metrics import perf_mark
+        from core.perf_metrics import perf_mark
 
         perf_mark(
             "gpu_isp_stages",
@@ -995,7 +995,7 @@ def try_gpu_decode_from_unpacked(
             unpacked.pat_str,
         )
         try:
-            from perf_metrics import perf_mark
+            from core.perf_metrics import perf_mark
 
             perf_mark(
                 "decode_full_gpu",

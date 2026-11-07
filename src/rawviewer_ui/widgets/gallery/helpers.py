@@ -10,7 +10,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap, QTransform
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
-import theme
+from core import theme
 from image_load_manager import Priority
 
 logger = logging.getLogger(__name__)
@@ -310,7 +310,7 @@ def _gallery_idle_load_priority() -> Priority:
     throttle is actually engaged (not merely because AI features are enabled).
     """
     try:
-        from rawviewer_profile import gallery_idle_load_priority
+        from core.profile import gallery_idle_load_priority
 
         return gallery_idle_load_priority()
     except Exception:

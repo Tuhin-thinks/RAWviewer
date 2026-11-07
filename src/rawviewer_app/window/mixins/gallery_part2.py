@@ -10,7 +10,7 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QSizePolicy
 
-import theme
+from core import theme
 from core.config import _norm_path
 from rawviewer_app.signals import GalleryMetadataSignals
 

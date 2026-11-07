@@ -11,7 +11,7 @@ import zipfile
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from app_version import APP_VERSION
+from core.app_version import APP_VERSION
 
 from .constants import (
     BUNDLE_DIR,

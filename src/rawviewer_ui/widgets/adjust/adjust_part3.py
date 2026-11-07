@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-import theme
+from core import theme
 from raw_adjustments import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,

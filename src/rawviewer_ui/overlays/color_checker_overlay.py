@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QWidget
 try:
     import rawviewer_ui.theme as theme
 except ModuleNotFoundError:
-    import theme as theme
+    from core import theme as theme
 
 
 class ColorCheckerOverlay(QWidget):

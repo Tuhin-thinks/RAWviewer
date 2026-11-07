@@ -186,7 +186,7 @@ class GalleryPart1:
         return cached
 
     def _burst_collapsed_gallery_paths(self, files: list[str]) -> list[str]:
-        from burst_grouping import build_collapsed_display_paths
+        from core.burst_grouping import build_collapsed_display_paths
 
         if not self._is_burst_grouping_enabled():
             return self._filter_burst_rejected_paths(files)
@@ -219,7 +219,7 @@ class GalleryPart1:
         if not canonical:
             return set()
         key = _norm_path(canonical)
-        from burst_grouping import BURST_MIN_COUNT
+        from core.burst_grouping import BURST_MIN_COUNT
 
         if (
             getattr(self, "view_mode", "") == "gallery"

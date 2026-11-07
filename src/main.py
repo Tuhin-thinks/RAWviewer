@@ -244,13 +244,13 @@ def main() -> None:
 
     # Packaged or installed app: enable semantic search by default (dev uses launch_dev.sh / run_debug.bat).
     # Lite builds bake PROFILE=lite and skip AI/face via rawviewer_profile defaults.
-    from rawviewer_profile import (
+    from core.profile import (
         apply_memory_tier_defaults,
         apply_profile_runtime_defaults,
         is_lite_build,
         memory_tier_startup_summary,
     )
-    from upgrade_compat import apply_upgrade_compat_defaults
+    from core.upgrade_compat import apply_upgrade_compat_defaults
 
     apply_profile_runtime_defaults()
     tier = apply_memory_tier_defaults()
@@ -283,7 +283,7 @@ def main() -> None:
 
     # One-line dump so packaged .app vs launch_dev.sh configs are easy to compare.
     try:
-        from rawviewer_profile import edition_display_name, resolved_profile
+        from core.profile import edition_display_name, resolved_profile
 
         _cfg = (
             f"edition={edition_display_name()}({resolved_profile()}) "
@@ -456,7 +456,7 @@ def main() -> None:
                 safe_print("  [Windows] AppUserModelID set", flush=True)
 
             # Set application properties
-            from release_update import APP_VERSION
+            from core.release_update import APP_VERSION
 
             app = _qt_app()
             app.setApplicationName("RAWviewer")
@@ -609,7 +609,7 @@ if __name__ == '__main__' and _IS_GUI_MAIN_PROCESS:
     safe_print("=" * 80, flush=True)
 
     try:
-        from rawviewer_profile import apply_runtime_defaults, memory_tier_startup_summary
+        from core.profile import apply_runtime_defaults, memory_tier_startup_summary
 
         tier = apply_runtime_defaults()
         if tier != "disabled":

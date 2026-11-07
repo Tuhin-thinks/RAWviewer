@@ -7,7 +7,7 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
-import theme
+from core import theme
 from raw_adjustments import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,

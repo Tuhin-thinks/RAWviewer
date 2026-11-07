@@ -6,7 +6,7 @@ from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QCursor, QMouseEvent, QPainter, QPen
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
-import theme
+from core import theme
 from raw_adjustments.tone_curve import (
     default_tone_curve_points,
     deserialize_tone_curve_points,

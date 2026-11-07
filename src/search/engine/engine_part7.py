@@ -464,7 +464,7 @@ class EnginePart7:
             gps_lon = row["gps_lon"]
 
             try:
-                from upgrade_compat import legacy_search_metadata_sync
+                from core.upgrade_compat import legacy_search_metadata_sync
 
                 sync_search = legacy_search_metadata_sync()
             except Exception:
@@ -524,7 +524,7 @@ class EnginePart7:
                 }
             )
         try:
-            from upgrade_compat import legacy_search_metadata_sync
+            from core.upgrade_compat import legacy_search_metadata_sync
 
             sync_search = legacy_search_metadata_sync()
         except Exception:

@@ -10,7 +10,7 @@ import time
 from PyQt6.QtCore import QPoint, QSize, Qt
 from PyQt6.QtGui import QCursor, QImage, QPixmap
 
-import theme
+from core import theme
 from core.config import _norm_path
 
 from .. import lazy

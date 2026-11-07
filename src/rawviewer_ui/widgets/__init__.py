@@ -21,7 +21,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import QApplication, QLabel, QSlider
 
-import theme
+from core import theme
 
 RAWVIEWER_INTERNAL_FILE_DRAG_MIME = "application/x-rawviewer-internal-file-drag"
 

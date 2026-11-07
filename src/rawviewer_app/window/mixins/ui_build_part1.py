@@ -5,7 +5,7 @@ import sys
 
 from PyQt6.QtCore import QSize
 
-import theme
+from core import theme
 
 from .. import lazy
 from ..lazy import qta

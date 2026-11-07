@@ -502,7 +502,7 @@ def apply_dodge_burn(
         try:
             import time as _time
 
-            from perf_metrics import perf_mark
+            from core.perf_metrics import perf_mark
 
             t0 = _time.perf_counter()
             m = resize_mask_to(mask, h, w)

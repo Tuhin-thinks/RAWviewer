@@ -145,14 +145,14 @@ def semantic_batch_size() -> int:
 def _default_semantic_batch_size() -> int:
     """Platform/tier default batch (8–16) when env is unset and perf v2 is active."""
     try:
-        from upgrade_compat import perf_v2_enabled
+        from core.upgrade_compat import perf_v2_enabled
 
         if not perf_v2_enabled():
             return 1
     except Exception:
         return 1
     try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+        from core.profile import classify_memory_tier, system_total_ram_gb
 
         tier = classify_memory_tier(system_total_ram_gb())
         return {
@@ -252,7 +252,7 @@ def semantic_encode_prep_workers(sample_path: str | None = None) -> int:
             pass
 
     try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+        from core.profile import classify_memory_tier, system_total_ram_gb
 
         tier = classify_memory_tier(system_total_ram_gb())
         tier_default = {
@@ -291,14 +291,14 @@ def semantic_coreml_chunk_size() -> int:
     if forced is not None:
         return forced
     try:
-        from upgrade_compat import perf_v2_enabled
+        from core.upgrade_compat import perf_v2_enabled
 
         if not perf_v2_enabled():
             return 8
     except Exception:
         return 8
     try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+        from core.profile import classify_memory_tier, system_total_ram_gb
 
         tier = classify_memory_tier(system_total_ram_gb())
         default = {

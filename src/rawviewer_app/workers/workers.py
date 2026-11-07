@@ -18,7 +18,7 @@ class _ReleaseUpdateCheckWorker(QRunnable):
         self.timeout = float(timeout)
 
     def run(self) -> None:
-        from release_update import check_for_update
+        from core.release_update import check_for_update
 
         try:
             result = check_for_update(timeout=self.timeout)

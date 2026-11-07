@@ -514,7 +514,7 @@ def recommended_preview_cache_items(available_gb: float | None = None) -> int:
     budget_fraction = 0.12  # Increased from 0.08 for more cache on modern systems
     budget_cap_mb = 2400.0  # Increased from 1200
     try:
-        from rawviewer_profile import indexing_loads_compete, is_lite_build
+        from core.profile import indexing_loads_compete, is_lite_build
 
         if not indexing_loads_compete():
             budget_fraction = 0.18

@@ -308,14 +308,14 @@ class MobileCLIPCoreMLBackend:
             raise RuntimeError("MobileCLIP Core ML download is only supported on macOS")
 
         def _report(pct: int) -> None:
-            from mobileclip_download_progress import report_progress
+            from core.download_progress import report_progress
 
             report_progress(progress_callback, pct, installer=False)
 
         os.makedirs(self.model_dir, exist_ok=True)
         _report(0)
         try:
-            from ssl_certs import configure_ssl_certificates
+            from core.ssl_certs import configure_ssl_certificates
 
             configure_ssl_certificates()
         except Exception:
@@ -329,7 +329,7 @@ class MobileCLIPCoreMLBackend:
             ) from exc
         hf_hub_download = cast(Any, _hf_hub_download)
 
-        from mobileclip_download_progress import make_byte_progress_tqdm
+        from core.download_progress import make_byte_progress_tqdm
 
         weight_files = [
             (
@@ -376,7 +376,7 @@ class MobileCLIPCoreMLBackend:
             _report(min(93, pct))
 
         if not os.path.exists(self.tokenizer_path):
-            from ssl_certs import urlretrieve
+            from core.ssl_certs import urlretrieve
 
             urlretrieve(self.TOKENIZER_URL, self.tokenizer_path)
         _report(100)
@@ -861,7 +861,7 @@ class MobileCLIPONNXBackend:
     def download_assets(
         self, progress_callback: Callable[..., None] | None = None
     ) -> str:
-        from mobileclip_download_progress import make_byte_progress_tqdm, report_progress
+        from core.download_progress import make_byte_progress_tqdm, report_progress
 
         def _report(pct: int) -> None:
             report_progress(progress_callback, pct, installer=False)
@@ -916,7 +916,7 @@ class MobileCLIPONNXBackend:
             shutil.rmtree(onnx_dir)
 
         if not os.path.exists(self.tokenizer_path):
-            from ssl_certs import urlretrieve
+            from core.ssl_certs import urlretrieve
 
             urlretrieve(self.TOKENIZER_URL, self.tokenizer_path)
         _report(100)

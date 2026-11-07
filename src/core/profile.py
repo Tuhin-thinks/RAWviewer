@@ -176,7 +176,7 @@ def resolved_profile() -> str:
     if env in ("lite", "full"):
         return env
     try:
-        from build_profile import PROFILE as baked
+        from core.build_profile import PROFILE as baked
 
         profile = _canonicalize_profile(str(baked).strip().lower())
         if profile in ("lite", "full"):

@@ -88,7 +88,7 @@ def legacy_search_metadata_sync() -> bool:
 
 def _tier_semantic_batch_default() -> int:
     try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+        from core.profile import classify_memory_tier, system_total_ram_gb
 
         tier = classify_memory_tier(system_total_ram_gb())
         return {
@@ -104,7 +104,7 @@ def _tier_semantic_batch_default() -> int:
 
 def _tier_coreml_chunk_default() -> int:
     try:
-        from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+        from core.profile import classify_memory_tier, system_total_ram_gb
 
         tier = classify_memory_tier(system_total_ram_gb())
         return {

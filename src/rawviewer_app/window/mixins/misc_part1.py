@@ -287,7 +287,7 @@ class MiscPart1:
     def _on_burst_grouping_toggled(self, checked: bool) -> None:
         self._burst_grouping_enabled = bool(checked)
         try:
-            from burst_grouping import BURST_GROUPING_SETTINGS_KEY
+            from core.burst_grouping import BURST_GROUPING_SETTINGS_KEY
 
             self.get_settings().setValue(BURST_GROUPING_SETTINGS_KEY, checked)
         except Exception:
@@ -326,7 +326,7 @@ class MiscPart1:
             self._burst_group_covers = {}
             return
 
-        from burst_grouping import burst_gap_seconds_from_settings, burst_groups_for_folder
+        from core.burst_grouping import burst_gap_seconds_from_settings, burst_groups_for_folder
 
         files = list(getattr(self, "image_files", []) or [])
         if not files:
@@ -362,7 +362,7 @@ class MiscPart1:
         self._burst_stack_covers = stack_covers
 
     def _burst_stack_count_for_path(self, file_path: str) -> int:
-        from burst_grouping import stack_count_for_cover
+        from core.burst_grouping import stack_count_for_cover
 
         if not self._is_burst_grouping_enabled():
             return 0
@@ -384,7 +384,7 @@ class MiscPart1:
         if not members:
             return None
         rejected = self._burst_visibility_exclusion_set()
-        from burst_grouping import BURST_MIN_COUNT
+        from core.burst_grouping import BURST_MIN_COUNT
 
         visible = [p for p in members if _norm_path(p) not in rejected]
         return visible if len(visible) >= BURST_MIN_COUNT else None

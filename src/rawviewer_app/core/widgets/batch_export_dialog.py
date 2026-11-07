@@ -6,7 +6,7 @@ import os
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSlider, QToolButton, QVBoxLayout, QWidget
 
-import theme
+from core import theme
 
 from .confirm_dialog import CustomConfirmDialog
 from .helpers import _norm_dir_key
@@ -255,7 +255,7 @@ class BatchExportDialog(CustomConfirmDialog):
         """AI denoise needs both the feature flag and the installed model file."""
         try:
             from raw_adjustments.pipeline import ai_denoise_model_present
-            from rawviewer_profile import ai_export_enabled
+            from core.profile import ai_export_enabled
 
             return bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:

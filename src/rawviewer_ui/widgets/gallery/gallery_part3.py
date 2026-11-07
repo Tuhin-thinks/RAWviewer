@@ -29,7 +29,7 @@ class GalleryPart3:
         cached = getattr(self, "_thumb_cache_byte_budget_cached", None)
         if cached is None:
             try:
-                from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+                from core.profile import classify_memory_tier, system_total_ram_gb
 
                 tier = classify_memory_tier(system_total_ram_gb())
             except Exception:
@@ -44,7 +44,7 @@ class GalleryPart3:
             self._thumb_cache_byte_budget_cached = int(mb) * 1024 * 1024
             cached = self._thumb_cache_byte_budget_cached
         try:
-            from memory_pressure import scale_thumb_budget_bytes
+            from core.memory_pressure import scale_thumb_budget_bytes
 
             return scale_thumb_budget_bytes(int(cached))
         except Exception:

@@ -95,7 +95,7 @@ class UnifiedPart2:
             try:
                 import time as _time
 
-                from perf_metrics import perf_mark
+                from core.perf_metrics import perf_mark
 
                 _t0 = _time.perf_counter()
                 out = apply_adjustments_to_rgb(rgb_image, adj)

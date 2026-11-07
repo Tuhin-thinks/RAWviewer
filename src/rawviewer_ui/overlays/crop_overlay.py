@@ -12,7 +12,7 @@ from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
 from PyQt6.QtWidgets import QGraphicsObject
 
-import theme
+from core import theme
 
 # Handle hit size in *view* pixels (cosmetic).
 _HANDLE_VIEW_PX = 10.0

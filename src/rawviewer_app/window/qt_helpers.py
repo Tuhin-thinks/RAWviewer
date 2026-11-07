@@ -9,7 +9,7 @@ from typing import Any, cast
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QScrollArea, QScrollBar
 
-import theme
+from core import theme
 
 from . import lazy
 from .lazy import qta

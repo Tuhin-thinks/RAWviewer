@@ -28,7 +28,7 @@ from .constants import (
 
 def _is_lite_installer() -> bool:
     try:
-        from build_profile import PROFILE
+        from core.build_profile import PROFILE
 
         return str(PROFILE).strip().lower() == "lite"
     except Exception:

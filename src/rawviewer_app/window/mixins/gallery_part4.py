@@ -9,7 +9,7 @@ import sys
 
 from PyQt6.QtCore import QSize, Qt, QTimer
 
-import theme
+from core import theme
 from core.config import _env_int, _norm_path
 
 from .. import lazy

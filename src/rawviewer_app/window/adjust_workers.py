@@ -118,7 +118,7 @@ class _AdjustPreviewWorker(QRunnable):
         try:
             import time as _time
 
-            from perf_metrics import perf_mark
+            from core.perf_metrics import perf_mark
 
             t0 = _time.perf_counter()
             dtype_name = str(getattr(self.base_rgb, "dtype", ""))

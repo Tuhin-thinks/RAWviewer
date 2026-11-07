@@ -25,14 +25,14 @@ from PyQt6.QtWidgets import (
 try:
     import rawviewer_ui.theme as theme
 except ModuleNotFoundError:
-    import theme as theme
+    from core import theme as theme
 from raw_adjustments.color_calibration import (
     calibrate_camera_curves_and_hsl,
     camera_identity_for_file,
     save_camera_profile,
     validate_and_detect_color_checker,
 )
-from dpreview_samples import dpreview_open_url
+from core.dpreview_samples import dpreview_open_url
 
 logger = logging.getLogger(__name__)
 

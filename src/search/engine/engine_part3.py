@@ -291,7 +291,7 @@ class EnginePart3:
         if is_external_or_network_volume(sample_path):
             return 2
         try:
-            from rawviewer_profile import classify_memory_tier, system_total_ram_gb
+            from core.profile import classify_memory_tier, system_total_ram_gb
 
             tier = classify_memory_tier(system_total_ram_gb())
             if tier in ("low", "medium", "balanced"):

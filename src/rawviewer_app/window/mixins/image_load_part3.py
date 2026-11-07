@@ -342,7 +342,7 @@ class ImageLoadPart3:
         near = self._nav_preload_display_near_count()
         next_count = min(self._PRELOAD_NEXT_COUNT, len(self.image_files) - 1)
         try:
-            from memory_pressure import adjacent_preload_cap
+            from core.memory_pressure import adjacent_preload_cap
 
             _cap = adjacent_preload_cap()
             if _cap is not None:
@@ -375,7 +375,7 @@ class ImageLoadPart3:
 
         prev_count = min(self._PRELOAD_PREV_COUNT, len(self.image_files) - 1)
         try:
-            from memory_pressure import adjacent_preload_cap
+            from core.memory_pressure import adjacent_preload_cap
 
             _cap = adjacent_preload_cap()
             if _cap is not None:

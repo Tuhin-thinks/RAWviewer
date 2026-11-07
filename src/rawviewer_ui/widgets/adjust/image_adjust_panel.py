@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QLabel, QSlider, QWidget
 
-import theme
+from core import theme
 from raw_adjustments import DEFAULT_ADJUSTMENTS
 from raw_adjustments.hsl import HSL_COLOR_NAMES
 

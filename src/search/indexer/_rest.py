@@ -230,7 +230,7 @@ def _yunet_model_path() -> str:
             "https://github.com/opencv/opencv_zoo/raw/main/models/"
             "face_detection_yunet/face_detection_yunet_2023mar.onnx"
         )
-        from ssl_certs import urlretrieve
+        from core.ssl_certs import urlretrieve
 
         urlretrieve(url, model_path)
         logging.getLogger(__name__).info("[VISION] YuNet ONNX model downloaded successfully.")

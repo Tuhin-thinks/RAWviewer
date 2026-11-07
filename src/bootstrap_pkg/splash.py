@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import sys
 
-import theme
+from core import theme
 
 # Compact card. Full-res appicon.png is 2k+ and looks huge as QSplashScreen.
 SPLASH_ICON_MAX_PX = 168
@@ -44,7 +44,7 @@ def splash_icon_path() -> str | None:
 
 def app_version_for_splash() -> str:
     try:
-        from app_version import APP_VERSION
+        from core.app_version import APP_VERSION
 
         return str(APP_VERSION).strip()
     except Exception:
@@ -58,7 +58,7 @@ def splash_subtitle() -> str:
     if ver:
         parts.append(ver)
     try:
-        from rawviewer_profile import edition_display_name
+        from core.profile import edition_display_name
 
         edition = str(edition_display_name() or "").strip()
         if edition:

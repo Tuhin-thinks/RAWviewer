@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-import theme
+from core import theme
 from raw_adjustments import CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, SLIDER_SPECS
 from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
 
@@ -279,7 +279,7 @@ class AdjustPart1:
                 target_sect = self.sect_noise
             elif spec.key in {"DenoiseDetail", "AIDenoiseAmount"}:
                 try:
-                    from rawviewer_profile import ai_export_enabled
+                    from core.profile import ai_export_enabled
 
                     if not ai_export_enabled():
                         continue
@@ -472,7 +472,7 @@ class AdjustPart1:
         self._ai_denoise_row = ai_widget
         try:
             from raw_adjustments.pipeline import ai_denoise_model_present
-            from rawviewer_profile import ai_export_enabled
+            from core.profile import ai_export_enabled
 
             ai_ok = bool(ai_export_enabled() and ai_denoise_model_present())
         except Exception:

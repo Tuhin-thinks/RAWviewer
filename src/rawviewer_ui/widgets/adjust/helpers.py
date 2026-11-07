@@ -38,7 +38,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-import theme
+from core import theme
 from raw_adjustments.tone_curve import (
     TONE_CURVE_BLUE_KEY,
     TONE_CURVE_GREEN_KEY,

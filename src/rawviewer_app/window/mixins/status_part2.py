@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import sys
 
-import theme
+from core import theme
 
 from .. import lazy
 from ..lazy import is_raw_file, process_file_from_path

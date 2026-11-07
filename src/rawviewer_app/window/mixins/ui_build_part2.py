@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-import theme
+from core import theme
 from core.config import _env_true, safe_print
 from rawviewer_app.core.widgets import (
     CustomTitleBar,

@@ -738,7 +738,7 @@ def _unpack_raw_impl(
     file_path: str,
     rawpy_lock: Any | None = None,
 ) -> UnpackedRaw | None:
-    from perf_metrics import perf_mark
+    from core.perf_metrics import perf_mark
 
     _t_unpack = time.perf_counter()
     try:
@@ -923,7 +923,7 @@ def finish_full_decode(
     cv2 = _import_cv2()
     if cv2 is None:
         return None
-    from perf_metrics import perf_mark
+    from core.perf_metrics import perf_mark
 
     _t0 = time.perf_counter()
 
@@ -998,7 +998,7 @@ def decode_half_from_unpacked(
     return_linear: bool = False,
 ) -> np.ndarray | None:
     """Demosaic-free half-size tier from an existing unpack (fit-view paint)."""
-    from perf_metrics import perf_timer
+    from core.perf_metrics import perf_timer
 
     with perf_timer("decode_half", unpacked.file_path):
         return _decode_half_from_unpacked_impl(unpacked, cancel_check, return_linear)

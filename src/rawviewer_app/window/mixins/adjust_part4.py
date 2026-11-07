@@ -241,7 +241,7 @@ class AdjustPart4:
                 self._dodge_burn_mask_at_stroke_start = None
             return
         try:
-            from perf_metrics import perf_mark
+            from core.perf_metrics import perf_mark
             from raw_adjustments.dodge_burn import (
                 DodgeBurnMask,
                 edge_snap_region,

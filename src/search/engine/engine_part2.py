@@ -474,7 +474,7 @@ class EnginePart2:
                                 logging.getLogger(__name__).info(
                                     "[VISION] Downloading DNN face detector prototxt..."
                                 )
-                                from ssl_certs import urlretrieve
+                                from core.ssl_certs import urlretrieve
 
                                 urlretrieve(
                                     "https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt",
@@ -486,7 +486,7 @@ class EnginePart2:
                                 logging.getLogger(__name__).info(
                                     "[VISION] Downloading DNN face detector weights..."
                                 )
-                                from ssl_certs import urlretrieve
+                                from core.ssl_certs import urlretrieve
 
                                 urlretrieve(
                                     "https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel",

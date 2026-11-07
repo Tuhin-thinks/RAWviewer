@@ -5,7 +5,7 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-import theme
+from core import theme
 from raw_adjustments import DEFAULT_ADJUSTMENTS, SLIDER_SPECS, WB_PRESETS
 
 from .helpers import CollapsibleSection, _adjust_combo_stylesheet, _qta_icon_safe

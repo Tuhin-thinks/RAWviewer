@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
-from release_update import APP_VERSION, RELEASE_PAGE_URL
+from core.release_update import APP_VERSION, RELEASE_PAGE_URL
 
 
 class ReleaseUpdateDialog(QDialog):

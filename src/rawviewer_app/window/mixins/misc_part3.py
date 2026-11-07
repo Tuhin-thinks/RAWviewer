@@ -11,7 +11,7 @@ from PyQt6.QtCore import QPoint, QTimer
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication
 
-import theme
+from core import theme
 from core.config import _env_int, _find_file_index_in_list, _norm_path, safe_print
 
 from .. import lazy
