@@ -118,7 +118,7 @@ def import_gpu_backend_on_main_thread(
             )
 
         _pump()
-        import gpu_raw_processor  # noqa: F401 -- wires decode + backend probe
+        from processing.raw_decode import gpu_processor as gpu_raw_processor  # noqa: F401 -- wires decode + backend probe
 
         try:
             from image_load_manager import apply_gpu_decode_profile_to_manager

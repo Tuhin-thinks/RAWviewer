@@ -122,7 +122,7 @@ class DisplayPart2:
             self._request_full_res_decode(path, priority_current=True)
 
     def _build_clipping_overlay_pixmap(self, pm):
-        from exposure_clipping import clipping_overlay_pixmap, rgb_array_from_pixmap
+        from processing.raw_decode.exposure_clipping import clipping_overlay_pixmap, rgb_array_from_pixmap
 
         rgb = rgb_array_from_pixmap(pm)
         if rgb is None:

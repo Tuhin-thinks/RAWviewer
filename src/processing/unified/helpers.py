@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 from PyQt6.QtCore import QLoggingCategory
 
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 # Re-exports from sibling and external packages
 from cache.keys import disk_preview_max_edge, memory_preview_max_edge  # noqa: F401

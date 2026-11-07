@@ -17,7 +17,7 @@ from common_image_loader import (
 )
 from image_cache import get_image_cache
 from image_load_manager import yield_if_current_task_active
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
     RAW_EXIF_SENSOR_META_VER,

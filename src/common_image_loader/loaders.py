@@ -22,7 +22,7 @@ except ImportError:
 
 import contextlib
 
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 from .edr import (
     hlg_to_linear,

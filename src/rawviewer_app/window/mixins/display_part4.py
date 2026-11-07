@@ -105,7 +105,7 @@ class DisplayPart4:
     ) -> bool:
         """Phase 2c: CUDA DeviceRgb → GL texture (no D2H for display)."""
         try:
-            from gpu_gl_bridge import DeviceRgb, cuda_gl_enabled
+            from processing.raw_decode.gpu_bridge import DeviceRgb, cuda_gl_enabled
             from rawviewer_ui.widgets.gpu import gpu_cuda_gl_enabled
 
             if not (cuda_gl_enabled() or gpu_cuda_gl_enabled()):
@@ -592,7 +592,7 @@ class DisplayPart4:
                 and self.current_file_path
             ):
                 try:
-                    from gpu_gl_bridge import DeviceRgb as _DeviceRgb
+                    from processing.raw_decode.gpu_bridge import DeviceRgb as _DeviceRgb
 
                     if isinstance(rgb_image, _DeviceRgb):
                         if self._try_display_device_rgb_via_cuda_gl(

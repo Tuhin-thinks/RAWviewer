@@ -755,7 +755,7 @@ class AdjustPart2:
                 except Exception:
                     pass
                 try:
-                    from onnx_scunet import release_scunet_sessions
+                    from processing.raw_decode.scunet import release_scunet_sessions
 
                     release_scunet_sessions()
                 except Exception:
@@ -847,7 +847,7 @@ class AdjustPart2:
             if getattr(self, "_adjust_brightness_saved", None) is not None:
                 return
             try:
-                from display_brightness import get_brightness, set_brightness
+                from platform.display_brightness import get_brightness, set_brightness
 
                 hwnd = self._display_brightness_hwnd()
                 current = get_brightness(hwnd=hwnd)
@@ -870,7 +870,7 @@ class AdjustPart2:
         if saved is None:
             return
         try:
-            from display_brightness import set_brightness
+            from platform.display_brightness import set_brightness
 
             set_brightness(float(saved), hwnd=self._display_brightness_hwnd())
         except Exception:

@@ -43,7 +43,7 @@ class UnifiedPart2:
             except Exception:
                 pass
         try:
-            from gpu_gl_bridge import DeviceRgb
+            from processing.raw_decode.gpu_bridge import DeviceRgb
 
             if isinstance(rgb_image, DeviceRgb):
                 # Editing still runs on host today; download only when needed.
@@ -169,7 +169,7 @@ class UnifiedPart2:
 
         host = rgb_image
         try:
-            from gpu_gl_bridge import DeviceRgb
+            from processing.raw_decode.gpu_bridge import DeviceRgb
 
             if isinstance(host, DeviceRgb):
                 host = host.to_numpy()

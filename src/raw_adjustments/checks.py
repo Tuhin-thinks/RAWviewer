@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 from .defaults import (
     _EXPORT_ONLY_DENOISE_KEYS,

@@ -70,7 +70,7 @@ def _publish(values: dict[str, Any]) -> None:
 
 def _lazy_import_heavy_modules(splash: Any = None) -> None:
     """Import heavy modules while the splash screen is visible."""
-    from startup_splash import splash_show_status
+    from bootstrap_pkg.splash import splash_show_status
 
     def _update_splash(msg: str) -> None:
         splash_show_status(splash, msg)

@@ -17,7 +17,7 @@ from common_image_loader import (
     is_slow_storage_path,
 )
 from image_load_manager import yield_if_current_task_active
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
     _BYTESCAN_FIRST_EXTS,

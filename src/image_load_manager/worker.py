@@ -363,7 +363,7 @@ class ImageLoadWorker(QRunnable):
                 def _emit_image_buffer(buf) -> None:
                     if buf is None or self.task.is_cancelled() or not self._safe_emit():
                         return
-                    from gpu_gl_bridge import DeviceRgb as _DeviceRgb
+                    from processing.raw_decode.gpu_bridge import DeviceRgb as _DeviceRgb
 
                     if isinstance(buf, (np.ndarray, _DeviceRgb)):
                         self.manager.image_ready.emit(file_path, buf)

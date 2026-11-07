@@ -265,7 +265,7 @@ class SettingsPart1:
                 # Slot reservation keeps neighbors from starving the on-screen
                 # decode; when it finishes the next demosaic starts immediately.
                 try:
-                    from fast_raw_decode import prefer_gpu_decode_enabled
+                    from processing.raw_decode.fast import prefer_gpu_decode_enabled
 
                     if prefer_gpu_decode_enabled():
                         stages = stages | {"full"}

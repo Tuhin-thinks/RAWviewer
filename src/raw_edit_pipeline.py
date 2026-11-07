@@ -356,7 +356,7 @@ def ai_denoise_model_present() -> bool:
     """True when the active AI denoise backend has its model file on disk."""
     if ai_backend_name() == "rawrefinery":
         return _rawrefinery_available()
-    from onnx_scunet import scunet_model_path
+    from processing.raw_decode.scunet import scunet_model_path
 
     path = scunet_model_path()
     return bool(path) and os.path.exists(path)
@@ -388,7 +388,7 @@ def _apply_ai_denoise_stage(
     use_scunet = False
     model_path = ""
     if use_ai_denoise:
-        from onnx_scunet import SCUNetONNX, scunet_model_path
+        from processing.raw_decode.scunet import SCUNetONNX, scunet_model_path
 
         model_path = scunet_model_path()
         scunet_enabled_env = (
@@ -907,7 +907,7 @@ def render_adjust_preview_uint8(
     not IEC sRGB OETF — otherwise staged preview diverges from the uncached
     path and smoke tests (and on-screen parity with settle/export) break.
     """
-    from fast_raw_decode import _gamma_lut8
+    from processing.raw_decode.fast import _gamma_lut8
     from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_tone_curve import apply_channel_curves_encoded
 
@@ -987,7 +987,7 @@ def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None
     # linear slope) -- the sRGB encode lifted the deepest shadows ~3x over
     # the browse render, surfacing sensor noise ("grainy" report). One curve
     # everywhere = editor default is pixel-comparable with browse.
-    from fast_raw_decode import gamma_curve16
+    from processing.raw_decode.fast import gamma_curve16
     from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_tone_curve import apply_channel_curves_encoded
 
@@ -1073,7 +1073,7 @@ def linear_to_export_uint16_srgb(img: np.ndarray, adj: dict[str, float] | None =
     BT.709-encoded rendering, tagged/treated as sRGB exactly like every
     LibRaw/dcraw-derived pipeline does.)
     """
-    from fast_raw_decode import gamma_curve16
+    from processing.raw_decode.fast import gamma_curve16
     from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_tone_curve import apply_channel_curves_encoded
 

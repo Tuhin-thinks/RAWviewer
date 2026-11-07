@@ -368,7 +368,7 @@ def _u8_to_linear_approx(encoded: np.ndarray) -> np.ndarray:
 
 
 def _linear_to_u8_bt709(linear: np.ndarray) -> np.ndarray:
-    from fast_raw_decode import _gamma_lut8
+    from processing.raw_decode.fast import _gamma_lut8
 
     idx = np.clip(linear.astype(np.float32) * 65535.0 + 0.5, 0, 65535).astype(np.uint16)
     return np.ascontiguousarray(_gamma_lut8()[idx])

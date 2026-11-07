@@ -367,7 +367,7 @@ class ImageCacheCore(QObject):
     def _release_gpu_memory(self) -> None:
         """Release GPU/unified-memory caching allocator's pool."""
         try:
-            from gpu_raw_processor import release_cached_gpu_memory
+            from processing.raw_decode.gpu_processor import release_cached_gpu_memory
             release_cached_gpu_memory()
         except Exception:
             logger.debug("GPU memory release failed", exc_info=True)

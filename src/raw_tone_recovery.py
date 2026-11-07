@@ -86,7 +86,7 @@ def edit_base_decode_params(
             params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
     if for_file:
         try:
-            from fast_raw_decode import get_corrected_camera_wb
+            from processing.raw_decode.fast import get_corrected_camera_wb
 
             corrected = get_corrected_camera_wb(for_file)
             if corrected:
@@ -127,7 +127,7 @@ def recovery_decode_params(
             params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
     if for_file:
         try:
-            from fast_raw_decode import get_corrected_camera_wb
+            from processing.raw_decode.fast import get_corrected_camera_wb
 
             corrected = get_corrected_camera_wb(for_file)
             if corrected:

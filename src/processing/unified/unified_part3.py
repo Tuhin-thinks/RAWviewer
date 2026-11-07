@@ -146,7 +146,7 @@ class UnifiedPart3:
                         _heavy_fallback_semaphore,
                         _rawpy_global_lock,
                     )
-                    from fast_raw_decode import (
+                    from processing.raw_decode.fast import (
                         decode_half_from_unpacked,
                         params_supported_half,
                         try_fast_raw_decode,
@@ -212,7 +212,7 @@ class UnifiedPart3:
                     # headroom that Exposure/Highlights can pull back down
                     # (display clips them to white, matching browse).
                     try:
-                        from fast_raw_decode import get_corrected_camera_wb
+                        from processing.raw_decode.fast import get_corrected_camera_wb
 
                         mul = get_corrected_camera_wb(file_path) or cam_mul_for_scale
                         if mul is None and edit_params.get("user_wb"):

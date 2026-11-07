@@ -126,7 +126,7 @@ def _gpu_demosaic_backend_in_use() -> bool:
     if not _gpu_demosaic_backend_available():
         return False
     try:
-        from fast_raw_decode import prefer_gpu_decode_enabled
+        from processing.raw_decode.fast import prefer_gpu_decode_enabled
 
         return prefer_gpu_decode_enabled()
     except Exception:

@@ -75,8 +75,8 @@ from rawviewer_app.window.splash import (
     _should_show_startup_splash,
     close_native_splash,
 )
-from startup_splash import make_splash_pixmap as _make_splash_pixmap
-from startup_splash import splash_show_status
+from bootstrap_pkg.splash import make_splash_pixmap as _make_splash_pixmap
+from bootstrap_pkg.splash import splash_show_status
 
 try:
     from rawviewer_app.env import configure_gui_process

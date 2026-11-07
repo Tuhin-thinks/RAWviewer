@@ -464,7 +464,7 @@ class MiscPart3:
             "RAWVIEWER_GPU_IMPORT_NAV_QUIET_MS", 2500, minimum=0
         )
         try:
-            import torch_bootstrap
+            from bootstrap_pkg import torch as torch_bootstrap
 
             if torch_bootstrap.gpu_backend_ready():
                 return

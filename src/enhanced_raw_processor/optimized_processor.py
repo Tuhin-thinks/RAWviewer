@@ -11,7 +11,7 @@ import rawpy
 from PyQt6.QtCore import QObject
 
 from image_load_manager import yield_if_current_task_active
-from rawpy_gil import rawpy_imread_warm
+from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
     _heavy_fallback_semaphore,

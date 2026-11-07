@@ -7,7 +7,7 @@ from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
-from exposure_clipping import clipping_counts
+from processing.raw_decode.exposure_clipping import clipping_counts
 
 
 def _qimage_to_rgb_array(image: QImage) -> np.ndarray | None:

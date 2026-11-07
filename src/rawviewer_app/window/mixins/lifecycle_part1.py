@@ -782,7 +782,7 @@ class LifecyclePart1:
         so it cannot land on top of session-restore full decode or mid-nav.
         """
         try:
-            import torch_bootstrap
+            from bootstrap_pkg import torch as torch_bootstrap
 
             if torch_bootstrap.gpu_backend_import_started():
                 return

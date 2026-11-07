@@ -108,7 +108,7 @@ def current_decode_signature(file_path: str | None = None) -> dict[str, Any]:
         pass
     if file_path:
         try:
-            from fast_raw_decode import get_corrected_camera_wb, wb_sanity_enabled
+            from processing.raw_decode.fast import get_corrected_camera_wb, wb_sanity_enabled
 
             if wb_sanity_enabled():
                 sig["wb_corrected"] = get_corrected_camera_wb(file_path) is not None

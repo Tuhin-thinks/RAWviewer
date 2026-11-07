@@ -260,7 +260,7 @@ class RgbGlImageItem(QGraphicsObject):
             from PyQt6.QtOpenGL import QOpenGLFunctions_2_0
             from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
-            from gpu_gl_bridge import (
+            from processing.raw_decode.gpu_bridge import (
                 CudaGlTextureSlot,
                 ensure_rgba_u8,
                 gl_tex_image_2d_rgba_empty,

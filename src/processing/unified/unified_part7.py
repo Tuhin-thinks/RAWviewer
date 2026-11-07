@@ -293,7 +293,7 @@ class UnifiedPart7:
 
             if use_full_resolution or params.get('half_size'):
                 from enhanced_raw_processor import _rawpy_global_lock as _fast_lock
-                from fast_raw_decode import (
+                from processing.raw_decode.fast import (
                     DecodeCancelled,
                     decode_half_from_unpacked,
                     finish_full_decode,
@@ -430,7 +430,7 @@ class UnifiedPart7:
                 # embedded-JPEG WB sanity correction (misparsed as-shot WB on
                 # bodies newer than the bundled LibRaw, e.g. EOS R6 Mark III).
                 try:
-                    from fast_raw_decode import get_corrected_camera_wb
+                    from processing.raw_decode.fast import get_corrected_camera_wb
 
                     _corrected_wb = get_corrected_camera_wb(file_path)
                     if _corrected_wb:
@@ -472,7 +472,7 @@ class UnifiedPart7:
 
             if orientation != 1 and rgb_image is not None:
                 try:
-                    from gpu_gl_bridge import DeviceRgb, apply_orientation_device_rgb
+                    from processing.raw_decode.gpu_bridge import DeviceRgb, apply_orientation_device_rgb
 
                     if isinstance(rgb_image, DeviceRgb):
                         rgb_image = apply_orientation_device_rgb(rgb_image, orientation)
@@ -487,7 +487,7 @@ class UnifiedPart7:
                             rgb_image = np.ascontiguousarray(rgb_image)
                 except Exception:
                     try:
-                        from gpu_gl_bridge import DeviceRgb as _DR
+                        from processing.raw_decode.gpu_bridge import DeviceRgb as _DR
 
                         host = (
                             rgb_image.to_numpy()
@@ -509,7 +509,7 @@ class UnifiedPart7:
                 # persist so a later decode of the same path can invalidate both.
                 cache_gen = self._bump_async_cache_gen(file_path)
                 try:
-                    from gpu_gl_bridge import DeviceRgb
+                    from processing.raw_decode.gpu_bridge import DeviceRgb
 
                     if use_full_resolution:
                         if isinstance(rgb_image, DeviceRgb):
@@ -586,7 +586,7 @@ class UnifiedPart7:
                                 return
                             import cv2
 
-                            from gpu_gl_bridge import DeviceRgb as _DR
+                            from processing.raw_decode.gpu_bridge import DeviceRgb as _DR
 
                             if isinstance(rgb, _DR):
                                 rgb = rgb.to_numpy()

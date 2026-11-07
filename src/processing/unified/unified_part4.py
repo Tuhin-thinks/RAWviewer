@@ -276,7 +276,7 @@ class UnifiedPart4:
         target = memory_preview_max_edge()
         try:
             from enhanced_raw_processor import _rawpy_global_lock
-            from fast_raw_decode import (
+            from processing.raw_decode.fast import (
                 decode_half_from_unpacked,
                 params_supported_half,
                 unpack_raw,
