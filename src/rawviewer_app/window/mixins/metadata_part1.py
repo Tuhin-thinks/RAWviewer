@@ -131,7 +131,7 @@ class MetadataPart1:
                 # pyexiv2 failed to load in a packaged build).
                 pyexiv2_ok = False
                 try:
-                    from metadata_backend import has_pyexiv2
+                    from metadata.backend import has_pyexiv2
 
                     pyexiv2_ok = bool(has_pyexiv2())
                 except Exception:
@@ -182,7 +182,7 @@ class MetadataPart1:
             return
 
         try:
-            from exif_subject_area import _rotate_rect, pixmap_ltwh_focus_hint
+            from metadata.subject_area import _rotate_rect, pixmap_ltwh_focus_hint
 
             orientation = 1
             cached_exif = self.image_cache.get_exif(path)

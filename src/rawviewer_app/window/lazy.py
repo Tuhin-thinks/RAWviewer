@@ -95,10 +95,10 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
         qta = None
 
     _update_splash("Loading metadata backend...")
-    from metadata_backend import exif_backend_mode as _ebm
-    from metadata_backend import exif_orientation_after_cw90 as _eocw
-    from metadata_backend import has_pyexiv2 as _hp2
-    from metadata_backend import process_file_from_path as _pfp
+    from metadata.backend import exif_backend_mode as _ebm
+    from metadata.backend import exif_orientation_after_cw90 as _eocw
+    from metadata.backend import has_pyexiv2 as _hp2
+    from metadata.backend import process_file_from_path as _pfp
     exif_backend_mode = _ebm
     exif_orientation_after_cw90 = _eocw
     has_pyexiv2 = _hp2
@@ -145,7 +145,7 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     use_progressive_raw_loading = _use_progressive_raw_loading
     metadata_index_idle_delay_ms = _metadata_index_idle_delay_ms
 
-    from image_histogram import ImageHistogramWidget as _ImageHistogramWidget
+    from metadata.histogram import ImageHistogramWidget as _ImageHistogramWidget
     ImageHistogramWidget = _ImageHistogramWidget
 
     _update_splash("Loading UI components...")

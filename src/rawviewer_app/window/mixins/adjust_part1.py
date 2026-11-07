@@ -234,7 +234,7 @@ class AdjustPart1:
         self._burst_rejected_paths = rejected
         self._save_burst_rejected_paths()
         try:
-            import metadata_backend
+            from metadata import backend as metadata_backend
 
             if metadata_backend.has_pyexiv2():
                 pass  # H4 sidecar write TBC when M X2 lands
@@ -503,7 +503,7 @@ class AdjustPart1:
         if not path or view is None or not view.has_pixmap():
             return None, None
         try:
-            from exif_subject_area import _rotate_rect, pixmap_ltwh_focus_hint
+            from metadata.subject_area import _rotate_rect, pixmap_ltwh_focus_hint
 
             orientation = 1
             cached_exif = self.image_cache.get_exif(path)

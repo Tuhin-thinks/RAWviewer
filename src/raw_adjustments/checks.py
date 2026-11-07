@@ -92,7 +92,7 @@ def read_as_shot_temperature(image_path: str) -> float:
     result = DEFAULT_ADJUSTMENTS["Temperature"]
     resolved = False
     try:
-        import metadata_backend
+        from metadata import backend as metadata_backend
 
         tags = metadata_backend.process_file_from_path(image_path, details=False)
         for tag in (

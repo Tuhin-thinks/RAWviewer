@@ -477,7 +477,7 @@ class AdjustPart5:
                 im.close()
 
     def _rotate_raw_pyexiv2_meta_cw90(self, path: str) -> None:
-        from metadata_backend import rotate_exif_orientation_meta_cw90
+        from metadata.backend import rotate_exif_orientation_meta_cw90
 
         rotate_exif_orientation_meta_cw90(path)
 

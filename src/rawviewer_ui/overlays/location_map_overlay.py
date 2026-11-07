@@ -11,7 +11,7 @@ from PyQt6.QtCore import QObject, QPoint, QRectF, QRunnable, Qt, QThreadPool, QU
 from PyQt6.QtGui import QColor, QCursor, QDesktopServices, QMouseEvent, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
-import metadata_backend
+from metadata import backend as metadata_backend
 from location_map_engine import (
     WIDGET_H,
     WIDGET_W,

@@ -9,7 +9,7 @@ import rawpy
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
-from metadata_backend import process_file_from_path
+from metadata.backend import process_file_from_path
 
 
 class RAWProcessorPart1(QThread):

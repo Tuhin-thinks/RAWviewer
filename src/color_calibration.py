@@ -65,7 +65,7 @@ def camera_identity_for_file(path: str) -> tuple[str, str, int | None]:
     if not path:
         return ("", "", None)
     try:
-        from metadata_backend import process_file_from_path
+        from metadata.backend import process_file_from_path
 
         return camera_identity_from_exif(process_file_from_path(path, details=False))
     except Exception:

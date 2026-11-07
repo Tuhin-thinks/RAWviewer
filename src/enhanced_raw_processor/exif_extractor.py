@@ -102,7 +102,7 @@ class EXIFExtractor(QObject):
                     pass
 
         try:
-            import metadata_backend
+            from metadata import backend as metadata_backend
 
             tags = metadata_backend.process_file_from_path(file_path, details=False)
         except Exception as e:

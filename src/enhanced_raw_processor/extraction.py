@@ -13,7 +13,7 @@ import numpy as np
 from PyQt6.QtCore import QLoggingCategory, QSize
 from PyQt6.QtGui import QImage, QImageReader
 
-import metadata_backend
+from metadata import backend as metadata_backend
 from common_image_loader import (
     decode_embedded_jpeg_bytes,
 )

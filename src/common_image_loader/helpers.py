@@ -65,7 +65,7 @@ def normalize_capture_time_string(capture_time: str | None) -> str | None:
 def probe_capture_timestamp_from_file(file_path: str) -> float:
     """Lightweight EXIF DateTime probe when cache has no capture_time."""
     try:
-        import metadata_backend
+        from metadata import backend as metadata_backend
 
         tags = metadata_backend.process_file_from_path(file_path, details=False)
         for tag_name in (

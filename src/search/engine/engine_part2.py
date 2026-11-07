@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 from PIL.Image import Image as PilImage
 
-import metadata_backend
+from metadata import backend as metadata_backend
 from search.backends import MobileCLIPONNXBackend, copy_bgra_into_cvpixelbuffer, resolve_mobileclip_backend
 from search.indexer import (
     SEMANTIC_BATCH_TUNE_CACHE_VERSION,
