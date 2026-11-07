@@ -29,20 +29,20 @@ class AdjustPart5:
         self._apply_adjust_panel_preview(full_quality=True)
         try:
             from raw_adjustments import load_adjustments_for_file, write_xmp_adjustments_for_file
-            from raw_dodge_burn import (
+            from raw_adjustments.dodge_burn import (
                 DEFAULT_STRENGTH,
                 MASK_KEY,
                 MASK_OBJ_KEY,
                 STRENGTH_KEY,
                 serialize_mask,
             )
-            from raw_spot_heal import (
+            from raw_adjustments.spot_heal import (
                 MASK_KEY as HEAL_MASK_KEY,
             )
-            from raw_spot_heal import (
+            from raw_adjustments.spot_heal import (
                 MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
             )
-            from raw_spot_heal import serialize_mask as serialize_heal_mask
+            from raw_adjustments.spot_heal import serialize_mask as serialize_heal_mask
 
             # Loaded unconditionally: the no-change check below needs it, and
             # it used to be bound only inside the undo branch -- so with undo
@@ -329,8 +329,8 @@ class AdjustPart5:
                 )
             return
         from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
-        from raw_auto_adjust import estimate_auto_tone, estimate_neutral_rgb, estimate_straighten_angle
-        from raw_edit_pipeline import _linear_float_from_buffer, linear_to_display_uint8
+        from raw_adjustments.auto_adjust import estimate_auto_tone, estimate_neutral_rgb, estimate_straighten_angle
+        from raw_adjustments.pipeline import _linear_float_from_buffer, linear_to_display_uint8
 
         fast = _make_fast_preview_base(base)
         lin = _linear_float_from_buffer(fast)

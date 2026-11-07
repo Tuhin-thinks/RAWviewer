@@ -318,7 +318,7 @@ def lut_chooser_as_shot_display_u8(
         return tiny
     if getattr(tiny, "dtype", None) == np.uint8:
         return np.ascontiguousarray(tiny)
-    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
     lin = process_linear_edit_buffer(tiny, identity, preview=True)
     return np.ascontiguousarray(linear_to_display_uint8(lin, identity))

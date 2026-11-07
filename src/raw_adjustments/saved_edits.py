@@ -137,7 +137,7 @@ def apply_saved_edits_for_display(file_path: str, arr):
         adj = load_adjustments_for_file(file_path)
         if is_default_adjustments(adj):
             return arr
-        from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+        from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
         lin = _decode_srgb_uint8_to_linear(np.ascontiguousarray(arr))
         out = process_linear_edit_buffer(lin, adj, preview=True)

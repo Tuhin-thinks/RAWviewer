@@ -401,7 +401,7 @@ class UiBuildPart2:
             self._adjust_preview_signals = _AdjustPreviewSignals()
             self._adjust_preview_signals.finished.connect(self._on_adjust_preview_ready)
             self._adjust_preview_signals.ai_progress.connect(self._on_adjust_ai_progress)
-            from raw_edit_pipeline import PreviewStageCache
+            from raw_adjustments.pipeline import PreviewStageCache
 
             self._adjust_preview_stage_cache = PreviewStageCache()
             self._adjust_preview_base_rgb_fast: Any = None

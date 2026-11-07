@@ -149,7 +149,7 @@ class GpuImageViewPart1:
         h, w = mask.data.shape
 
         try:
-            from raw_spot_heal import HealMask
+            from raw_adjustments.spot_heal import HealMask
 
             is_heal = isinstance(mask, HealMask)
         except Exception:

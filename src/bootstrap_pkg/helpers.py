@@ -311,7 +311,7 @@ def _file_association_extensions() -> list[str]:
         src_dir = os.path.join(BUNDLE_DIR, "src")
         if src_dir not in sys.path:
             sys.path.insert(0, src_dir)
-        from raw_file_extensions import get_supported_extensions
+        from raw_adjustments.file_extensions import get_supported_extensions
 
         return get_supported_extensions()
     except Exception:

@@ -27,7 +27,7 @@ def tone_curve_serial_is_active(serial: object) -> bool:
     text = str(serial or "").strip()
     if not text:
         return False
-    from raw_tone_curve import (
+    from raw_adjustments.tone_curve import (
         deserialize_tone_curve_points,
         is_identity_tone_curve_points,
     )
@@ -44,7 +44,7 @@ def uses_recovery_tone_map(adj: dict[str, float] | None) -> bool:
         return False
     if float(adj.get(RECOVERY_BASELINE_KEY, 0.0)) <= 0.5:
         return False
-    from raw_tone_curve import CHANNEL_CURVE_KEYS, TONE_CURVE_SERIAL_KEY
+    from raw_adjustments.tone_curve import CHANNEL_CURVE_KEYS, TONE_CURVE_SERIAL_KEY
 
     if tone_curve_serial_is_active(adj.get(TONE_CURVE_SERIAL_KEY)):
         return False
@@ -199,10 +199,10 @@ def solve_white_balance_from_sample(
 def is_default_adjustments(adj: dict[str, float] | None) -> bool:
     if not adj:
         return True
-    from raw_dodge_burn import MASK_KEY
-    from raw_lut import LUT_AMOUNT_KEY, LUT_NAME_KEY
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
-    from raw_tone_curve import CHANNEL_CURVE_KEYS, TONE_CURVE_SERIAL_KEY
+    from raw_adjustments.dodge_burn import MASK_KEY
+    from raw_adjustments.lut import LUT_AMOUNT_KEY, LUT_NAME_KEY
+    from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
+    from raw_adjustments.tone_curve import CHANNEL_CURVE_KEYS, TONE_CURVE_SERIAL_KEY
 
     # Identity serials ("0,0;255,255") are visually a no-op; treat them as
     # default so Reset / clear can delete the sidecar and skip baking a stale
@@ -218,8 +218,8 @@ def is_default_adjustments(adj: dict[str, float] | None) -> bool:
         return False
     # Live paint injects mask objects without a PNG serial yet ΓÇö still non-default.
     try:
-        from raw_dodge_burn import MASK_OBJ_KEY
-        from raw_spot_heal import MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY
+        from raw_adjustments.dodge_burn import MASK_OBJ_KEY
+        from raw_adjustments.spot_heal import MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY
 
         if adj.get(MASK_OBJ_KEY) is not None or adj.get(HEAL_MASK_OBJ_KEY) is not None:
             return False
@@ -282,7 +282,7 @@ def is_default_adjustments_for_sidecar(adj: dict[str, float] | None) -> bool:
 
 
 def adjustments_equal(a: dict[str, float], b: dict[str, float]) -> bool:
-    from raw_lut import LUT_NAME_KEY, LUT_SPACE_KEY, lut_working_space
+    from raw_adjustments.lut import LUT_NAME_KEY, LUT_SPACE_KEY, lut_working_space
 
     if str(a.get(LUT_NAME_KEY, "") or "").strip() != str(b.get(LUT_NAME_KEY, "") or "").strip():
         return False

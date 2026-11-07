@@ -128,7 +128,7 @@ class UnifiedPart3:
         apply_lens_correction: bool = False,
     ) -> np.ndarray | None:
         from common_image_loader import dng_prefers_embedded_preview_first
-        from raw_tone_recovery import edit_base_decode_params
+        from raw_adjustments.tone_recovery import edit_base_decode_params
 
         try:
             exif_data = self.exif_extractor.extract_exif_data(file_path)
@@ -246,7 +246,7 @@ class UnifiedPart3:
                         rgb_image, orientation, exif_data
                     )
                 if apply_lens_correction:
-                    from raw_lens_correction import apply_lens_correction as _apply_lens_correction
+                    from raw_adjustments.lens_correction import apply_lens_correction as _apply_lens_correction
 
                     rgb_image = _apply_lens_correction(rgb_image, exif_data)
                 logging.getLogger(__name__).info(

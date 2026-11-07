@@ -98,7 +98,7 @@ DEFAULT_ADJUSTMENTS: dict[str, float] = {
     "CreativeLUTAmount": 0.0,
 }
 
-from raw_hsl import HSL_COLOR_NAMES  # noqa: E402
+from raw_adjustments.hsl import HSL_COLOR_NAMES  # noqa: E402
 
 for _hsl_color in HSL_COLOR_NAMES:
     DEFAULT_ADJUSTMENTS[f"HueAdjustment{_hsl_color}"] = 0.0

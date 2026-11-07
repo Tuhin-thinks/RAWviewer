@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 try:
-    from raw_dodge_burn import DEFAULT_BRUSH_FEATHER
+    from raw_adjustments.dodge_burn import DEFAULT_BRUSH_FEATHER
 except ImportError:
     DEFAULT_BRUSH_FEATHER = 0.70
 
@@ -51,7 +51,7 @@ def _heal_brush_falloff(
     feather: float,
 ) -> np.ndarray:
     """Call dodge/burn falloff; pass ``feather`` only when that API exists."""
-    from raw_dodge_burn import circular_brush_falloff
+    from raw_adjustments.dodge_burn import circular_brush_falloff
 
     global _FALLOFF_HAS_FEATHER
     if _FALLOFF_HAS_FEATHER is None:

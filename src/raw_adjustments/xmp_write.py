@@ -365,7 +365,7 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: dict[str, float]) -> None:
     # Replace our fields in place; leave Look / masks / Grain / etc. alone.
     _strip_our_crs_fields(desc)
 
-    from raw_pv2012 import PROCESS_VERSION, TONE_CURVE_NAME_2012
+    from raw_adjustments.pv2012 import PROCESS_VERSION, TONE_CURVE_NAME_2012
 
     desc.set(f"{{{CRS_NS}}}ProcessVersion", PROCESS_VERSION)
     desc.set(f"{{{CRS_NS}}}ToneCurveName2012", TONE_CURVE_NAME_2012)
@@ -393,7 +393,7 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: dict[str, float]) -> None:
         desc.set(f"{{{CRS_NS}}}DefringePurpleAmount", amt)
         desc.set(f"{{{CRS_NS}}}DefringeGreenAmount", amt)
 
-    from raw_tone_curve import (
+    from raw_adjustments.tone_curve import (
         TONE_CURVE_BLUE_KEY,
         TONE_CURVE_GREEN_KEY,
         TONE_CURVE_RED_KEY,
@@ -417,21 +417,21 @@ def _write_xmp_adjustments_locked(xmp_path: str, adj: dict[str, float]) -> None:
     _write_point_curve(TONE_CURVE_GREEN_KEY, "ToneCurvePV2012Green")
     _write_point_curve(TONE_CURVE_BLUE_KEY, "ToneCurvePV2012Blue")
 
-    from raw_dodge_burn import MASK_KEY
+    from raw_adjustments.dodge_burn import MASK_KEY
 
     mask_serial = str(merged.get(MASK_KEY, "") or "")
     if mask_serial:
         db = ET.SubElement(desc, f"{{{CRS_NS}}}DodgeBurnMask")
         db.text = mask_serial
 
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+    from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
 
     heal_serial = str(merged.get(HEAL_MASK_KEY, "") or "")
     if heal_serial:
         heal = ET.SubElement(desc, f"{{{CRS_NS}}}SpotHealMask")
         heal.text = heal_serial
 
-    from raw_lut import (
+    from raw_adjustments.lut import (
         LUT_AMOUNT_KEY,
         LUT_NAME_KEY,
         LUT_SPACE_DEFAULT,

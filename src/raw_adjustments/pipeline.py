@@ -18,18 +18,18 @@ from raw_adjustments import (
     is_default_adjustments,
     uses_recovery_tone_map,
 )
-from raw_chroma_denoise import apply_chroma_denoise, apply_luma_denoise, chroma_denoise_enabled
-from raw_dodge_burn import DEFAULT_STRENGTH as _DB_DEFAULT_STRENGTH
-from raw_dodge_burn import MASK_KEY as _DB_MASK_KEY
-from raw_dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
-from raw_dodge_burn import STRENGTH_KEY as _DB_STRENGTH_KEY
-from raw_dodge_burn import resolve_mask_from_adj as _resolve_db_mask
-from raw_pv2012 import apply_pv2012_tone_rgb
-from raw_spot_heal import MASK_KEY as _HEAL_MASK_KEY
-from raw_spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
-from raw_spot_heal import resolve_mask_from_adj as _resolve_heal_mask
-from raw_tone_curve import TONE_CURVE_SERIAL_KEY
-from raw_transform import TRANSFORM_KEYS as _TRANSFORM_KEYS
+from raw_adjustments.chroma_denoise import apply_chroma_denoise, apply_luma_denoise, chroma_denoise_enabled
+from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as _DB_DEFAULT_STRENGTH
+from raw_adjustments.dodge_burn import MASK_KEY as _DB_MASK_KEY
+from raw_adjustments.dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
+from raw_adjustments.dodge_burn import STRENGTH_KEY as _DB_STRENGTH_KEY
+from raw_adjustments.dodge_burn import resolve_mask_from_adj as _resolve_db_mask
+from raw_adjustments.pv2012 import apply_pv2012_tone_rgb
+from raw_adjustments.spot_heal import MASK_KEY as _HEAL_MASK_KEY
+from raw_adjustments.spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
+from raw_adjustments.spot_heal import resolve_mask_from_adj as _resolve_heal_mask
+from raw_adjustments.tone_curve import TONE_CURVE_SERIAL_KEY
+from raw_adjustments.transform import TRANSFORM_KEYS as _TRANSFORM_KEYS
 
 
 def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
@@ -82,7 +82,7 @@ def _apply_saturation_vibrance(img: np.ndarray, merged: dict[str, float]) -> np.
     """
     import cv2
 
-    from raw_tone_recovery import _decode_srgb_float01, _encode_srgb_float01
+    from raw_adjustments.tone_recovery import _decode_srgb_float01, _encode_srgb_float01
 
     sat_val = float(merged.get("Saturation", 0.0))
     vib_val = float(merged.get("Vibrance", 0.0))
@@ -117,7 +117,7 @@ def _tone_map_reinhard_display(img: np.ndarray) -> np.ndarray:
     _tone_map_clip_display + the dcraw BT.709 encode, matching browse
     exactly in tone reproduction.
     """
-    from raw_tone_recovery import _luminance
+    from raw_adjustments.tone_recovery import _luminance
 
     lum = _luminance(img)
     mapped = lum / (1.0 + np.maximum(lum, 0.0))
@@ -137,7 +137,7 @@ def _tone_map_clip_display(img: np.ndarray) -> np.ndarray:
 
 def _tone_map_recovery_display(img: np.ndarray) -> np.ndarray:
     """Recovery preview tone path (matches P-key recovery, including edge cap)."""
-    from raw_tone_recovery import (
+    from raw_adjustments.tone_recovery import (
         RECOVERY_MAX_EDGE,
         _cap_max_edge_linear,
         apply_local_shadow_highlight_recovery_display,
@@ -176,8 +176,8 @@ def _apply_display_stage(
     total_h: int | None = None,
 ) -> np.ndarray:
     """Tone map → sat/vib → HSL → detail (display-linear float [0, 1])."""
-    from raw_detail_enhance import apply_detail_enhancements
-    from raw_hsl import apply_hsl_adjustments
+    from raw_adjustments.detail_enhance import apply_detail_enhancements
+    from raw_adjustments.hsl import apply_hsl_adjustments
 
     display = _tone_map_for_display(img, merged)
     if merged:
@@ -228,7 +228,7 @@ def process_linear_edit_buffer(
 
     # Geometry first: every later stage (dodge/burn coordinates included)
     # works in the transformed frame. No-op unless transform keys are set.
-    from raw_transform import apply_geometry
+    from raw_adjustments.transform import apply_geometry
 
     img = apply_geometry(img, merged)
 
@@ -299,7 +299,7 @@ def _process_linear_edit_pre_ai(
     # (matches how a real exposure difference at capture time would look).
     mask = _resolve_db_mask(merged)
     if mask is not None:
-        from raw_dodge_burn import apply_dodge_burn
+        from raw_adjustments.dodge_burn import apply_dodge_burn
 
         stops = float(merged.get(_DB_STRENGTH_KEY, _DB_DEFAULT_STRENGTH))
         img = apply_dodge_burn(img, mask, stops)
@@ -308,7 +308,7 @@ def _process_linear_edit_pre_ai(
     # already-exposed neighborhood; before denoise/tone.
     heal_mask = _resolve_heal_mask(merged)
     if heal_mask is not None:
-        from raw_spot_heal import apply_spot_heal
+        from raw_adjustments.spot_heal import apply_spot_heal
 
         img = apply_spot_heal(
             img, heal_mask, row_offset=row_offset, full_height=full_height
@@ -347,7 +347,7 @@ def ai_backend_name() -> str:
 
 
 def _rawrefinery_available() -> bool:
-    from rawrefinery_denoise import model_available
+    from raw_adjustments.refinery_denoise import model_available
 
     return model_available()
 
@@ -373,7 +373,7 @@ def _apply_ai_denoise_stage(
 ) -> np.ndarray:
     """AI barrier: runs on the whole image, never on bands."""
     if use_ai_denoise and ai_backend_name() == "rawrefinery" and _rawrefinery_available():
-        from rawrefinery_denoise import denoise as rawrefinery_denoise
+        from raw_adjustments.refinery_denoise import denoise as rawrefinery_denoise
 
         ai_amount = max(0.0, min(1.0, float(merged.get("AIDenoiseAmount", 100.0)) / 100.0))
         if ai_amount <= 1e-4:
@@ -644,7 +644,7 @@ _TONE_KEYS = (
 )
 
 def _hsl_color_keys() -> tuple[str, ...]:
-    from raw_hsl import HSL_COLOR_NAMES
+    from raw_adjustments.hsl import HSL_COLOR_NAMES
 
     return tuple(
         f"{prefix}Adjustment{color}"
@@ -746,7 +746,7 @@ def process_linear_edit_buffer_staged(
         pre_key = _stage_key(merged, _PRE_TONE_KEYS)
         if cache.stage_keys.get("pre_tone") != pre_key or "pre_tone" not in cache.stage_out:
             img = _linear_float_from_buffer(rgb_image)
-            from raw_transform import apply_geometry
+            from raw_adjustments.transform import apply_geometry
 
             # preview_lite: apply WB/denoise on the uncropped frame once, then
             # warp. Transform-slider ticks then only invalidate the cheap
@@ -765,13 +765,13 @@ def process_linear_edit_buffer_staged(
                         pre = pre * (2.0 ** exp_val)
                     mask = _resolve_db_mask(merged)
                     if mask is not None:
-                        from raw_dodge_burn import apply_dodge_burn
+                        from raw_adjustments.dodge_burn import apply_dodge_burn
 
                         stops = float(merged.get(_DB_STRENGTH_KEY, _DB_DEFAULT_STRENGTH))
                         pre = apply_dodge_burn(pre, mask, stops)
                     heal_mask = _resolve_heal_mask(merged)
                     if heal_mask is not None:
-                        from raw_spot_heal import apply_spot_heal
+                        from raw_adjustments.spot_heal import apply_spot_heal
 
                         pre = apply_spot_heal(pre, heal_mask)
                     # Skip denoise on lite transform path — largest cost after
@@ -798,14 +798,14 @@ def process_linear_edit_buffer_staged(
 
                 mask = _resolve_db_mask(merged)
                 if mask is not None:
-                    from raw_dodge_burn import apply_dodge_burn
+                    from raw_adjustments.dodge_burn import apply_dodge_burn
 
                     stops = float(merged.get(_DB_STRENGTH_KEY, _DB_DEFAULT_STRENGTH))
                     img = apply_dodge_burn(img, mask, stops)
 
                 heal_mask = _resolve_heal_mask(merged)
                 if heal_mask is not None:
-                    from raw_spot_heal import apply_spot_heal
+                    from raw_adjustments.spot_heal import apply_spot_heal
 
                     img = apply_spot_heal(img, heal_mask)
 
@@ -857,8 +857,8 @@ def _apply_display_stage_staged(
     img: np.ndarray, merged: dict[str, float], cache: PreviewStageCache
 ) -> np.ndarray:
     """Cached equivalent of _apply_display_stage for the preview path."""
-    from raw_detail_enhance import apply_detail_enhancements
-    from raw_hsl import apply_hsl_adjustments
+    from raw_adjustments.detail_enhance import apply_detail_enhancements
+    from raw_adjustments.hsl import apply_hsl_adjustments
 
     with cache.lock:
         tone_key = cache.stage_keys.get("tone")
@@ -908,8 +908,8 @@ def render_adjust_preview_uint8(
     path and smoke tests (and on-screen parity with settle/export) break.
     """
     from processing.raw_decode.fast import _gamma_lut8
-    from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
-    from raw_tone_curve import apply_channel_curves_encoded
+    from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
+    from raw_adjustments.tone_curve import apply_channel_curves_encoded
 
     merged = dict(DEFAULT_ADJUSTMENTS)
     merged.update(adj or {})
@@ -945,7 +945,7 @@ def _apply_display_color_adjustments(
     Creative LUT is applied later via ``apply_pipeline_lut_*`` (Rec.709 after
     gamma encode by default; Linear keeps the pre-encode path).
     """
-    from raw_effects import (
+    from raw_adjustments.effects import (
         VIGNETTE_MIDPOINT_DEFAULT,
         VIGNETTE_MIDPOINT_KEY,
         apply_dehaze,
@@ -988,8 +988,8 @@ def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None
     # the browse render, surfacing sensor noise ("grainy" report). One curve
     # everywhere = editor default is pixel-comparable with browse.
     from processing.raw_decode.fast import gamma_curve16
-    from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
-    from raw_tone_curve import apply_channel_curves_encoded
+    from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
+    from raw_adjustments.tone_curve import apply_channel_curves_encoded
 
     merged = dict(adj or {})
     n_workers = _linear_pipeline_worker_count(img.shape[0])
@@ -1037,7 +1037,7 @@ def _apply_display_stage_banded(
     same padding math as _apply_adjustments_to_srgb_banded.
     """
     from raw_adjustments import _BAND_PAD_PX, band_ranges, banded_executor
-    from raw_effects import DEHAZE_KEY
+    from raw_adjustments.effects import DEHAZE_KEY
 
     if abs(float(merged.get(DEHAZE_KEY, 0.0) or 0.0)) > 1e-3:
         return _apply_display_stage(img, merged)
@@ -1074,8 +1074,8 @@ def linear_to_export_uint16_srgb(img: np.ndarray, adj: dict[str, float] | None =
     LibRaw/dcraw-derived pipeline does.)
     """
     from processing.raw_decode.fast import gamma_curve16
-    from raw_lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
-    from raw_tone_curve import apply_channel_curves_encoded
+    from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
+    from raw_adjustments.tone_curve import apply_channel_curves_encoded
 
     merged = dict(adj or {})
     display = _apply_display_stage(img, merged)

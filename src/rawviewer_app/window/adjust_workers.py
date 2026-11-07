@@ -64,13 +64,13 @@ class _AdjustMaskLoadWorker(QRunnable):
         db_mask = None
         heal_mask = None
         try:
-            from raw_dodge_burn import deserialize_mask as deserialize_db_mask
+            from raw_adjustments.dodge_burn import deserialize_mask as deserialize_db_mask
 
             db_mask = deserialize_db_mask(self.db_serial)
         except Exception:
             db_mask = None
         try:
-            from raw_spot_heal import deserialize_mask as deserialize_heal_mask
+            from raw_adjustments.spot_heal import deserialize_mask as deserialize_heal_mask
 
             heal_mask = deserialize_heal_mask(self.heal_serial)
         except Exception:
@@ -123,7 +123,7 @@ class _AdjustPreviewWorker(QRunnable):
             t0 = _time.perf_counter()
             dtype_name = str(getattr(self.base_rgb, "dtype", ""))
             if self.ai_denoise and dtype_name in ("uint16", "float32"):
-                from raw_edit_pipeline import linear_to_display_uint8, run_edit_pipeline
+                from raw_adjustments.pipeline import linear_to_display_uint8, run_edit_pipeline
 
                 gen = self.generation
 
@@ -147,7 +147,7 @@ class _AdjustPreviewWorker(QRunnable):
                 # denoise/PV2012 tone/tonemap on every tick.
                 # preview_lite: cheaper PV2012 on the downsampled drag base;
                 # settle_fast: full base with lighter chroma damp.
-                from raw_edit_pipeline import render_adjust_preview_uint8
+                from raw_adjustments.pipeline import render_adjust_preview_uint8
 
                 out = render_adjust_preview_uint8(
                     self.base_rgb,
@@ -175,11 +175,11 @@ class _AdjustPreviewWorker(QRunnable):
 
                     out = apply_adjustments_to_linear(self.base_rgb, self.adj)
             if out is not None and str(getattr(out, "dtype", "")) != "uint8":
-                from raw_tone_recovery import _encode_srgb8
+                from raw_adjustments.tone_recovery import _encode_srgb8
 
                 out = _encode_srgb8(np.clip(out.astype(np.float32), 0.0, None))
             try:
-                from raw_dodge_burn import MASK_KEY as _DB_MASK_KEY
+                from raw_adjustments.dodge_burn import MASK_KEY as _DB_MASK_KEY
 
                 has_db = 1 if str(self.adj.get(_DB_MASK_KEY, "") or "").strip() else 0
             except Exception:
@@ -236,7 +236,7 @@ class _AdjustCompareOriginalWorker(QRunnable):
         out = None
         try:
             from raw_adjustments import DEFAULT_ADJUSTMENTS, apply_adjustments_to_rgb
-            from raw_transform import TRANSFORM_KEYS
+            from raw_adjustments.transform import TRANSFORM_KEYS
 
             adj = dict(DEFAULT_ADJUSTMENTS)
             for key in TRANSFORM_KEYS:
@@ -244,7 +244,7 @@ class _AdjustCompareOriginalWorker(QRunnable):
                     adj[key] = self.geometry_adj[key]
             out = apply_adjustments_to_rgb(self.base_rgb, adj)
             if out is not None and str(getattr(out, "dtype", "")) != "uint8":
-                from raw_tone_recovery import _encode_srgb8
+                from raw_adjustments.tone_recovery import _encode_srgb8
 
                 out = _encode_srgb8(np.clip(out.astype(np.float32), 0.0, None))
         except Exception:
@@ -331,7 +331,7 @@ class _AdjustEditBaseWorker(QRunnable):
             )
             has_lens_profile = processor.lens_profile_available(self.file_path)
             if has_lens_profile:
-                from raw_lens_correction import get_lens_profile_name
+                from raw_adjustments.lens_correction import get_lens_profile_name
                 exif_data = processor.exif_extractor.extract_exif_data(self.file_path)
                 lens_profile_name = get_lens_profile_name(exif_data)
         except Exception:

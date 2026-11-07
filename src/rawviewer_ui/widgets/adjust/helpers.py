@@ -39,7 +39,7 @@ from PyQt6.QtWidgets import (
 )
 
 import theme
-from raw_tone_curve import (
+from raw_adjustments.tone_curve import (
     TONE_CURVE_BLUE_KEY,
     TONE_CURVE_GREEN_KEY,
     TONE_CURVE_RED_KEY,
@@ -343,7 +343,7 @@ class _LutThumbWorker(QRunnable):
         try:
             import numpy as np
 
-            from raw_lut import render_lut_chooser_previews
+            from raw_adjustments.lut import render_lut_chooser_previews
 
             base = self.display_u8
             if base is None:

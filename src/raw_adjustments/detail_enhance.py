@@ -6,7 +6,7 @@ import numpy as np
 
 
 def _luma(img: np.ndarray) -> np.ndarray:
-    from raw_tone_recovery import _luminance
+    from raw_adjustments.tone_recovery import _luminance
 
     return _luminance(img)
 

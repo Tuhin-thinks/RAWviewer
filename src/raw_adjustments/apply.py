@@ -35,7 +35,7 @@ def apply_adjustments_to_rgb(rgb_image: np.ndarray, adj: dict[str, float]) -> np
         return rgb_image
     if adj is None:
         return rgb_image
-    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
     merged = dict(DEFAULT_ADJUSTMENTS)
     merged.update(adj or {})
@@ -57,7 +57,7 @@ def apply_adjustments_to_rgb(rgb_image: np.ndarray, adj: dict[str, float]) -> np
 
 def apply_adjustments_to_linear(rgb_image: np.ndarray, adj: dict[str, float]) -> np.ndarray:
     """Scene-linear edit path: PV2012 + NLM chroma, tone-map, encode sRGB uint8."""
-    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
     if rgb_image is None:
         return rgb_image
@@ -73,7 +73,7 @@ def apply_adjustments_to_linear(rgb_image: np.ndarray, adj: dict[str, float]) ->
 
 def apply_adjustments_to_linear_uint16(rgb_image: np.ndarray, adj: dict[str, float]) -> np.ndarray:
     """Full-quality export: PV2012 pipeline ΓåÆ 16-bit display-referred sRGB."""
-    from raw_edit_pipeline import linear_to_export_uint16_srgb, process_linear_edit_buffer
+    from raw_adjustments.pipeline import linear_to_export_uint16_srgb, process_linear_edit_buffer
 
     if rgb_image is None:
         return rgb_image
@@ -96,7 +96,7 @@ def _apply_adjustments_to_srgb(rgb_image: np.ndarray, adj: dict[str, float]) -> 
     # gamma path -- gallery tiles, fit previews, cached uint8 redisplay --
     # shows the same framing as the linear edit pipeline. Must run before the
     # row-band split below: it changes the buffer's shape.
-    from raw_transform import apply_geometry
+    from raw_adjustments.transform import apply_geometry
 
     rgb_image = apply_geometry(rgb_image, merged)
 
@@ -109,7 +109,7 @@ def _apply_adjustments_to_srgb(rgb_image: np.ndarray, adj: dict[str, float]) -> 
     # multiprocessing. Dodge & Burn is excluded (its mask needs its own
     # per-band slicing, not implemented here) and falls back to the
     # single-threaded path below.
-    from raw_dodge_burn import MASK_KEY as _db_mask_key
+    from raw_adjustments.dodge_burn import MASK_KEY as _db_mask_key
 
     mask_serial = str(merged.get(_db_mask_key, "") or "")
     n_workers = _detail_pipeline_worker_count(rgb_image.shape[0])
@@ -255,13 +255,13 @@ def _apply_adjustments_to_srgb_core(img: np.ndarray, merged: dict[str, float]) -
     # an edited photo, not the live Adjust-panel preview) -- applying the
     # mask here too keeps that path visually consistent with the scene-
     # linear pipeline's result (process_linear_edit_buffer).
-    from raw_dodge_burn import MASK_KEY as _db_mask_key
+    from raw_adjustments.dodge_burn import MASK_KEY as _db_mask_key
 
     mask_serial = str(merged.get(_db_mask_key, "") or "")
     if mask_serial:
-        from raw_dodge_burn import DEFAULT_STRENGTH as _db_default_strength
-        from raw_dodge_burn import STRENGTH_KEY as _db_strength_key
-        from raw_dodge_burn import _deserialize_mask_cached, apply_dodge_burn
+        from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as _db_default_strength
+        from raw_adjustments.dodge_burn import STRENGTH_KEY as _db_strength_key
+        from raw_adjustments.dodge_burn import _deserialize_mask_cached, apply_dodge_burn
 
         mask = _deserialize_mask_cached(mask_serial)
         if mask is not None:
@@ -269,12 +269,12 @@ def _apply_adjustments_to_srgb_core(img: np.ndarray, merged: dict[str, float]) -
             img = apply_dodge_burn(img, mask, stops)
 
     # 2c. Spot heal (cv2.inpaint) ΓÇö same rationale as dodge/burn above.
-    from raw_spot_heal import MASK_KEY as _heal_mask_key
+    from raw_adjustments.spot_heal import MASK_KEY as _heal_mask_key
 
     heal_serial = str(merged.get(_heal_mask_key, "") or "")
     if heal_serial:
-        from raw_spot_heal import _deserialize_mask_cached as _heal_deserialize
-        from raw_spot_heal import apply_spot_heal
+        from raw_adjustments.spot_heal import _deserialize_mask_cached as _heal_deserialize
+        from raw_adjustments.spot_heal import apply_spot_heal
 
         heal_mask = _heal_deserialize(heal_serial)
         if heal_mask is not None:
@@ -332,7 +332,7 @@ def _apply_adjustments_to_srgb_core(img: np.ndarray, merged: dict[str, float]) -
 
         img = luma + (img - luma) * sat_scale
 
-    from raw_detail_enhance import apply_detail_enhancements
+    from raw_adjustments.detail_enhance import apply_detail_enhancements
 
     img = np.clip(img, 0.0, 1.0)
     img = apply_detail_enhancements(img, merged)
@@ -351,7 +351,7 @@ def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
 def _linear_buffer_to_display_uint8(rgb_image: np.ndarray) -> np.ndarray:
     if rgb_image is None:
         return rgb_image
-    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
     processed = process_linear_edit_buffer(rgb_image, {}, preview=True)
     return linear_to_display_uint8(processed)

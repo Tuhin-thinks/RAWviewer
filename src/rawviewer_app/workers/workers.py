@@ -468,7 +468,7 @@ class RawRecoveryWorker(QRunnable):
         self.exif_data = exif_data or {}
 
     def run(self) -> None:
-        from raw_tone_recovery import decode_and_recover_raw
+        from raw_adjustments.tone_recovery import decode_and_recover_raw
 
         logger = logging.getLogger(__name__)
         logger.info(

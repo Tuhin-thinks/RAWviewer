@@ -254,7 +254,7 @@ class BatchExportDialog(CustomConfirmDialog):
     def _ai_denoise_available() -> bool:
         """AI denoise needs both the feature flag and the installed model file."""
         try:
-            from raw_edit_pipeline import ai_denoise_model_present
+            from raw_adjustments.pipeline import ai_denoise_model_present
             from rawviewer_profile import ai_export_enabled
 
             return bool(ai_export_enabled() and ai_denoise_model_present())

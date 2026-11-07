@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QLabel, QSlider, QWidget
 
 import theme
 from raw_adjustments import DEFAULT_ADJUSTMENTS
-from raw_hsl import HSL_COLOR_NAMES
+from raw_adjustments.hsl import HSL_COLOR_NAMES
 
 from .adjust_part1 import AdjustPart1
 from .adjust_part2 import AdjustPart2

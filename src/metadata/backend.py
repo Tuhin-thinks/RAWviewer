@@ -325,7 +325,7 @@ def process_file_from_path(
         # Check if the file is a RAW/DNG file. If so, prefer the high-performance exifread path,
         # which reads only headers and avoids pyexiv2/Exiv2 loading the huge raw sensor data (700ms -> 1ms).
         ext = os.path.splitext(path)[1].lower().lstrip(".")
-        from raw_file_extensions import RAW_FILE_EXTENSIONS
+        from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
         if ext in RAW_FILE_EXTENSIONS:
             tags = _exifread_process_path(path, details=False, stop_tag=stop_tag)
             # Canon CR2/CR3: exifread header-only reads often omit orientation and capture time.

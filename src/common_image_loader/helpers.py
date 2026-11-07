@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from image_cache import get_image_cache
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
 
 _io_pressure_until = 0.0
 _CAPTURE_TIME_FORMATS = (

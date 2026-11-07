@@ -365,7 +365,7 @@ class BatchPart1:
         )
         from PyQt6.QtWidgets import QFileDialog
 
-        from raw_edit_pipeline import (
+        from raw_adjustments.pipeline import (
             EXPORT_FORMAT_JPEG,
             EXPORT_FORMAT_TIFF16,
             EXPORT_FORMAT_WEBP,
@@ -487,14 +487,14 @@ class BatchPart1:
         # Export may run in a process pool, so replace the live mask object
         # with a PNG serial the worker can pickle/deserialize.
         try:
-            from raw_dodge_burn import MASK_KEY, MASK_OBJ_KEY, serialize_mask
-            from raw_spot_heal import (
+            from raw_adjustments.dodge_burn import MASK_KEY, MASK_OBJ_KEY, serialize_mask
+            from raw_adjustments.spot_heal import (
                 MASK_KEY as HEAL_MASK_KEY,
             )
-            from raw_spot_heal import (
+            from raw_adjustments.spot_heal import (
                 MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
             )
-            from raw_spot_heal import serialize_mask as serialize_heal_mask
+            from raw_adjustments.spot_heal import serialize_mask as serialize_heal_mask
 
             adj = self._dodge_burn_overlay_adj(adj)
             adj = dict(adj)

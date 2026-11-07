@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageOps
 from PIL.Image import Image as PilImage
 
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
 
 from ._config import (
     _INDEX_THREAD_LOCAL,

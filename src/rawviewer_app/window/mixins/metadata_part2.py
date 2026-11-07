@@ -254,7 +254,7 @@ class MetadataPart2:
         self, pt, buffer_w: int, buffer_h: int
     ) -> tuple[float, float]:
         """Display-pixmap point → same-framing buffer (dodge/burn + WB pick)."""
-        from raw_transform import map_display_point_to_buffer
+        from raw_adjustments.transform import map_display_point_to_buffer
 
         ux, uy = self._display_point_to_unrotated(float(pt.x()), float(pt.y()))
         disp = self._unrotated_display_size()
@@ -287,7 +287,7 @@ class MetadataPart2:
         Delegates to color_calibration so the profile lookup and this
         banner/dialog path can never disagree about a camera's identity.
         """
-        from color_calibration import camera_identity_for_file
+        from raw_adjustments.color_calibration import camera_identity_for_file
 
         return camera_identity_for_file(path)
 
@@ -299,7 +299,7 @@ class MetadataPart2:
         must not claim a profile is in effect.
         """
         try:
-            from color_calibration import describe_camera_profile
+            from raw_adjustments.color_calibration import describe_camera_profile
             from raw_adjustments import resolve_xmp_path
 
             xmp = resolve_xmp_path(path)
@@ -367,7 +367,7 @@ class MetadataPart2:
                 if img is not None and not hasattr(img, "shape"):
                     img = None
                 try:
-                    from color_calibration import has_factory_color_profile
+                    from raw_adjustments.color_calibration import has_factory_color_profile
 
                     factory = has_factory_color_profile(target_path)
                 except Exception:

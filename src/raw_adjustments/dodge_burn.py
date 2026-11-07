@@ -438,7 +438,7 @@ def edge_snap_region(
     guided filter has context outside the stroke (avoids a visible seam at
     the exact stroke boundary).
     """
-    from raw_chroma_denoise import apply_guided_filter
+    from raw_adjustments.chroma_denoise import apply_guided_filter
 
     h, w = mask.data.shape
     x0, y0, x1, y1 = bbox
@@ -524,7 +524,7 @@ def apply_dodge_burn(
     # here at 24MP: 220ms broadcast vs 109ms per-channel-out, bit-identical.
     # raw_detail_enhance._multiply_by_2d_factor documents the same finding --
     # dodge/burn simply was not using it.
-    from raw_detail_enhance import _multiply_by_2d_factor
+    from raw_adjustments.detail_enhance import _multiply_by_2d_factor
 
     return _multiply_by_2d_factor(img, gain)
 

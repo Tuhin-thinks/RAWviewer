@@ -147,7 +147,7 @@ class AdjustPart4:
                 adj = panel.get_adjustments() or {}
         except Exception:
             adj = {}
-        from raw_transform import TRANSFORM_KEYS, has_geometry
+        from raw_adjustments.transform import TRANSFORM_KEYS, has_geometry
 
         uncropped = bool(getattr(self, "_crop_preview_uncropped", False))
         geo_key = tuple(float(adj.get(k, 0.0) or 0.0) for k in TRANSFORM_KEYS)
@@ -178,7 +178,7 @@ class AdjustPart4:
         if mask_shape is None:
             return
         try:
-            from raw_spot_heal import HealMask, stamp_heal_brush
+            from raw_adjustments.spot_heal import HealMask, stamp_heal_brush
 
             mh, mw = mask_shape
             mask = getattr(self, "_spot_heal_mask", None)
@@ -242,13 +242,13 @@ class AdjustPart4:
             return
         try:
             from perf_metrics import perf_mark
-            from raw_dodge_burn import (
+            from raw_adjustments.dodge_burn import (
                 DodgeBurnMask,
                 edge_snap_region,
                 erase_brush,
                 stamp_brush,
             )
-            from raw_spot_heal import erase_heal_brush
+            from raw_adjustments.spot_heal import erase_heal_brush
 
             mh, mw = mask_shape
             mask = getattr(self, "_dodge_burn_mask", None)
@@ -321,7 +321,7 @@ class AdjustPart4:
                 try:
                     base = getattr(self, "_adjust_preview_base_rgb", None)
                     if base is not None and hasattr(base, "shape"):
-                        from raw_edit_pipeline import _linear_float_from_buffer
+                        from raw_adjustments.pipeline import _linear_float_from_buffer
 
                         b = _linear_float_from_buffer(base)
                         if b.shape[0] != mh or b.shape[1] != mw:
@@ -474,7 +474,7 @@ class AdjustPart4:
                     else:
                         # Degenerate mask mapping -- stamp a display-space
                         # gaussian at the cursor instead of a flat block.
-                        from raw_dodge_burn import circular_brush_falloff
+                        from raw_adjustments.dodge_burn import circular_brush_falloff
 
                         r_disp = max(2.0, float(panel.dodge_burn_brush_radius()))
                         d_disp = circular_brush_falloff(
@@ -724,20 +724,20 @@ class AdjustPart4:
         plus a cheap fingerprint for stage-cache keys; XMP save serializes
         PNG separately (see ``_on_adjust_panel_editing_finished``).
         """
-        from raw_dodge_burn import (
+        from raw_adjustments.dodge_burn import (
             DEFAULT_STRENGTH,
             MASK_KEY,
             MASK_OBJ_KEY,
             STRENGTH_KEY,
             mask_stage_fingerprint,
         )
-        from raw_spot_heal import (
+        from raw_adjustments.spot_heal import (
             MASK_KEY as HEAL_MASK_KEY,
         )
-        from raw_spot_heal import (
+        from raw_adjustments.spot_heal import (
             MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
         )
-        from raw_spot_heal import mask_stage_fingerprint as heal_fingerprint
+        from raw_adjustments.spot_heal import mask_stage_fingerprint as heal_fingerprint
 
         mask = getattr(self, "_dodge_burn_mask", None)
         if mask is not None and not mask.is_empty:
@@ -855,7 +855,7 @@ class AdjustPart4:
         except Exception:
             return False
         try:
-            from raw_edit_pipeline import ai_denoise_model_present
+            from raw_adjustments.pipeline import ai_denoise_model_present
 
             return ai_denoise_model_present()
         except Exception:
@@ -869,7 +869,7 @@ class AdjustPart4:
         Ctrl/Cmd+Z restored slider state then ``_on_adjust_panel_editing_finished``
         re-serialized the still-current painted mask and undo looked broken.
         """
-        from raw_dodge_burn import MASK_KEY, deserialize_mask
+        from raw_adjustments.dodge_burn import MASK_KEY, deserialize_mask
 
         serial = str((adj or {}).get(MASK_KEY, "") or "").strip()
         mask = None
@@ -891,7 +891,7 @@ class AdjustPart4:
 
     def _apply_spot_heal_mask_from_adj(self, adj: dict | None) -> None:
         """Restore the in-memory spot-heal mask from an adjustments dict."""
-        from raw_spot_heal import MASK_KEY, deserialize_mask
+        from raw_adjustments.spot_heal import MASK_KEY, deserialize_mask
 
         serial = str((adj or {}).get(MASK_KEY, "") or "").strip()
         mask = None

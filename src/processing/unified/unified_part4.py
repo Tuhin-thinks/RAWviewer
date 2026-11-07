@@ -25,7 +25,7 @@ class UnifiedPart4:
         """
         try:
             exif_data = self.exif_extractor.extract_exif_data(file_path)
-            from raw_lens_correction import has_lens_profile
+            from raw_adjustments.lens_correction import has_lens_profile
 
             return has_lens_profile(exif_data)
         except Exception:

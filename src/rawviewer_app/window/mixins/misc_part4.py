@@ -402,7 +402,7 @@ class MiscPart4:
 
     def get_supported_extensions(self):
         """Get list of supported image file extensions."""
-        from raw_file_extensions import get_supported_extensions
+        from raw_adjustments.file_extensions import get_supported_extensions
 
         return get_supported_extensions()
 

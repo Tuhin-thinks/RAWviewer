@@ -83,8 +83,8 @@ class AdjustPart3:
         has_edit = False
         try:
             from raw_adjustments import is_default_adjustments, load_adjustments_for_file
-            from raw_dodge_burn import MASK_KEY
-            from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+            from raw_adjustments.dodge_burn import MASK_KEY
+            from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
 
             # XML parse only -- cheap. The mask blobs (base64 + PNG, at edit
             # base resolution, can be multi-MB) are decoded further below on
@@ -167,7 +167,7 @@ class AdjustPart3:
                     has_profile = processor.lens_profile_available(path)
                     profile_name = ""
                     if has_profile:
-                        from raw_lens_correction import get_lens_profile_name
+                        from raw_adjustments.lens_correction import get_lens_profile_name
                         exif_data = processor.exif_extractor.extract_exif_data(path)
                         profile_name = get_lens_profile_name(exif_data)
                     panel.set_lens_correction_available(has_profile, profile_name)
@@ -198,8 +198,8 @@ class AdjustPart3:
         """
         if adj_used is None:
             return False
-        from raw_dodge_burn import MASK_OBJ_KEY
-        from raw_spot_heal import MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY
+        from raw_adjustments.dodge_burn import MASK_OBJ_KEY
+        from raw_adjustments.spot_heal import MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY
 
         if getattr(self, "_adjust_loading_edit_wants_db", False) and adj_used.get(MASK_OBJ_KEY) is None:
             return False
@@ -554,7 +554,7 @@ class AdjustPart3:
         ):
             return
         try:
-            from raw_lut import lut_chooser_as_shot_display_u8
+            from raw_adjustments.lut import lut_chooser_as_shot_display_u8
 
             base = getattr(self, "_adjust_preview_base_rgb_fast", None)
             if base is None:
@@ -646,8 +646,8 @@ class AdjustPart3:
             # through to a real re-render.
             with contextlib.suppress(Exception):
                 adj = self._dodge_burn_overlay_adj(adj)
-            from raw_dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
-            from raw_spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
+            from raw_adjustments.dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
+            from raw_adjustments.spot_heal import MASK_OBJ_KEY as _HEAL_MASK_OBJ_KEY
 
             keys = (set(adj) | set(last_adj)) - {_DB_MASK_OBJ_KEY, _HEAL_MASK_OBJ_KEY}
             for k in keys:
@@ -741,7 +741,7 @@ class AdjustPart3:
             if not moved:
                 return False
 
-            from raw_transform import apply_geometry
+            from raw_adjustments.transform import apply_geometry
 
             geo_adj = dict(adj)
             if getattr(self, "_crop_preview_uncropped", False):

@@ -17,9 +17,9 @@ from raw_adjustments import (
     is_pv2012_tone_slider,
     recovery_baseline_slider_hints,
 )
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
-from raw_dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
-from raw_hsl import HSL_COLOR_NAMES
+from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+from raw_adjustments.dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
+from raw_adjustments.hsl import HSL_COLOR_NAMES
 
 from .helpers import _CHANNEL_CURVE_KEYS_BY_NAME, CollapsibleSection, _qta_icon_safe, normalize_adjust_dock
 
@@ -91,7 +91,7 @@ class AdjustPart4:
         out["CropTop"] = float(t)
         out["CropBottom"] = float(b)
         out["AnamorphicRatio"] = float(getattr(self, "_anamorphic_ratio", 1.0) or 1.0)
-        from raw_lut import LUT_AMOUNT_KEY, LUT_NAME_KEY, LUT_SPACE_KEY, LUT_SPACE_REC709
+        from raw_adjustments.lut import LUT_AMOUNT_KEY, LUT_NAME_KEY, LUT_SPACE_KEY, LUT_SPACE_REC709
 
         name = str(getattr(self, "_lut_active_name", "") or "").strip()
         amt = float(getattr(self, "_lut_amount_slider", None).value()) if hasattr(self, "_lut_amount_slider") else 0.0
@@ -751,7 +751,7 @@ class AdjustPart4:
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return
         try:
-            from color_calibration import delete_camera_profile
+            from raw_adjustments.color_calibration import delete_camera_profile
 
             removed = delete_camera_profile(make, model, iso=iso)
             if not removed and iso is not None:

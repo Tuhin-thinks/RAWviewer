@@ -23,9 +23,9 @@ from raw_adjustments import (
     RECOVERY_BASELINE_KEY,
     SLIDER_SPECS,
 )
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
-from raw_dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
-from raw_hsl import HSL_COLOR_NAMES
+from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+from raw_adjustments.dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
+from raw_adjustments.hsl import HSL_COLOR_NAMES
 
 from .helpers import (
     _CHANNEL_CURVE_KEYS_BY_NAME,
@@ -131,7 +131,7 @@ class AdjustPart3:
         space_lbl.setStyleSheet(f"color: {theme.INK}; font-size: 11px;")
         space_lbl.setMinimumWidth(78)
         space_row.addWidget(space_lbl)
-        from raw_lut import LUT_SPACE_LINEAR, LUT_SPACE_REC709
+        from raw_adjustments.lut import LUT_SPACE_LINEAR, LUT_SPACE_REC709
 
         self._lut_space_combo = QComboBox()
         self._lut_space_combo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -165,8 +165,8 @@ class AdjustPart3:
         return str(item.text() or "")
 
     def _refresh_looks_list(self, select_lut: str | None = None) -> None:
-        from raw_lut import list_managed_luts
-        from raw_xmp_presets import list_managed_presets
+        from raw_adjustments.lut import list_managed_luts
+        from raw_adjustments.xmp_presets import list_managed_presets
 
         lw = getattr(self, "_looks_list", None)
         if lw is None:
@@ -248,8 +248,8 @@ class AdjustPart3:
 
     def _import_looks_paths(self, paths: list[str]) -> None:
         """Drop / import only adds to the library — click a row to apply."""
-        from raw_lut import import_cube_file
-        from raw_xmp_presets import import_xmp_preset
+        from raw_adjustments.lut import import_cube_file
+        from raw_adjustments.xmp_presets import import_xmp_preset
 
         for p in paths:
             pl = p.lower()
@@ -267,8 +267,8 @@ class AdjustPart3:
         )
 
     def _remove_look(self, name: str, kind: str) -> None:
-        from raw_lut import remove_managed_lut
-        from raw_xmp_presets import remove_managed_preset
+        from raw_adjustments.lut import remove_managed_lut
+        from raw_adjustments.xmp_presets import remove_managed_preset
 
         self._looks_ignore_item_click = True
         try:
@@ -378,8 +378,8 @@ class AdjustPart3:
         if not name:
             return
         try:
-            from raw_dodge_burn import MASK_KEY
-            from raw_xmp_presets import load_preset_adjustments
+            from raw_adjustments.dodge_burn import MASK_KEY
+            from raw_adjustments.xmp_presets import load_preset_adjustments
 
             preset = load_preset_adjustments(name)
         except Exception as exc:
@@ -390,7 +390,7 @@ class AdjustPart3:
         # Local paint stays per-image (same as copy/paste settings).
         preset.pop(MASK_KEY, None)
         try:
-            from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+            from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
 
             preset.pop(HEAL_MASK_KEY, None)
         except Exception:
@@ -531,11 +531,11 @@ class AdjustPart3:
     def set_adjustments(self, adj: dict[str, float]) -> None:
         self._mask_user_hidden = False
         self.disarm_dodge_burn()
-        from raw_dodge_burn import MASK_KEY as _db_mask_key
+        from raw_adjustments.dodge_burn import MASK_KEY as _db_mask_key
 
         self.set_dodge_burn_mask_present(bool(str((adj or {}).get(_db_mask_key, "") or "")))
         try:
-            from raw_spot_heal import MASK_KEY as _heal_mask_key
+            from raw_adjustments.spot_heal import MASK_KEY as _heal_mask_key
 
             self.set_spot_heal_mask_present(
                 bool(str((adj or {}).get(_heal_mask_key, "") or ""))
@@ -622,7 +622,7 @@ class AdjustPart3:
             )
             self._anamorphic_ratio = float(merged.get("AnamorphicRatio", 1.0) or 1.0)
             self._sync_anamorphic_buttons(self._anamorphic_ratio)
-            from raw_lut import (
+            from raw_adjustments.lut import (
                 LUT_AMOUNT_KEY,
                 LUT_NAME_KEY,
                 LUT_SPACE_REC709,

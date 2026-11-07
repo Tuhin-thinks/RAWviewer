@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from raw_tone_curve import apply_tone_curve_perceptual
+from raw_adjustments.tone_curve import apply_tone_curve_perceptual
 
 PROCESS_VERSION = "11.0"
 TONE_CURVE_NAME_2012 = "Linear"
@@ -159,7 +159,7 @@ def _damp_chroma_after_lift(
     """Edge-aware HF chroma damp after a luminance lift (shared by ratio + linear paths)."""
     import cv2
 
-    from raw_chroma_denoise import _luma_edge_weight, apply_guided_filter
+    from raw_adjustments.chroma_denoise import _luma_edge_weight, apply_guided_filter
 
     smooth_luma = apply_guided_filter(luma_2d, luma_2d, 10, 0.003)
     edge_w = _luma_edge_weight(smooth_luma.astype(np.float32), soft=0.008)
@@ -389,7 +389,7 @@ def apply_pv2012_tone_rgb(
     if preview_lite:
         y0 = np.clip(y0_raw.astype(np.float32), 0.0, None)
     else:
-        from raw_chroma_denoise import apply_guided_filter
+        from raw_adjustments.chroma_denoise import apply_guided_filter
 
         y0 = np.clip(
             apply_guided_filter(

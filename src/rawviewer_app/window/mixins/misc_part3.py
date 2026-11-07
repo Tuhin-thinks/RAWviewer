@@ -259,7 +259,7 @@ class MiscPart3:
         panel = getattr(self, "single_image_adjust_panel", None)
         if panel is None:
             return
-        from raw_auto_adjust import estimate_straighten_angle
+        from raw_adjustments.auto_adjust import estimate_straighten_angle
 
         # Estimate on a display buffer WITHOUT current CropAngle so the result
         # is an absolute straighten angle (not a residual on an already-warped
@@ -269,7 +269,7 @@ class MiscPart3:
         base = getattr(self, "_adjust_preview_base_rgb", None)
         if base is not None and hasattr(base, "shape"):
             try:
-                from raw_edit_pipeline import linear_to_display_uint8
+                from raw_adjustments.pipeline import linear_to_display_uint8
 
                 adj0 = dict(panel.get_adjustments())
                 adj0["CropAngle"] = 0.0

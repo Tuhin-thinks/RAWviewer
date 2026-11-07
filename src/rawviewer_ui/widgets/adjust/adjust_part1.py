@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
 
 import theme
 from raw_adjustments import CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, SLIDER_SPECS
-from raw_dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
+from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
 
 from .helpers import (
     _PARAMETRIC_TONE_KEYS,
@@ -471,7 +471,7 @@ class AdjustPart1:
         self.sect_noise.add_widget(ai_widget)
         self._ai_denoise_row = ai_widget
         try:
-            from raw_edit_pipeline import ai_denoise_model_present
+            from raw_adjustments.pipeline import ai_denoise_model_present
             from rawviewer_profile import ai_export_enabled
 
             ai_ok = bool(ai_export_enabled() and ai_denoise_model_present())

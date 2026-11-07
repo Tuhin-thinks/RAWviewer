@@ -72,7 +72,7 @@ class RgbGlImageItem(QGraphicsObject):
         if arr.dtype == np.uint16:
             arr = (arr / 257.0).astype(np.uint8)
         elif np.issubdtype(arr.dtype, np.floating):
-            from raw_tone_recovery import _encode_srgb8
+            from raw_adjustments.tone_recovery import _encode_srgb8
             arr = _encode_srgb8(np.clip(arr.astype(np.float32), 0.0, None))
         elif arr.dtype != np.uint8:
             arr = np.clip(arr, 0, 255).astype(np.uint8)

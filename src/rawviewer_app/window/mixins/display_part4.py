@@ -628,7 +628,7 @@ class DisplayPart4:
             if rgb_image.dtype == np.uint16:
                 rgb_image = (rgb_image / 257.0).astype(np.uint8)
             elif np.issubdtype(rgb_image.dtype, np.floating):
-                from raw_tone_recovery import _encode_srgb8
+                from raw_adjustments.tone_recovery import _encode_srgb8
                 rgb_image = _encode_srgb8(
                     np.clip(rgb_image.astype(np.float32), 0.0, None)
                 )

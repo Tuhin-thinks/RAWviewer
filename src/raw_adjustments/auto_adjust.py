@@ -177,7 +177,7 @@ def _solve_ev_for_median(median_lum: float, target_y: float) -> float:
     which is all bisection needs, and this runs on ONE scalar -- the median --
     not on the image, because a monotone map commutes with the median.
     """
-    from raw_pv2012 import _scene_to_perceptual
+    from raw_adjustments.pv2012 import _scene_to_perceptual
 
     def y_at(ev: float) -> float:
         return float(
@@ -217,7 +217,7 @@ def estimate_auto_tone(linear_rgb: np.ndarray) -> dict | None:
     ``estimate_straighten_angle``'s refuse-rather-than-guess contract.
     """
     try:
-        from raw_pv2012 import _PERCEPTUAL_WHITE, _scene_to_perceptual
+        from raw_adjustments.pv2012 import _PERCEPTUAL_WHITE, _scene_to_perceptual
 
         a = linear_rgb
         if a is None or getattr(a, "ndim", 0) != 3 or a.shape[2] < 3:

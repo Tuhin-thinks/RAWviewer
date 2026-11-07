@@ -338,7 +338,7 @@ class DisplayPart3:
             if numpy_array.dtype == np.uint16:
                 numpy_array = (numpy_array / 257.0).astype(np.uint8)
             elif np.issubdtype(numpy_array.dtype, np.floating):
-                from raw_tone_recovery import _encode_srgb8
+                from raw_adjustments.tone_recovery import _encode_srgb8
 
                 numpy_array = _encode_srgb8(
                     np.clip(numpy_array.astype(np.float32), 0.0, None)

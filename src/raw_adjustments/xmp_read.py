@@ -100,7 +100,7 @@ def _parse_point_curve_from_xmp(xmp_path: str, tag_name: str) -> str:
     """
     if not xmp_path or not os.path.isfile(xmp_path):
         return ""
-    from raw_tone_curve import serialize_tone_curve_points
+    from raw_adjustments.tone_curve import serialize_tone_curve_points
 
     points: list[tuple[float, float]] = []
     try:
@@ -207,7 +207,7 @@ def load_adjustments_from_xmp(xmp_path: str) -> dict[str, float]:
         return adj
     parsed = parse_xmp_adjustments(xmp_path)
     adj.update(parsed)
-    from raw_tone_curve import (
+    from raw_adjustments.tone_curve import (
         TONE_CURVE_BLUE_KEY,
         TONE_CURVE_GREEN_KEY,
         TONE_CURVE_RED_KEY,
@@ -225,17 +225,17 @@ def load_adjustments_from_xmp(xmp_path: str) -> dict[str, float]:
         ch = _parse_point_curve_from_xmp(xmp_path, tag)
         if ch:
             adj[key] = ch
-    from raw_dodge_burn import MASK_KEY
+    from raw_adjustments.dodge_burn import MASK_KEY
 
     mask_serial = parse_dodge_burn_mask_from_xmp(xmp_path)
     if mask_serial:
         adj[MASK_KEY] = mask_serial
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+    from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
 
     heal_serial = parse_spot_heal_mask_from_xmp(xmp_path)
     if heal_serial:
         adj[HEAL_MASK_KEY] = heal_serial
-    from raw_lut import LUT_NAME_KEY, LUT_SPACE_DEFAULT, LUT_SPACE_KEY
+    from raw_adjustments.lut import LUT_NAME_KEY, LUT_SPACE_DEFAULT, LUT_SPACE_KEY
 
     lut_name = parse_creative_lut_name_from_xmp(xmp_path)
     if lut_name:
@@ -265,7 +265,7 @@ def load_adjustments_for_file(image_path: str) -> dict[str, float]:
         adj["Temperature"] = as_shot
     if not (xmp_path and os.path.isfile(xmp_path)):
         try:
-            from color_calibration import camera_identity_for_file, get_camera_profile
+            from raw_adjustments.color_calibration import camera_identity_for_file, get_camera_profile
 
             make, model, iso_val = camera_identity_for_file(image_path)
             if make or model:
@@ -282,7 +282,7 @@ def load_adjustments_for_file(image_path: str) -> dict[str, float]:
                         adj["Tint"] = float(adj.get("Tint", 0.0)) + float(
                             prof["tint_shift"]
                         )
-                    from raw_hsl import HSL_COLOR_NAMES
+                    from raw_adjustments.hsl import HSL_COLOR_NAMES
 
                     for band in HSL_COLOR_NAMES:
                         for prof_key, adj_prefix in (
@@ -312,7 +312,7 @@ def _warn_if_profile_decode_stale(
     image_path: str,
 ) -> None:
     try:
-        from color_calibration import normalize_camera_key, profile_decode_mismatch
+        from raw_adjustments.color_calibration import normalize_camera_key, profile_decode_mismatch
 
         reason = profile_decode_mismatch(prof, image_path)
         if not reason:

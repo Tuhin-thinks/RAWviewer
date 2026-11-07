@@ -16,7 +16,7 @@ import numpy as np
 from PIL import Image
 
 from core.errors import IndexAborted
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
 from search.backends import resolve_mobileclip_backend
 from search.indexer import _bundled_resource_path, _coerce_float, semantic_embeddings_enabled
 from search.queries import CustomReverseGeocoder

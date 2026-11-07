@@ -301,7 +301,7 @@ class GpuImageViewPart2:
         try:
             import numpy as np
 
-            from raw_dodge_burn import circular_brush_falloff
+            from raw_adjustments.dodge_burn import circular_brush_falloff
 
             ri = max(2, int(np.ceil(r)))
             size = 2 * ri + 1

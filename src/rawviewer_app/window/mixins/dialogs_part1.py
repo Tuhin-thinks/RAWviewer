@@ -62,7 +62,7 @@ class DialogsPart1:
                 if self._nef_he_compressed(file_path) and long_edge >= 768:
                     return
         try:
-            from raw_file_extensions import get_supported_extensions
+            from raw_adjustments.file_extensions import get_supported_extensions
             exts = get_supported_extensions()
         except Exception:
             exts = ['.arw', '.cr2', '.nef', '.dng', '.jpg', '.jpeg', '.png']
@@ -633,8 +633,8 @@ class DialogsPart1:
         base = getattr(self, "_adjust_preview_base_rgb", None)
         if base is None or not hasattr(base, "shape"):
             return None
-        from raw_edit_pipeline import _linear_float_from_buffer
-        from raw_transform import apply_geometry
+        from raw_adjustments.pipeline import _linear_float_from_buffer
+        from raw_adjustments.transform import apply_geometry
 
         img = _linear_float_from_buffer(base)
         geo = dict(adj or {})
@@ -751,8 +751,8 @@ class DialogsPart1:
                 self.status_bar.showMessage("Auto WB needs a decoded RAW edit base -- try again in a moment", 3000)
             return
         from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
-        from raw_auto_adjust import estimate_neutral_rgb
-        from raw_edit_pipeline import _linear_float_from_buffer
+        from raw_adjustments.auto_adjust import estimate_neutral_rgb
+        from raw_adjustments.pipeline import _linear_float_from_buffer
 
         est = estimate_neutral_rgb(_linear_float_from_buffer(base))
         if est is None:

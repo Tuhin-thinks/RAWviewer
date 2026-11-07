@@ -9,7 +9,7 @@ import threading
 import time
 from collections.abc import Sequence
 
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
 from search.indexer import (
     _dnn_get_backend_name,
     _get_shared_index_executor,

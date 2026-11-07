@@ -92,7 +92,7 @@ def linear_edr_float_to_qpixmap(
     from PyQt6.QtCore import QSize, Qt
     from PyQt6.QtGui import QColorSpace
 
-    from raw_tone_recovery import encode_edr_rgbx64
+    from raw_adjustments.tone_recovery import encode_edr_rgbx64
 
     if rgb_edr is None or rgb_edr.size == 0:
         return QPixmap()
@@ -123,7 +123,7 @@ def decode_raw_edr_pixmap(
     """Decode RAW with linear 16-bit pipeline and build macOS EDR QPixmap."""
     if not use_raw_edr_for_display():
         return None
-    from raw_tone_recovery import decode_raw_for_edr_rgb
+    from raw_adjustments.tone_recovery import decode_raw_for_edr_rgb
 
     apply_orientation = apply_container_orientation_to_array
     rgb_edr = decode_raw_for_edr_rgb(

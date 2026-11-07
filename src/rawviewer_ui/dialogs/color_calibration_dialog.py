@@ -26,7 +26,7 @@ try:
     import rawviewer_ui.theme as theme
 except ModuleNotFoundError:
     import theme as theme
-from color_calibration import (
+from raw_adjustments.color_calibration import (
     calibrate_camera_curves_and_hsl,
     camera_identity_for_file,
     save_camera_profile,
@@ -544,7 +544,7 @@ class ColorCalibrationDialog(QDialog):
 
     def _on_choose_own_file(self) -> None:
         try:
-            from raw_file_extensions import get_supported_extensions
+            from raw_adjustments.file_extensions import get_supported_extensions
 
             exts = " ".join(f"*{e}" for e in get_supported_extensions())
         except Exception:

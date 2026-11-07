@@ -8,7 +8,7 @@ import os
 from PyQt6.QtCore import QObject
 
 from image_cache import get_image_cache
-from raw_file_extensions import RAW_FILE_EXTENSIONS
+from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
 
 from .enhanced_processor import EnhancedRAWProcessor
 

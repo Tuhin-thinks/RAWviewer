@@ -213,7 +213,7 @@ class AdjustPart5:
         return f"{path}#as_shot"
 
     def _lut_thumb_space(self) -> str:
-        from raw_lut import LUT_SPACE_DEFAULT
+        from raw_adjustments.lut import LUT_SPACE_DEFAULT
 
         combo = getattr(self, "_lut_space_combo", None)
         if combo is None:
@@ -256,7 +256,7 @@ class AdjustPart5:
         timer.start(_LUT_THUMB_DEBOUNCE_MS)
 
     def _apply_cached_lut_thumbs(self) -> bool:
-        from raw_lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
+        from raw_adjustments.lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
 
         cache = getattr(self, "_lut_thumb_cache", None)
         rows = getattr(self, "_lut_thumb_rows", None) or {}
@@ -281,7 +281,7 @@ class AdjustPart5:
         return all_hit
 
     def _start_lut_thumb_worker(self) -> None:
-        from raw_lut import LUT_PREVIEW_AMOUNT, list_managed_luts
+        from raw_adjustments.lut import LUT_PREVIEW_AMOUNT, list_managed_luts
 
         display = getattr(self, "_lut_thumb_display_u8", None)
         if display is None:
@@ -301,7 +301,7 @@ class AdjustPart5:
         QThreadPool.globalInstance().start(worker)
 
     def _on_lut_thumbs_ready(self, token: int, previews) -> None:
-        from raw_lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
+        from raw_adjustments.lut import LUT_PREVIEW_AMOUNT, lut_preview_cache_key
 
         if int(token) != int(getattr(self, "_lut_thumb_token", 0)):
             return
