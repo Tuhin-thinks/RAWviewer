@@ -1,6 +1,6 @@
 [project]
 name = "rawviewer"
-version = "3.1.0"
+version = "3.1.1"
 description = "RAWviewer - Professional RAW Image Viewer with Semantic Search"
 requires-python = ">=3.10,<3.13"
 
