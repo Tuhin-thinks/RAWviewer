@@ -656,7 +656,7 @@ def build_windows_launcher_stub(icon_path: str | None) -> tuple[Path, Path]:
         if path.exists():
             shutil.rmtree(path, ignore_errors=True)
 
-    launcher_src = REPO_ROOT / "src" / "win_launcher.py"
+    launcher_src = REPO_ROOT / "src" / "platform_support" / "win_launcher.py"
     cmd = [
         sys.executable,
         "-m",
