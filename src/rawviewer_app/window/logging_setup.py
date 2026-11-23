@@ -76,6 +76,7 @@ class FocusGallerySwitchFilter(logging.Filter):
         "[SHARE]",
         "[CLOSE]",
         "[PROFILE]",
+        "[ORIENT]",  # RAWVIEWER_ORIENT_DEBUG=1 diagnostics (opt-in, so never noisy)
     )
 
     def filter(self, record: logging.LogRecord) -> bool:

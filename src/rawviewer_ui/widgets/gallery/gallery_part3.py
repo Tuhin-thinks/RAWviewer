@@ -73,14 +73,18 @@ class GalleryPart3:
                 total -= sizes.get(k, 0)
 
     def _store_oriented_base_pixmap(self, file_path: str, pixmap: QPixmap) -> QPixmap:
-        """Orient, cache base thumbnail, and drop stale scaled variants."""
-        oriented = self._orient_gallery_base_pixmap(file_path, pixmap)
-        if oriented is None or oriented.isNull():
+        """Cache an already display-oriented base thumbnail and drop stale scaled variants.
+
+        Callers orient first (array or pixmap path). Orienting again here applied EXIF
+        orientation twice per tile, which flipped portraits upside down whenever the
+        first pass's guard misjudged the pixels.
+        """
+        if pixmap is None or pixmap.isNull():
             return pixmap
-        self._thumbnail_cache.put((file_path, self._thumb_base_key), oriented)
+        self._thumbnail_cache.put((file_path, self._thumb_base_key), pixmap)
         self._enforce_thumbnail_cache_budget()
         self._invalidate_scaled_thumbnails_for_path(file_path)
-        return oriented
+        return pixmap
 
     def _global_cache_to_base_pixmap(self, path: str) -> QPixmap | None:
         """Pull an oriented base pixmap from the global ImageCache for gallery tiles.

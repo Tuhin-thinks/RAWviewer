@@ -105,6 +105,29 @@ def array_matches_exif_display(
         o,
         tolerance=tolerance,
     )
+def pixels_already_display_oriented(
+    width: int,
+    height: int,
+    orientation: int,
+    exif_data: dict[str, Any] | None = None,
+) -> bool:
+    """Shape-only double-rotation guard shared by the array and pixmap paths.
+
+    Compares portrait/landscape only -- never aspect ratio. Embedded previews often
+    differ in aspect from the sensor (Sony 16:9 preview vs 3:2 sensor), so an
+    aspect-ratio tolerance misreads an upright preview as unrotated and rotates it again.
+    180/mirror tags (2/3/4) do not change shape, so they only count as applied when
+    the EXIF dict says so.
+    """
+    o = int(orientation or 1)
+    ow = int((exif_data or {}).get("original_width") or 0)
+    oh = int((exif_data or {}).get("original_height") or 0)
+    if ow <= 0 or oh <= 0:
+        ow, oh = 3, 2  # Default to landscape sensor aspect ratio (matches most cameras)
+    dw, dh = exif_display_dimensions(ow, oh, o)
+    return (dh > dw) == (int(height) > int(width)) and (
+        o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data)
+    )
 def apply_container_orientation_to_array(
     image_array: np.ndarray,
     orientation: int,
@@ -128,13 +151,7 @@ def apply_container_orientation_to_array(
     # pre-rotate their preview, which is what produced the "portrait shown sideways" bug.
     # exif_display_dimensions only ever swaps landscape->portrait, so this stays correct
     # whether original_width/height were stored as sensor dims or already-display dims.
-    ow = int((exif_data or {}).get("original_width") or 0)
-    oh = int((exif_data or {}).get("original_height") or 0)
-    if ow <= 0 or oh <= 0:
-        ow, oh = 3, 2  # Default to landscape sensor aspect ratio (matches most cameras)
-
-    dw, dh = exif_display_dimensions(ow, oh, o)
-    if (dh > dw) == (h > w) and (o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data)):
+    if pixels_already_display_oriented(w, h, o, exif_data):
         import logging
         logging.getLogger(__name__).debug(
             f"apply_container_orientation_to_array: skipping orientation {o} "
@@ -208,16 +225,10 @@ def apply_container_orientation_to_pixmap(
     if orientation == 1:
         return pixmap
 
-    ow = int(exif_data.get("original_width") or 0)
-    oh = int(exif_data.get("original_height") or 0)
-    if ow > 0 and oh > 0 and pixmap_matches_exif_display(
-        pixmap.width(),
-        pixmap.height(),
-        ow,
-        oh,
-        orientation,
-        pixels_display_oriented=exif_pixels_display_oriented(exif_data),
-    ):
+    # Same shape-only guard as apply_container_orientation_to_array. Do NOT use
+    # pixmap_matches_exif_display here: its aspect tolerance re-rotated upright
+    # 16:9 portrait previews (gallery showed portraits sideways / upside down).
+    if pixels_already_display_oriented(pixmap.width(), pixmap.height(), orientation, exif_data):
         return pixmap
 
     transform = QTransform()
