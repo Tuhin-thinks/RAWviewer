@@ -58,6 +58,14 @@
 
 Full changelog: [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
+## 3.1.1 (bug fixes)
+
+A small fix release on top of 3.1.0. [Release page](https://github.com/Tuhin-thinks/RAWviewer/releases/tag/v3.1.1).
+
+- **Gallery portraits upright again**: portrait shots (notably Sony, whose 16:9 preview differs from the 3:2 sensor) no longer show sideways or upside down in the gallery. Single view was already correct. If old thumbnails still look rotated, run `clear_cache.bat` once.
+- **Windows installer builds again**: fixed the `build_windows.bat` failures that followed the source restructure, and the installed app now reports the right version and honours the Standard/Plus choice made at install time.
+- **Startup**: resolved circular imports that broke dev launches after the restructure.
+
 ## 3.1.0 (stability + performance vs 3.0.2)
 
 **3.1.0 is a stability and performance patch**, not a feature train. It is **not on `main` yet** (PR **#10** → `release/3.1.0`). GitHub Releases still ship **3.0.2**. Testers: [`testplan/TEST_PLAN_3.1.md`](testplan/TEST_PLAN_3.1.md). Notes: [`RELEASE_NOTES.md`](RELEASE_NOTES.md#version-310).
