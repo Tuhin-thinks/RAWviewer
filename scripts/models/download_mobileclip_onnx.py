@@ -122,7 +122,7 @@ def _materialize_cached_file(src: str, dst: Path) -> None:
 
 def main() -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from mobileclip_download_progress import (
+    from core.download_progress import (
         emit_installer_progress,
         make_byte_progress_tqdm,
         reset_installer_progress_state,

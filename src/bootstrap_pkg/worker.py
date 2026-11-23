@@ -143,7 +143,8 @@ class InstallWorker(QObject):
 
             # Dynamically configure build_profile.py based on install mode
             profile_val = "lite" if self.install_mode == "lite" else "full"
-            build_profile_path = os.path.join(src_dir, "build_profile.py")
+            # Must match the import the app uses: core.build_profile.
+            build_profile_path = os.path.join(src_dir, "core", "build_profile.py")
             try:
                 with open(build_profile_path, "w", encoding="utf-8") as f:
                     f.write(f'PROFILE = "{profile_val}"\n')

@@ -1,6 +1,6 @@
 [project]
 name = "rawviewer"
-version = "3.1.0"
+version = "3.1.1"
 description = "RAWviewer - Professional RAW Image Viewer with Semantic Search"
 requires-python = ">=3.10,<3.13"
 
@@ -104,9 +104,9 @@ disable_error_code = ["attr-defined", "misc", "operator", "no-untyped-call", "as
 # Platform-specific modules with missing stub coverage
 [[tool.mypy.overrides]]
 module = [
-    "platform.windows_share",
-    "platform.display_brightness",
-    "platform.win_launcher",
+    "platform_support.windows_share",
+    "platform_support.display_brightness",
+    "platform_support.win_launcher",
     "bootstrap_pkg.worker",
     "bootstrap_pkg.constants",
 ]
