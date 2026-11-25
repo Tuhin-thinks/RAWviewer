@@ -185,7 +185,7 @@ def prefer_gpu_decode_enabled() -> bool:
     # Unset: decide from the backend. Never raise -- a missing/broken torch must
     # degrade to the CPU path, not break decoding.
     try:
-        from gpu_raw_processor import detect_gpu_backend
+        from processing.raw_decode.gpu_processor import detect_gpu_backend
 
         return detect_gpu_backend() in {"pytorch_cuda", "cupy"}
     except Exception:
@@ -903,10 +903,10 @@ def finish_full_decode(
                     mp_cap,
                 )
             else:
-                import torch_bootstrap
+                from bootstrap_pkg import torch as torch_bootstrap
 
                 if torch_bootstrap.wait_for_gpu_backend_ready(timeout=2.0):
-                    from gpu_raw_processor import try_gpu_decode_from_unpacked
+                    from processing.raw_decode.gpu_processor import try_gpu_decode_from_unpacked
 
                     gpu_out = try_gpu_decode_from_unpacked(
                         unpacked, cancel_check=cancel_check, return_linear=return_linear
@@ -1118,11 +1118,11 @@ def try_fast_raw_decode(
                     # it ourselves. A timeout falls back to CPU decode below via the
                     # existing `except Exception` path, same as any other GPU-decode
                     # failure.
-                    import torch_bootstrap
+                    from bootstrap_pkg import torch as torch_bootstrap
 
                     if not torch_bootstrap.wait_for_gpu_backend_ready(timeout=10.0):
                         raise RuntimeError("GPU backend not ready within timeout")
-                    from gpu_raw_processor import try_gpu_decode_from_unpacked
+                    from processing.raw_decode.gpu_processor import try_gpu_decode_from_unpacked
 
                     gpu_out = try_gpu_decode_from_unpacked(
                         unpacked, cancel_check=cancel_check, return_linear=return_linear
