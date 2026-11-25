@@ -634,7 +634,7 @@ def _row_from_exiv2_raw_dict(raw: dict[str, str]) -> dict[str, Any]:
 def _row_from_pyexiv2(path: str) -> dict[str, Any] | None:
     """Flatten ``read_exif_raw_string_dict`` keys to Exiv2 leaf names (last segment)."""
     try:
-        from metadata_backend import read_exif_raw_string_dict
+        from metadata.backend import read_exif_raw_string_dict
     except ImportError:
         return None
     raw = read_exif_raw_string_dict(path)
@@ -654,7 +654,7 @@ def _get_focus_hint_sensor_space(path: str) -> tuple[tuple[int, int, int, int], 
         is_raw = ext in ("cr2", "cr3", "nef", "arw", "dng", "orf", "rw2", "raf")
 
         try:
-            from exifread_af import pixmap_ltwh_af_from_exifread, pixmap_ltwh_subject_cipa_from_exifread
+            from metadata.exifread_af import pixmap_ltwh_af_from_exifread, pixmap_ltwh_subject_cipa_from_exifread
 
             # Use 1000x1000 as virtual pixmap to get a normalized rect_ref
             lt_sub = pixmap_ltwh_subject_cipa_from_exifread(path, 1000, 1000)
