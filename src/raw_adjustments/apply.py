@@ -11,7 +11,7 @@ from raw_adjustments.banding import (  # moved (P2b); re-exported
 
 from .checks import is_default_adjustments, uses_recovery_tone_map, wb_reference_temperature
 from .defaults import DEFAULT_ADJUSTMENTS, _kelvin_to_rgb
-from .saved_edits import _decode_srgb_uint8_to_linear
+from .srgb import _decode_srgb_uint8_to_linear
 
 
 def _format_xmp_value(key: str, value: float) -> str:

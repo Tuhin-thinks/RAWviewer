@@ -413,7 +413,7 @@ def render_adjust_preview_uint8(
     not IEC sRGB OETF — otherwise staged preview diverges from the uncached
     path and smoke tests (and on-screen parity with settle/export) break.
     """
-    from processing.raw_decode.fast import _gamma_lut8
+    from processing.raw_decode.gamma import _gamma_lut8
     from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_adjustments.tone_curve import apply_channel_curves_encoded
 

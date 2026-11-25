@@ -553,7 +553,7 @@ def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None
     # linear slope) -- the sRGB encode lifted the deepest shadows ~3x over
     # the browse render, surfacing sensor noise ("grainy" report). One curve
     # everywhere = editor default is pixel-comparable with browse.
-    from processing.raw_decode.fast import gamma_curve16
+    from processing.raw_decode.gamma import gamma_curve16
     from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_adjustments.tone_curve import apply_channel_curves_encoded
 
@@ -635,7 +635,7 @@ def linear_to_export_uint16_srgb(img: np.ndarray, adj: dict[str, float] | None =
     BT.709-encoded rendering, tagged/treated as sRGB exactly like every
     LibRaw/dcraw-derived pipeline does.)
     """
-    from processing.raw_decode.fast import gamma_curve16
+    from processing.raw_decode.gamma import gamma_curve16
     from raw_adjustments.lut import apply_pipeline_lut_encoded, apply_pipeline_lut_linear
     from raw_adjustments.tone_curve import apply_channel_curves_encoded
 

@@ -498,7 +498,7 @@ def _gpu_gamma_lut(device, torch_mod) -> Any:
     key = str(device)
     lut = _GAMMA_LUT_GPU.get(key)
     if lut is None:
-        from processing.raw_decode.fast import gamma_curve16
+        from processing.raw_decode.gamma import gamma_curve16
 
         # 16-bit curve, indexed by a 16-bit input -> keep as int64 index
         # source; convert once to a device-resident float LUT for gather.
@@ -717,7 +717,7 @@ def _cupy_gamma_lut() -> Any:
     """CuPy-resident copy of the shared 16-bit gamma curve (see _gpu_gamma_lut)."""
     global _GAMMA_LUT_CUPY
     if _GAMMA_LUT_CUPY is None:
-        from processing.raw_decode.fast import gamma_curve16
+        from processing.raw_decode.gamma import gamma_curve16
 
         _GAMMA_LUT_CUPY = cupy.array(gamma_curve16().astype(np.float32))
     return _GAMMA_LUT_CUPY
