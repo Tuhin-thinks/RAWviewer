@@ -6,42 +6,43 @@ Rule: finish every unit in layer N before starting layer N+1. Units inside one l
 are independent and may run in parallel. A cycle unit is typed as one piece.
 
 ```text
-work units: 202 (2 cycles)
-  layer  0:  56 units,  56 modules
-  layer  1:  14 units,  14 modules
-  layer  2:  14 units,  14 modules
-  layer  3:   4 units,   4 modules
-  layer  4:   4 units,   4 modules
-  layer  5:   2 units,  55 modules
-  layer  6:  22 units,  22 modules
-  layer  7:  19 units,  19 modules
-  layer  8:   7 units,   7 modules
-  layer  9:   3 units,   3 modules
+work units: 219 (3 cycles)
+  layer  0:  61 units,  61 modules
+  layer  1:  20 units,  21 modules
+  layer  2:  17 units,  17 modules
+  layer  3:   7 units,   7 modules
+  layer  4:   8 units,   8 modules
+  layer  5:   3 units,   3 modules
+  layer  6:   1 units,  42 modules
+  layer  7:  20 units,  20 modules
+  layer  8:  15 units,  15 modules
+  layer  9:   7 units,   7 modules
   layer 10:   3 units,   3 modules
-  layer 11:   2 units,   2 modules
-  layer 12:  21 units,  28 modules
-  layer 13:  17 units,  17 modules
-  layer 14:  11 units,  11 modules
-  layer 15:   1 units,   1 modules
+  layer 11:   3 units,   3 modules
+  layer 12:   2 units,   2 modules
+  layer 13:  21 units,  28 modules
+  layer 14:  17 units,  17 modules
+  layer 15:  11 units,  11 modules
   layer 16:   1 units,   1 modules
   layer 17:   1 units,   1 modules
+  layer 18:   1 units,   1 modules
 ```
 
 ## Most imported modules (fan-in)
 
-- `common_image_loader`: 59
+- `common_image_loader`: 58
 - `core.config`: 48
-- `rawviewer_app.window.lazy`: 47
 - `rawviewer_app.window`: 47
+- `rawviewer_app.window.lazy`: 47
 - `image_cache`: 39
 - `core`: 37
 - `core.theme`: 37
 - `image_load_manager.helpers`: 27
 - `rawviewer_app.window.qt_helpers`: 24
 - `rawviewer_app.window.paths`: 23
-- `enhanced_raw_processor.extraction`: 22
 - `raw_adjustments.xmp_read`: 22
-- `raw_adjustments.checks`: 17
+- `enhanced_raw_processor.extraction`: 20
+- `raw_adjustments.checks`: 18
 - `processing.unified.helpers`: 15
 - `raw_adjustments.dodge_burn`: 15
 
@@ -73,17 +74,22 @@ work units: 202 (2 cycles)
 - L0: `processing.image`
 - L0: `processing.raw`
 - L0: `processing.raw_decode`
+- L0: `processing.raw_decode.camera_wb`
 - L0: `processing.raw_decode.exposure_clipping`
+- L0: `processing.raw_decode.gamma`
 - L0: `processing.raw_decode.gil`
 - L0: `pyi_rth_macos_process_pool`
 - L0: `pyi_rth_release_defaults`
 - L0: `pyi_rth_ssl_certs`
+- L0: `raw_adjustments.banding`
 - L0: `raw_adjustments.chroma_denoise`
 - L0: `raw_adjustments.effects`
 - L0: `raw_adjustments.file_extensions`
 - L0: `raw_adjustments.hsl`
 - L0: `raw_adjustments.lens_correction`
 - L0: `raw_adjustments.refinery_denoise`
+- L0: `raw_adjustments.shared`
+- L0: `raw_adjustments.srgb`
 - L0: `raw_adjustments.tone_curve`
 - L0: `raw_adjustments.transform`
 - L0: `rawviewer_app`
@@ -108,8 +114,14 @@ work units: 202 (2 cycles)
 - L1: `core.release_update`
 - L1: `metadata.backend`
 - L1: `metadata.histogram`
+- L1 (cycle): `processing.raw_decode.gpu_bridge`, `processing.raw_decode.gpu_processor`
+- L1: `processing.raw_decode.scunet`
 - L1: `raw_adjustments.defaults`
+- L1: `raw_adjustments.detail_enhance`
+- L1: `raw_adjustments.dodge_burn`
 - L1: `raw_adjustments.pv2012`
+- L1: `raw_adjustments.spot_heal`
+- L1: `raw_adjustments.tone_recovery`
 - L1: `rawviewer_app.core.widgets.share`
 - L1: `rawviewer_app.env`
 - L1: `rawviewer_app.signals`
@@ -120,6 +132,8 @@ work units: 202 (2 cycles)
 - L2: `bootstrap_pkg.worker`
 - L2: `metadata.subject_area`
 - L2: `raw_adjustments.auto_adjust`
+- L2: `raw_adjustments.color_calibration`
+- L2: `raw_adjustments.lut`
 - L2: `rawviewer_app.core.widgets.macos`
 - L2: `rawviewer_app.core.widgets.metadata_bar`
 - L2: `rawviewer_app.core.widgets.resize_grip`
@@ -130,122 +144,126 @@ work units: 202 (2 cycles)
 - L2: `rawviewer_ui.overlays.crop_overlay`
 - L2: `rawviewer_ui.overlays.location_map_overlay`
 - L2: `rawviewer_ui.widgets`
+- L2: `rawviewer_ui.widgets.gpu.gpu_item`
 - L2: `rawviewer_ui.widgets.tone_curve_widget`
 - L3: `bootstrap_pkg.gui`
+- L3: `raw_adjustments.checks`
 - L3: `rawviewer_app.core.widgets.confirm_dialog`
 - L3: `rawviewer_app.window.splash`
+- L3: `rawviewer_ui.widgets.adjust.helpers`
 - L3: `rawviewer_ui.widgets.filmstrip`
+- L3: `rawviewer_ui.widgets.gpu.gpu_view_part2`
 - L4: `bootstrap_pkg`
+- L4: `raw_adjustments.linear`
 - L4: `rawviewer_app.core.widgets.overlays`
 - L4: `rawviewer_app.core.widgets.task_progress_dialog`
 - L4: `rawviewer_app.core.widgets.warning_dialog`
+- L4: `rawviewer_ui.widgets.adjust.adjust_part2`
+- L4: `rawviewer_ui.widgets.adjust.adjust_part5`
+- L4: `rawviewer_ui.widgets.adjust.adjust_part6`
 - L5: `bootstrap`
-- L5 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.disk`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.keys`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.raw_decode.gpu_bridge`, `processing.raw_decode.gpu_processor`, `processing.raw_decode.scunet`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments.apply`, `raw_adjustments.checks`, `raw_adjustments.color_calibration`, `raw_adjustments.detail_enhance`, `raw_adjustments.dodge_burn`, `raw_adjustments.lut`, `raw_adjustments.pipeline`, `raw_adjustments.saved_edits`, `raw_adjustments.spot_heal`, `raw_adjustments.tone_recovery`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
-- L6: `bootstrap_pkg.splash`
-- L6: `core.burst_grouping`
-- L6: `core.memory_pressure`
-- L6: `core.upgrade_compat`
-- L6: `enhanced_raw_processor.enhanced_processor`
-- L6: `image_load_manager`
-- L6: `processing.raw_decode.pool_worker`
-- L6: `processing.unified`
-- L6: `pyi_rth_profile_defaults`
-- L6: `raw_adjustments`
-- L6: `raw_adjustments.xmp_presets`
-- L6: `rawviewer_app.core.widgets.batch_export_dialog`
-- L6: `rawviewer_app.processing._pixmap_converters`
-- L6: `rawviewer_app.processing._raw_part1`
-- L6: `rawviewer_app.services.batch`
-- L6: `rawviewer_app.viewer.session_mixin`
-- L6: `rawviewer_app.workers.workers`
-- L6: `rawviewer_ui.widgets.adjust.helpers`
-- L6: `rawviewer_ui.widgets.gallery.helpers`
-- L6: `rawviewer_ui.widgets.gpu.gpu_item`
-- L6: `rawviewer_ui.widgets.gpu.gpu_view_part1`
-- L6: `rawviewer_ui.widgets.gpu.gpu_view_part2`
-- L7: `enhanced_raw_processor.preload_manager`
-- L7: `rawviewer_app.core.widgets`
-- L7: `rawviewer_app.processing._raw_part2`
-- L7: `rawviewer_app.viewer`
-- L7: `rawviewer_app.workers`
+- L5: `raw_adjustments.apply`
+- L5: `raw_adjustments.pipeline`
+- L6 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.disk`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.keys`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments.saved_edits`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
+- L7: `bootstrap_pkg.splash`
+- L7: `core.burst_grouping`
+- L7: `core.memory_pressure`
+- L7: `core.upgrade_compat`
+- L7: `enhanced_raw_processor.enhanced_processor`
+- L7: `image_load_manager`
+- L7: `processing.raw_decode.pool_worker`
+- L7: `processing.unified`
+- L7: `pyi_rth_profile_defaults`
+- L7: `raw_adjustments`
+- L7: `raw_adjustments.xmp_presets`
+- L7: `rawviewer_app.core.widgets.batch_export_dialog`
+- L7: `rawviewer_app.processing._pixmap_converters`
+- L7: `rawviewer_app.processing._raw_part1`
+- L7: `rawviewer_app.services.batch`
+- L7: `rawviewer_app.viewer.session_mixin`
+- L7: `rawviewer_app.workers.workers`
 - L7: `rawviewer_ui.widgets.adjust.adjust_part1`
-- L7: `rawviewer_ui.widgets.adjust.adjust_part2`
-- L7: `rawviewer_ui.widgets.adjust.adjust_part3`
-- L7: `rawviewer_ui.widgets.adjust.adjust_part5`
-- L7: `rawviewer_ui.widgets.adjust.adjust_part6`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part1`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part2`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part3`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part4`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part5`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part6`
-- L7: `rawviewer_ui.widgets.gallery.gallery_part7`
-- L7: `rawviewer_ui.widgets.gpu.gpu_view`
-- L7: `search.indexer._config`
-- L8: `enhanced_raw_processor`
-- L8: `rawviewer_app.processing`
-- L8: `rawviewer_ui.dialogs.color_calibration_dialog`
-- L8: `rawviewer_ui.widgets.adjust.adjust_part4`
-- L8: `rawviewer_ui.widgets.gallery.justified_gallery`
-- L8: `rawviewer_ui.widgets.gpu`
-- L8: `search.indexer._rest`
-- L9: `rawviewer_ui.widgets.adjust.image_adjust_panel`
-- L9: `rawviewer_ui.widgets.gallery`
-- L9: `search.indexer`
-- L10: `rawviewer_ui.widgets.adjust`
-- L10: `search.backends`
-- L10: `search.engine.engine_part4`
-- L11: `rawviewer_app.window.lazy`
-- L11: `search.engine.engine_part5`
-- L12: `rawviewer_app.window.adjust_workers`
-- L12: `rawviewer_app.window.mixins.adjust_part2`
-- L12: `rawviewer_app.window.mixins.display_part1`
-- L12: `rawviewer_app.window.mixins.display_part2`
-- L12: `rawviewer_app.window.mixins.display_part4`
-- L12: `rawviewer_app.window.mixins.display_part6`
-- L12: `rawviewer_app.window.mixins.gallery_part1`
-- L12: `rawviewer_app.window.mixins.gallery_part3`
-- L12: `rawviewer_app.window.mixins.image_load_part2`
-- L12: `rawviewer_app.window.mixins.image_load_part3`
-- L12: `rawviewer_app.window.mixins.lifecycle_part2`
-- L12: `rawviewer_app.window.mixins.metadata_part1`
-- L12: `rawviewer_app.window.mixins.metadata_part2`
-- L12: `rawviewer_app.window.mixins.misc_part2`
-- L12: `rawviewer_app.window.mixins.misc_part3`
-- L12: `rawviewer_app.window.mixins.misc_part4`
-- L12: `rawviewer_app.window.mixins.navigation_part2`
-- L12: `rawviewer_app.window.mixins.settings_part1`
-- L12: `rawviewer_app.window.mixins.shortcuts_part1`
-- L12: `rawviewer_app.window.qt_helpers`
-- L12 (cycle): `search.engine`, `search.engine.engine_part1`, `search.engine.engine_part2`, `search.engine.engine_part3`, `search.engine.engine_part6`, `search.engine.engine_part7`, `search.engine.semantic_index`, `search.queries`
-- L13: `rawviewer_app.window.macos`
-- L13: `rawviewer_app.window.mixins.adjust_part1`
-- L13: `rawviewer_app.window.mixins.adjust_part3`
-- L13: `rawviewer_app.window.mixins.adjust_part4`
-- L13: `rawviewer_app.window.mixins.adjust_part5`
-- L13: `rawviewer_app.window.mixins.batch_part1`
-- L13: `rawviewer_app.window.mixins.display_part3`
-- L13: `rawviewer_app.window.mixins.gallery_part2`
-- L13: `rawviewer_app.window.mixins.gallery_part4`
-- L13: `rawviewer_app.window.mixins.gallery_part5`
-- L13: `rawviewer_app.window.mixins.image_load_part1`
-- L13: `rawviewer_app.window.mixins.lifecycle_part1`
-- L13: `rawviewer_app.window.mixins.navigation_part1`
-- L13: `rawviewer_app.window.mixins.status_part1`
-- L13: `rawviewer_app.window.mixins.status_part2`
-- L13: `rawviewer_app.window.mixins.ui_build_part1`
-- L13: `search`
-- L14: `rawviewer_app.window.mixins.dialogs_part1`
-- L14: `rawviewer_app.window.mixins.display_part5`
-- L14: `rawviewer_app.window.mixins.external_part1`
-- L14: `rawviewer_app.window.mixins.external_part2`
-- L14: `rawviewer_app.window.mixins.misc_part1`
-- L14: `rawviewer_app.window.mixins.search_part1`
-- L14: `rawviewer_app.window.mixins.search_part2`
-- L14: `rawviewer_app.window.mixins.search_part3`
-- L14: `rawviewer_app.window.mixins.search_part4`
-- L14: `rawviewer_app.window.mixins.ui_build_part2`
-- L14: `rawviewer_app.window.mixins.ui_build_part3`
-- L15: `rawviewer_app.window.mixins`
-- L16: `rawviewer_app.window.raw_image_viewer`
-- L17: `main`
+- L7: `rawviewer_ui.widgets.gallery.helpers`
+- L7: `rawviewer_ui.widgets.gpu.gpu_view_part1`
+- L8: `enhanced_raw_processor.preload_manager`
+- L8: `rawviewer_app.core.widgets`
+- L8: `rawviewer_app.processing._raw_part2`
+- L8: `rawviewer_app.viewer`
+- L8: `rawviewer_app.workers`
+- L8: `rawviewer_ui.widgets.adjust.adjust_part3`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part1`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part2`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part3`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part4`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part5`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part6`
+- L8: `rawviewer_ui.widgets.gallery.gallery_part7`
+- L8: `rawviewer_ui.widgets.gpu.gpu_view`
+- L8: `search.indexer._config`
+- L9: `enhanced_raw_processor`
+- L9: `rawviewer_app.processing`
+- L9: `rawviewer_ui.dialogs.color_calibration_dialog`
+- L9: `rawviewer_ui.widgets.adjust.adjust_part4`
+- L9: `rawviewer_ui.widgets.gallery.justified_gallery`
+- L9: `rawviewer_ui.widgets.gpu`
+- L9: `search.indexer._rest`
+- L10: `rawviewer_ui.widgets.adjust.image_adjust_panel`
+- L10: `rawviewer_ui.widgets.gallery`
+- L10: `search.indexer`
+- L11: `rawviewer_ui.widgets.adjust`
+- L11: `search.backends`
+- L11: `search.engine.engine_part4`
+- L12: `rawviewer_app.window.lazy`
+- L12: `search.engine.engine_part5`
+- L13: `rawviewer_app.window.adjust_workers`
+- L13: `rawviewer_app.window.mixins.adjust_part2`
+- L13: `rawviewer_app.window.mixins.display_part1`
+- L13: `rawviewer_app.window.mixins.display_part2`
+- L13: `rawviewer_app.window.mixins.display_part4`
+- L13: `rawviewer_app.window.mixins.display_part6`
+- L13: `rawviewer_app.window.mixins.gallery_part1`
+- L13: `rawviewer_app.window.mixins.gallery_part3`
+- L13: `rawviewer_app.window.mixins.image_load_part2`
+- L13: `rawviewer_app.window.mixins.image_load_part3`
+- L13: `rawviewer_app.window.mixins.lifecycle_part2`
+- L13: `rawviewer_app.window.mixins.metadata_part1`
+- L13: `rawviewer_app.window.mixins.metadata_part2`
+- L13: `rawviewer_app.window.mixins.misc_part2`
+- L13: `rawviewer_app.window.mixins.misc_part3`
+- L13: `rawviewer_app.window.mixins.misc_part4`
+- L13: `rawviewer_app.window.mixins.navigation_part2`
+- L13: `rawviewer_app.window.mixins.settings_part1`
+- L13: `rawviewer_app.window.mixins.shortcuts_part1`
+- L13: `rawviewer_app.window.qt_helpers`
+- L13 (cycle): `search.engine`, `search.engine.engine_part1`, `search.engine.engine_part2`, `search.engine.engine_part3`, `search.engine.engine_part6`, `search.engine.engine_part7`, `search.engine.semantic_index`, `search.queries`
+- L14: `rawviewer_app.window.macos`
+- L14: `rawviewer_app.window.mixins.adjust_part1`
+- L14: `rawviewer_app.window.mixins.adjust_part3`
+- L14: `rawviewer_app.window.mixins.adjust_part4`
+- L14: `rawviewer_app.window.mixins.adjust_part5`
+- L14: `rawviewer_app.window.mixins.batch_part1`
+- L14: `rawviewer_app.window.mixins.display_part3`
+- L14: `rawviewer_app.window.mixins.gallery_part2`
+- L14: `rawviewer_app.window.mixins.gallery_part4`
+- L14: `rawviewer_app.window.mixins.gallery_part5`
+- L14: `rawviewer_app.window.mixins.image_load_part1`
+- L14: `rawviewer_app.window.mixins.lifecycle_part1`
+- L14: `rawviewer_app.window.mixins.navigation_part1`
+- L14: `rawviewer_app.window.mixins.status_part1`
+- L14: `rawviewer_app.window.mixins.status_part2`
+- L14: `rawviewer_app.window.mixins.ui_build_part1`
+- L14: `search`
+- L15: `rawviewer_app.window.mixins.dialogs_part1`
+- L15: `rawviewer_app.window.mixins.display_part5`
+- L15: `rawviewer_app.window.mixins.external_part1`
+- L15: `rawviewer_app.window.mixins.external_part2`
+- L15: `rawviewer_app.window.mixins.misc_part1`
+- L15: `rawviewer_app.window.mixins.search_part1`
+- L15: `rawviewer_app.window.mixins.search_part2`
+- L15: `rawviewer_app.window.mixins.search_part3`
+- L15: `rawviewer_app.window.mixins.search_part4`
+- L15: `rawviewer_app.window.mixins.ui_build_part2`
+- L15: `rawviewer_app.window.mixins.ui_build_part3`
+- L16: `rawviewer_app.window.mixins`
+- L17: `rawviewer_app.window.raw_image_viewer`
+- L18: `main`

@@ -158,7 +158,19 @@
  {
   "level": 0,
   "modules": [
+   "processing.raw_decode.camera_wb"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
    "processing.raw_decode.exposure_clipping"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw_decode.gamma"
   ]
  },
  {
@@ -183,6 +195,12 @@
   "level": 0,
   "modules": [
    "pyi_rth_ssl_certs"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.banding"
   ]
  },
  {
@@ -219,6 +237,18 @@
   "level": 0,
   "modules": [
    "raw_adjustments.refinery_denoise"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.shared"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.srgb"
   ]
  },
  {
@@ -368,13 +398,50 @@
  {
   "level": 1,
   "modules": [
+   "processing.raw_decode.gpu_bridge",
+   "processing.raw_decode.gpu_processor"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "processing.raw_decode.scunet"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
    "raw_adjustments.defaults"
   ]
  },
  {
   "level": 1,
   "modules": [
+   "raw_adjustments.detail_enhance"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "raw_adjustments.dodge_burn"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
    "raw_adjustments.pv2012"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "raw_adjustments.spot_heal"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "raw_adjustments.tone_recovery"
   ]
  },
  {
@@ -440,6 +507,18 @@
  {
   "level": 2,
   "modules": [
+   "raw_adjustments.color_calibration"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "raw_adjustments.lut"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
    "rawviewer_app.core.widgets.macos"
   ]
  },
@@ -500,6 +579,12 @@
  {
   "level": 2,
   "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_item"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
    "rawviewer_ui.widgets.tone_curve_widget"
   ]
  },
@@ -507,6 +592,12 @@
   "level": 3,
   "modules": [
    "bootstrap_pkg.gui"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "raw_adjustments.checks"
   ]
  },
  {
@@ -524,13 +615,31 @@
  {
   "level": 3,
   "modules": [
+   "rawviewer_ui.widgets.adjust.helpers"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
    "rawviewer_ui.widgets.filmstrip"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_view_part2"
   ]
  },
  {
   "level": 4,
   "modules": [
    "bootstrap_pkg"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "raw_adjustments.linear"
   ]
  },
  {
@@ -552,6 +661,24 @@
   ]
  },
  {
+  "level": 4,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part2"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part5"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part6"
+  ]
+ },
+ {
   "level": 5,
   "modules": [
    "bootstrap"
@@ -559,6 +686,18 @@
  },
  {
   "level": 5,
+  "modules": [
+   "raw_adjustments.apply"
+  ]
+ },
+ {
+  "level": 5,
+  "modules": [
+   "raw_adjustments.pipeline"
+  ]
+ },
+ {
+  "level": 6,
   "modules": [
    "bootstrap_pkg.torch",
    "cache",
@@ -590,9 +729,6 @@
    "image_load_manager.manager_part3",
    "image_load_manager.worker",
    "processing.raw_decode.fast",
-   "processing.raw_decode.gpu_bridge",
-   "processing.raw_decode.gpu_processor",
-   "processing.raw_decode.scunet",
    "processing.unified.helpers",
    "processing.unified.processor",
    "processing.unified.unified_part1",
@@ -602,180 +738,111 @@
    "processing.unified.unified_part5",
    "processing.unified.unified_part6",
    "processing.unified.unified_part7",
-   "raw_adjustments.apply",
-   "raw_adjustments.checks",
-   "raw_adjustments.color_calibration",
-   "raw_adjustments.detail_enhance",
-   "raw_adjustments.dodge_burn",
-   "raw_adjustments.lut",
-   "raw_adjustments.pipeline",
    "raw_adjustments.saved_edits",
-   "raw_adjustments.spot_heal",
-   "raw_adjustments.tone_recovery",
    "raw_adjustments.xmp_read",
    "raw_adjustments.xmp_write"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "bootstrap_pkg.splash"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "core.burst_grouping"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "core.memory_pressure"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "core.upgrade_compat"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "enhanced_raw_processor.enhanced_processor"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "image_load_manager"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "processing.raw_decode.pool_worker"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "processing.unified"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "pyi_rth_profile_defaults"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "raw_adjustments"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "raw_adjustments.xmp_presets"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.core.widgets.batch_export_dialog"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.processing._pixmap_converters"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.processing._raw_part1"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.services.batch"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.viewer.session_mixin"
   ]
  },
  {
-  "level": 6,
+  "level": 7,
   "modules": [
    "rawviewer_app.workers.workers"
-  ]
- },
- {
-  "level": 6,
-  "modules": [
-   "rawviewer_ui.widgets.adjust.helpers"
-  ]
- },
- {
-  "level": 6,
-  "modules": [
-   "rawviewer_ui.widgets.gallery.helpers"
-  ]
- },
- {
-  "level": 6,
-  "modules": [
-   "rawviewer_ui.widgets.gpu.gpu_item"
-  ]
- },
- {
-  "level": 6,
-  "modules": [
-   "rawviewer_ui.widgets.gpu.gpu_view_part1"
-  ]
- },
- {
-  "level": 6,
-  "modules": [
-   "rawviewer_ui.widgets.gpu.gpu_view_part2"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "enhanced_raw_processor.preload_manager"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "rawviewer_app.core.widgets"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "rawviewer_app.processing._raw_part2"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "rawviewer_app.viewer"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "rawviewer_app.workers"
   ]
  },
  {
@@ -787,293 +854,317 @@
  {
   "level": 7,
   "modules": [
-   "rawviewer_ui.widgets.adjust.adjust_part2"
+   "rawviewer_ui.widgets.gallery.helpers"
   ]
  },
  {
   "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_view_part1"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "enhanced_raw_processor.preload_manager"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_app.core.widgets"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_app.processing._raw_part2"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_app.viewer"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_app.workers"
+  ]
+ },
+ {
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.adjust.adjust_part3"
   ]
  },
  {
-  "level": 7,
-  "modules": [
-   "rawviewer_ui.widgets.adjust.adjust_part5"
-  ]
- },
- {
-  "level": 7,
-  "modules": [
-   "rawviewer_ui.widgets.adjust.adjust_part6"
-  ]
- },
- {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part1"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part2"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part3"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part4"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part5"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part6"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gallery.gallery_part7"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "rawviewer_ui.widgets.gpu.gpu_view"
   ]
  },
  {
-  "level": 7,
+  "level": 8,
   "modules": [
    "search.indexer._config"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "enhanced_raw_processor"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "rawviewer_app.processing"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "rawviewer_ui.dialogs.color_calibration_dialog"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "rawviewer_ui.widgets.adjust.adjust_part4"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "rawviewer_ui.widgets.gallery.justified_gallery"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "rawviewer_ui.widgets.gpu"
   ]
  },
  {
-  "level": 8,
+  "level": 9,
   "modules": [
    "search.indexer._rest"
   ]
  },
  {
-  "level": 9,
+  "level": 10,
   "modules": [
    "rawviewer_ui.widgets.adjust.image_adjust_panel"
   ]
  },
  {
-  "level": 9,
+  "level": 10,
   "modules": [
    "rawviewer_ui.widgets.gallery"
   ]
  },
  {
-  "level": 9,
+  "level": 10,
   "modules": [
    "search.indexer"
   ]
  },
  {
-  "level": 10,
+  "level": 11,
   "modules": [
    "rawviewer_ui.widgets.adjust"
   ]
  },
  {
-  "level": 10,
+  "level": 11,
   "modules": [
    "search.backends"
   ]
  },
  {
-  "level": 10,
+  "level": 11,
   "modules": [
    "search.engine.engine_part4"
   ]
  },
  {
-  "level": 11,
+  "level": 12,
   "modules": [
    "rawviewer_app.window.lazy"
   ]
  },
  {
-  "level": 11,
+  "level": 12,
   "modules": [
    "search.engine.engine_part5"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.adjust_workers"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.adjust_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.display_part1"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.display_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.display_part4"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.display_part6"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.gallery_part1"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.gallery_part3"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.image_load_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.image_load_part3"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.lifecycle_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.metadata_part1"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.metadata_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.misc_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.misc_part3"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.misc_part4"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.navigation_part2"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.settings_part1"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.mixins.shortcuts_part1"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "rawviewer_app.window.qt_helpers"
   ]
  },
  {
-  "level": 12,
+  "level": 13,
   "modules": [
    "search.engine",
    "search.engine.engine_part1",
@@ -1086,187 +1177,187 @@
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.macos"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.adjust_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.adjust_part3"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.adjust_part4"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.adjust_part5"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.batch_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.display_part3"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.gallery_part2"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.gallery_part4"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.gallery_part5"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.image_load_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.lifecycle_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.navigation_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.status_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.status_part2"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "rawviewer_app.window.mixins.ui_build_part1"
   ]
  },
  {
-  "level": 13,
+  "level": 14,
   "modules": [
    "search"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.dialogs_part1"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.display_part5"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.external_part1"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.external_part2"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.misc_part1"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.search_part1"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.search_part2"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.search_part3"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.search_part4"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.ui_build_part2"
   ]
  },
  {
-  "level": 14,
+  "level": 15,
   "modules": [
    "rawviewer_app.window.mixins.ui_build_part3"
   ]
  },
  {
-  "level": 15,
+  "level": 16,
   "modules": [
    "rawviewer_app.window.mixins"
   ]
  },
  {
-  "level": 16,
+  "level": 17,
   "modules": [
    "rawviewer_app.window.raw_image_viewer"
   ]
  },
  {
-  "level": 17,
+  "level": 18,
   "modules": [
    "main"
   ]
