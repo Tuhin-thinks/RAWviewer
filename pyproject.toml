@@ -1,34 +1,54 @@
+# RAWviewer project configuration.
+#
+# Every tool section below states what it enforces and why. Rule sets are
+# deliberately narrow where the codebase is not yet compliant; the goal is to
+# tighten them over time, never to silence new code. See CLAUDE.md for the
+# coding standards these settings implement.
+
 [project]
 name = "rawviewer"
 version = "3.1.1"
 description = "RAWviewer - Professional RAW Image Viewer with Semantic Search"
+# Supported interpreter range. Code must run on the floor (3.10): no PEP 695
+# `type` aliases, no PEP 701 f-string nesting, no 3.12-only stdlib calls.
 requires-python = ">=3.10,<3.13"
 
+# ---------------------------------------------------------------------------
+# Ruff: linter and formatter (replaces flake8, isort, pyupgrade, black).
+# Run: python -m ruff check <paths>   and   python -m ruff format --check <paths>
+# ---------------------------------------------------------------------------
 [tool.ruff]
-line-length = 120
+line-length = 120            # Matches the formatter; E501 is ignored because the formatter wraps.
+# Target the floor, not 3.12: otherwise UP rules suggest syntax that 3.10 cannot run.
+# NOTE: currently "py312" (see audit). Change to "py310" when the team agrees.
 target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
-    "SIM",  # flake8-simplify
+    "E",    # pycodestyle errors: syntax-level style problems.
+    "W",    # pycodestyle warnings: whitespace, trailing spaces.
+    "F",    # pyflakes: unused imports/variables, undefined names.
+    "I",    # isort: import blocks sorted and grouped (stdlib / third-party / first-party).
+    "B",    # flake8-bugbear: likely bugs (mutable defaults, loop-variable capture, bare raise).
+    "C4",   # flake8-comprehensions: avoid needless list()/dict()/set() wrapping.
+    "UP",   # pyupgrade: modern syntax for the target version. Includes UP010
+            # (unnecessary `from __future__` imports) and UP006/UP007/UP035 (PEP 585/604 typing).
+    "SIM",  # flake8-simplify: collapsible if/else, needless bool returns, contextlib.suppress.
 ]
 ignore = [
-    "E501",  # Line length handled by formatter
-    "UP040", # PEP 695 `type` keyword requires Python 3.12; project supports 3.10+
+    "E501",  # Line length: left to the formatter.
+    "UP040", # PEP 695 `type X = ...` aliases need 3.12; the floor is 3.10, so keep TypeAlias.
 ]
+# Not enabled yet, planned: "RUF" (ruff-specific), "ANN" (annotations; overlaps mypy),
+# "D" (docstrings), "PL" (pylint), "N" (naming). Each needs a baseline pass first.
 
 [tool.ruff.format]
-quote-style = "double"
+quote-style = "double"        # Consistent with PEP 8 default and the existing code.
 indent-style = "space"
 
 [tool.ruff.lint.per-file-ignores]
+# Each entry is a file that has a justified reason, not a general exemption.
+# F401 (unused import): package __init__ files re-export names on purpose.
 "src/search/indexer/__init__.py" = ["F401"]
 "src/raw_adjustments/__init__.py" = ["F401"]
 "src/bootstrap_pkg/__init__.py" = ["F401"]
@@ -36,6 +56,7 @@ indent-style = "space"
 "src/rawviewer_ui/widgets/gpu/__init__.py" = ["F401"]
 "src/cache/image_cache/__init__.py" = ["F401"]
 "src/rawviewer_app/processing/__init__.py" = ["F401"]
+# E402 (import not at top): these modules set sys.path, env vars or Qt/OpenMP flags before importing.
 "src/main.py" = ["E402"]
 "src/raw_adjustments/pipeline.py" = ["E402"]
 "src/core/release_update.py" = ["E402"]
@@ -47,19 +68,25 @@ indent-style = "space"
 "src/rawviewer_ui/widgets/adjust/adjust_part4.py" = ["E402"]
 "src/bootstrap_pkg/helpers.py" = ["E402"]
 
+# ---------------------------------------------------------------------------
+# Mypy: static type checking.
+# Run: python -m mypy <paths>
+# ---------------------------------------------------------------------------
 [tool.mypy]
-python_version = "3.12"
-strict = true
-allow_subclassing_any = true
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+python_version = "3.12"       # Checker dialect. Should match the floor (3.10) once the team agrees.
+strict = true                 # Turns on all strict flags below plus the rest of --strict.
+allow_subclassing_any = true  # PyQt6 base classes are untyped; subclassing them must not error.
+warn_return_any = true        # Flag `return x` where x is Any in a function declared to return a concrete type.
+warn_unused_ignores = true    # A `# type: ignore` that no longer hides an error is itself an error.
+disallow_untyped_defs = true  # Every function needs parameter and return annotations.
+disallow_incomplete_defs = true  # Partially annotated signatures are errors.
 
+# Test and script code may be lighter-typed. Loosened per module, never globally.
 [[tool.mypy.overrides]]
 module = ["tests.*", "scripts.*"]
 disallow_untyped_defs = false
 
+# Third-party packages without stubs: treat as Any instead of erroring on import.
 [[tool.mypy.overrides]]
 module = [
     "PyQt6.*",
@@ -71,7 +98,10 @@ module = [
 ]
 ignore_missing_imports = true
 
-# Qt UI modules: PyQt6 lacks comprehensive stubs, so many errors are false positives
+# Qt UI and app modules. PyQt6 stubs are incomplete, so attribute and
+# union checks fire on valid code. This block disables 13 error codes for the
+# whole packages, including no-untyped-def, which is a regression risk.
+# Tracked as tech debt: narrow it per module as the code gets annotated.
 [[tool.mypy.overrides]]
 module = [
     "rawviewer_ui.*",
@@ -92,7 +122,7 @@ disable_error_code = [
     "assignment",
 ]
 
-# Autotest utilities: use dynamic attributes and PyQt6 test APIs
+# Autotest harnesses drive the UI with dynamic attributes by design.
 [[tool.mypy.overrides]]
 module = [
     "gallery_autotest",
@@ -101,7 +131,7 @@ module = [
 disallow_untyped_defs = false
 disable_error_code = ["attr-defined", "misc", "operator", "no-untyped-call", "assignment"]
 
-# Platform-specific modules with missing stub coverage
+# Platform modules with no usable stubs (Windows COM, macOS bridges, bootstrap worker).
 [[tool.mypy.overrides]]
 module = [
     "platform_support.windows_share",
@@ -113,4 +143,11 @@ module = [
 ignore_missing_imports = true
 disable_error_code = ["attr-defined", "misc", "assignment", "no-untyped-def"]
 
-
+# ---------------------------------------------------------------------------
+# Pytest: unit and regression tests.
+# Run: python -m pytest tests -q
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]         # Only collect from tests/; never from build or vendored code.
+# Tests insert src/ on sys.path themselves, so no pythonpath setting is needed.
+# QT_QPA_PLATFORM=offscreen is set inside the test modules that create widgets.
