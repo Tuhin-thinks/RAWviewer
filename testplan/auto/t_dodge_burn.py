@@ -22,9 +22,9 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     from raw_dodge_burn import (
-        DodgeBurnMask,
         MASK_KEY,
         STRENGTH_KEY,
+        DodgeBurnMask,
         apply_dodge_burn,
         deserialize_mask,
         edge_snap_region,
@@ -150,7 +150,7 @@ def main() -> int:
     check("deserialize empty string returns None", deserialize_mask("") is None)
 
     # 7. is_default_adjustments treats a present mask as non-default
-    from raw_adjustments import DEFAULT_ADJUSTMENTS, AS_SHOT_TEMP_KEY, is_default_adjustments
+    from raw_adjustments import AS_SHOT_TEMP_KEY, DEFAULT_ADJUSTMENTS, is_default_adjustments
 
     adj = dict(DEFAULT_ADJUSTMENTS)
     adj[AS_SHOT_TEMP_KEY] = 5500.0

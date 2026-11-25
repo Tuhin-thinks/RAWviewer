@@ -85,8 +85,8 @@ def main() -> int:
     # Model-key disambiguation regression: LibRaw aliases the newer body onto an
     # older body's color matrix, so rgb_cam alone must never key the verdict
     # cache -- one body's "clean" verdict would suppress checks on the other.
-    import rawpy
     import numpy as np
+    import rawpy
 
     def _model_key(path):
         with rawpy.imread(path) as r:

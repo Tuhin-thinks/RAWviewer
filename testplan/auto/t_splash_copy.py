@@ -12,8 +12,9 @@ sys.path.insert(0, SRC)
 
 class SplashCopyTests(unittest.TestCase):
     def test_version_matches_app_version(self):
-        from core.app_version import APP_VERSION
         from startup_splash import app_version_for_splash, splash_subtitle
+
+        from core.app_version import APP_VERSION
 
         self.assertEqual(app_version_for_splash(), APP_VERSION)
         sub = splash_subtitle()

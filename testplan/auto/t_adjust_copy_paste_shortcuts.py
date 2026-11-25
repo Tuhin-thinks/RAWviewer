@@ -16,8 +16,8 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
+    from PyQt6.QtCore import QObject, Qt
     from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import Qt, QObject
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
     import main as mainmod
@@ -84,7 +84,6 @@ def main() -> int:
 
     # Test 2: Paste settings via Ctrl+V
     # We must seed the clipboard so Paste is executed
-    from rawviewer_ui.widgets.adjust import _EDIT_SETTINGS_CLIPBOARD
     import rawviewer_ui.widgets.adjust as ap
     ap._EDIT_SETTINGS_CLIPBOARD = {"Exposure2012": 1.0}
 

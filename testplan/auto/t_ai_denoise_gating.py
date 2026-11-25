@@ -18,7 +18,6 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     import numpy as np
-
     from onnx_scunet import _preferred_model_name, scunet_model_path
     from raw_edit_pipeline import process_linear_edit_buffer
     from rawviewer_profile import ai_export_enabled, is_lite_build

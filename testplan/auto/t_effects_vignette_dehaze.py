@@ -19,8 +19,9 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 def main() -> int:
-    from raw_effects import apply_dehaze, apply_vignette
     from raw_edit_pipeline import _apply_display_stage, _apply_display_stage_banded
+    from raw_effects import apply_dehaze, apply_vignette
+
     from raw_adjustments import DEFAULT_ADJUSTMENTS
 
     img = np.full((200, 300, 3), 0.45, dtype=np.float32)

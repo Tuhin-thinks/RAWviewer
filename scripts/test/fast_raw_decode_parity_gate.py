@@ -57,7 +57,6 @@ def collect_files(args):
 
 def main() -> int:
     import rawpy
-
     from fast_raw_decode import (
         decode_half_from_unpacked,
         finish_full_decode,

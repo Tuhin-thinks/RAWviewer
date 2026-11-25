@@ -32,8 +32,8 @@ def main() -> int:
 
     os.environ.setdefault("RAWVIEWER_WB_SANITY", "0")
     os.environ.setdefault("RAWVIEWER_PERF", "0")
-    import numpy as np
     import fast_raw_decode as frd
+    import numpy as np
 
     results = {}
     results["unpack_ms"] = bench(lambda: frd.unpack_raw(GOLDEN))

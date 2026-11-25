@@ -47,9 +47,10 @@ def main() -> None:
     out_dir = sys.argv[2] if len(sys.argv) > 2 else "/tmp/shadow_sweep"
     os.makedirs(out_dir, exist_ok=True)
 
+    import raw_pv2012 as pv
+
     from processing.unified import UnifiedImageProcessor
     from raw_adjustments import DEFAULT_ADJUSTMENTS
-    import raw_pv2012 as pv
 
     proc = UnifiedImageProcessor()
     stem = os.path.splitext(os.path.basename(path))[0]
@@ -93,7 +94,7 @@ def main() -> None:
         return np.clip(out, 0.0, None)
 
     import raw_edit_pipeline as rep
-    from raw_edit_pipeline import process_linear_edit_buffer, linear_to_display_uint8
+    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
 
     for label, overrides in VARIANTS:
         damp_max = overrides.get("_DAMP_MAX_OVERRIDE", 0.85)

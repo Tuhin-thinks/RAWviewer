@@ -26,9 +26,9 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
+    from PyQt6.QtCore import QEvent, QPoint
+    from PyQt6.QtGui import QColor, QPixmap
     from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import QPoint, QEvent
-    from PyQt6.QtGui import QPixmap, QColor
 
     app = QApplication.instance() or QApplication([])  # noqa: F841 (keeps the app alive)
     assert app is not None

@@ -21,8 +21,8 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
-    from image_cache import ImageCache, _libraw_native_search_dirs, libraw_runtime_stamp
     import processing.unified as uip
+    from image_cache import ImageCache, _libraw_native_search_dirs, libraw_runtime_stamp
 
     stamp = libraw_runtime_stamp()
     check("libraw_runtime_stamp is non-empty when rawpy imports", bool(stamp))
@@ -39,7 +39,7 @@ def main() -> int:
         cache = ImageCache(tmp, persistent_cache_enabled=True)
         marker = os.path.join(tmp, "libraw_pixel_ver.txt")
         check("libraw stamp marker written on init", os.path.isfile(marker))
-        with open(marker, "r", encoding="utf-8") as fh:
+        with open(marker, encoding="utf-8") as fh:
             written = fh.read().strip()
         check("marker matches current stamp", written == stamp)
 
@@ -50,7 +50,7 @@ def main() -> int:
         cache.close()
         del cache
         cache2 = ImageCache(tmp, persistent_cache_enabled=True)
-        with open(marker, "r", encoding="utf-8") as fh:
+        with open(marker, encoding="utf-8") as fh:
             written2 = fh.read().strip()
         check("stale stamp is rewritten to current", written2 == stamp)
         cache2.close()

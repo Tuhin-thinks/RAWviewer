@@ -23,12 +23,12 @@ def main() -> int:
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
     from image_cache import memory_preview_max_edge
+    from processing.unified import UnifiedImageProcessor
     from raw_adjustments import (
         AS_SHOT_TEMP_KEY,
         DEFAULT_ADJUSTMENTS,
         write_xmp_adjustments_for_file,
     )
-    from processing.unified import UnifiedImageProcessor
 
     os.environ["RAWVIEWER_ENABLE_EDITING"] = "1"
     os.environ["RAWVIEWER_SIDECAR_ADJUST"] = "1"

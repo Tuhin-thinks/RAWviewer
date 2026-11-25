@@ -58,7 +58,6 @@ def _scene(
 
 
 def main() -> int:
-    from raw_adjustments import DEFAULT_ADJUSTMENTS, SLIDER_SPECS
     from raw_auto_adjust import (
         _AUTO_TONE_CLIP_FULL,
         _AUTO_TONE_CLIP_START,
@@ -72,6 +71,8 @@ def main() -> int:
         estimate_auto_tone,
     )
     from raw_pv2012 import _HIGHLIGHT_LINEAR_MAX_STOPS, _SHADOW_LINEAR_MAX_STOPS
+
+    from raw_adjustments import DEFAULT_ADJUSTMENTS, SLIDER_SPECS
 
     # --- refusals ---------------------------------------------------------
     check("all-black buffer refuses", estimate_auto_tone(np.zeros((200, 200, 3), np.float32)) is None)

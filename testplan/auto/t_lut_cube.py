@@ -18,7 +18,7 @@ def check(name, ok, detail=""):
 
 
 def _write_identity_cube(path: str, size: int = 3) -> None:
-    lines = [f"TITLE \"Identity\"", f"LUT_3D_SIZE {size}"]
+    lines = ["TITLE \"Identity\"", f"LUT_3D_SIZE {size}"]
     for b in range(size):
         for g in range(size):
             for r in range(size):
@@ -31,7 +31,7 @@ def _write_identity_cube(path: str, size: int = 3) -> None:
 
 def _write_scale_cube(path: str, scale, size: int = 5) -> None:
     sr, sg, sb = scale
-    lines = [f'TITLE "Scale"', f"LUT_3D_SIZE {size}"]
+    lines = ['TITLE "Scale"', f"LUT_3D_SIZE {size}"]
     for b in range(size):
         for g in range(size):
             for r in range(size):
@@ -45,7 +45,7 @@ def _write_scale_cube(path: str, scale, size: int = 5) -> None:
 
 
 def main() -> int:
-    from raw_lut import apply_cube_lut, apply_creative_lut, parse_cube_file
+    from raw_lut import apply_creative_lut, apply_cube_lut, parse_cube_file
 
     with tempfile.TemporaryDirectory() as td:
         cube = os.path.join(td, "id.cube")
@@ -149,8 +149,9 @@ def main() -> int:
         finally:
             _rl.luts_dir = prev_dir
 
-        from raw_adjustments import AS_SHOT_TEMP_KEY, is_default_adjustments
         from raw_lut import lut_chooser_as_shot_display_u8, lut_chooser_identity_adj
+
+        from raw_adjustments import AS_SHOT_TEMP_KEY, is_default_adjustments
 
         graded = {
             "Exposure2012": 1.75,

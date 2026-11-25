@@ -1,5 +1,5 @@
-from typing import Any, BinaryIO, Self, Tuple
 from pathlib import Path
+from typing import Any, BinaryIO, Self
 
 from numpy.typing import NDArray
 
@@ -23,7 +23,7 @@ class Resampling:
     LANCZOS: int
 
 class Image:
-    size: Tuple[int, int]
+    size: tuple[int, int]
     mode: str
     info: dict[str, Any]
 
@@ -39,13 +39,13 @@ class Image:
     def tobytes(self, encoder_name: str = ..., *args: Any) -> bytes: ...
     def resize(
         self,
-        size: Tuple[int, int],
+        size: tuple[int, int],
         resample: int = ...,
-        box: Tuple[int, int, int, int] | None = None,
+        box: tuple[int, int, int, int] | None = None,
     ) -> Image: ...
     def thumbnail(
         self,
-        size: Tuple[int, int],
+        size: tuple[int, int],
         resample: int = ...,
     ) -> None: ...
     def transpose(self, method: int) -> Image: ...

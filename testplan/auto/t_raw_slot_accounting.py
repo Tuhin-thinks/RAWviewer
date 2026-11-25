@@ -78,14 +78,14 @@ def _finish(m, task):
 
 
 def main() -> int:
-    import image_load_manager as ilm
-    from image_load_manager import Priority
-
     # Construct the REAL object first. Every other case here uses __new__ to
     # isolate the slot accounting, which meant __init__ was never exercised --
     # and a lock aliased one line before it was created shipped green, with
     # the app unable to start at all. Cheap check, caught nothing else.
     from PyQt6.QtWidgets import QApplication
+
+    import image_load_manager as ilm
+    from image_load_manager import Priority
 
     # Bound to a name: an unreferenced QApplication is collected, and
     # ImageLoadManager refuses to construct without one.

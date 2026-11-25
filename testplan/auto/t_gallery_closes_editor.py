@@ -31,7 +31,6 @@ inspection, but specifically replicates the real call order this time
 """
 import inspect
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))

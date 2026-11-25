@@ -89,11 +89,11 @@ def main() -> int:
     hub_cache = _bootstrap_hf_cache(args, repo_root)
 
     try:
+        import coremltools as ct
         import numpy as np
+        import open_clip
         import torch
         import torch.nn as nn
-        import coremltools as ct
-        import open_clip
         from mobileclip.modules.common.mobileone import reparameterize_model
     except ImportError as e:
         print("Missing dependency:", e, file=sys.stderr)

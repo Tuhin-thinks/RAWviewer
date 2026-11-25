@@ -19,6 +19,13 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
+    from raw_tone_curve import (
+        TONE_CURVE_BLUE_KEY,
+        TONE_CURVE_GREEN_KEY,
+        TONE_CURVE_RED_KEY,
+        TONE_CURVE_SERIAL_KEY,
+    )
+
     from raw_adjustments import (
         AS_SHOT_TEMP_KEY,
         DEFAULT_ADJUSTMENTS,
@@ -26,12 +33,6 @@ def main() -> int:
         read_as_shot_temperature,
         resolve_xmp_path,
         write_xmp_adjustments_for_file,
-    )
-    from raw_tone_curve import (
-        TONE_CURVE_BLUE_KEY,
-        TONE_CURVE_GREEN_KEY,
-        TONE_CURVE_RED_KEY,
-        TONE_CURVE_SERIAL_KEY,
     )
 
     tmpd = tempfile.mkdtemp()

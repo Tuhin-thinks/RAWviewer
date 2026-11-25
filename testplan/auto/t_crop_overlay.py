@@ -18,8 +18,9 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
-    from raw_adjustments import DEFAULT_ADJUSTMENTS
     from raw_transform import apply_geometry, has_geometry
+
+    from raw_adjustments import DEFAULT_ADJUSTMENTS
 
     for k in ("CropLeft", "CropRight", "CropTop", "CropBottom"):
         check(f"DEFAULT has {k}", k in DEFAULT_ADJUSTMENTS)

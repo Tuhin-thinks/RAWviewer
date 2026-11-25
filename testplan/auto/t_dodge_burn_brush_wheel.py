@@ -19,8 +19,8 @@ def main() -> int:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
-    from rawviewer_ui import gpu_image_view as giv
     from rawviewer_ui import adjust_panel as ap
+    from rawviewer_ui import gpu_image_view as giv
 
     wheel_src = inspect.getsource(giv.GpuImageView.wheelEvent)
     check(

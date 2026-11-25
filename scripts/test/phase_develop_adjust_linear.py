@@ -66,7 +66,8 @@ def test_shadow_lift_mostly_affects_dark_tones() -> None:
 
 def test_pv2012_process_version_in_xmp() -> None:
     import tempfile
-    from raw_adjustments import write_xmp_adjustments, parse_xmp_adjustments
+
+    from raw_adjustments import parse_xmp_adjustments, write_xmp_adjustments
 
     adj = dict(DEFAULT_ADJUSTMENTS)
     adj["Exposure2012"] = 0.5
@@ -144,7 +145,6 @@ def test_chroma_denoise_removes_blotchy_correlated_noise() -> None:
     coarse pass added to reach it (user report: "the color noise cannot be
     removed")."""
     import cv2
-
     from raw_chroma_denoise import _rgb_to_ycbcr, apply_chroma_denoise
 
     rng = np.random.default_rng(0)
@@ -196,7 +196,6 @@ def test_chroma_denoise_shadow_blotch_stronger_than_midtone() -> None:
     """Shadow-weighted coarse mix must cut blotchy chroma harder in deep
     shadows (where Shadows2012 lift reveals it) than on a midtone flat."""
     import cv2
-
     from raw_chroma_denoise import _rgb_to_ycbcr, apply_chroma_denoise
 
     rng = np.random.default_rng(1)
@@ -266,18 +265,18 @@ def test_luma_nr_slider_registered_and_applies_in_pipeline() -> None:
 
 
 def test_guided_filter_denoise() -> None:
-    from raw_chroma_denoise import apply_chroma_denoise, apply_luma_denoise, _rgb_to_ycbcr
+    from raw_chroma_denoise import _rgb_to_ycbcr, apply_chroma_denoise, apply_luma_denoise
 
     rng = np.random.default_rng(7)
     flat = rng.normal(0.5, 0.05, (32, 32, 3)).astype(np.float32)
-    
+
     # Test Chroma Guided Filter
     out_chroma = apply_chroma_denoise(flat.copy(), strength=1.0, method=1, preview=False)
     _, cb_noisy, cr_noisy = _rgb_to_ycbcr(flat)
     _, cb_clean, cr_clean = _rgb_to_ycbcr(out_chroma)
     assert np.std(cb_clean) < np.std(cb_noisy)
     assert np.std(cr_clean) < np.std(cr_noisy)
-    
+
     # Test Luma Guided Filter
     out_luma = apply_luma_denoise(flat.copy(), strength=1.0, method=1, preview=False)
     y_noisy, _, _ = _rgb_to_ycbcr(flat)
@@ -687,7 +686,6 @@ def test_export_tiff16_true_16bit_precision() -> None:
     import tempfile
 
     import tifffile as _tifffile
-
     from raw_edit_pipeline import export_adjusted_tiff16
 
     rng = np.random.default_rng(1)
@@ -707,7 +705,6 @@ def test_export_tiff16_embeds_xmp() -> None:
     import tempfile
 
     import tifffile as _tifffile
-
     from raw_edit_pipeline import export_adjusted_tiff16
 
     rng = np.random.default_rng(2)
@@ -771,7 +768,6 @@ def test_tone_curve_point_helpers() -> None:
         insert_tone_curve_point,
         is_identity_tone_curve_points,
         move_tone_curve_point,
-        normalize_tone_curve_points,
         remove_tone_curve_point,
         serialize_tone_curve_points,
     )
@@ -793,8 +789,9 @@ def test_tone_curve_point_helpers() -> None:
 
 
 def test_wb_dropper_solve_neutralizes_sample() -> None:
-    from raw_adjustments import solve_white_balance_from_sample
     from raw_edit_pipeline import _apply_wb_tint
+
+    from raw_adjustments import solve_white_balance_from_sample
 
     ref_temp = 5500.0
     for r, g, b in [(0.35, 0.45, 0.60), (0.50, 0.52, 0.48), (0.45, 0.50, 0.55)]:
@@ -823,8 +820,9 @@ def test_preview_stage_cache_matches_full_recompute() -> None:
     full pipeline recompute at every step of a slider "drag" sequence that
     changes one stage's keys at a time, combined multi-stage changes, a
     reset back to defaults, and a mid-sequence base-image swap."""
-    from raw_adjustments import apply_adjustments_to_linear
     from raw_edit_pipeline import PreviewStageCache, render_adjust_preview_uint8
+
+    from raw_adjustments import apply_adjustments_to_linear
 
     rng = np.random.default_rng(7)
     img = (rng.random((48, 64, 3)).astype(np.float32) * 0.6 + 0.05)

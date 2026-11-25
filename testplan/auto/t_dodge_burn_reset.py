@@ -27,8 +27,9 @@ def main() -> int:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
-    import main as mainmod
     from raw_dodge_burn import DodgeBurnMask
+
+    import main as mainmod
 
     class FakePanel:
         def __init__(self):

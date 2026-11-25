@@ -210,7 +210,7 @@ def main() -> int:
         gallery._scroll_preview_pixmap(paths[0]) is None,
     )
 
-    from PyQt6.QtGui import QPixmap, QColor
+    from PyQt6.QtGui import QColor, QPixmap
 
     hit = QPixmap(120, 80)
     hit.fill(QColor(40, 80, 120))

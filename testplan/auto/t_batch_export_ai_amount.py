@@ -16,7 +16,6 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
-    from PyQt6.QtCore import Qt
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
@@ -73,6 +72,7 @@ def main() -> int:
     # --- export_one_file override ---
     import tempfile
     import threading
+
     from rawviewer_app.services.batch import export_one_file
 
     tmp = tempfile.mkdtemp()

@@ -6,13 +6,13 @@ Handles dependency installation and executable creation.
 
 VERSION = "3.1.1"
 
+import argparse
 import os
-import subprocess
 import platform
 import shutil
-import time
+import subprocess
 import sys
-import argparse
+import time
 from pathlib import Path
 
 # Repository root (directory containing this script)
@@ -309,27 +309,27 @@ def update_macos_plist(app_path, profile: str = "full"):
     if not os.path.exists(plist_path):
         print(f"[WARNING] Info.plist not found at {plist_path}")
         return False
-        
+
     try:
         import plistlib
         with open(plist_path, 'rb') as f:
             plist = plistlib.load(f)
-            
+
         # Define supported extensions
         image_extensions = [
             'jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp', 'tif', 'tiff', 'heic',
             'cr2', 'cr3', 'nef', 'arw', 'dng', 'raf', 'orf', 'rw2', 'pef', 'srw', 'crw', 'mef', 'mrw'
         ]
-        
+
         # Add CFBundleDocumentTypes if not present
         if 'CFBundleDocumentTypes' not in plist:
             plist['CFBundleDocumentTypes'] = []
-            
+
         # Check if our document type is already defined
         doc_type_exists = any(
             doc.get('CFBundleTypeName') == 'Image File' for doc in plist['CFBundleDocumentTypes']
         )
-        
+
         if not doc_type_exists:
             doc_type = {
                 'CFBundleTypeName': 'Image File',
@@ -342,7 +342,7 @@ def update_macos_plist(app_path, profile: str = "full"):
                 'CFBundleTypeExtensions': image_extensions
             }
             plist['CFBundleDocumentTypes'].append(doc_type)
-            
+
         bundle_name = _macos_app_bundle_name(profile)
         is_standard = profile.strip().lower() in ("lite", "standard")
         # Bundle IDs kept stable (lite → Standard, default → Plus).
@@ -355,7 +355,7 @@ def update_macos_plist(app_path, profile: str = "full"):
         plist['CFBundlePackageType'] = 'APPL'
         plist['CFBundleShortVersionString'] = VERSION
         plist['CFBundleVersion'] = VERSION
-        
+
         # Add macOS permission usage descriptions
         # (Relevant if/when App Sandbox is enabled; current release is not sandboxed —
         #  file access follows normal POSIX permissions after the user picks a path.)
@@ -378,7 +378,7 @@ def update_macos_plist(app_path, profile: str = "full"):
         plist['NSAppleEventsUsageDescription'] = (
             'RAWviewer uses AppleEvents for native file dialogs when needed.'
         )
-        
+
         # macOS specific flags
         plist['LSMinimumSystemVersion'] = '13.0'
         plist['NSHighResolutionCapable'] = True
@@ -1045,13 +1045,13 @@ def _prune_built_app(exe_path: Path, profile: str) -> None:
     if platform.system() != 'Darwin':
         return
     print(f"[INFO] Starting post-build pruning for: {exe_path}")
-    
+
     # 1. Prune pycountry locales (saves ~20.0 MB)
     locales_dir = exe_path / "Contents" / "Resources" / "pycountry" / "locales"
     if locales_dir.exists():
         print(f"  Pruning pycountry locales from: {locales_dir}")
         shutil.rmtree(locales_dir, ignore_errors=True)
-        
+
     # 2. Prune unused Qt6 native frameworks (saves ~7.0 MB)
     qt_lib_dir = exe_path / "Contents" / "Frameworks" / "PyQt6" / "Qt6" / "lib"
     if qt_lib_dir.exists():
@@ -1253,7 +1253,7 @@ def main():
         if platform.system() == "Windows"
         else None
     )
-    
+
     # Try to kill any running RAWviewer.exe processes on Windows
     if platform.system() == 'Windows':
         for image in (
@@ -1274,7 +1274,7 @@ def main():
             except Exception as e:
                 print(f"[WARNING] Could not close running {image} instances: {e}")
         time.sleep(1)
-    
+
     # Clean build directory
     if os.path.exists('build') and not incremental:
         try:
@@ -1287,14 +1287,14 @@ def main():
             print(f"[WARNING] Error cleaning build directory: {e}")
     elif os.path.exists('build') and incremental:
         _build_log("Reusing existing build/ directory")
-    
+
     # Clean dist directory (try to delete specific files first)
     if os.path.exists('dist'):
         try:
             if args.keep_dist and platform.system() == "Windows" and windows_target_setup:
                 target_file = os.path.join("dist", f"{windows_target_setup}.exe")
                 if os.path.exists(target_file):
-                    print(f"Cleaning dist directory (keeping other installers)...")
+                    print("Cleaning dist directory (keeping other installers)...")
                     try:
                         os.remove(target_file)
                         print(f"  Removed {windows_target_setup}.exe")
@@ -1434,20 +1434,20 @@ def main():
     elif platform.system() == "Windows":
         add_data_args.append('--add-data "uninstall.bat;."')
         add_data_args.append('--add-data "scripts;scripts"')
-        
+
         # Prepare installer pixi.toml variants (CUDA+CuPy, DirectML, Lite).
         cuda_manifest = _prepare_windows_pixi_manifest("cuda", profile="full")
         dml_manifest = _prepare_windows_pixi_manifest("directml", profile="full")
         lite_manifest = _prepare_windows_pixi_manifest("directml", profile="lite")
-        
+
         cuda_str = str(cuda_manifest).replace("\\", "/")
         dml_str = str(dml_manifest).replace("\\", "/")
         lite_str = str(lite_manifest).replace("\\", "/")
-        
+
         add_data_args.append(f'--add-data "{cuda_str};."')
         add_data_args.append(f'--add-data "{dml_str};."')
         add_data_args.append(f'--add-data "{lite_str};."')
-        
+
         app_bundle_name = "RAWviewer_Setup"
         launcher_exe, launcher_runtime = build_windows_launcher_stub(
             icon_path if os.path.exists(icon_path) else None
@@ -1459,7 +1459,7 @@ def main():
     add_data_arg_str = " ".join(add_data_args)
 
     src_path = os.path.abspath('src')
-    
+
     cmd_base = [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
@@ -1539,7 +1539,7 @@ def main():
         for bin_path in _macos_rawpy_openmp_binaries():
             cmd_base.extend(["--add-binary", f"{bin_path}:rawpy"])
             print(f"[INFO] Bundling OpenMP LibRaw binary: {bin_path.name}")
-        
+
         # Exclude unused heavy PyQt6 modules to keep built bundle lightweight
         unused_pyqt6 = [
             "PyQt6.Qt3DAnimation", "PyQt6.Qt3DCore", "PyQt6.Qt3DExtras", "PyQt6.Qt3DInput",
@@ -1632,7 +1632,7 @@ def main():
             "--exclude-module", "tifffile",
             "--exclude-module", "huggingface_hub",
         ])
-        
+
         add_data_args.append('--add-data "src;src"')
         # AI denoise models (scunet.onnx, nafnet.onnx, rawrefinery_deep_128.onnx).
         # onnx_scunet._models_dir() resolves to src/../models, which in the built
@@ -1666,17 +1666,17 @@ def main():
             cmd_base.extend(["--runtime-hook", profile_hook])
         if os.path.isfile(release_defaults_hook):
             cmd_base.extend(["--runtime-hook", release_defaults_hook])
-        
+
     if icon_arg:
         if platform.system() == 'Windows':
             cmd_base.extend(["--icon", icon_path])
         else:
             cmd_base.extend(["--icon", icon_path])
-            
+
     # Add data
     for arg in add_data_args:
         cmd_base.extend(["--add-data", arg.split('--add-data ')[-1].strip('"')])
-        
+
     if platform.system() == 'Windows':
         cmd_base.append("src/bootstrap.py")
     else:
@@ -1715,7 +1715,7 @@ def main():
             run_command(['xattr', '-cr', str(exe_path)])
     else:
         print("[ERROR] Executable was not created!")
-        
+
     if platform.system() == 'Windows' and exe_path.exists():
         print("Build completed successfully.")
         print(f"  Installer: {exe_path}")
@@ -1728,6 +1728,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"[CRITICAL ERROR] Build script crashed: {e}")
         sys.exit(1)
-    
+
     # If main() returns None/0 but we want to check if it really succeeded
     # Actually main() doesn't return anything, so we should check for failures inside main()

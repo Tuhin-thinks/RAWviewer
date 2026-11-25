@@ -19,7 +19,6 @@ import sys
 import urllib.request
 from pathlib import Path
 
-
 MODEL_REPO = "apple/coreml-mobileclip"
 MODEL_FILES = ("mobileclip_s2_image.mlpackage", "mobileclip_s2_text.mlpackage")
 TOKENIZER_URL = "https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz"

@@ -228,9 +228,11 @@ def main() -> int:
     check("pre_tone keys include spot heal", HEAL_KEY in _PRE_TONE_KEYS)
 
     # 6. Reset must strip SpotHealMask from XMP (else gallery stays "edited")
-    from raw_adjustments import _OUR_CRS_CHILD_LOCALS, write_xmp_adjustments
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
     import tempfile
+
+    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+
+    from raw_adjustments import _OUR_CRS_CHILD_LOCALS, write_xmp_adjustments
 
     check(
         "SpotHealMask is in our CRS strip set",
@@ -239,8 +241,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         xmp = os.path.join(td, "t.xmp")
         write_xmp_adjustments(xmp, {HEAL_MASK_KEY: serial})
-        from raw_adjustments import parse_spot_heal_mask_from_xmp, is_default_adjustments
-        from raw_adjustments import load_adjustments_from_xmp
+        from raw_adjustments import is_default_adjustments, load_adjustments_from_xmp, parse_spot_heal_mask_from_xmp
 
         check(
             "heal serial round-trips into XMP",

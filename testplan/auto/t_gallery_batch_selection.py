@@ -29,10 +29,11 @@ def check(name, ok, detail=""):
 
 
 def main() -> int:
-    from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import QPoint
-    from rawviewer_ui.widgets import ThumbnailLabel
+    from PyQt6.QtWidgets import QApplication
+
     from main import RAWImageViewer, _norm_path
+    from rawviewer_ui.widgets import ThumbnailLabel
 
     app = QApplication.instance() or QApplication([])  # noqa: F841 (keeps the app alive)
     assert app is not None
@@ -234,9 +235,14 @@ def main() -> int:
 
     # --- batch_ops unit checks ----------------------------------------------
     import tempfile
+
     from rawviewer_app.services.batch import (
-        BatchFileOpSignals, BatchFileOpWorker, BatchExportWorker,
-        copy_one_file, discard_one_file, unique_destination,
+        BatchExportWorker,
+        BatchFileOpSignals,
+        BatchFileOpWorker,
+        copy_one_file,
+        discard_one_file,
+        unique_destination,
     )
 
     with tempfile.TemporaryDirectory() as tmp:

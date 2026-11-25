@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Structural tests for idle timer system - verifies code structure via AST parsing."""
 
-import os
-import sys
 import ast
 import importlib
+import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
@@ -136,7 +136,7 @@ def main() -> int:
 
     # Summary
     print(f"\n{'='*60}")
-    print(f"Total checks run: ~35")
+    print("Total checks run: ~35")
     print(f"Failures: {len(FAILURES)}")
 
     if FAILURES:

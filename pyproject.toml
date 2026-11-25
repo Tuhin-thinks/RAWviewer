@@ -21,7 +21,7 @@ requires-python = ">=3.10,<3.13"
 line-length = 120            # Matches the formatter; E501 is ignored because the formatter wraps.
 # Target the floor, not 3.12: otherwise UP rules suggest syntax that 3.10 cannot run.
 # NOTE: currently "py312" (see audit). Change to "py310" when the team agrees.
-target-version = "py312"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
