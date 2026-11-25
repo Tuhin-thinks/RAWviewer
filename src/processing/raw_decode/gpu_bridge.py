@@ -437,6 +437,7 @@ def download_for_pixmap_path(rgb_device: Any, *, as_uint16: bool = False) -> Any
     """Pinned D2H helper mirroring the ISP download path (numpy owned copy)."""
     try:
         import torch
+
         from processing.raw_decode.gpu_processor import _download_device_rgb, _workspace_for
 
         if not isinstance(rgb_device, torch.Tensor):
