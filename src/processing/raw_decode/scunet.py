@@ -287,7 +287,7 @@ class SCUNetONNX:
         for y in h_idx_list:
             for x in w_idx_list:
                 if cancel_check is not None and cancel_check():
-                    from raw_adjustments.pipeline import ExportCancelled
+                    from core.errors import ExportCancelled
 
                     raise ExportCancelled()
 

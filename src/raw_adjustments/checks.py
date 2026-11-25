@@ -112,8 +112,7 @@ def read_as_shot_temperature(image_path: str) -> float:
         try:
             # Imported lazily: a module-level import of processing.* here creates
             # a cycle (processing -> common_image_loader -> raw_adjustments -> processing).
-            from enhanced_raw_processor.extraction import _rawpy_global_lock
-            from processing.raw_decode.gil import rawpy_imread_warm
+            from processing.raw_decode.gil import _rawpy_global_lock, rawpy_imread_warm
 
             with _rawpy_global_lock:
                 raw_ctx = rawpy_imread_warm(image_path)

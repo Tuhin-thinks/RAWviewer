@@ -19,6 +19,7 @@ buffers are retained, cold-I/O amplification is capped at WARM_BYTES.
 
 import os
 import sys
+import threading
 from typing import Any
 
 
@@ -39,6 +40,10 @@ def _warm_bytes() -> int:
     except ValueError:
         mb = float(default_mb)
     return max(0, int(mb * 1024 * 1024))
+
+
+# Serialises rawpy/LibRaw calls process-wide. Shared object: extraction re-exports it.
+_rawpy_global_lock = threading.Lock()
 
 
 def rawpy_imread_warm(file_path: str) -> Any:
