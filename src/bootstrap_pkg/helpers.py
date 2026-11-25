@@ -283,7 +283,7 @@ def _run_logged_subprocess(cmd, cwd, log, cancelled, progress_hook=None) -> int 
             process.stdout.close()
 
 
-def _run_subprocess_with_retry(cmd, cwd, log, label, cancelled, progress_hook=None) -> int | None:
+def _run_subprocess_with_retry(cmd, cwd, log, label: str, cancelled, progress_hook=None) -> int | None:
     last_code = 1
     for attempt in range(1, DOWNLOAD_RETRIES + 1):
         if cancelled():

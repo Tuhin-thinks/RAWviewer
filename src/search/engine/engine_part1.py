@@ -77,7 +77,7 @@ class EnginePart1:
         }
     )
 
-    def __init__(self, db_path: str | None = None, model_name: str | None = None):
+    def __init__(self, db_path: str | None = None, model_name: str | None = None) -> None:
         if db_path is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
             os.makedirs(cache_dir, exist_ok=True)
@@ -221,7 +221,7 @@ class EnginePart1:
                 self._model_name = "unknown"
         return self._model_name
 
-    def _init_db_if_needed(self):
+    def _init_db_if_needed(self) -> None:
         self._model = None
         self._reverse_geocoder: CustomReverseGeocoder | Literal[False] | None = None
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=60.0)

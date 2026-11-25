@@ -22,7 +22,7 @@ from .helpers import (
 
 
 class UnifiedPart1:
-    def __init__(self):
+    def __init__(self) -> None:
         self.cache = get_image_cache()
         self.thumbnail_extractor = ThumbnailExtractor()
         self.exif_extractor = EXIFExtractor()

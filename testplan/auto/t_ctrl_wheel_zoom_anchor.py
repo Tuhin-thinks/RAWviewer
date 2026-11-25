@@ -12,13 +12,13 @@ FAILURES = []
 TOL_PX = 2.0
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
-def ctrl_wheel(view, pos, notches_up=True, count=1):
+def ctrl_wheel(view, pos, notches_up: bool = True, count: int = 1) -> None:
     from PyQt6.QtCore import QPoint, QPointF, Qt
     from PyQt6.QtGui import QWheelEvent
 

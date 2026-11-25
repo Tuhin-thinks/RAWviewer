@@ -17,7 +17,7 @@ BASELINE = os.path.join(os.path.dirname(__file__), "..", "baselines", "perf_base
 TOLERANCE = 1.25  # fail if slower than baseline * 1.25
 
 
-def bench(fn, n=3) -> float:
+def bench(fn, n: int = 3) -> float:
     best = float("inf")
     for _ in range(n):
         t0 = time.perf_counter()

@@ -122,7 +122,7 @@ class EnginePart7:
         fmt_hints = self._FORMAT_HINT_FILENAME_TOKENS
 
         @staticmethod
-        def _loose_place_to_city(m):
+        def _loose_place_to_city(m) -> str:
             place = m.group(1).strip()
             if not re.search(r"\s", place):
                 token = place.lower().lstrip(".")
@@ -131,7 +131,7 @@ class EnginePart7:
             return f"city:{'_'.join(place.split())}"
 
         @staticmethod
-        def _loose_place_to_country(m):
+        def _loose_place_to_country(m) -> str:
             place = m.group(1).strip()
             if not re.search(r"\s", place):
                 token = place.lower().lstrip(".")

@@ -125,7 +125,7 @@ class BatchFileOpWorker(QRunnable):
         mode: str = "copy",
         signals: BatchFileOpSignals | None = None,
         cancel_event: threading.Event | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.paths = list(paths)
         self.dest_dir = dest_dir
@@ -356,7 +356,7 @@ class BatchExportWorker(QRunnable):
         name_suffix: str = "_edited",
         use_ai_denoise: bool = False,
         ai_amount: float | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.paths = list(paths)
         self.dest_dir = dest_dir

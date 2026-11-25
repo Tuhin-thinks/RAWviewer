@@ -10,7 +10,7 @@ from core import theme
 class ResizeGripIndicator(QWidget):
     """Bottom-right resize hint for frameless windows (overlay, not app chrome)."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setFixedSize(16, 16)
         self._hint_visible = False
@@ -28,7 +28,7 @@ class ResizeGripIndicator(QWidget):
     def _viewer(self):
         return self.parent()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         viewer = self._viewer()
         if (
             viewer is not None
@@ -39,29 +39,29 @@ class ResizeGripIndicator(QWidget):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         viewer = self._viewer()
         if viewer is not None and hasattr(viewer, "_continue_resize_drag") and viewer._continue_resize_drag(event):
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         viewer = self._viewer()
         if viewer is not None and hasattr(viewer, "_finish_resize_drag") and viewer._finish_resize_drag():
             event.accept()
             return
         super().mouseReleaseEvent(event)
 
-    def enterEvent(self, event):
+    def enterEvent(self, event) -> None:
         self.set_hint_visible(True)
         super().enterEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event) -> None:
         self.set_hint_visible(False)
         super().leaveEvent(event)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         if not self._hint_visible:
             return
         painter = QPainter(self)

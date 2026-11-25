@@ -55,12 +55,12 @@ _already_adjusted_ids: dict[int, weakref.ref] = {}
 _already_adjusted_lock = threading.Lock()
 
 
-def mark_array_as_already_adjusted(arr):
+def mark_array_as_already_adjusted(arr) -> None:
     if arr is None:
         return
     key = id(arr)
 
-    def _drop(_ref, _key=key):
+    def _drop(_ref, _key=key) -> None:
         with _already_adjusted_lock:
             _already_adjusted_ids.pop(_key, None)
 

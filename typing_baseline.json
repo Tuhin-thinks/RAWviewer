@@ -2,35 +2,35 @@
   "schema": 1,
   "command": "mypy --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases src scripts testplan tests build.py",
   "totals": {
-    "errors": 9371,
+    "errors": 8333,
     "any": 258,
     "type_ignore": 37,
     "by_code": {
-      "attr-defined": 4878,
-      "no-untyped-call": 1377,
-      "no-untyped-def": 1319,
+      "attr-defined": 4886,
+      "no-untyped-def": 1187,
+      "no-untyped-call": 437,
       "no-any-return": 255,
-      "assignment": 233,
+      "assignment": 238,
       "type-arg": 190,
       "misc": 177,
-      "union-attr": 155,
+      "arg-type": 168,
       "has-type": 150,
-      "arg-type": 138,
       "call-arg": 136,
-      "var-annotated": 116,
+      "var-annotated": 134,
+      "union-attr": 132,
       "call-overload": 96,
       "operator": 41,
-      "unused-ignore": 25,
+      "unused-ignore": 26,
       "override": 18,
       "index": 17,
       "name-defined": 13,
       "method-assign": 11,
       "return-value": 6,
       "comparison-overlap": 6,
-      "untyped-decorator": 6,
       "func-returns-value": 4,
       "no-redef": 2,
-      "valid-type": 2
+      "valid-type": 2,
+      "exit-return": 1
     }
   },
   "files": {
@@ -39,8 +39,8 @@
       "assignment": 4,
       "attr-defined": 2,
       "no-any-return": 1,
-      "no-untyped-call": 8,
-      "no-untyped-def": 5,
+      "no-untyped-call": 7,
+      "no-untyped-def": 2,
       "operator": 1,
       "unused-ignore": 1
     },
@@ -57,7 +57,7 @@
       "no-untyped-def": 1
     },
     "scripts/models/download_mobileclip_onnx.py": {
-      "no-untyped-def": 4
+      "no-untyped-def": 3
     },
     "scripts/models/export_mobileclip2_coreml.py": {
       "no-untyped-def": 2
@@ -78,31 +78,24 @@
     },
     "scripts/tools/shadow_tuning_render.py": {
       "index": 1,
-      "no-untyped-call": 1,
       "union-attr": 1
     },
     "scripts/tools/shadow_tuning_sweep.py": {
       "index": 1,
-      "no-untyped-call": 2,
-      "no-untyped-def": 1,
+      "no-untyped-def": 2,
       "union-attr": 1
     },
     "scripts/typing/ledger.py": {
       "assignment": 1
     },
-    "src/bootstrap_pkg/__init__.py": {
-      "no-untyped-call": 1
-    },
     "src/bootstrap_pkg/constants.py": {
       "attr-defined": 1
     },
     "src/bootstrap_pkg/gui.py": {
-      "arg-type": 1,
-      "assignment": 3,
-      "attr-defined": 4,
+      "assignment": 4,
+      "attr-defined": 10,
       "method-assign": 3,
-      "no-untyped-call": 6,
-      "no-untyped-def": 15
+      "no-untyped-def": 3
     },
     "src/bootstrap_pkg/helpers.py": {
       "no-untyped-def": 10,
@@ -114,21 +107,20 @@
     "src/bootstrap_pkg/worker.py": {
       "attr-defined": 1,
       "call-arg": 4,
-      "no-untyped-def": 3
+      "no-untyped-def": 2
     },
     "src/cache/disk.py": {
       "arg-type": 1,
       "assignment": 3,
       "no-any-return": 2,
-      "no-untyped-call": 14,
-      "no-untyped-def": 5,
+      "no-untyped-call": 11,
+      "no-untyped-def": 1,
       "var-annotated": 1
     },
     "src/cache/image_cache/__init__.py": {
       "arg-type": 1,
       "assignment": 1,
-      "misc": 6,
-      "no-untyped-def": 1
+      "misc": 6
     },
     "src/cache/image_cache/core.py": {
       "assignment": 11,
@@ -152,8 +144,8 @@
     },
     "src/cache/metadata.py": {
       "assignment": 1,
-      "no-untyped-call": 6,
-      "no-untyped-def": 3
+      "no-untyped-call": 5,
+      "no-untyped-def": 1
     },
     "src/common_image_loader/__init__.py": {
       "no-untyped-def": 2
@@ -259,8 +251,8 @@
       "arg-type": 3,
       "attr-defined": 4,
       "call-overload": 1,
-      "no-untyped-call": 5,
-      "no-untyped-def": 12,
+      "no-untyped-call": 2,
+      "no-untyped-def": 3,
       "operator": 22
     },
     "src/image_load_manager/__init__.py": {
@@ -284,7 +276,7 @@
     },
     "src/image_load_manager/manager_part2.py": {
       "attr-defined": 90,
-      "no-untyped-def": 3,
+      "no-untyped-def": 1,
       "type-arg": 3,
       "var-annotated": 2
     },
@@ -292,8 +284,7 @@
       "arg-type": 1,
       "attr-defined": 93,
       "misc": 1,
-      "no-untyped-call": 2,
-      "no-untyped-def": 10,
+      "no-untyped-def": 5,
       "type-arg": 7,
       "var-annotated": 1
     },
@@ -301,13 +292,13 @@
       "assignment": 1,
       "call-overload": 1,
       "no-any-return": 1,
-      "no-untyped-call": 5,
-      "no-untyped-def": 8,
+      "no-untyped-call": 1,
+      "no-untyped-def": 6,
       "type-arg": 1
     },
     "src/main.py": {
       "attr-defined": 3,
-      "no-untyped-call": 12,
+      "no-untyped-call": 9,
       "unused-ignore": 1
     },
     "src/metadata/backend.py": {
@@ -317,16 +308,15 @@
     },
     "src/metadata/histogram.py": {
       "arg-type": 3,
-      "no-untyped-def": 8,
-      "union-attr": 2
+      "assignment": 1,
+      "no-untyped-def": 7
     },
     "src/nav_autotest.py": {
       "arg-type": 8,
       "assignment": 3,
       "attr-defined": 15,
       "index": 3,
-      "no-untyped-call": 5,
-      "no-untyped-def": 12,
+      "no-untyped-def": 3,
       "operator": 9
     },
     "src/platform_support/display_brightness.py": {
@@ -363,18 +353,17 @@
       "no-untyped-def": 4
     },
     "src/processing/raw_decode/gpu_processor.py": {
+      "attr-defined": 2,
+      "exit-return": 1,
       "index": 2,
       "no-any-return": 7,
-      "no-untyped-call": 1,
       "no-untyped-def": 16,
-      "type-arg": 5,
-      "union-attr": 2
+      "type-arg": 5
     },
     "src/processing/raw_decode/scunet.py": {
       "attr-defined": 2,
       "no-any-return": 2,
-      "no-untyped-call": 2,
-      "no-untyped-def": 3,
+      "no-untyped-def": 2,
       "return-value": 1,
       "type-arg": 1,
       "var-annotated": 2
@@ -392,7 +381,7 @@
       "attr-defined": 4,
       "no-any-return": 1,
       "no-untyped-call": 3,
-      "no-untyped-def": 6,
+      "no-untyped-def": 5,
       "type-arg": 3
     },
     "src/processing/unified/unified_part2.py": {
@@ -412,8 +401,7 @@
     },
     "src/processing/unified/unified_part5.py": {
       "attr-defined": 30,
-      "no-any-return": 6,
-      "no-untyped-call": 1
+      "no-any-return": 6
     },
     "src/processing/unified/unified_part6.py": {
       "attr-defined": 20,
@@ -424,7 +412,7 @@
       "assignment": 2,
       "attr-defined": 74,
       "no-any-return": 15,
-      "no-untyped-call": 3,
+      "no-untyped-call": 2,
       "no-untyped-def": 2
     },
     "src/pyi_rth_ssl_certs.py": {
@@ -530,13 +518,11 @@
       "assignment": 2
     },
     "src/rawviewer_app/core/widgets/batch_export_dialog.py": {
-      "no-untyped-call": 1,
       "no-untyped-def": 2,
       "type-arg": 2
     },
     "src/rawviewer_app/core/widgets/confirm_dialog.py": {
-      "no-untyped-call": 3,
-      "no-untyped-def": 11,
+      "no-untyped-def": 9,
       "union-attr": 2
     },
     "src/rawviewer_app/core/widgets/macos.py": {
@@ -547,8 +533,8 @@
     },
     "src/rawviewer_app/core/widgets/overlays.py": {
       "no-any-return": 2,
-      "no-untyped-call": 10,
-      "no-untyped-def": 26,
+      "no-untyped-call": 1,
+      "no-untyped-def": 14,
       "type-arg": 3
     },
     "src/rawviewer_app/core/widgets/resize_grip.py": {
@@ -571,8 +557,7 @@
     "src/rawviewer_app/core/widgets/title_bar.py": {
       "attr-defined": 9,
       "method-assign": 1,
-      "no-untyped-call": 1,
-      "no-untyped-def": 7
+      "no-untyped-def": 6
     },
     "src/rawviewer_app/core/widgets/warning_dialog.py": {
       "no-untyped-def": 6
@@ -580,34 +565,30 @@
     "src/rawviewer_app/processing/_pixmap_converters.py": {
       "attr-defined": 1,
       "call-arg": 2,
-      "no-untyped-def": 6
+      "no-untyped-def": 2
     },
     "src/rawviewer_app/processing/_raw_part1.py": {
       "call-arg": 5,
-      "no-untyped-call": 6,
-      "no-untyped-def": 10
+      "no-untyped-call": 1,
+      "no-untyped-def": 5
     },
     "src/rawviewer_app/processing/_raw_part2.py": {
-      "arg-type": 2,
-      "assignment": 5,
-      "no-untyped-call": 8,
-      "no-untyped-def": 1
+      "arg-type": 1,
+      "assignment": 4,
+      "no-untyped-call": 8
     },
     "src/rawviewer_app/services/batch.py": {
       "attr-defined": 1,
       "call-arg": 2,
-      "no-untyped-call": 1,
       "type-arg": 7
     },
     "src/rawviewer_app/viewer/session_mixin.py": {
       "attr-defined": 52,
-      "no-untyped-call": 4,
-      "no-untyped-def": 6
+      "no-untyped-def": 3
     },
     "src/rawviewer_app/window/adjust_workers.py": {
       "attr-defined": 1,
       "call-arg": 7,
-      "no-untyped-call": 1,
       "type-arg": 3
     },
     "src/rawviewer_app/window/bootstrap.py": {
@@ -631,7 +612,7 @@
       "attr-defined": 72,
       "call-arg": 1,
       "no-any-return": 5,
-      "no-untyped-call": 7,
+      "no-untyped-call": 5,
       "no-untyped-def": 26,
       "union-attr": 2,
       "var-annotated": 1
@@ -645,7 +626,7 @@
     "src/rawviewer_app/window/mixins/adjust_part3.py": {
       "assignment": 4,
       "attr-defined": 53,
-      "no-untyped-call": 4,
+      "no-untyped-call": 3,
       "no-untyped-def": 6,
       "type-arg": 5
     },
@@ -684,7 +665,7 @@
       "attr-defined": 45,
       "func-returns-value": 2,
       "no-any-return": 2,
-      "no-untyped-call": 5,
+      "no-untyped-call": 3,
       "no-untyped-def": 8,
       "type-arg": 4
     },
@@ -719,7 +700,7 @@
       "attr-defined": 60,
       "has-type": 5,
       "no-any-return": 1,
-      "no-untyped-call": 3,
+      "no-untyped-call": 2,
       "no-untyped-def": 6,
       "type-arg": 3,
       "var-annotated": 2
@@ -744,7 +725,6 @@
       "attr-defined": 59,
       "call-overload": 5,
       "func-returns-value": 1,
-      "no-untyped-call": 2,
       "no-untyped-def": 15,
       "union-attr": 4,
       "unused-ignore": 2,
@@ -764,7 +744,7 @@
       "attr-defined": 89,
       "has-type": 1,
       "no-any-return": 2,
-      "no-untyped-call": 10,
+      "no-untyped-call": 9,
       "no-untyped-def": 12,
       "type-arg": 6,
       "var-annotated": 5
@@ -817,14 +797,13 @@
       "arg-type": 1,
       "attr-defined": 106,
       "has-type": 8,
-      "no-untyped-call": 1,
       "no-untyped-def": 3
     },
     "src/rawviewer_app/window/mixins/image_load_part3.py": {
       "assignment": 1,
       "attr-defined": 90,
       "has-type": 10,
-      "no-untyped-call": 4,
+      "no-untyped-call": 2,
       "no-untyped-def": 17
     },
     "src/rawviewer_app/window/mixins/lifecycle_part1.py": {
@@ -857,7 +836,7 @@
       "attr-defined": 29,
       "has-type": 1,
       "no-any-return": 3,
-      "no-untyped-call": 5,
+      "no-untyped-call": 4,
       "no-untyped-def": 13,
       "type-arg": 2,
       "union-attr": 2
@@ -985,7 +964,7 @@
       "assignment": 1,
       "attr-defined": 132,
       "call-overload": 15,
-      "no-untyped-call": 19,
+      "no-untyped-call": 12,
       "no-untyped-def": 11,
       "union-attr": 7
     },
@@ -1030,8 +1009,8 @@
       "assignment": 5,
       "call-arg": 3,
       "call-overload": 1,
-      "no-untyped-call": 6,
-      "no-untyped-def": 7,
+      "no-untyped-call": 5,
+      "no-untyped-def": 4,
       "type-arg": 1,
       "union-attr": 12
     },
@@ -1041,7 +1020,6 @@
       "call-arg": 1,
       "call-overload": 2,
       "no-any-return": 2,
-      "no-untyped-call": 2,
       "no-untyped-def": 4
     },
     "src/rawviewer_ui/dialogs/mobileclip_download_dialog.py": {
@@ -1090,7 +1068,7 @@
       "attr-defined": 69,
       "call-arg": 29,
       "call-overload": 8,
-      "no-untyped-call": 9,
+      "no-untyped-call": 1,
       "no-untyped-def": 1
     },
     "src/rawviewer_ui/widgets/adjust/adjust_part2.py": {
@@ -1100,7 +1078,6 @@
       "attr-defined": 44,
       "name-defined": 1,
       "no-any-return": 1,
-      "no-untyped-call": 3,
       "no-untyped-def": 3
     },
     "src/rawviewer_ui/widgets/adjust/adjust_part4.py": {
@@ -1229,20 +1206,19 @@
       "misc": 5
     },
     "src/rawviewer_ui/widgets/gpu/gpu_item.py": {
-      "arg-type": 1,
+      "assignment": 1,
       "call-overload": 1,
-      "no-untyped-call": 2,
-      "no-untyped-def": 14,
+      "no-untyped-call": 1,
+      "no-untyped-def": 13,
       "override": 3,
       "type-arg": 1,
-      "union-attr": 24,
-      "unused-ignore": 1
+      "union-attr": 5,
+      "unused-ignore": 2
     },
     "src/rawviewer_ui/widgets/gpu/gpu_view.py": {
       "assignment": 2,
       "call-arg": 10,
       "misc": 3,
-      "no-untyped-call": 3,
       "no-untyped-def": 1,
       "union-attr": 3
     },
@@ -1271,11 +1247,12 @@
       "override": 4
     },
     "src/search/backends.py": {
+      "arg-type": 2,
       "assignment": 6,
       "call-overload": 1,
       "misc": 1,
-      "no-untyped-call": 14,
-      "no-untyped-def": 19,
+      "no-untyped-call": 11,
+      "no-untyped-def": 18,
       "type-arg": 1,
       "var-annotated": 1
     },
@@ -1283,8 +1260,7 @@
       "assignment": 1,
       "attr-defined": 3,
       "no-any-return": 3,
-      "no-untyped-call": 1,
-      "no-untyped-def": 8
+      "no-untyped-def": 7
     },
     "src/search/engine/engine_part2.py": {
       "arg-type": 3,
@@ -1336,8 +1312,8 @@
       "assignment": 2,
       "attr-defined": 2,
       "no-any-return": 1,
-      "no-untyped-call": 11,
-      "no-untyped-def": 14,
+      "no-untyped-call": 5,
+      "no-untyped-def": 15,
       "type-arg": 1
     },
     "src/search/queries.py": {
@@ -1346,67 +1322,58 @@
       "type-arg": 4
     },
     "testplan/auto/t_adjust_copy_paste_shortcuts.py": {
+      "assignment": 1,
       "attr-defined": 1,
-      "no-untyped-call": 18,
-      "no-untyped-def": 13,
-      "var-annotated": 1
+      "no-untyped-def": 8,
+      "var-annotated": 2
     },
     "testplan/auto/t_adjust_loading_overlay.py": {
-      "no-untyped-call": 9,
-      "no-untyped-def": 7,
-      "var-annotated": 1
+      "no-untyped-call": 2,
+      "no-untyped-def": 4,
+      "var-annotated": 2
     },
     "testplan/auto/t_adjust_panel_dock.py": {
-      "no-untyped-call": 19,
-      "no-untyped-def": 5,
+      "no-untyped-def": 2,
       "var-annotated": 2
     },
     "testplan/auto/t_adjust_section_order.py": {
-      "no-untyped-call": 1,
       "no-untyped-def": 1,
       "type-arg": 1
     },
     "testplan/auto/t_adjust_workflow_restore.py": {
-      "no-untyped-call": 5,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_ai_denoise_amount.py": {
-      "no-untyped-call": 17,
-      "no-untyped-def": 5,
+      "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_ai_denoise_gating.py": {
-      "no-untyped-call": 8,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
     "testplan/auto/t_ai_denoise_preview_export_golden.py": {
-      "no-untyped-call": 11,
       "no-untyped-def": 5,
       "var-annotated": 1
     },
     "testplan/auto/t_batch_export_ai_amount.py": {
-      "no-untyped-call": 14,
       "no-untyped-def": 3,
       "var-annotated": 2
     },
     "testplan/auto/t_cache_semantics.py": {
       "arg-type": 1,
-      "no-untyped-call": 7,
       "no-untyped-def": 1,
       "union-attr": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_capture_time_only_sort.py": {
       "assignment": 2,
-      "no-untyped-call": 11,
-      "no-untyped-def": 5,
+      "no-untyped-call": 2,
+      "no-untyped-def": 6,
       "return-value": 2,
-      "var-annotated": 1
+      "var-annotated": 2
     },
     "testplan/auto/t_channel_tone_curve.py": {
-      "no-untyped-call": 7,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
@@ -1415,80 +1382,73 @@
       "no-untyped-def": 3
     },
     "testplan/auto/t_cr3_preview_perf.py": {
-      "no-untyped-call": 3,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_crop_overlay.py": {
-      "no-untyped-call": 8,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_ctrl_wheel_zoom_anchor.py": {
-      "no-untyped-call": 8,
+      "no-untyped-call": 1,
       "no-untyped-def": 3,
       "var-annotated": 1
     },
     "testplan/auto/t_detail_enhance_perf.py": {
-      "no-untyped-call": 7,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_display_brightness.py": {
-      "no-untyped-call": 27,
-      "no-untyped-def": 10,
+      "no-untyped-def": 3,
       "var-annotated": 1
     },
     "testplan/auto/t_dodge_burn.py": {
-      "no-untyped-call": 36,
+      "no-untyped-call": 2,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
     "testplan/auto/t_dodge_burn_brush_wheel.py": {
       "attr-defined": 2,
-      "no-untyped-call": 5,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_dodge_burn_reset.py": {
-      "no-untyped-call": 7,
-      "no-untyped-def": 5,
-      "var-annotated": 1
+      "no-untyped-call": 2,
+      "no-untyped-def": 3,
+      "var-annotated": 2
     },
     "testplan/auto/t_dodge_burn_undo.py": {
-      "no-untyped-call": 11,
-      "no-untyped-def": 5,
-      "var-annotated": 1
+      "no-untyped-call": 2,
+      "no-untyped-def": 3,
+      "var-annotated": 2
     },
     "testplan/auto/t_edit_base_max_edge.py": {
-      "no-untyped-call": 4,
+      "arg-type": 4,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_editor_skip_unsupported.py": {
-      "no-untyped-call": 11,
-      "no-untyped-def": 5,
+      "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_exif_cache_concurrency.py": {
-      "no-untyped-call": 4,
-      "no-untyped-def": 3,
+      "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_filmstrip_editor_hidden.py": {
-      "no-untyped-call": 8,
-      "no-untyped-def": 10,
+      "no-untyped-def": 7,
       "var-annotated": 1
     },
     "testplan/auto/t_folder_fallback.py": {
       "arg-type": 4,
-      "no-untyped-call": 62,
+      "no-untyped-call": 21,
       "no-untyped-def": 8,
       "unused-ignore": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_full_decode_dedup.py": {
-      "no-untyped-call": 27,
+      "arg-type": 2,
+      "no-untyped-call": 6,
       "no-untyped-def": 5,
       "var-annotated": 1
     },
@@ -1498,92 +1458,81 @@
       "func-returns-value": 1,
       "has-type": 4,
       "misc": 1,
-      "no-untyped-call": 57,
-      "no-untyped-def": 18,
+      "no-untyped-call": 2,
+      "no-untyped-def": 14,
       "return-value": 1,
-      "var-annotated": 2
+      "var-annotated": 7
     },
     "testplan/auto/t_gallery_closes_editor.py": {
-      "no-untyped-call": 11,
+      "no-untyped-call": 3,
       "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_gallery_copy_path_button.py": {
       "arg-type": 1,
-      "no-untyped-call": 16,
+      "no-untyped-call": 4,
       "no-untyped-def": 2,
       "union-attr": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_gallery_hover_prefetch.py": {
       "attr-defined": 2,
-      "no-untyped-call": 24,
-      "no-untyped-def": 5,
-      "var-annotated": 1
+      "no-untyped-def": 4,
+      "var-annotated": 2
     },
     "testplan/auto/t_gallery_new_file.py": {
       "arg-type": 7,
-      "no-untyped-call": 22,
+      "assignment": 1,
       "no-untyped-def": 9,
-      "var-annotated": 1
+      "var-annotated": 2
     },
     "testplan/auto/t_gallery_scroll_date_bubble.py": {
       "assignment": 4,
       "misc": 29,
-      "no-untyped-call": 4,
-      "no-untyped-def": 3,
+      "no-untyped-call": 2,
+      "no-untyped-def": 1,
       "type-arg": 1,
       "union-attr": 9
     },
     "testplan/auto/t_gallery_thumb_perf.py": {
-      "no-untyped-call": 6,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_gallery_thumb_recovery.py": {
       "arg-type": 4,
-      "no-untyped-call": 19,
       "no-untyped-def": 3,
-      "var-annotated": 1
+      "var-annotated": 4
     },
     "testplan/auto/t_gpu_return_linear.py": {
-      "no-untyped-call": 2,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_half_decode_return_linear.py": {
-      "no-untyped-call": 4,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_he_nef_thumbnail.py": {
-      "no-untyped-call": 12,
       "no-untyped-def": 5,
       "var-annotated": 1
     },
     "testplan/auto/t_hsl_correctness.py": {
-      "no-untyped-call": 5,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_idle_timer_structure.py": {
-      "no-untyped-call": 11,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
     "testplan/auto/t_idle_timer_trigger.py": {
-      "no-untyped-call": 13,
-      "no-untyped-def": 7,
+      "no-untyped-def": 6,
       "type-arg": 1,
       "var-annotated": 2
     },
     "testplan/auto/t_libraw_cache_stamp.py": {
-      "no-untyped-call": 10,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_lut_cube.py": {
-      "no-untyped-call": 20,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
@@ -1592,8 +1541,8 @@
       "var-annotated": 1
     },
     "testplan/auto/t_memory_tier_overlay.py": {
-      "no-untyped-call": 12,
-      "no-untyped-def": 2,
+      "arg-type": 8,
+      "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_module_import_smoke.py": {
@@ -1601,17 +1550,16 @@
     },
     "testplan/auto/t_nef_he_detection.py": {
       "arg-type": 1,
-      "no-untyped-call": 26,
-      "no-untyped-def": 3,
+      "no-untyped-call": 19,
+      "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_nef_he_editing_export.py": {
-      "no-untyped-call": 18,
+      "no-untyped-call": 3,
       "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_params_supported_user_wb.py": {
-      "no-untyped-call": 6,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
@@ -1619,98 +1567,86 @@
       "no-untyped-def": 1
     },
     "testplan/auto/t_pv2012_preview_lite.py": {
-      "no-untyped-call": 8,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_queue_reprioritise.py": {
-      "assignment": 3,
+      "arg-type": 4,
+      "assignment": 4,
       "method-assign": 1,
-      "no-untyped-call": 26,
-      "no-untyped-def": 5,
+      "no-untyped-call": 9,
+      "no-untyped-def": 6,
       "var-annotated": 1
     },
     "testplan/auto/t_raw_slot_accounting.py": {
+      "arg-type": 13,
       "assignment": 2,
       "method-assign": 1,
-      "no-untyped-call": 69,
-      "no-untyped-def": 7,
+      "no-untyped-call": 8,
+      "no-untyped-def": 6,
       "var-annotated": 1
     },
     "testplan/auto/t_search_bar_animation.py": {
-      "no-untyped-call": 16,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_shadow_edge_aware_damp.py": {
-      "no-untyped-call": 5,
+      "no-untyped-call": 3,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
     "testplan/auto/t_shadow_smoothed_ratio.py": {
-      "no-untyped-call": 2,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_sidecar_progressive.py": {
       "index": 1,
-      "no-untyped-call": 10,
       "no-untyped-def": 3,
       "var-annotated": 1
     },
     "testplan/auto/t_skip_same_format_export.py": {
       "assignment": 2,
-      "no-untyped-call": 15,
       "no-untyped-def": 2,
       "var-annotated": 1
     },
     "testplan/auto/t_slider_specs.py": {
-      "no-untyped-call": 4,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
-    "testplan/auto/t_splash_copy.py": {
-      "no-untyped-def": 3
-    },
     "testplan/auto/t_spot_heal.py": {
       "attr-defined": 1,
-      "no-untyped-call": 33,
-      "no-untyped-def": 6,
-      "var-annotated": 1
+      "no-untyped-def": 3,
+      "var-annotated": 2
     },
     "testplan/auto/t_tone_engine.py": {
-      "no-untyped-call": 38,
+      "no-untyped-call": 24,
       "no-untyped-def": 5,
       "var-annotated": 1
     },
     "testplan/auto/t_unpack_stash_lru.py": {
-      "no-untyped-call": 12,
-      "no-untyped-def": 2,
+      "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_visited_edit_bake.py": {
       "arg-type": 7,
       "assignment": 3,
-      "no-untyped-call": 16,
-      "no-untyped-def": 5,
-      "var-annotated": 2
+      "no-untyped-def": 4,
+      "var-annotated": 4
     },
     "testplan/auto/t_wb_sanity.py": {
-      "no-untyped-call": 11,
+      "no-untyped-call": 3,
       "no-untyped-def": 4,
       "var-annotated": 1
     },
     "testplan/auto/t_worker_no_qpixmap.py": {
       "assignment": 1,
       "attr-defined": 2,
-      "no-untyped-call": 14,
-      "no-untyped-def": 3,
+      "no-untyped-def": 1,
       "var-annotated": 1
     },
     "testplan/auto/t_xmp_roundtrip.py": {
       "arg-type": 1,
       "assignment": 1,
-      "no-untyped-call": 16,
       "no-untyped-def": 1,
       "var-annotated": 1
     },
@@ -1719,8 +1655,7 @@
       "call-overload": 1,
       "no-any-return": 1,
       "no-untyped-def": 1,
-      "union-attr": 1,
-      "untyped-decorator": 6
+      "union-attr": 1
     }
   },
   "any": {

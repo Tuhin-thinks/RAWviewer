@@ -118,7 +118,7 @@ class _MapLoadWorker(QRunnable):
         current_path: str,
         cache_dir: Path,
         signals: MapLoadSignals,
-    ):
+    ) -> None:
         super().__init__()
         self._current_path = current_path
         self._cache_dir = cache_dir
@@ -176,7 +176,7 @@ class ProbeSignals(QObject):
 class _Probe(QRunnable):
     """Background loader/probe to check if OpenStreetMap tiles are online."""
 
-    def __init__(self, signals: ProbeSignals):
+    def __init__(self, signals: ProbeSignals) -> None:
         super().__init__()
         self.signals = signals
         self._cancelled = False
@@ -195,7 +195,7 @@ class _Probe(QRunnable):
 class _MapCanvas(QWidget):
     """Inner QWidget that draws the stitched map tiles and location pins."""
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model: LocationMapModel | None = None
         self._loading: bool = False
@@ -255,7 +255,7 @@ class _MapCanvas(QWidget):
 class MapCoordinateBadge(QWidget):
     """Clickable GPS coordinate badge overlay that opens Google Maps."""
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.lat = 0.0
         self.lon = 0.0
@@ -322,7 +322,7 @@ class ImageLocationMapWidget(QWidget):
     _CARD_W = WIDGET_W + 8
     _CARD_H = WIDGET_H + 8
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model: LocationMapModel | None = None
         self._worker: _MapLoadWorker | None = None

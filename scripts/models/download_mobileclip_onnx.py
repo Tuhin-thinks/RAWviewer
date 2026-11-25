@@ -151,10 +151,10 @@ def main() -> int:
 
         def _fetch(
             remote_path=remote_path,
-            local_name=local_name,
+            local_name: str = local_name,
             stage_start=stage_start,
             stage_end=stage_end,
-        ):
+        ) -> None:
             print(f"[INFO] Fetching {local_name} ({stage_start}-{stage_end}%)", flush=True)
             reset_installer_progress_state()
             emit_installer_progress(stage_start)
@@ -179,7 +179,7 @@ def main() -> int:
     tokenizer_path = MODELS_DIR / "bpe_simple_vocab_16e6.txt.gz"
     if not tokenizer_path.exists():
 
-        def _fetch_tokenizer():
+        def _fetch_tokenizer() -> None:
             print("[INFO] Fetching tokenizer", flush=True)
             _download_url_with_progress(
                 "https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz",

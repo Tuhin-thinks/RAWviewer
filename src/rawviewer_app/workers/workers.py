@@ -13,7 +13,7 @@ from rawviewer_app.signals import RawRecoverySignals, ReleaseUpdateCheckSignals
 class _ReleaseUpdateCheckWorker(QRunnable):
     """Fetch latest GitHub release tag and compare to the running app version."""
 
-    def __init__(self, signals: ReleaseUpdateCheckSignals, *, timeout: float = 5.0):
+    def __init__(self, signals: ReleaseUpdateCheckSignals, *, timeout: float = 5.0) -> None:
         super().__init__()
         self.signals = signals
         self.timeout = float(timeout)
@@ -52,14 +52,14 @@ class _SemanticIndexPrepWorker(QRunnable):
     (observed ~10s+ freezes during gallery fill on large folders).
     """
 
-    def __init__(self, corpus_files, index, signals, *, metadata_only: bool = False):
+    def __init__(self, corpus_files, index, signals, *, metadata_only: bool = False) -> None:
         super().__init__()
         self.corpus_files = corpus_files
         self.index = index
         self.signals = signals
         self.metadata_only = bool(metadata_only)
 
-    def run(self):
+    def run(self) -> None:
         try:
             coverage = self.index.get_index_coverage(self.corpus_files)
             if self.metadata_only:
@@ -109,7 +109,9 @@ class SemanticAssetDownloadSignals(QObject):
 class ImageLoadTask(QRunnable):
     """Background task to load and scale images"""
 
-    def __init__(self, index, file_path, target_width, target_height, signal, parent_viewer=None, generation=0):
+    def __init__(
+        self, index, file_path, target_width, target_height, signal, parent_viewer=None, generation: int = 0
+    ) -> None:
         super().__init__()
         self.index = index
         self.file_path = file_path
@@ -121,7 +123,7 @@ class ImageLoadTask(QRunnable):
         self._cancelled = False
         self._lock = threading.Lock()
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the task"""
         with self._lock:
             self._cancelled = True
@@ -131,7 +133,7 @@ class ImageLoadTask(QRunnable):
         with self._lock:
             return self._cancelled
 
-    def run(self):
+    def run(self) -> None:
         """Load and scale image in worker thread - returns QImage, not QPixmap"""
         import logging
         import os
@@ -531,7 +533,7 @@ class RawRecoveryWorker(QRunnable):
         signals: RawRecoverySignals,
         *,
         exif_data: dict | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.file_path = file_path
         self.signals = signals

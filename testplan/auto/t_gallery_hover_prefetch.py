@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -25,21 +25,21 @@ def main() -> int:
     import rawviewer_ui.widgets.gallery as gv
 
     class FakeWidget:
-        def __init__(self, path):
+        def __init__(self, path) -> None:
             self.file_path = path
 
     class FakeViewer:
-        def __init__(self, view_mode="gallery"):
+        def __init__(self, view_mode: str = "gallery") -> None:
             self.view_mode = view_mode
             self.calls = []
 
-        def _maybe_queue_background_full_decode(self, path):
+        def _maybe_queue_background_full_decode(self, path) -> None:
             self.calls.append(path)
 
     class Mock:
         pass
 
-    def make_gallery(scrolling=False, view_mode="gallery"):
+    def make_gallery(scrolling: bool = False, view_mode: str = "gallery"):
         m = Mock()
         m._last_scroll_event_t = 0.0 if not scrolling else __import__("time").time()
         m.parent_viewer = FakeViewer(view_mode)

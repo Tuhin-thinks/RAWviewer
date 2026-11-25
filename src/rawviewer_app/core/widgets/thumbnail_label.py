@@ -12,7 +12,7 @@ class ThumbnailLabel(QLabel):
 
     clicked = pyqtSignal(str)  # file_path
 
-    def __init__(self, parent=None, pixmap=None, file_path=None):
+    def __init__(self, parent=None, pixmap=None, file_path=None) -> None:
         super().__init__(parent)
         self.file_path = file_path
         self.original_pixmap = pixmap
@@ -27,14 +27,14 @@ class ThumbnailLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setMouseTracking(True)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self.file_path:
             self.clicked.emit(self.file_path)
             event.accept()
         else:
             super().mousePressEvent(event)
 
-    def set_original_pixmap(self, pixmap):
+    def set_original_pixmap(self, pixmap) -> None:
         """Store the original pixmap for rescaling"""
         self.original_pixmap = pixmap
 

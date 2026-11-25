@@ -9,7 +9,7 @@ from core import theme
 class TopMetadataBar(QFrame):
     """Centered EXIF strip for macOS (no custom title bar)."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setFixedHeight(28)
         self.setStyleSheet(f"""

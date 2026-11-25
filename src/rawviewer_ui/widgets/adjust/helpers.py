@@ -161,11 +161,11 @@ class AdjustValueLabel(QLabel):
 
     clicked = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit()
             event.accept()
@@ -186,7 +186,7 @@ class _FileDropFrame(QFrame):
     files_dropped = pyqtSignal(list)
     unsupported_dropped = pyqtSignal(list)  # rejected local paths (basenames ok)
 
-    def __init__(self, suffixes: tuple[str, ...], parent=None):
+    def __init__(self, suffixes: tuple[str, ...], parent=None) -> None:
         super().__init__(parent)
         self._suffixes = tuple(s.lower() for s in suffixes)
 
@@ -229,7 +229,7 @@ class _FileDropFrame(QFrame):
 
 # Back-compat alias
 class _LutDropFrame(_FileDropFrame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__((".cube",), parent)
 
 
@@ -323,7 +323,7 @@ class _LutThumbWorker(QRunnable):
         amount: float,
         space: str,
         signals: _LutThumbSignals,
-    ):
+    ) -> None:
         super().__init__()
         self.setAutoDelete(True)
         self.token = int(token)
@@ -377,7 +377,7 @@ class _LooksRowWidget(QWidget):
 
     remove_clicked = pyqtSignal()
 
-    def __init__(self, name: str, kind: str, parent=None):
+    def __init__(self, name: str, kind: str, parent=None) -> None:
         super().__init__(parent)
         self._suppress_item_click = False
         row = QHBoxLayout(self)
@@ -467,7 +467,7 @@ class CollapsibleSection(QWidget):
     doesn't have to keep collapsing it every time they open the editor.
     """
 
-    def __init__(self, title: str, parent=None, *, settings_key: str | None = None):
+    def __init__(self, title: str, parent=None, *, settings_key: str | None = None) -> None:
         super().__init__(parent)
         self._settings_key = settings_key
         self._expanded = self._load_expanded_default()
@@ -602,7 +602,7 @@ class AdjustSlider(QSlider):
     _THUMB_W = 10
     _THUMB_H = 14
 
-    def __init__(self, orientation=Qt.Orientation.Horizontal, parent=None):
+    def __init__(self, orientation=Qt.Orientation.Horizontal, parent=None) -> None:
         super().__init__(orientation, parent)
         self.setMinimumHeight(22)
         self.setMouseTracking(True)

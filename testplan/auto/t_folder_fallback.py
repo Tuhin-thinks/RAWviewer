@@ -19,7 +19,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -28,7 +28,7 @@ def check(name, ok, detail=""):
 class _Host:
     """Minimal stand-in for RAWImageViewer's scan/scope methods (no Qt app)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.get_supported_extensions = lambda: {".arw", ".jpg"}  # type: ignore[method-assign]
 
     # Real implementations, borrowed off the class.
@@ -56,7 +56,7 @@ class _Host:
 A64 = None  # placeholder guard removed with the unused iterator
 
 
-def _touch(folder, name, content=b"\xff\xd8\xff\xe0stub"):
+def _touch(folder, name: str, content: bytes = b"\xff\xd8\xff\xe0stub"):
     p = os.path.join(folder, name)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     with open(p, "wb") as fh:

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -34,7 +34,7 @@ _KEYS = (
 )
 
 
-def _clear():
+def _clear() -> None:
     import rawviewer_profile as rp
 
     rp._USER_RAWVIEWER_ENV = None

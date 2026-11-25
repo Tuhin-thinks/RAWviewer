@@ -16,7 +16,7 @@ from .worker import ImageLoadTask, ImageLoadWorker
 
 
 class ImageLoadManagerPart3:
-    def cancel_all_tasks(self):
+    def cancel_all_tasks(self) -> None:
         """取消所有任務"""
         with self._queue_lock:
             for task in self._active_tasks.values():
@@ -151,7 +151,7 @@ class ImageLoadManagerPart3:
         for task in kept:
             self._work_queue.put(task)
 
-    def flush_queue(self):
+    def flush_queue(self) -> None:
         """Aggressively drop pending tasks to prioritize new position (used for large scroll jumps)."""
         with self._queue_lock:
             for task in self._active_tasks.values():
@@ -162,7 +162,7 @@ class ImageLoadManagerPart3:
             self._work_queue = queue.PriorityQueue()
             self._reconcile_raw_slots_locked()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """關閉管理器並清理資源"""
         self._stopped = True
         watchdog = getattr(self, "_dispatch_watchdog", None)
@@ -184,7 +184,7 @@ class ImageLoadManagerPart3:
                 with contextlib.suppress(Exception):
                     pool.waitForDone(1000)
 
-    def _task_finished(self, task: ImageLoadTask, *, emit: bool = True):
+    def _task_finished(self, task: ImageLoadTask, *, emit: bool = True) -> None:
         """Remove completed work from the active map and keep the queue moving.
 
         ``emit=False`` skips the signal but still does the bookkeeping. The
@@ -497,7 +497,7 @@ class ImageLoadManagerPart3:
 
         return thumb_ok and exif_ok and full_ok
 
-    def _schedule_next_task(self):
+    def _schedule_next_task(self) -> None:
         """Dispatch queued work onto the CURRENT or background pool.
 
         Policy runs under _queue_lock; tryStart runs outside so enqueue/cancel

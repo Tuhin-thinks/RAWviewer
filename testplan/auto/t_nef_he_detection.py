@@ -35,7 +35,7 @@ SAMPLE_DIR = os.environ.get("RAWVIEWER_TEST_ASSETS", "/tmp/RAW_Sample")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -44,8 +44,8 @@ def check(name, ok, detail=""):
 def build_nef_fixture(
     nef_compression_value=None,
     *,
-    nikon_makernote=True,
-    via_tag51=False,
+    nikon_makernote: bool = True,
+    via_tag51: bool = False,
 ):
     """Minimal little-endian TIFF: IFD0 -> Exif IFD (0x8769) -> MakerNote
     (0x927C) -> Nikon inner TIFF -> compression value, either directly at

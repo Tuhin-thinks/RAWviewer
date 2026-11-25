@@ -19,7 +19,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -62,7 +62,7 @@ def main() -> int:
     class _StyleCountLabel(ThumbnailLabel):
         setstyle_calls = 0
 
-        def setStyleSheet(self, style):  # noqa: N802
+        def setStyleSheet(self, style) -> None:  # noqa: N802
             _StyleCountLabel.setstyle_calls += 1
             super().setStyleSheet(style)
 

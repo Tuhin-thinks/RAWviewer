@@ -178,7 +178,7 @@ class MobileCLIPCoreMLBackend:
         ("mobileclip2_s0_image.mlpackage", "mobileclip2_s0_text.mlpackage"),
     )
 
-    def __init__(self, model_dir: str | None = None):
+    def __init__(self, model_dir: str | None = None) -> None:
         if model_dir is None:
             model_dir = self._default_model_dir()
         self.model_dir = model_dir
@@ -381,7 +381,7 @@ class MobileCLIPCoreMLBackend:
             raise RuntimeError(err)
         return self.model_dir
 
-    def _load_models(self):
+    def _load_models(self) -> None:
         if self._image_model is not None and self._text_model is not None:
             return
         import CoreML
@@ -769,7 +769,7 @@ class MobileCLIPONNXBackend:
     TOKENIZER_URL = "https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz"
     SUPPORTS_HUB_DOWNLOAD = True
 
-    def __init__(self, model_dir: str | None = None):
+    def __init__(self, model_dir: str | None = None) -> None:
         self.variant = os.environ.get("RAWVIEWER_MOBILECLIP_VARIANT", "b").strip().lower()
         if self.variant not in ("s0", "s2", "b", "l14"):
             self.variant = "b"
@@ -1027,7 +1027,7 @@ def _bytes_to_unicode() -> dict[int, str]:
     return dict(zip(bs, [chr(n) for n in cs], strict=False))
 
 
-def _get_pairs(word):
+def _get_pairs(word: str):
     pairs = set()
     prev_char = word[0]
     for char in word[1:]:
@@ -1039,7 +1039,7 @@ def _get_pairs(word):
 class _ClipBPETokenizer:
     """Minimal OpenAI CLIP BPE tokenizer for MobileCLIP Core ML text encoder."""
 
-    def __init__(self, bpe_path: str):
+    def __init__(self, bpe_path: str) -> None:
         self.byte_encoder = _bytes_to_unicode()
         self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
         with gzip.open(bpe_path, "rt", encoding="utf-8") as f:

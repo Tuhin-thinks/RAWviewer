@@ -344,7 +344,7 @@ def _log_opencl_runtime_details_once(cv2_module=None) -> None:
             logger.info("[ACCEL] OpenCL runtime: available, enabled=%s (device details unavailable)", enabled)
             return
 
-        def _safe(callable_or_attr, default="unknown"):
+        def _safe(callable_or_attr, default: str = "unknown"):
             try:
                 v = callable_or_attr() if callable(callable_or_attr) else callable_or_attr
                 return str(v) if v not in (None, "") else default

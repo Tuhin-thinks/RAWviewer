@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class PersistentThumbnailCache:
     """Persistent disk cache for JPEG thumbnails extracted from RAW files."""
 
-    def __init__(self, cache_dir: str = None):
+    def __init__(self, cache_dir: str = None) -> None:
         if cache_dir is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         os.makedirs(cache_dir, exist_ok=True)
@@ -52,7 +52,7 @@ class PersistentThumbnailCache:
             self._local.conn = conn
         return self._local.conn
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize the SQLite database for tracking cache entries."""
         with self.lock:
             try:
@@ -324,7 +324,7 @@ class PersistentThumbnailCache:
         with self._file_stats_cache_lock:
             self._file_stats_cache.clear()
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection for the current thread."""
         try:
             if hasattr(self, "_local") and hasattr(self._local, "conn"):
@@ -337,7 +337,7 @@ class PersistentThumbnailCache:
 class PersistentGridCache(PersistentThumbnailCache):
     """Persistent disk cache for medium-res grid tiles (e.g., 512px)."""
 
-    def __init__(self, cache_dir: str = None):
+    def __init__(self, cache_dir: str = None) -> None:
         if cache_dir is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         # Use 'grid' subdirectory
@@ -350,7 +350,7 @@ class PersistentGridCache(PersistentThumbnailCache):
         self.db_path = os.path.join(self.base_cache_dir, "grid_cache.db")
         self._init_db()  # Re-init DB with new path
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize grid cache database."""
         with self.lock:
             try:
@@ -381,7 +381,7 @@ class PersistentGridCache(PersistentThumbnailCache):
 class PersistentPreviewCache(PersistentThumbnailCache):
     """Persistent disk cache for medium JPEG previews (default max edge 512px)."""
 
-    def __init__(self, cache_dir: str = None):
+    def __init__(self, cache_dir: str = None) -> None:
         if cache_dir is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         # Use 'previews' subdirectory
@@ -394,7 +394,7 @@ class PersistentPreviewCache(PersistentThumbnailCache):
         self.db_path = os.path.join(self.base_cache_dir, "preview_cache.db")
         self._init_db()  # Re-init DB with new path
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize preview cache database."""
         with self.lock:
             try:

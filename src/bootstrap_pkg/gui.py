@@ -53,7 +53,7 @@ class InstallerGUI(QMainWindow):
         "• Uninstall anytime from Windows Settings → Apps → RAWviewer"
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("RAWviewer Setup")
         self.setFixedSize(650, 560)
@@ -73,7 +73,7 @@ class InstallerGUI(QMainWindow):
         if icon_path:
             self.setWindowIcon(QIcon(icon_path))
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         self.main_container = QFrame()
         self.main_container.setObjectName("main_container")
         self.setCentralWidget(self.main_container)
@@ -147,7 +147,7 @@ class InstallerGUI(QMainWindow):
 
         layout.addWidget(self.bottom_bar)
 
-    def load_styles(self):
+    def load_styles(self) -> None:
         self.setStyleSheet(f"""
             QFrame#main_container {{
                 background-color: {_VOID};
@@ -250,7 +250,7 @@ class InstallerGUI(QMainWindow):
             }}
         """)
 
-    def init_welcome_page(self):
+    def init_welcome_page(self) -> None:
         layout = QVBoxLayout(self.page_welcome)
         layout.setContentsMargins(40, 20, 40, 20)
 
@@ -316,12 +316,12 @@ class InstallerGUI(QMainWindow):
         layout.addLayout(row)
         layout.addStretch()
 
-    def browse_path(self):
+    def browse_path(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "Select Folder", self.path_edit.text())
         if path:
             self.path_edit.setText(os.path.normpath(path))
 
-    def init_progress_page(self):
+    def init_progress_page(self) -> None:
         layout = QVBoxLayout(self.page_progress)
         layout.setContentsMargins(40, 20, 40, 20)
 
@@ -342,7 +342,7 @@ class InstallerGUI(QMainWindow):
         self.log_box.setReadOnly(True)
         layout.addWidget(self.log_box)
 
-    def init_success_page(self):
+    def init_success_page(self) -> None:
         layout = QVBoxLayout(self.page_success)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -357,7 +357,7 @@ class InstallerGUI(QMainWindow):
         self.success_desc = desc
         layout.addWidget(desc, alignment=Qt.AlignmentFlag.AlignCenter)
 
-    def start_install(self):
+    def start_install(self) -> None:
         target_dir = self.path_edit.text().strip()
         if not target_dir:
             return
@@ -388,7 +388,7 @@ class InstallerGUI(QMainWindow):
         self.worker.progress_label_signal.connect(self.install_step_label.setText)
         self.thread.start()
 
-    def request_close(self):
+    def request_close(self) -> None:
         if self._install_in_progress:
             if self._awaiting_cancel:
                 return
@@ -401,7 +401,7 @@ class InstallerGUI(QMainWindow):
             return
         self.close()
 
-    def on_finished(self, success, note=""):
+    def on_finished(self, success: bool, note: str = "") -> None:
         close_after_failure = self._close_after_failed_install
         self._install_in_progress = False
         self._awaiting_cancel = False
@@ -435,7 +435,7 @@ class InstallerGUI(QMainWindow):
         if not success and close_after_failure:
             self.close()
 
-    def retry_install(self):
+    def retry_install(self) -> None:
         self.stack.setCurrentIndex(0)
         self.btn_next.setText("INSTALL")
         self.btn_cancel.setText("CANCEL")
@@ -445,14 +445,14 @@ class InstallerGUI(QMainWindow):
         self.btn_next.clicked.connect(self.start_install)
         self.progress_bar.setValue(0)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         if self._install_in_progress:
             self.request_close()
             event.ignore()
             return
         super().closeEvent(event)
 
-    def launch_app(self):
+    def launch_app(self) -> None:
         install_dir = self.path_edit.text()
         app_exe = os.path.join(install_dir, "RAWviewer.exe")
         try:
@@ -486,10 +486,10 @@ class InstallerGUI(QMainWindow):
 
         QTimer.singleShot(400, self.close)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, "drag_pos"):
             self.move(event.globalPosition().toPoint() - self.drag_pos)

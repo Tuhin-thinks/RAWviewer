@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -24,7 +24,7 @@ class FullImageCache:
     with a simple fixed-size LRU cache that stores up to 10 full-resolution images.
     """
 
-    def __init__(self, max_size: int = 10):
+    def __init__(self, max_size: int = 10) -> None:
         import threading
         from collections import OrderedDict
 
@@ -89,7 +89,7 @@ class FullImageCache:
         """Alias for get() to maintain compatibility."""
         return self.get(file_path)
 
-    def put_full_image(self, file_path: str, image, *, copy: bool = True):
+    def put_full_image(self, file_path: str, image, *, copy: bool = True) -> None:
         """Alias for put() to maintain compatibility."""
         if image is not None:
             stored = np.ascontiguousarray(image) if not copy else image.copy()

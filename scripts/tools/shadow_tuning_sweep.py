@@ -63,7 +63,7 @@ def main() -> None:
 
     orig_apply = pv.apply_pv2012_tone_rgb
 
-    def patched_apply(img, adj, *, damp_max=0.85, lift_div=3.0, anchor_hi=0.012):
+    def patched_apply(img, adj, *, damp_max: float = 0.85, lift_div: float = 3.0, anchor_hi: float = 0.012):
         # Re-implements apply_pv2012_tone_rgb's body with the damp/anchor
         # knobs parameterized, so we can sweep without editing the module.
         lum_ = pv._luminance(img)

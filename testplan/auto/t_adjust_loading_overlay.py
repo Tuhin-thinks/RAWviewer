@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -30,21 +30,21 @@ def main() -> int:
     import main as mainmod
 
     class FakeImageManager:
-        def __init__(self):
+        def __init__(self) -> None:
             self.cancel_calls = []
 
-        def cancel_task(self, path):
+        def cancel_task(self, path) -> None:
             self.cancel_calls.append(path)
 
     class FakeLoadingOverlay:
-        def __init__(self):
+        def __init__(self) -> None:
             self.hide_calls = 0
             self.visible = False
 
-        def show_loading(self, msg=None):
+        def show_loading(self, msg=None) -> None:
             self.visible = True
 
-        def hide_loading(self):
+        def hide_loading(self) -> None:
             self.hide_calls += 1
             self.visible = False
 

@@ -22,7 +22,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -50,7 +50,7 @@ def main() -> int:
     import image_load_manager as ilm
     from image_load_manager import ImageLoadTask, Priority
 
-    def task(path, priority=Priority.BACKGROUND):
+    def task(path, priority: int = Priority.BACKGROUND):
         t = ImageLoadTask(path, priority=priority, stages={"thumbnail"})
         t.task_key = (path, False, frozenset({"thumbnail"}))
         return t

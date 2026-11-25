@@ -21,24 +21,24 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 class _Gallery:
-    def __init__(self):
+    def __init__(self) -> None:
         self.received = None
 
-    def set_images(self, images, force_rebuild=False):
+    def set_images(self, images, force_rebuild: bool = False) -> None:
         self.received = list(images)
 
 
 class _Host:
     """Minimal stand-in carrying only what register_new_file touches."""
 
-    def __init__(self, folder, files):
+    def __init__(self, folder, files) -> None:
         self.current_folder = folder
         self.image_files = list(files)
         self.current_file_path = files[0] if files else None
@@ -62,11 +62,11 @@ class _Host:
     def _filmstrip_bar(self):
         return None
 
-    def _show_created_file(self, path):
+    def _show_created_file(self, path) -> None:
         self.opened.append(path)
 
 
-def _touch(folder, name, mtime):
+def _touch(folder, name: str, mtime):
     p = os.path.join(folder, name)
     with open(p, "wb") as fh:
         fh.write(b"\xff\xd8\xff\xe0stub")

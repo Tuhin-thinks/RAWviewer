@@ -35,7 +35,7 @@ class ImageLoadTask:
         thumbnail_target_size: QSize | None = None,
         thumbnail_fit: str = "crop",
         gallery_thumbnail: bool = False,
-    ):
+    ) -> None:
         self.file_path = file_path
         self.priority = priority
         self.use_full_resolution = use_full_resolution
@@ -57,7 +57,7 @@ class ImageLoadTask:
         self._cancelled = False
         self._lock = threading.Lock()
 
-    def cancel(self):
+    def cancel(self) -> None:
         """標記任務為已取消（非阻塞）"""
         with self._lock:
             self._cancelled = True
@@ -83,7 +83,7 @@ class ImageLoadTask:
 class ImageLoadWorker(QRunnable):
     """可重用的工作線程"""
 
-    def __init__(self, task: ImageLoadTask, manager: "ImageLoadManager"):
+    def __init__(self, task: ImageLoadTask, manager: "ImageLoadManager") -> None:
         super().__init__()
         self.task = task
         self.manager = manager
@@ -138,7 +138,7 @@ class ImageLoadWorker(QRunnable):
         if self._safe_emit():
             self.manager.error_occurred.emit(file_path, message)
 
-    def run(self):
+    def run(self) -> None:
         """執行任務"""
         worker_thread_local.priority = getattr(self.task, "priority", None)
         worker_thread_local.task = self.task
@@ -422,7 +422,7 @@ class ImageLoadWorker(QRunnable):
             worker_thread_local.priority = None
             worker_thread_local.task = None
 
-    def _handle_thumbnail_result(self, file_path, thumbnail):
+    def _handle_thumbnail_result(self, file_path, thumbnail) -> None:
         """Internal helper to process and emit thumbnail results."""
         # Saved XMP edits on the fit/preview tier (see apply_saved_edits_for_
         # display: no-op unless the file actually has non-default edits).

@@ -29,7 +29,7 @@ class ImageCacheCore(QObject):
     cache_miss = pyqtSignal(str, str)  # file_path, cache_type
     memory_warning = pyqtSignal(float)  # memory_usage_percent
 
-    def __init__(self, cache_dir: str = None, persistent_cache_enabled: bool = False):
+    def __init__(self, cache_dir: str = None, persistent_cache_enabled: bool = False) -> None:
         super().__init__()
 
         # Initialize cache directory
@@ -50,7 +50,7 @@ class ImageCacheCore(QObject):
         self.thumbnail_cache = LRUCache(max_size=cache_sizes["thumbnails"])
         self.grid_cache = LRUCache(max_size=cache_sizes["thumbnails"] // 2)
 
-        def _note_preview_evicted(key):
+        def _note_preview_evicted(key) -> None:
             self.libraw_preview_paths.discard(key)
 
         self.preview_cache = LRUCache(
@@ -59,7 +59,7 @@ class ImageCacheCore(QObject):
         )
         self._full_cache_reasons: OrderedDict[str, str] = OrderedDict()
 
-        def _note_full_evicted(key):
+        def _note_full_evicted(key) -> None:
             self._note_full_cache_reason(key, "evicted (capacity 10)")
 
         self.full_image_cache = LRUCache(max_size=10, on_evict=_note_full_evicted)

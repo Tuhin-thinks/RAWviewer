@@ -30,14 +30,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 class FakeCache:
-    def __init__(self, capture_times):
+    def __init__(self, capture_times) -> None:
         self._ct = dict(capture_times)
         self.calls = []
 
@@ -45,7 +45,7 @@ class FakeCache:
         self.calls.append("get_capture_times_for_sort")
         return {p: self._ct[p] for p in paths if p in self._ct}
 
-    def get_multiple_exif(self, paths, file_stats=None, fast_mode=True):
+    def get_multiple_exif(self, paths, file_stats=None, fast_mode: bool = True):
         self.calls.append("get_multiple_exif")
         # Full EXIF blob (what pickle.loads would have produced) -- includes
         # capture_time plus the heavy extra fields the sort does not need.

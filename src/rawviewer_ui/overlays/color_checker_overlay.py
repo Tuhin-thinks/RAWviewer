@@ -47,7 +47,7 @@ class ColorCheckerOverlay(QWidget):
                 return i
         return -1
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             idx = self._nearest_handle(event.position(), self.width(), self.height())
             if idx >= 0:
@@ -57,7 +57,7 @@ class ColorCheckerOverlay(QWidget):
                 return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         w, h = max(1, self.width()), max(1, self.height())
         pos = event.position()
         if self._drag_index >= 0:
@@ -76,7 +76,7 @@ class ColorCheckerOverlay(QWidget):
             self.update()
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self._drag_index >= 0:
             self._drag_index = -1
             self.update()
@@ -84,7 +84,7 @@ class ColorCheckerOverlay(QWidget):
             return
         super().mouseReleaseEvent(event)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         qp = QPainter(self)
         qp.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()

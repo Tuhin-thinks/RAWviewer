@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import QApplication  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -39,13 +39,13 @@ _app = QApplication.instance() or QApplication([])
 
 
 class _Cache:
-    def __init__(self, n):
+    def __init__(self, n) -> None:
         self.lock = threading.Lock()
         self.cache = {(f"/f/IMG_{i:05d}.CR3", 512): object() for i in range(n)}
 
 
 class _Host:
-    def __init__(self, n):
+    def __init__(self, n) -> None:
         self._metadata_cache = {f"/f/IMG_{i:05d}.CR3": {"k": i} for i in range(n)}
         self._thumbnail_cache = _Cache(n)
         self._placeholder_thumb_paths = set()

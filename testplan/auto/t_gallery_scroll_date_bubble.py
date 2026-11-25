@@ -59,10 +59,10 @@ def main() -> int:
         _SCROLL_BUBBLE_THROTTLE_S = JustifiedGallery._SCROLL_BUBBLE_THROTTLE_S
         _thumb_base_key = "__base__"
 
-        def _on_scroll_settled(self):
+        def _on_scroll_settled(self) -> None:
             pass
 
-        def _on_slider_released(self):
+        def _on_slider_released(self) -> None:
             # Mirrors the real one minus the thumbnail work it also triggers.
             self._is_scrollbar_dragging = False
             self._hide_scroll_date_bubble()

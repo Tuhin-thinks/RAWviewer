@@ -13,14 +13,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     extra = f"  {detail}" if detail else ""
     print(f"{'PASS' if ok else 'FAIL'}  {name}{extra}")
     if not ok:
         FAILURES.append(name)
 
 
-def test_range_math():
+def test_range_math() -> None:
     from display_brightness import (
         DISPLAYPOLICY_BOTH,
         IOCTL_VIDEO_QUERY_DISPLAY_BRIGHTNESS,
@@ -42,7 +42,7 @@ def test_range_math():
     check("display policy both", DISPLAYPOLICY_BOTH == 3)
 
 
-def test_get_never_raises():
+def test_get_never_raises() -> None:
     from display_brightness import get_brightness
 
     try:
@@ -57,21 +57,21 @@ def test_get_never_raises():
     )
 
 
-def test_fake_backend_roundtrip():
+def test_fake_backend_roundtrip() -> None:
     import display_brightness as db
 
     class _Fake:
-        def __init__(self):
+        def __init__(self) -> None:
             self.v = 0.4
 
         def get(self):
             return self.v
 
-        def set(self, value):
+        def set(self, value) -> bool:
             self.v = float(value)
             return True
 
-        def close(self):
+        def close(self) -> None:
             return
 
     prev = db._active_backend
@@ -85,7 +85,7 @@ def test_fake_backend_roundtrip():
         db._set_active_backend(prev)
 
 
-def test_adjust_wiring_in_main():
+def test_adjust_wiring_in_main() -> None:
     from _source_utils import main_source
 
     text = main_source()
@@ -111,7 +111,7 @@ def test_adjust_wiring_in_main():
     )
 
 
-def main():
+def main() -> int:
     test_range_math()
     test_get_never_raises()
     test_fake_backend_roundtrip()

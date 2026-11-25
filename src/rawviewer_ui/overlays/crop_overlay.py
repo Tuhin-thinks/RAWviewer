@@ -24,7 +24,7 @@ class CropOverlayItem(QGraphicsObject):
     insetsChanged = pyqtSignal(float, float, float, float)  # L, R, T, B
     editingFinished = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setZValue(20)
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)

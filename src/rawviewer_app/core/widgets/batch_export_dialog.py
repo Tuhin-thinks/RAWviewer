@@ -28,7 +28,7 @@ class BatchExportDialog(CustomConfirmDialog):
         start_dir: str = "",
         source_dir_keys: set | None = None,
         writable_check=None,
-    ):
+    ) -> None:
         noun = "photo" if count == 1 else "photos"
         super().__init__(
             parent=parent,

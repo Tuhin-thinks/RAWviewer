@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -83,7 +83,7 @@ def main() -> int:
     # set to "gallery" -- replicating the real call order, unlike the
     # original (flawed) version of this test.
     class FakePanel:
-        def __init__(self, visible):
+        def __init__(self, visible) -> None:
             self._visible = visible
 
         def isVisible(self):

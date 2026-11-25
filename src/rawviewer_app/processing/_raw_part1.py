@@ -24,7 +24,7 @@ class RAWProcessorPart1(QThread):
     processing_progress = pyqtSignal(str)  # Status message for progress updates
     exif_data_ready = pyqtSignal(dict)  # EXIF data dictionary when ready
 
-    def __init__(self, file_path, is_raw, use_full_resolution=False):
+    def __init__(self, file_path, is_raw: bool, use_full_resolution: bool = False) -> None:
         super().__init__()
         self.file_path = file_path
         self.is_raw = is_raw
@@ -36,11 +36,11 @@ class RAWProcessorPart1(QThread):
         # Use ThumbnailExtractor for cleaner thumbnail extraction (following 複製 version pattern)
         self.thumbnail_extractor = ThumbnailExtractor()
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Request processing to stop"""
         self._should_stop = True
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up the thread gracefully - optimized for fast navigation"""
         logger = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class RAWProcessorPart1(QThread):
 
         return apply_container_orientation_to_array(image_array, orientation, exif_data)
 
-    def is_raw_data_pre_rotated(self):
+    def is_raw_data_pre_rotated(self) -> bool:
         """Check if this camera/file stores RAW data pre-rotated - optimized"""
         # CRITICAL: Even for SONY/Leica/Hasselblad cameras, we should apply orientation correction
         # based on EXIF orientation tag, as the RAW data may not always be pre-rotated correctly
@@ -210,7 +210,7 @@ class RAWProcessorPart1(QThread):
         #
         # return False
 
-    def is_canon_camera(self):
+    def is_canon_camera(self) -> bool:
         """Check if this is a Canon camera that needs special white balance processing"""
         try:
             # First try to detect by file extension (more reliable for CR3)
@@ -233,7 +233,7 @@ class RAWProcessorPart1(QThread):
 
         return False
 
-    def is_fujifilm_camera(self):
+    def is_fujifilm_camera(self) -> bool:
         """Check if this is a Fujifilm camera that needs special white balance processing"""
         try:
             # First try to detect by file extension (more reliable for RAF)

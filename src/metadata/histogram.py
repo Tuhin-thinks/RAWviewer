@@ -68,7 +68,7 @@ class ImageHistogramWidget(QWidget):
     _BORDER = QColor(255, 255, 255, 45)
     _RADIUS = 8
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._hr: np.ndarray | None = None
         self._hg: np.ndarray | None = None
@@ -84,15 +84,15 @@ class ImageHistogramWidget(QWidget):
         self._drag_press_global = None
         self._drag_pos_at_press = None
 
-    def enterEvent(self, event):
+    def enterEvent(self, event) -> None:
         self.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
         super().enterEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event) -> None:
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         super().leaveEvent(event)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_press_global = event.globalPosition().toPoint()
             self._drag_pos_at_press = self.pos()
@@ -101,7 +101,7 @@ class ImageHistogramWidget(QWidget):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if self._drag_press_global is not None and event.buttons() & Qt.MouseButton.LeftButton:
             parent = self.parentWidget()
             if parent:
@@ -117,7 +117,7 @@ class ImageHistogramWidget(QWidget):
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_press_global = None
             self._drag_pos_at_press = None
@@ -157,7 +157,7 @@ class ImageHistogramWidget(QWidget):
         self._hi_clip, self._lo_clip, self._clip_total = clipping_counts(rgb)
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -173,7 +173,7 @@ class ImageHistogramWidget(QWidget):
             painter.drawText(chart, Qt.AlignmentFlag.AlignCenter, "—")
             return
 
-        def polyline(hist: np.ndarray, color: QColor, width_f: float = 1.2):
+        def polyline(hist: np.ndarray, color: QColor, width_f: float = 1.2) -> None:
             peak = float(np.max(hist))
             if peak < 1.0:
                 peak = 1.0

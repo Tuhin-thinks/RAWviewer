@@ -11,7 +11,7 @@ from rawviewer_app.signals import FolderLoadSignals
 
 
 class SessionMixin:
-    def load_folder_images(self, folder_path, start_file=None, start_view=None):
+    def load_folder_images(self, folder_path, start_file=None, start_view=None) -> None:
         """Load images from a folder without blocking the UI during scan/sort."""
         logger = logging.getLogger(__name__)
         folder_path = os.path.abspath(folder_path)
@@ -109,7 +109,9 @@ class SessionMixin:
             viewer = self
 
             class _FolderLoadWorker(QRunnable):
-                def __init__(self_inner, token, folder_path, extensions, newest_first, start_file, start_view, signals):
+                def __init__(
+                    self_inner, token, folder_path, extensions, newest_first, start_file, start_view, signals
+                ) -> None:
                     super().__init__()
                     self_inner.token = token
                     self_inner.folder_path = folder_path
@@ -119,7 +121,7 @@ class SessionMixin:
                     self_inner.start_view = start_view
                     self_inner.signals = signals
 
-                def run(self_inner):
+                def run(self_inner) -> None:
                     import time
 
                     try:
@@ -222,7 +224,7 @@ class SessionMixin:
             if fast_open:
                 defer_ms = _env_int("RAWVIEWER_FAST_OPEN_FOLDER_LOAD_DEFER_MS", 2500, minimum=0)
 
-                def _deferred_start(w=worker):
+                def _deferred_start(w=worker) -> None:
                     if token == getattr(viewer, "_folder_load_generation", None):
                         QThreadPool.globalInstance().start(w, priority=-1)
 
@@ -295,7 +297,7 @@ class SessionMixin:
         with contextlib.suppress(ValueError):
             lst.remove(file_path)
 
-    def save_session_state(self):
+    def save_session_state(self) -> None:
         settings = self.get_settings()
 
         # Always save window geometry and state
@@ -360,7 +362,7 @@ class SessionMixin:
         except Exception:
             pass
 
-    def restore_session_state(self):
+    def restore_session_state(self) -> bool:
         """Restore the last session's folder and file, with error handling for unavailable drives"""
         logger = logging.getLogger(__name__)
 

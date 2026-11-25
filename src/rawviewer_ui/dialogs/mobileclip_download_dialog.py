@@ -22,7 +22,7 @@ class MobileCLIPDownloadDialog(QDialog):
     download_requested = pyqtSignal()
     _DIALOG_WIDTH = 460
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._download_started = False
 
@@ -304,7 +304,7 @@ class MobileCLIPDownloadDialog(QDialog):
         self._apply_size_for_page(2)
         self._center_on_parent()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = True
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
@@ -312,14 +312,14 @@ class MobileCLIPDownloadDialog(QDialog):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if getattr(self, "_dragging", False):
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()

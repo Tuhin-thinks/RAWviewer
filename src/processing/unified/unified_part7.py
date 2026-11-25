@@ -483,7 +483,7 @@ class UnifiedPart7:
                     if use_full_resolution:
                         if isinstance(rgb_image, DeviceRgb):
                             # Defer host D2H so CUDA-GL display can paint first.
-                            def _cache_device_host(dev=rgb_image, fp=file_path, expected=cache_gen):
+                            def _cache_device_host(dev=rgb_image, fp=file_path, expected=cache_gen) -> None:
                                 try:
                                     if self._async_cache_gen_current(fp) != expected:
                                         return
@@ -529,7 +529,7 @@ class UnifiedPart7:
                     #      2304px JPEG; spatial tools run at preview scale).
                     # Default (no browse-edits): persist the unadjusted base.
 
-                    def _persist_libraw_preview(rgb=rgb_image, fp=file_path, expected=cache_gen):
+                    def _persist_libraw_preview(rgb=rgb_image, fp=file_path, expected=cache_gen) -> None:
                         try:
                             if self._async_cache_gen_current(fp) != expected:
                                 return

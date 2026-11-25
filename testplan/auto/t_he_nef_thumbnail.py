@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -28,10 +28,10 @@ def check(name, ok, detail=""):
 class _FakeProcessor:
     """Stands in for UnifiedImageProcessor's registry lookup."""
 
-    def __init__(self, registered=()):
+    def __init__(self, registered=()) -> None:
         self._registered = {os.path.normcase(os.path.abspath(p)) for p in registered}
 
-    def is_libraw_unsupported(self, file_path):
+    def is_libraw_unsupported(self, file_path) -> bool:
         return os.path.normcase(os.path.abspath(file_path)) in self._registered
 
 

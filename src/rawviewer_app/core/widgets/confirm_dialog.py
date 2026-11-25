@@ -30,15 +30,15 @@ class CustomConfirmDialog(QDialog):
     def __init__(
         self,
         parent=None,
-        title="Confirm Delete",
-        message="",
-        informative_text="",
+        title: str = "Confirm Delete",
+        message: str = "",
+        informative_text: str = "",
         *,
         confirm_action: str = "Delete",
         confirm_label: str | None = None,
         cancel_label: str | None = None,
         body_widget=None,
-    ):
+    ) -> None:
         super().__init__(parent)
         flags = Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint
         if sys.platform == "darwin":
@@ -329,7 +329,7 @@ class CustomConfirmDialog(QDialog):
         self.container.setFixedSize(dialog_w, dialog_h)
         self.setFixedSize(dialog_w, dialog_h)
 
-    def showEvent(self, event):
+    def showEvent(self, event) -> None:
         super().showEvent(event)
         # Re-fit after the real font/layout pass; bodies added after
         # construction must never stay clipped inside a stale fixed size.
@@ -345,7 +345,7 @@ class CustomConfirmDialog(QDialog):
             app.applicationStateChanged.connect(self._on_application_state_changed)
             self._app_state_connected = True
 
-    def hideEvent(self, event):
+    def hideEvent(self, event) -> None:
         app = QApplication.instance()
         if app and self._app_state_connected:
             with contextlib.suppress(Exception):
@@ -369,7 +369,7 @@ class CustomConfirmDialog(QDialog):
                 return
             self.reject()
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
         if key == Qt.Key.Key_Escape:
             self.reject()
@@ -392,15 +392,15 @@ class CustomConfirmDialog(QDialog):
                 return
         super().keyPressEvent(event)
 
-    def accept(self):
+    def accept(self) -> None:
         self.result_value = True
         super().accept()
 
-    def reject(self):
+    def reject(self) -> None:
         self.result_value = False
         super().reject()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         """Allow dragging the dialog"""
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = True
@@ -409,7 +409,7 @@ class CustomConfirmDialog(QDialog):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         """Handle dragging"""
         if hasattr(self, "_dragging") and self._dragging:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
@@ -417,7 +417,7 @@ class CustomConfirmDialog(QDialog):
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         """Stop dragging"""
         if hasattr(self, "_dragging"):
             self._dragging = False

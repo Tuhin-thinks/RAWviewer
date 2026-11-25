@@ -297,7 +297,7 @@ def _macos_app_bundle_name(profile: str = "full") -> str:
     return "RAWviewer"
 
 
-def update_macos_plist(app_path, profile: str = "full"):
+def update_macos_plist(app_path, profile: str = "full") -> bool:
     """Update Info.plist in macOS app bundle to add file associations"""
     plist_path = os.path.join(app_path, "Contents", "Info.plist")
     if not os.path.exists(plist_path):
@@ -447,7 +447,7 @@ def ensure_packaged_libraw() -> bool:
     return True
 
 
-def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full"):
+def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full") -> bool:
     """Install required dependencies"""
     lite = profile.strip().lower() == "lite"
     if _build_skip_deps():
@@ -1103,7 +1103,7 @@ def _prune_built_app(exe_path: Path, profile: str) -> None:
             shutil.rmtree(info, ignore_errors=True)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Build RAWviewer executable")
     parser.add_argument(
         "--windows-accel",

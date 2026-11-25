@@ -44,14 +44,14 @@ class InstallWorker(QObject):
     progress_signal = pyqtSignal(int)
     progress_label_signal = pyqtSignal(str)
 
-    def __init__(self, target_dir, install_mode, clear_cache: bool = False):
+    def __init__(self, target_dir, install_mode, clear_cache: bool = False) -> None:
         super().__init__()
         self.target_dir = os.path.normpath(target_dir)
         self.install_mode = install_mode
         self.clear_cache = bool(clear_cache)
         self.cancelled = False
 
-    def stop(self):
+    def stop(self) -> None:
         self.cancelled = True
 
     def _is_cancelled(self) -> bool:

@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -44,7 +44,7 @@ class StubViewer:
     class below, so this exercises shipping code rather than a copy of it.
     """
 
-    def __init__(self, mainmod, extensions=(".arw", ".jpg")):
+    def __init__(self, mainmod, extensions=(".arw", ".jpg")) -> None:
         self._mainmod = mainmod
         self._extensions = list(extensions)
 

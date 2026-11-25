@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -30,13 +30,13 @@ def main() -> int:
     import main as mainmod
 
     class FakePanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.mask_present_calls = []
 
-        def set_dodge_burn_mask_present(self, present):
+        def set_dodge_burn_mask_present(self, present) -> None:
             self.mask_present_calls.append(present)
 
-        def dodge_burn_show_mask(self):
+        def dodge_burn_show_mask(self) -> bool:
             return False
 
     def make_mock(*, mask):

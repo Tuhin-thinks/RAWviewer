@@ -12,7 +12,7 @@ import numpy as np
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -184,16 +184,16 @@ def main() -> int:
     import main as mainmod
 
     class FakePanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.heal_calls = []
 
-        def set_spot_heal_mask_present(self, present):
+        def set_spot_heal_mask_present(self, present) -> None:
             self.heal_calls.append(present)
 
-        def dodge_burn_show_mask(self):
+        def dodge_burn_show_mask(self) -> bool:
             return False
 
-        def dodge_burn_mode(self):
+        def dodge_burn_mode(self) -> str:
             return "heal"
 
     m = type("M", (), {})()

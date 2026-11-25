@@ -381,7 +381,7 @@ class CustomReverseGeocoder:
 
     _LANDMARK_DIST_SQ = 0.0182  # ~15 km squared degree distance
 
-    def __init__(self, cities: list, landmarks: list | None = None):
+    def __init__(self, cities: list, landmarks: list | None = None) -> None:
         self.cities = cities
         self.landmarks = landmarks or []
         self._city_coords = (

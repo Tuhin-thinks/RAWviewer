@@ -20,7 +20,7 @@ class CompareHandleItem(QGraphicsEllipseItem):
     grip lines in the center to clearly convey that it can be dragged.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setAcceptHoverEvents(True)
 
@@ -49,7 +49,7 @@ class RgbGlImageItem(QGraphicsObject):
       upload, painted with ``beginNativePainting`` (Phase 2c).
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._w = 0
         self._h = 0
@@ -182,7 +182,7 @@ class RgbGlImageItem(QGraphicsObject):
     def _schedule_pending_cuda_drain(self) -> None:
         from PyQt6.QtCore import QTimer
 
-        def _drain():
+        def _drain() -> None:
             try:
                 if not self._pending_cuda_release:
                     return

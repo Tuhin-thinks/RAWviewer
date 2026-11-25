@@ -31,7 +31,7 @@ FAILURES = []
 GOLDEN_ARW = os.environ.get("RAWVIEWER_TEST_ASSETS_ARW", "/tmp/RAW_Sample/DSC01089.ARW")
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)

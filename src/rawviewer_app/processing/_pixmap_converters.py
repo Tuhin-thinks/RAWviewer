@@ -10,7 +10,7 @@ class PixmapConverter(QThread):
 
     pixmap_ready = pyqtSignal(str, QPixmap)  # file_path, pixmap
 
-    def __init__(self, file_path, rgb_image, image_cache):
+    def __init__(self, file_path, rgb_image, image_cache) -> None:
         super().__init__()
         self.file_path = file_path
         # Not copied here: this class is a QThread, but __init__ runs
@@ -26,11 +26,11 @@ class PixmapConverter(QThread):
         self.image_cache = image_cache
         self._should_stop = False
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Request processing to stop"""
         self._should_stop = True
 
-    def run(self):
+    def run(self) -> None:
         """Convert numpy array to QPixmap in background"""
         try:
             if self._should_stop:
@@ -109,17 +109,17 @@ class RawEdrPixmapConverter(QThread):
         *,
         max_edge: int = 0,
         exif_data=None,
-    ):
+    ) -> None:
         super().__init__()
         self.file_path = file_path
         self.max_edge = int(max_edge or 0)
         self.exif_data = exif_data
         self._should_stop = False
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         self._should_stop = True
 
-    def run(self):
+    def run(self) -> None:
         try:
             if self._should_stop:
                 return

@@ -49,7 +49,7 @@ def _register_exif_cache_atexit() -> None:
         return
     _exif_cache_atexit_registered = True
 
-    def _flush_exif_on_exit():
+    def _flush_exif_on_exit() -> None:
         global _global_cache
         if _global_cache is not None:
             with contextlib.suppress(Exception):

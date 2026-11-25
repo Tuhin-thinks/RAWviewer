@@ -11,7 +11,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     extra = f"  {detail}" if detail else ""
     print(f"{'PASS' if ok else 'FAIL'}  {name}{extra}")
     if not ok:

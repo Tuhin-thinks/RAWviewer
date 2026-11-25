@@ -36,14 +36,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 class FakeTask:
-    def __init__(self, cancelled=False, priority=None):
+    def __init__(self, cancelled: bool = False, priority: int | None = None) -> None:
         self._cancelled = cancelled
         # Default owners to BACKGROUND (the common prefetch/idle full-decode
         # priority); tests that care set it explicitly.
@@ -66,7 +66,7 @@ def make_manager_stub():
     return m
 
 
-def register(m, file_path, use_full_resolution, stages, *, cancelled=False, priority=None):
+def register(m, file_path, use_full_resolution, stages, *, cancelled: bool = False, priority: int | None = None):
     key = (file_path, use_full_resolution, tuple(sorted(stages)), None)
     m._active_tasks[key] = FakeTask(cancelled=cancelled, priority=priority)
     m._task_keys_by_path[file_path].add(key)

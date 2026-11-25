@@ -71,7 +71,7 @@ class ColorCheckerPreviewCanvas(QWidget):
 
     corners_changed = pyqtSignal()
 
-    def __init__(self, image: np.ndarray, parent: QWidget | None = None):
+    def __init__(self, image: np.ndarray, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.image = image
         self._pixmap = self._numpy_to_pixmap(image)
@@ -170,7 +170,7 @@ class ColorCheckerPreviewCanvas(QWidget):
         h, w = self.image.shape[:2]
         return [(p.x() * w, p.y() * h) for p in self.corners]
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             rect = self._get_image_rect()
             pos = event.position()
@@ -185,7 +185,7 @@ class ColorCheckerPreviewCanvas(QWidget):
                     return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         rect = self._get_image_rect()
         pos = event.position()
 
@@ -216,7 +216,7 @@ class ColorCheckerPreviewCanvas(QWidget):
 
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self._drag_idx != -1:
             self._drag_idx = -1
             self.update()
@@ -235,7 +235,7 @@ class ColorCheckerPreviewCanvas(QWidget):
         ry = (ch - rh) / 2.0
         return QRectF(rx, ry, rw, rh)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -285,7 +285,7 @@ class ColorCalibrationDialog(QDialog):
         parent: QWidget | None = None,
         has_factory_profile: bool | None = None,
         source_file: str | None = None,
-    ):
+    ) -> None:
         super().__init__(parent)
         # True  -> LibRaw ships a colour matrix for this body; calibrating
         #          overrides colour science that already works.

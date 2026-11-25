@@ -13,7 +13,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -52,7 +52,7 @@ def main() -> int:
 
         interim_shapes = []
 
-        def on_interim(buf):
+        def on_interim(buf) -> None:
             interim_shapes.append(getattr(buf, "shape", None))
 
         out = proc.apply_sidecar_progressive(img_path, base, on_interim=on_interim)

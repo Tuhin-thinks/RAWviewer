@@ -33,7 +33,7 @@ class SingleImageViewOverlay(QWidget):
         gpu_view=None,
         map_widget=None,
         adjust_widget=None,
-    ):
+    ) -> None:
         super().__init__(parent)
         self._viewer = viewer
         self._scroll = scroll_area
@@ -239,7 +239,7 @@ class SingleImageViewOverlay(QWidget):
         if not self._filmstrip_layer_visible():
             return
 
-        def _finish_hide():
+        def _finish_hide() -> None:
             self._hide_filmstrip_layer()
             self._filmstrip_opacity.setOpacity(0.0)
             self._filmstrip_reveal = False
@@ -398,7 +398,7 @@ class SingleImageViewOverlay(QWidget):
             if not self._filmstrip_pointer_active:
                 self._schedule_hide_filmstrip()
 
-    def eventFilter(self, watched, event):
+    def eventFilter(self, watched, event) -> bool:
         from PyQt6.QtCore import QEvent
 
         gpu = self._gpu_view
@@ -419,7 +419,7 @@ class SingleImageViewOverlay(QWidget):
         """Backward-compatible alias for fade-in."""
         self._fade_in_filmstrip()
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         # Scroll area stays full size; film strip overlays the bottom (no image reflow).
         self._scroll.setGeometry(0, 0, self.width(), self.height())
@@ -466,7 +466,7 @@ class SingleImageViewOverlay(QWidget):
         if viewer is not None and hasattr(viewer, "_restore_keyboard_focus"):
             QTimer.singleShot(0, viewer._restore_keyboard_focus)
 
-    def _layout_adjust(self):
+    def _layout_adjust(self) -> None:
         panel = self._adj
         if panel is None or not panel.isVisible():
             return
@@ -486,16 +486,16 @@ class SingleImageViewOverlay(QWidget):
             panel.move(x, y)
         panel.raise_()
 
-    def mark_adjust_user_moved(self):
+    def mark_adjust_user_moved(self) -> None:
         self._adj_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
             viewer.schedule_save_session_state()
 
-    def relayout_adjust(self):
+    def relayout_adjust(self) -> None:
         self._layout_adjust()
 
-    def _layout_map(self):
+    def _layout_map(self) -> None:
         m = self._map
         if m is None or not m.isVisible():
             return
@@ -515,10 +515,10 @@ class SingleImageViewOverlay(QWidget):
             m.move(x, y)
         m.raise_()
 
-    def relayout_map(self):
+    def relayout_map(self) -> None:
         self._layout_map()
 
-    def mark_map_user_moved(self):
+    def mark_map_user_moved(self) -> None:
         self._map_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
@@ -580,7 +580,7 @@ class SingleImageViewOverlay(QWidget):
             except (KeyError, TypeError, ValueError):
                 pass
 
-    def _layout_filmstrip(self):
+    def _layout_filmstrip(self) -> None:
         layer = getattr(self, "_filmstrip_layer", None)
         if layer is None:
             return
@@ -600,16 +600,16 @@ class SingleImageViewOverlay(QWidget):
         self._layout_filmstrip_inner()
         self._raise_filmstrip_chrome()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         self.handle_pointer_for_filmstrip(event.globalPosition())
         super().mouseMoveEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event) -> None:
         self._cancel_show_filmstrip()
         self._schedule_hide_filmstrip()
         super().leaveEvent(event)
 
-    def _layout_histogram(self):
+    def _layout_histogram(self) -> None:
         h = self._hist
         if not h.isVisible():
             return
@@ -629,41 +629,41 @@ class SingleImageViewOverlay(QWidget):
             h.move(x, y)
         h.raise_()
 
-    def mark_histogram_user_moved(self):
+    def mark_histogram_user_moved(self) -> None:
         self._hist_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
             viewer.schedule_save_session_state()
 
-    def relayout_histogram(self):
+    def relayout_histogram(self) -> None:
         self._layout_histogram()
 
 
 class LoadingOverlay(QWidget):
     """Semi-transparent loading overlay with spinner-like message"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setVisible(False)
         self._message = "Loading Image..."
 
-    def set_message(self, message):
+    def set_message(self, message) -> None:
         self._message = message
         self.update()
 
-    def show_loading(self, message=None):
+    def show_loading(self, message=None) -> None:
         if message:
             self._message = message
         self.setVisible(True)
         self.raise_()
         self.update()
 
-    def hide_loading(self):
+    def hide_loading(self) -> None:
         self.setVisible(False)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -690,6 +690,6 @@ class LoadingOverlay(QWidget):
         painter.setFont(font)
         painter.drawText(x, y, box_width, box_height, Qt.AlignmentFlag.AlignCenter, self._message)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         # Already covers parent because we resize it in parent's resizeEvent
         super().resizeEvent(event)

@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -33,7 +33,7 @@ def main() -> int:
     import main as mainmod
 
     class FakeBar:
-        def __init__(self):
+        def __init__(self) -> None:
             self.enabled = True
             self.visible = True
             self.set_files_calls = 0
@@ -41,22 +41,22 @@ def main() -> int:
         def isEnabled(self):
             return self.enabled
 
-        def setEnabled(self, v):
+        def setEnabled(self, v) -> None:
             self.enabled = v
 
         def isVisible(self):
             return self.visible
 
-        def hide(self):
+        def hide(self) -> None:
             self.visible = False
 
-        def show(self):
+        def show(self) -> None:
             self.visible = True
 
-        def set_files(self, *a, **k):
+        def set_files(self, *a, **k) -> None:
             self.set_files_calls += 1
 
-    def make_mock(*, adjust_active, n_files=3):
+    def make_mock(*, adjust_active, n_files: int = 3):
         m = type("M", (), {})()
         m.view_mode = "single"
         m._adjust_overlay_visible = adjust_active
@@ -67,7 +67,7 @@ def main() -> int:
         m._sync_filmstrip_in_progress = False
 
         class FakePanel:
-            def isVisible(self):
+            def isVisible(self) -> bool:
                 return True
 
         m.single_image_adjust_panel = FakePanel()

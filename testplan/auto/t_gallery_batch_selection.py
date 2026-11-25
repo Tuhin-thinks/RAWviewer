@@ -22,7 +22,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -60,7 +60,7 @@ def main() -> int:
     class _StyleCountLabel(ThumbnailLabel):
         setstyle_calls = 0
 
-        def setStyleSheet(self, style):  # noqa: N802
+        def setStyleSheet(self, style) -> None:  # noqa: N802
             _StyleCountLabel.setstyle_calls += 1
             super().setStyleSheet(style)
 
@@ -90,11 +90,11 @@ def main() -> int:
     # --- selection core via borrowed methods --------------------------------
 
     class _GalleryStub:
-        def refresh_gallery_selection_visuals(self):
+        def refresh_gallery_selection_visuals(self) -> None:
             self.refreshed = True
 
     class _Host:
-        def __init__(self, files, display=None):
+        def __init__(self, files, display=None) -> None:
             self.view_mode = "gallery"
             self.image_files = list(files)
             self._gallery_selected_paths = set()
@@ -106,10 +106,10 @@ def main() -> int:
         def _gallery_files_for_display(self):
             return list(self._display)
 
-        def _is_burst_grouping_enabled(self):
+        def _is_burst_grouping_enabled(self) -> bool:
             return False
 
-    def borrow(name):
+    def borrow(name: str):
         return RAWImageViewer.__dict__[name]
 
     host = _Host([])
@@ -290,7 +290,7 @@ def main() -> int:
         loop = QEventLoop()
         state = {"done": None}
 
-        def _fin(done, failed, cancelled, detail):
+        def _fin(done, failed, cancelled, detail) -> None:
             state["done"] = (done, failed, cancelled, detail)
             loop.quit()
 
@@ -318,7 +318,7 @@ def main() -> int:
         loop2 = QEventLoop()
         state2 = {}
 
-        def _fin2(done, failed, cancelled, detail):
+        def _fin2(done, failed, cancelled, detail) -> None:
             state2["done"] = (done, failed, cancelled)
             loop2.quit()
 
@@ -348,7 +348,7 @@ def main() -> int:
         loop3 = QEventLoop()
         state3 = {}
 
-        def _fin3(done, failed, cancelled, detail):
+        def _fin3(done, failed, cancelled, detail) -> None:
             state3["done"] = (done, failed, cancelled)
             loop3.quit()
 
@@ -366,14 +366,14 @@ def main() -> int:
     import image_cache as _image_cache
 
     class _StubCache:
-        def __init__(self):
+        def __init__(self) -> None:
             self.invalidated = []
 
-        def invalidate_file(self, p):
+        def invalidate_file(self, p) -> None:
             self.invalidated.append(p)
 
     class _RemovalHost:
-        def __init__(self, files):
+        def __init__(self, files) -> None:
             self.image_files = list(files)
             self.current_file_path = files[0] if files else None
             self.current_file_index = 0
@@ -384,16 +384,16 @@ def main() -> int:
             self.bulk_calls = []
             self.saves = 0
 
-        def _drop_discarded_from_semantic_corpus(self, p):
+        def _drop_discarded_from_semantic_corpus(self, p) -> None:
             self.corpus_dropped.append(p)
 
-        def _after_gallery_bulk_file_removal(self, anchor_path=None):
+        def _after_gallery_bulk_file_removal(self, anchor_path=None) -> None:
             self.bulk_calls.append(anchor_path)
 
-        def schedule_save_session_state(self):
+        def schedule_save_session_state(self) -> None:
             self.saves += 1
 
-        def show_error(self, *a, **k):
+        def show_error(self, *a, **k) -> None:
             self._errors = a
 
     rhost = _RemovalHost(files)
@@ -434,7 +434,7 @@ def main() -> int:
     phost._cancel_load_and_preload_for_path = lambda p: phost._cancelled.append(p)
     recorded = {}
 
-    def _fake_start(kind, paths, dest_dir="", reveal=False, **kw):
+    def _fake_start(kind, paths, dest_dir: str = "", reveal: bool = False, **kw) -> None:
         recorded["args"] = (kind, list(paths), dest_dir, reveal)
 
     phost._start_batch_op = _fake_start

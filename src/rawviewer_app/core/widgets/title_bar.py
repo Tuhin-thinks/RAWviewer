@@ -13,7 +13,7 @@ from core import theme
 class CustomTitleBar(QFrame):
     """Material Design 3 style custom title bar for frameless window."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.parent = parent
         self.setFixedHeight(40)  # Smaller height
@@ -166,7 +166,7 @@ class CustomTitleBar(QFrame):
         else:
             self.max_btn.setIcon(qta.icon("fa5.square", color=theme.INK))
 
-    def _toggle_maximize(self):
+    def _toggle_maximize(self) -> None:
         if self.parent.isMaximized():
             self.parent.showNormal()
         else:
@@ -185,7 +185,7 @@ class CustomTitleBar(QFrame):
             # Wait a bit for window size to settle
             QTimer.singleShot(200, self.parent.gallery_justified.force_layout_update)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             parent = self.parent
             if parent is not None and hasattr(parent, "_title_bar_corner_resize_at"):
@@ -203,26 +203,26 @@ class CustomTitleBar(QFrame):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if self._dragging and not self._is_maximized:
             self.parent.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if self._dragging:
             self._dragging = False
             event.accept()
             return
         super().mouseReleaseEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._toggle_maximize()
             event.accept()
 
-    def set_title(self, title):
+    def set_title(self, title) -> None:
         """No-op: custom title bar displays icon only (window title uses setWindowTitle)."""
         return
 

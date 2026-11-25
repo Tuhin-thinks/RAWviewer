@@ -10,7 +10,7 @@ sys.path.insert(0, SRC)
 
 
 class SplashCopyTests(unittest.TestCase):
-    def test_version_matches_app_version(self):
+    def test_version_matches_app_version(self) -> None:
         from startup_splash import app_version_for_splash, splash_subtitle
 
         from core.app_version import APP_VERSION
@@ -20,12 +20,12 @@ class SplashCopyTests(unittest.TestCase):
         self.assertIn(APP_VERSION, sub)
         self.assertTrue("Plus" in sub or "Standard" in sub)
 
-    def test_status_helper_tolerates_none(self):
+    def test_status_helper_tolerates_none(self) -> None:
         from startup_splash import splash_show_status
 
         splash_show_status(None, "Starting…")
 
-    def test_splash_card_has_footer(self):
+    def test_splash_card_has_footer(self) -> None:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
         from PyQt6.QtWidgets import QApplication
 

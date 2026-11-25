@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class PersistentEXIFCache:
     """Persistent cache for EXIF data using SQLite."""
 
-    def __init__(self, cache_dir: str = None):
+    def __init__(self, cache_dir: str = None) -> None:
         if cache_dir is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         os.makedirs(cache_dir, exist_ok=True)
@@ -159,7 +159,7 @@ class PersistentEXIFCache:
         with self.lock:
             self._flush_pending_writes()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize the SQLite database."""
         with self.lock:
             conn = self._get_connection()
@@ -661,7 +661,7 @@ class PersistentEXIFCache:
             )
         return out
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection for the current thread.
 
         Flushes batched writes first -- without this, any EXIF update that

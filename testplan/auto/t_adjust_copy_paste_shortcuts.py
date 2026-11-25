@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -23,7 +23,7 @@ def main() -> int:
     import main as mainmod
 
     class MockEvent:
-        def __init__(self, key, modifiers, auto_repeat=False):
+        def __init__(self, key, modifiers, auto_repeat: bool = False) -> None:
             self._key = key
             self._modifiers = modifiers
             self._auto_repeat = auto_repeat
@@ -38,25 +38,25 @@ def main() -> int:
             return self._auto_repeat
 
     class MockPanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.copy_called = False
             self.paste_called = False
 
-        def _on_copy_settings_clicked(self):
+        def _on_copy_settings_clicked(self) -> None:
             self.copy_called = True
 
-        def _on_paste_settings_clicked(self):
+        def _on_paste_settings_clicked(self) -> None:
             self.paste_called = True
 
     class MockStatusBar:
-        def __init__(self):
+        def __init__(self) -> None:
             self.messages = []
 
-        def showMessage(self, msg, timeout):
+        def showMessage(self, msg, timeout) -> None:
             self.messages.append(msg)
 
     class MockViewer(QObject):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self._focus_widget = None
             self.view_mode = "single"
@@ -67,7 +67,7 @@ def main() -> int:
         def focusWidget(self):
             return self._focus_widget
 
-        def __getattr__(self, name):
+        def __getattr__(self, name: str):
             return lambda *args, **kwargs: None
 
     m = MockViewer()

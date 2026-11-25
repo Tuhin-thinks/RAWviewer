@@ -329,7 +329,7 @@ class _NullCtx:
     def __enter__(self):
         return self
 
-    def __exit__(self, *a):
+    def __exit__(self, *a) -> bool:
         return False
 
 
@@ -368,7 +368,7 @@ class _GpuIspWorkspace:
         "pinned_rgb_u16",
     )
 
-    def __init__(self, device):
+    def __init__(self, device) -> None:
         self.device = device
         self.h = 0
         self.w = 0

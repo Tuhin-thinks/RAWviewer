@@ -12,7 +12,7 @@ from ._raw_part1 import RAWProcessorPart1
 
 
 class RAWProcessorPart2(RAWProcessorPart1):
-    def run(self):
+    def run(self) -> None:
         """Main processing method with improved error handling and resource management"""
         logger = logging.getLogger(__name__)
         try:

@@ -139,11 +139,11 @@ def ensure_scunet_model_downloaded() -> bool:
 class SCUNetONNX:
     """Wraps an ONNX-based SCUNet noise reduction model with tiled execution."""
 
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         self._session = None
 
-    def _init_session(self):
+    def _init_session(self) -> None:
         import onnxruntime as ort
 
         key = _session_key(self.model_path)

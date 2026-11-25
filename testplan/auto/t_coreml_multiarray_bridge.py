@@ -19,7 +19,7 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 class _FakeMultiArray:
-    def __init__(self, data: np.ndarray, data_type: int = 65568):
+    def __init__(self, data: np.ndarray, data_type: int = 65568) -> None:
         self._buf = np.ascontiguousarray(data)
         self._dtype = data_type
 

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -86,7 +86,7 @@ def main() -> int:
 
     # --- _nef_he_compressed helper still works for browse detection ---
     class FakeCache:
-        def __init__(self, row):
+        def __init__(self, row) -> None:
             self._row = row
 
         def get_exif(self, file_path):

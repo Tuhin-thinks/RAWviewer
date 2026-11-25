@@ -23,7 +23,7 @@ class ImageLoadManagerPart2:
         thumbnail_fit: str = "crop",
         bypass_cache: bool = False,
         gallery_thumbnail: bool = False,
-    ):
+    ) -> None:
         """請求加載圖像"""
         # Don't accept new tasks if stopped
         if self._stopped:
@@ -300,7 +300,7 @@ class ImageLoadManagerPart2:
         holders.discard(task)
         self._active_raw_tasks = len(holders)
 
-    def cancel_task(self, file_path: str):
+    def cancel_task(self, file_path: str) -> None:
         """取消任務（非阻塞）"""
         with self._queue_lock:
             keys = list(self._task_keys_by_path.get(file_path, ()))

@@ -27,7 +27,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -64,7 +64,7 @@ def main() -> int:
         check("main thread reports as the GUI thread", uip._on_gui_thread() is True)
         seen = {}
 
-        def probe():
+        def probe() -> None:
             seen["gui"] = uip._on_gui_thread()
 
         t = threading.Thread(target=probe)
@@ -83,7 +83,7 @@ def main() -> int:
 
         result = {}
 
-        def worker():
+        def worker() -> None:
             try:
                 result["buf"] = proc._process_regular_image(jpg, use_full_resolution=True)
             except Exception as exc:  # noqa: BLE001

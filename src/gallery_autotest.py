@@ -97,7 +97,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         except Exception:
             return False
 
-    def _press_key():
+    def _press_key() -> None:
         # Guard: Up in single view toggles bookmark; never press until gallery.
         if not _in_gallery():
             safe_print(
@@ -114,7 +114,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         else:
             viewer._shortcut_activate_gallery_down()
 
-    def _poll():
+    def _poll() -> None:
         g = _gallery()
         if g is None:
             return
@@ -164,7 +164,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         )
         QApplication.sendEvent(vp, ev)
 
-    def _wheel_tick():
+    def _wheel_tick() -> None:
         """120Hz synthetic trackpad: drag 0.6s -> momentum decay -> idle 0.5s."""
         from PyQt6.QtCore import Qt
 
@@ -206,7 +206,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
                 _send_wheel(dy, Qt.ScrollPhase.ScrollMomentum)
                 state["presses"] += 1
 
-    def _heartbeat():
+    def _heartbeat() -> None:
         now = time.time()
         last = state["hb_last"]
         state["hb_last"] = now
@@ -216,7 +216,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         if gap_ms > 25.0:
             state["stall_gaps"].append((round(now - state["t0"], 2), round(gap_ms, 1)))
 
-    def _finish():
+    def _finish() -> None:
         _poll()
         poll_timer.stop()
         gaps = sorted(g for _, g in state["stall_gaps"])
@@ -244,7 +244,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         safe_print(f"[GALLERYTEST] timeline={state['samples']}", flush=True, force=True)
         _quit_app("done")
 
-    def _press():
+    def _press() -> None:
         if time.time() - state["t0"] >= duration_s:
             key_timer.stop()
             # Let in-flight tiles land before the final count.
@@ -256,7 +256,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         except Exception as e:  # pragma: no cover
             safe_print(f"[GALLERYTEST] key press failed: {e}", flush=True, force=True)
 
-    def _start_keyhold():
+    def _start_keyhold() -> None:
         if state["started"]:
             return
         if not _in_gallery():
@@ -306,7 +306,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             force=True,
         )
 
-    def _try_enter_gallery():
+    def _try_enter_gallery() -> None:
         """Wait for folder scan + EXIF-sort gate (v2.5), then toggle into gallery."""
         if _in_gallery():
             _start_keyhold()
@@ -373,7 +373,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             )
         QTimer.singleShot(200, _try_enter_gallery)
 
-    def _wait_first_render():
+    def _wait_first_render() -> None:
         if getattr(viewer, "_single_view_first_render_logged", False):
             if state["first_render_s"] is None:
                 state["first_render_s"] = round(time.time() - harness_t0, 3)

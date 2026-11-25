@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -57,7 +57,7 @@ def main() -> int:
     calls = []
 
     class StubSCUNet:
-        def __init__(self, _path):
+        def __init__(self, _path) -> None:
             pass
 
         def process(self, img, **kwargs):
