@@ -57,6 +57,10 @@ from typing import Any
 import numpy as np
 
 from core.errors import DecodeCancelled, RAWViewerError  # noqa: F401
+from processing.raw_decode.camera_wb import (  # moved (P2b); re-exported  # moved (P2b); re-exported
+    _WB_CORRECTION_CACHE,
+    wb_sanity_enabled,
+)
 from processing.raw_decode.gamma import (  # moved (P2b); re-exported
     _gamma_lut8,
 )
@@ -207,14 +211,6 @@ def gpu_decode_max_megapixels() -> float:
         return 70.0
 
 
-def wb_sanity_enabled() -> bool:
-    """As-shot WB sanity check vs embedded JPEG (RAWVIEWER_WB_SANITY=0 disables)."""
-    return str(os.environ.get("RAWVIEWER_WB_SANITY", "1")).strip().lower() not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
 
 
 # Midtone-masked median of per-pixel log(R/G), log(B/G) differences between a
@@ -226,7 +222,6 @@ def wb_sanity_enabled() -> bool:
 # threshold 0.5 sits in the middle of a >5x gap.
 _WB_SANITY_THRESHOLD = 0.5
 # key: normcase(abspath). Value: corrected cam_mul list, or None = checked, OK.
-_WB_CORRECTION_CACHE: dict[str, list[float] | None] = {}
 # Per-MODEL verdict: the WB misparse is a parser-vs-model property, so once
 # one file of a model measures clean, later files of that model skip the
 # embedded-JPEG check entirely -- it costs ~38ms of thumb extract + decode +
@@ -265,17 +260,6 @@ def _wb_model_key(
     )
 
 
-def get_corrected_camera_wb(file_path: str) -> list[float] | None:
-    """Session-cached corrected camera WB multipliers for ``file_path``.
-
-    Non-None only when this file's as-shot WB failed the embedded-JPEG sanity
-    check during :func:`unpack_raw` (e.g. bodies newer than the bundled
-    LibRaw's makernote parser, like the EOS R6 Mark III). Callers that decode
-    via rawpy directly (edit base, EDR) should pass it as ``user_wb`` with
-    ``use_camera_wb=False`` so every pipeline shows the same corrected color.
-    """
-    key = os.path.normcase(os.path.abspath(file_path))
-    return _WB_CORRECTION_CACHE.get(key)
 
 
 def _srgb_to_linear01(arr8: np.ndarray) -> np.ndarray:
