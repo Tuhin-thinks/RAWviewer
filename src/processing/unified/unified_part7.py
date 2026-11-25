@@ -409,7 +409,7 @@ class UnifiedPart7:
                 # embedded-JPEG WB sanity correction (misparsed as-shot WB on
                 # bodies newer than the bundled LibRaw, e.g. EOS R6 Mark III).
                 try:
-                    from processing.raw_decode.fast import get_corrected_camera_wb
+                    from processing.raw_decode.camera_wb import get_corrected_camera_wb
 
                     _corrected_wb = get_corrected_camera_wb(file_path)
                     if _corrected_wb:

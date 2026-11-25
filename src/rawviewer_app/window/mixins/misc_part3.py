@@ -98,7 +98,7 @@ class MiscPart3:
 
     def _mark_path_libraw_unsupported(self, file_path: str) -> None:
         try:
-            from processing.unified import _mark_libraw_unsupported
+            from processing.unified.helpers import _mark_libraw_unsupported
 
             _mark_libraw_unsupported(os.path.normcase(os.path.abspath(file_path)))
         except Exception:

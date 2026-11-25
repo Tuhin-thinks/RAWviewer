@@ -2,6 +2,7 @@
 
 import contextlib
 import logging
+import os
 import threading
 from collections import OrderedDict
 from collections.abc import Callable
@@ -13,10 +14,65 @@ from cache.keys import (
     _env_float,
     _env_int,
     _safe_virtual_memory,
-    recommended_preview_cache_items,
 )
+from cache_limits import _preview_cache_adaptive_enabled, memory_preview_max_edge
 
 logger = logging.getLogger(__name__)
+
+
+def recommended_preview_cache_items(available_gb: float | None = None) -> int:
+    """Preview LRU capacity from free RAM, preview resolution, and build profile."""
+    explicit = os.environ.get("RAWVIEWER_PREVIEW_CACHE_ITEMS", "").strip()
+    if explicit:
+        return _env_int("RAWVIEWER_PREVIEW_CACHE_ITEMS", 10, minimum=6, maximum=128)
+
+    if not _preview_cache_adaptive_enabled():
+        return 10
+
+    if available_gb is None:
+        try:
+            available_gb = float(_safe_virtual_memory().available) / (1024**3)
+        except Exception:
+            return 10
+
+    edge = memory_preview_max_edge()
+    preview_mb = max(6.0, (edge / 1920.0) ** 2 * 12.0)
+
+    budget_fraction = 0.12  # Increased from 0.08 for more cache on modern systems
+    budget_cap_mb = 2400.0  # Increased from 1200
+    try:
+        from core.profile import indexing_loads_compete, is_lite_build
+
+        if not indexing_loads_compete():
+            budget_fraction = 0.18
+            budget_cap_mb = 3200.0
+        if is_lite_build():
+            budget_fraction = max(budget_fraction, 0.20)
+            budget_cap_mb = 3600.0
+    except Exception:
+        pass
+
+    budget_mb = min(float(available_gb) * 1024.0 * budget_fraction, budget_cap_mb)
+    items = int(budget_mb / preview_mb)
+
+    if available_gb >= 32:
+        floor = 32
+    elif available_gb >= 24:
+        floor = 24
+    elif available_gb >= 16:
+        floor = 20
+    elif available_gb >= 10:
+        floor = 16
+    elif available_gb >= 6:
+        floor = 14
+    elif available_gb >= 3:
+        floor = 10
+    else:
+        floor = 8
+
+    min_items = _env_int("RAWVIEWER_PREVIEW_CACHE_ITEMS_MIN", 6, minimum=4, maximum=32)
+    max_items = _env_int("RAWVIEWER_PREVIEW_CACHE_ITEMS_MAX", 64, minimum=8, maximum=128)
+    return max(min_items, min(max(floor, items), max_items))
 
 
 class FullImageCache:
