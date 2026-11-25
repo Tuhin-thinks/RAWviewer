@@ -255,7 +255,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
                     if not exif_data:
                         # Extract and cache full EXIF data for metadata display
                         self.processing_progress.emit("Reading metadata...")
-                        from enhanced_raw_processor import EXIFExtractor
+                        from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
                         exif_extractor = EXIFExtractor()
                         exif_data = exif_extractor.extract_exif_data(self.file_path)
@@ -747,7 +747,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
                 # Extract EXIF data for non-RAW files
                 try:
                     self.processing_progress.emit("Reading metadata...")
-                    from enhanced_raw_processor import EXIFExtractor
+                    from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
                     exif_extractor = EXIFExtractor()
                     exif_data = exif_extractor.extract_exif_data(self.file_path)

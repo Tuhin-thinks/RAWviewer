@@ -26,7 +26,7 @@ class UnifiedPart6:
     ) -> np.ndarray | QPixmap | None:
         """處理完整圖像（統一接口）"""
         if apply_sidecar_adjustments is None:
-            from raw_adjustments import sidecar_adjustments_enabled
+            from raw_adjustments.xmp_read import sidecar_adjustments_enabled
 
             apply_sidecar_adjustments = sidecar_adjustments_enabled()
         # 檢查快取

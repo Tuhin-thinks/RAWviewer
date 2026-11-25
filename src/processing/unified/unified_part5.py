@@ -24,7 +24,7 @@ class UnifiedPart5:
         if self.cache.is_libraw_preview(file_path):
             prev = self.cache.get_preview(file_path)
             if prev is not None:
-                from raw_adjustments import mark_array_as_already_adjusted
+                from raw_adjustments.saved_edits import mark_array_as_already_adjusted
 
                 # Downscale to target_size or grid size
                 single_view_preview = self._single_view_display_thumbnail(target_size, allow_heavy_fallback)
@@ -138,7 +138,7 @@ class UnifiedPart5:
                     params["half_size"] = True
                     params["user_flip"] = 0  # Handle orientation manually
 
-                    from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
+                    from enhanced_raw_processor.extraction import _heavy_fallback_semaphore, _rawpy_global_lock
 
                     with _rawpy_global_lock:
                         raw_ctx = rawpy_imread_warm(file_path)
@@ -157,7 +157,7 @@ class UnifiedPart5:
         # Non-RAW reader path can return QImage directly.
         from_qimage_autotransform = False
         if isinstance(thumbnail, QImage):
-            from enhanced_raw_processor import _qimage_to_rgb_array
+            from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
             from_qimage_autotransform = True
             rgb = _qimage_to_rgb_array(thumbnail)
@@ -171,7 +171,7 @@ class UnifiedPart5:
         if exif_data is None or exif_data.get("minimal_preview_exif"):
             if single_view_preview and self._is_raw_file(file_path):
                 try:
-                    from enhanced_raw_processor import _rawpy_global_lock
+                    from enhanced_raw_processor.extraction import _rawpy_global_lock
 
                     with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
                         exif_data = self.exif_extractor.build_minimal_raw_exif(file_path, raw)
@@ -195,19 +195,16 @@ class UnifiedPart5:
 
         # Apply XMP adjustments if they exist and are not default
         try:
-            from raw_adjustments import (
-                apply_adjustments_to_rgb,
-                is_default_adjustments,
-                load_adjustments_for_file,
-                sidecar_adjustments_enabled,
-            )
+            from raw_adjustments.apply import apply_adjustments_to_rgb
+            from raw_adjustments.checks import is_default_adjustments
+            from raw_adjustments.xmp_read import load_adjustments_for_file, sidecar_adjustments_enabled
 
             if sidecar_adjustments_enabled() and thumbnail is not None:
                 adj = load_adjustments_for_file(file_path)
                 if adj and not is_default_adjustments(adj):
                     if not isinstance(thumbnail, np.ndarray) and isinstance(thumbnail, QImage):
                         from_qimage_autotransform = True
-                        from enhanced_raw_processor import _qimage_to_rgb_array
+                        from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
                         rgb = _qimage_to_rgb_array(thumbnail)
                         if rgb is not None:

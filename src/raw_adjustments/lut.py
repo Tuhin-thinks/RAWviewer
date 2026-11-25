@@ -278,7 +278,7 @@ def lut_chooser_identity_adj(adj: dict | None = None) -> dict:
     grading. Only ``AsShotTemperature`` is kept so Temperature stays at
     as-shot (identity WB).
     """
-    from raw_adjustments import AS_SHOT_TEMP_KEY
+    from raw_adjustments.defaults import AS_SHOT_TEMP_KEY
 
     out: dict = {}
     shot = (adj or {}).get(AS_SHOT_TEMP_KEY)

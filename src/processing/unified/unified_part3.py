@@ -139,10 +139,7 @@ class UnifiedPart3:
             rgb_image: np.ndarray | None = None
             if skip_key not in _LIBRAW_UNSUPPORTED_PATHS:
                 try:
-                    from enhanced_raw_processor import (
-                        _heavy_fallback_semaphore,
-                        _rawpy_global_lock,
-                    )
+                    from enhanced_raw_processor.extraction import _heavy_fallback_semaphore, _rawpy_global_lock
                     from processing.raw_decode.fast import (
                         decode_half_from_unpacked,
                         params_supported_half,
