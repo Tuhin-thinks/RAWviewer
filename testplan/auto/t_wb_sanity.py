@@ -78,7 +78,7 @@ def main() -> int:
             u is not None and float(min(u.black)) > 0.0,
             detail=f"black={[round(float(x)) for x in u.black]}" if u is not None else "",
         )
-        check(f"flat black floor {name}", u is not None and len(set(round(float(x)) for x in u.black)) == 1)
+        check(f"flat black floor {name}", u is not None and len({round(float(x)) for x in u.black}) == 1)
         check(f"WB left alone {name}", frd.get_corrected_camera_wb(p) is None)
 
     # Clean bodies keep LibRaw's own black untouched (the repair is gated on

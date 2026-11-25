@@ -20,6 +20,7 @@ is actually present; skips (not fails) otherwise, matching this repo's
 convention for machine-local golden fixtures.
 """
 
+import contextlib
 import os
 import sys
 import time
@@ -79,10 +80,8 @@ def main() -> int:
     for tier_remove in ("thumbnail_cache", "grid_cache", "preview_cache"):
         tier = getattr(cache, tier_remove, None)
         if tier is not None:
-            try:
+            with contextlib.suppress(Exception):
                 tier.remove(GOLDEN_ARW)
-            except Exception:
-                pass
 
     from common_image_loader import load_raw_preview_array
 

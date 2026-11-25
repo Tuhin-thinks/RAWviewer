@@ -81,10 +81,7 @@ def main() -> int:
         back = load_adjustments_for_file(img)
         for k, v in edits.items():
             got = back.get(k, "<MISSING>")
-            if isinstance(v, str):
-                ok = str(got) == v
-            else:
-                ok = got != "<MISSING>" and abs(float(got) - float(v)) < 0.51
+            ok = str(got) == v if isinstance(v, str) else got != "<MISSING>" and abs(float(got) - float(v)) < 0.51
             check(f"round-trip {k}", ok, f"wrote {v!r} loaded {got!r}")
 
         # as-shot memo deterministic

@@ -10,6 +10,8 @@ import numpy as np
 
 sys.path.insert(0, "src")
 
+import contextlib
+
 from raw_adjustments import (
     DEFAULT_ADJUSTMENTS,
     apply_adjustments_to_linear,
@@ -759,10 +761,8 @@ def test_export_jpeg_roundtrip() -> None:
         assert os.path.isfile(out_path)
         assert os.path.getsize(out_path) > 100
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.remove(out_path)
-        except OSError:
-            pass
 
 
 def test_tone_curve_point_helpers() -> None:

@@ -83,7 +83,7 @@ def write_png_ico(path: Path, src: Image.Image, sizes: list[int]) -> None:
     offset = 6 + n * 16
     entries = b""
     data = b""
-    for im, png in zip(images, pngs):
+    for im, png in zip(images, pngs, strict=False):
         w, h = im.size
         entry_w = 0 if w >= 256 else w
         entry_h = 0 if h >= 256 else h

@@ -40,10 +40,7 @@ def models_ready(target_dir: str | Path) -> bool:
     tok = root / TOKENIZER_FILE
     if not tok.is_file():
         return False
-    for name in MODEL_FILES:
-        if not _mlpackage_complete(root / name):
-            return False
-    return True
+    return all(_mlpackage_complete(root / name) for name in MODEL_FILES)
 
 
 def download_models(

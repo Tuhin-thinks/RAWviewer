@@ -4,9 +4,8 @@ Build script for RAW Image Viewer Windows/macOS executable
 Handles dependency installation and executable creation.
 """
 
-VERSION = "3.1.1"
-
 import argparse
+import contextlib
 import os
 import platform
 import shutil
@@ -14,6 +13,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+VERSION = "3.1.1"
 
 # Repository root (directory containing this script)
 REPO_ROOT = Path(__file__).resolve().parent
@@ -46,9 +47,7 @@ def _build_skip_deps() -> bool:
     if _env_flag("RAWVIEWER_BUILD_SKIP_DEPS"):
         return True
     # build_macos.sh uses pixi with a locked env; reinstalling deps every run is wasted time.
-    if _using_pixi_build_env() and _env_flag("RAWVIEWER_USE_SYSTEM_PYTHON_BUILD"):
-        return True
-    return False
+    return bool(_using_pixi_build_env() and _env_flag("RAWVIEWER_USE_SYSTEM_PYTHON_BUILD"))
 
 
 def _build_incremental() -> bool:
@@ -228,9 +227,7 @@ def _should_use_project_venv_for_build() -> bool:
         return False
     if platform.system() == "Darwin":
         return True
-    if _is_externally_managed_python():
-        return True
-    return False
+    return bool(_is_externally_managed_python())
 
 
 def ensure_project_venv_and_reexec() -> None:
@@ -289,10 +286,7 @@ def ensure_project_venv_and_reexec() -> None:
 
 def run_command(cmd):
     # Support both string commands and lists
-    if isinstance(cmd, list):
-        result = subprocess.run(cmd)
-    else:
-        result = subprocess.run(cmd, shell=True)
+    result = subprocess.run(cmd) if isinstance(cmd, list) else subprocess.run(cmd, shell=True)
     return result.returncode == 0
 
 
@@ -627,10 +621,7 @@ def _prepare_windows_pixi_manifest(accel: str, *, profile: str = "full") -> Path
         raise ValueError(f"Unsupported Windows acceleration backend: {accel}")
     tmp_dir = REPO_ROOT / "build" / "_pixi_variants"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    if lite:
-        suffix = "lite"
-    else:
-        suffix = accel
+    suffix = "lite" if lite else accel
     out = tmp_dir / f"pixi-{suffix}.toml"
     out.write_text(raw, encoding="utf-8")
     return out
@@ -921,10 +912,8 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
     stub_rel_from_frameworks = Path("lensfunpy") / "__dot__dylibs" / "libintl.8.dylib"
     # Prefer the real on-disk stub path under the app (handles .dylibs vs __dot__dylibs).
     stub_in_app = stub_src
-    try:
+    with contextlib.suppress(ValueError):
         stub_rel_from_frameworks = stub_in_app.relative_to(exe_path / "Contents" / "Frameworks")
-    except ValueError:
-        pass
 
     g_consumers = 0
     for dylib in exe_path.rglob("*"):
@@ -1404,7 +1393,6 @@ def main():
             f'--add-data "src{os.sep}icons{os.sep}landmarks.csv.gz{add_data_sep}icons"',
         ]
     app_bundle_name = _macos_app_bundle_name(args.profile)
-    windows_pixi_manifest = None
     if platform.system() == "Darwin":
         print(f"[INFO] macOS app bundle: dist/{app_bundle_name}.app")
         if is_lite:
@@ -1436,7 +1424,6 @@ def main():
         add_data_args.append(f'--add-data "{launcher_runtime.resolve()};_launcher"')
         print(f"[INFO] Windows installer output: dist\\{app_bundle_name}.exe")
         print("[INFO] Bundling Windows manifests (CUDA+CuPy, DirectML, Lite).")
-    add_data_arg_str = " ".join(add_data_args)
 
     src_path = os.path.abspath("src")
 
