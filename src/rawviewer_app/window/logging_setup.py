@@ -75,6 +75,11 @@ class FocusGallerySwitchFilter(logging.Filter):
         "[SHARE]",
         "[CLOSE]",
         "[PROFILE]",
+        "[CACHE]",
+        "[EXIF]",
+        "[PREVIEW]",
+        "[LOOKS]",
+        "[XMP_PRESET]",
         "[ORIENT]",  # RAWVIEWER_ORIENT_DEBUG=1 diagnostics (opt-in, so never noisy)
     )
 

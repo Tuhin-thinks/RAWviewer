@@ -232,7 +232,9 @@ class UnifiedPart7:
                     return self.cache.get_preview(file_path)
                 # Remaining demosaic fallthrough when embed was too small / missing.
                 if _verbose_orientation_logs():
-                    print("[PREVIEW] Preview extraction failed, falling back to RAW processing")
+                    logging.getLogger(__name__).info(
+                        "[PREVIEW] Preview extraction failed, falling back to RAW processing"
+                    )
 
             # 獲取處理器參數
             params = self.raw_processor.get_optimized_processing_params(file_path, exif_data)

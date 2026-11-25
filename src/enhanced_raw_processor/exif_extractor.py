@@ -299,8 +299,12 @@ class EXIFExtractor(QObject):
                             if m:
                                 orientation = int(m.group(1))
                     if os.environ.get("RAWVIEWER_VERBOSE_ORIENTATION_LOGS") == "1":
-                        print(
-                            f"[EXIF] Extracted via sips: {original_width}x{original_height}, orientation={orientation} for {os.path.basename(file_path)}"
+                        logging.getLogger(__name__).info(
+                            "[EXIF] Extracted via sips: %sx%s, orientation=%s for %s",
+                            original_width,
+                            original_height,
+                            orientation,
+                            os.path.basename(file_path),
                         )
                 except Exception:
                     pass

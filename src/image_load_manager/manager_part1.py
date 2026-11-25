@@ -2,6 +2,7 @@
 
 import concurrent.futures
 import contextlib
+import logging
 import os
 import queue
 import threading
@@ -37,38 +38,37 @@ class ImageLoadManagerPart1(QObject):
         """初始化管理器"""
         # CRITICAL: 對於 QObject 子類，必須在最開始就調用 super().__init__()
         # 不能在調用 super().__init__() 之前訪問任何實例屬性（包括 hasattr）
-        import sys
 
         verbose_init = _env_true("RAWVIEWER_VERBOSE_MANAGER_INIT", default=False)
         if verbose_init:
-            print("[ImageLoadManager.__init__] Starting initialization...", flush=True)
+            logging.getLogger(__name__).info("[MANAGER] __init__: starting initialization...")
 
         # Ensure QApplication exists before initializing QObject
         from PyQt6.QtWidgets import QApplication
 
         app = QApplication.instance()
         if app is None:
-            print("[ImageLoadManager.__init__] ERROR: QApplication instance not found!", file=sys.stderr, flush=True)
+            logging.getLogger(__name__).error("[MANAGER] __init__: QApplication instance not found")
             raise RuntimeError("QApplication must be created before ImageLoadManager")
 
         if verbose_init:
-            print("[ImageLoadManager.__init__] Calling super().__init__(app)...", flush=True)
+            logging.getLogger(__name__).info("[MANAGER] __init__: calling super().__init__(app)...")
         try:
             # Root the manager in the application's lifecycle to prevent premature deletion.
             super().__init__(app)
             if verbose_init:
-                print("[ImageLoadManager.__init__] super().__init__(app) completed", flush=True)
+                logging.getLogger(__name__).info("[MANAGER] __init__: super().__init__(app) completed")
         except Exception as e:
-            print(f"[ImageLoadManager.__init__] ERROR in super().__init__(): {e}", file=sys.stderr, flush=True)
+            logging.getLogger(__name__).error("[MANAGER] __init__: error in super().__init__(): %s", e)
             import traceback
 
-            print(traceback.format_exc(), file=sys.stderr, flush=True)
+            logging.getLogger(__name__).error(traceback.format_exc())
             raise
 
         # 避免重複初始化實例變量
         if hasattr(self, "_initialized") and self._initialized:
             if verbose_init:
-                print("[ImageLoadManager.__init__] Already initialized, skipping instance variables", flush=True)
+                logging.getLogger(__name__).info("[MANAGER] __init__: already initialized, skipping instance variables")
             return
 
         self._work_queue = queue.PriorityQueue()

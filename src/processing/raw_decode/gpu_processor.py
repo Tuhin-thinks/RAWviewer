@@ -569,7 +569,6 @@ def _record_gpu_isp_stages(stage_ms: dict[str, float], file_path: str = "") -> N
     )
     if file_path:
         line += f" file={os.path.basename(file_path)}"
-    print(line, flush=True)
     logger.info(line)
 
 

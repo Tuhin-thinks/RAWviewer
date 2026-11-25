@@ -1,5 +1,6 @@
 """Adjust mixin part 3 of 5 for ImageAdjustPanelWidget."""
 
+import logging
 import os
 
 from PyQt6.QtCore import QSize, Qt
@@ -251,7 +252,7 @@ class AdjustPart3:
                 else:
                     self._on_looks_unsupported_dropped([p])
             except Exception as exc:
-                print(f"[LOOKS] import failed: {p}: {exc}")
+                logging.getLogger(__name__).warning("[LOOKS] import failed: %s: %s", p, exc)
         self._refresh_looks_list(select_lut=getattr(self, "_lut_active_name", "") or None)
 
     def _remove_look(self, name: str, kind: str) -> None:
@@ -369,7 +370,7 @@ class AdjustPart3:
 
             preset = load_preset_adjustments(name)
         except Exception as exc:
-            print(f"[XMP_PRESET] apply failed: {name}: {exc}")
+            logging.getLogger(__name__).warning("[XMP_PRESET] apply failed: %s: %s", name, exc)
             return
         current = self.get_adjustments()
         as_shot = current.get(AS_SHOT_TEMP_KEY)

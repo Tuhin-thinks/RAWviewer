@@ -133,9 +133,10 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == int(RAW_EXIF_SENSOR_META_VER):
                 return
-            print(
-                "[CACHE] Orientation version changed "
-                f"({stored} -> {RAW_EXIF_SENSOR_META_VER}); purging persisted pixel caches"
+            logger.info(
+                "[CACHE] Orientation version changed (%s -> %s); purging persisted pixel caches",
+                stored,
+                RAW_EXIF_SENSOR_META_VER,
             )
             for cache in (
                 self.disk_thumbnail_cache,
@@ -163,9 +164,10 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == int(self.EDIT_BAKE_PIXEL_VER):
                 return
-            print(
-                "[CACHE] Edit-bake hygiene version changed "
-                f"({stored} -> {self.EDIT_BAKE_PIXEL_VER}); purging persisted pixel caches"
+            logger.info(
+                "[CACHE] Edit-bake hygiene version changed (%s -> %s); purging persisted pixel caches",
+                stored,
+                self.EDIT_BAKE_PIXEL_VER,
             )
             for cache in (
                 self.disk_thumbnail_cache,
@@ -194,7 +196,7 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == stamp:
                 return
-            print(f"[CACHE] LibRaw runtime changed ({stored!r} -> {stamp!r}); purging persisted pixel caches")
+            logger.info("[CACHE] LibRaw runtime changed (%r -> %r); purging persisted pixel caches", stored, stamp)
             for cache in (
                 self.disk_thumbnail_cache,
                 self.disk_grid_cache,

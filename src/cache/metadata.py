@@ -185,23 +185,23 @@ class PersistentEXIFCache:
                 columns = [info[1] for info in cursor.fetchall()]
 
                 if "capture_time" not in columns:
-                    print("[CACHE] Migrating database: adding capture_time column")
+                    logger.info("[CACHE] Migrating database: adding capture_time column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN capture_time TEXT")
 
                 if "original_width" not in columns:
-                    print("[CACHE] Migrating database: adding original_width column")
+                    logger.info("[CACHE] Migrating database: adding original_width column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN original_width INTEGER")
 
                 if "original_height" not in columns:
-                    print("[CACHE] Migrating database: adding original_height column")
+                    logger.info("[CACHE] Migrating database: adding original_height column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN original_height INTEGER")
 
                 if "sensor_meta_ver" not in columns:
-                    print("[CACHE] Migrating database: adding sensor_meta_ver column")
+                    logger.info("[CACHE] Migrating database: adding sensor_meta_ver column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN sensor_meta_ver INTEGER DEFAULT 0")
 
             except Exception as e:
-                print(f"[CACHE] Error checking/migrating schema: {e}")
+                logger.warning("[CACHE] Error checking/migrating schema: %s", e)
 
             conn.commit()
 
