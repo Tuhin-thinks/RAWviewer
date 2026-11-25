@@ -20,7 +20,10 @@ import logging
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +116,6 @@ class DeviceRgb:
         if self._host_cache is not None:
             return self._host_cache
         try:
-            from processing.raw_decode.gpu_processor import _download_device_rgb, _workspace_for
 
             device = self.tensor.device
             h, w = self.height, self.width
@@ -436,7 +438,6 @@ def download_for_pixmap_path(rgb_device: Any, *, as_uint16: bool = False) -> Any
     try:
         import torch
 
-        from processing.raw_decode.gpu_processor import _download_device_rgb, _workspace_for
 
         if not isinstance(rgb_device, torch.Tensor):
             return None
@@ -447,3 +448,120 @@ def download_for_pixmap_path(rgb_device: Any, *, as_uint16: bool = False) -> Any
         return _download_device_rgb(rgb_device, device, ws, as_uint16=as_uint16)
     except Exception:
         return None
+
+
+_GPU_WORKSPACES: dict = {}
+
+
+class _GpuIspWorkspace:
+    """Growable device + pinned-host buffers shared across consecutive develops."""
+
+    __slots__ = (
+        "device",
+        "h",
+        "w",
+        "raw_f",
+        "raw_norm",
+        "pinned_u16",
+        "pinned_rgb_u8",
+        "pinned_rgb_u16",
+    )
+
+    def __init__(self, device) -> None:
+        self.device = device
+        self.h = 0
+        self.w = 0
+        self.raw_f = None
+        self.raw_norm = None
+        self.pinned_u16 = None
+        self.pinned_rgb_u8 = None
+        self.pinned_rgb_u16 = None
+
+    def ensure(self, h: int, w: int) -> None:
+        import torch
+
+        if self.raw_f is not None and self.h == h and self.w == w:
+            return
+        self.h, self.w = h, w
+        self.raw_f = torch.empty((h, w), device=self.device, dtype=torch.float32)
+        self.raw_norm = torch.empty((h, w), device=self.device, dtype=torch.float32)
+        if self.device.type == "cuda":
+            try:
+                self.pinned_u16 = torch.empty((h, w), dtype=torch.uint16, pin_memory=True)
+            except Exception:
+                self.pinned_u16 = None
+            try:
+                self.pinned_rgb_u8 = torch.empty((h, w, 3), dtype=torch.uint8, pin_memory=True)
+            except Exception:
+                self.pinned_rgb_u8 = None
+            try:
+                self.pinned_rgb_u16 = torch.empty((h, w, 3), dtype=torch.uint16, pin_memory=True)
+            except Exception:
+                self.pinned_rgb_u16 = None
+        else:
+            self.pinned_u16 = None
+            self.pinned_rgb_u8 = None
+            self.pinned_rgb_u16 = None
+
+
+def _workspace_for(device) -> _GpuIspWorkspace:
+    key = str(device)
+    ws = _GPU_WORKSPACES.get(key)
+    if ws is None:
+        ws = _GpuIspWorkspace(device)
+        _GPU_WORKSPACES[key] = ws
+    return ws
+
+
+def _download_device_rgb(
+    rgb_device: Any,
+    device,
+    ws: _GpuIspWorkspace,
+    *,
+    as_uint16: bool = False,
+) -> "np.ndarray":
+    """D2H into a reused pinned host buffer, then return an owned numpy copy.
+
+    Avoids ``tensor.cpu().numpy()``'s pageable staging alloc on the hot path.
+    Full CUDA↔GL interop (skip host) still needs a custom GL viewport that
+    does not go through ``QGraphicsPixmapItem`` — see ``gpu_gl_bridge.py``.
+    """
+    import numpy as np
+    import torch
+
+    if device.type != "cuda":
+        arr = rgb_device.detach().cpu().numpy()
+        if as_uint16 and arr.dtype != np.uint16:
+            return arr.astype(np.uint16, copy=False)
+        return arr
+
+    rgb_device = rgb_device.contiguous()
+    if as_uint16:
+        pinned = ws.pinned_rgb_u16
+        if pinned is None or pinned.shape != rgb_device.shape:
+            try:
+                pinned = torch.empty(rgb_device.shape, dtype=torch.uint16, pin_memory=True)
+                ws.pinned_rgb_u16 = pinned
+            except Exception:
+                return rgb_device.detach().cpu().numpy().astype(np.uint16)
+        if rgb_device.dtype != torch.uint16:
+            # int32 linear path → write into uint16 pin via clamp
+            tmp = rgb_device.clamp(0, 65535).to(torch.uint16)
+            pinned.copy_(tmp, non_blocking=True)
+            del tmp
+        else:
+            pinned.copy_(rgb_device, non_blocking=True)
+    else:
+        pinned = ws.pinned_rgb_u8
+        if pinned is None or pinned.shape != rgb_device.shape:
+            try:
+                pinned = torch.empty(rgb_device.shape, dtype=torch.uint8, pin_memory=True)
+                ws.pinned_rgb_u8 = pinned
+            except Exception:
+                return rgb_device.detach().cpu().numpy()
+        pinned.copy_(rgb_device, non_blocking=True)
+
+    torch.cuda.current_stream(device).synchronize()
+    # Owned copy: next develop reuses the pin and would otherwise overwrite
+    # arrays still held by PixmapConverter / image cache.
+    return pinned.numpy().copy()
