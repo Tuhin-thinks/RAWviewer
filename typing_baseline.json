@@ -1,0 +1,1799 @@
+{
+  "schema": 1,
+  "command": "mypy --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases src scripts testplan tests build.py",
+  "totals": {
+    "errors": 9374,
+    "any": 258,
+    "type_ignore": 37,
+    "by_code": {
+      "attr-defined": 4878,
+      "no-untyped-call": 1377,
+      "no-untyped-def": 1319,
+      "no-any-return": 256,
+      "assignment": 233,
+      "type-arg": 190,
+      "misc": 177,
+      "union-attr": 155,
+      "has-type": 150,
+      "arg-type": 138,
+      "call-arg": 136,
+      "var-annotated": 116,
+      "call-overload": 96,
+      "operator": 41,
+      "unused-ignore": 25,
+      "override": 18,
+      "index": 17,
+      "name-defined": 13,
+      "method-assign": 11,
+      "return-value": 6,
+      "comparison-overlap": 6,
+      "untyped-decorator": 6,
+      "func-returns-value": 4,
+      "no-redef": 4,
+      "valid-type": 2
+    }
+  },
+  "files": {
+    "build.py": {
+      "arg-type": 3,
+      "assignment": 4,
+      "attr-defined": 2,
+      "no-any-return": 1,
+      "no-untyped-call": 8,
+      "no-untyped-def": 5,
+      "operator": 1,
+      "unused-ignore": 1
+    },
+    "scripts/bench/bench_gpu_isp.py": {
+      "no-untyped-def": 4
+    },
+    "scripts/check_file_sizes.py": {
+      "no-untyped-def": 1
+    },
+    "scripts/long_functions.py": {
+      "attr-defined": 2
+    },
+    "scripts/models/download_mobileclip_coreml.py": {
+      "no-untyped-def": 1
+    },
+    "scripts/models/download_mobileclip_onnx.py": {
+      "no-untyped-def": 4
+    },
+    "scripts/models/export_mobileclip2_coreml.py": {
+      "no-untyped-def": 2
+    },
+    "scripts/packaging/make_app_icons.py": {
+      "return-value": 1
+    },
+    "scripts/test/fast_raw_decode_parity_gate.py": {
+      "arg-type": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 1
+    },
+    "scripts/test/phase_develop_adjust_linear.py": {
+      "assignment": 3,
+      "no-any-return": 2,
+      "no-untyped-call": 1,
+      "no-untyped-def": 2
+    },
+    "scripts/tools/shadow_tuning_render.py": {
+      "index": 1,
+      "no-untyped-call": 1,
+      "union-attr": 1
+    },
+    "scripts/tools/shadow_tuning_sweep.py": {
+      "index": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 1,
+      "union-attr": 1
+    },
+    "scripts/typing/ledger.py": {
+      "assignment": 1
+    },
+    "src/bootstrap_pkg/__init__.py": {
+      "no-untyped-call": 1
+    },
+    "src/bootstrap_pkg/constants.py": {
+      "attr-defined": 1
+    },
+    "src/bootstrap_pkg/gui.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "attr-defined": 4,
+      "method-assign": 3,
+      "no-untyped-call": 6,
+      "no-untyped-def": 15
+    },
+    "src/bootstrap_pkg/helpers.py": {
+      "no-untyped-def": 10,
+      "union-attr": 1
+    },
+    "src/bootstrap_pkg/splash.py": {
+      "no-untyped-def": 2
+    },
+    "src/bootstrap_pkg/worker.py": {
+      "attr-defined": 1,
+      "call-arg": 4,
+      "no-untyped-def": 3
+    },
+    "src/cache/disk.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "no-any-return": 2,
+      "no-untyped-call": 14,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "src/cache/image_cache/__init__.py": {
+      "arg-type": 1,
+      "assignment": 1,
+      "misc": 6,
+      "no-untyped-def": 1
+    },
+    "src/cache/image_cache/core.py": {
+      "assignment": 11,
+      "attr-defined": 4,
+      "call-arg": 3,
+      "no-untyped-def": 2
+    },
+    "src/cache/image_cache/full_exif_util.py": {
+      "arg-type": 1,
+      "call-overload": 9,
+      "no-any-return": 1,
+      "union-attr": 2
+    },
+    "src/cache/image_cache/thumb_grid_preview.py": {
+      "assignment": 10,
+      "call-overload": 9,
+      "unused-ignore": 1
+    },
+    "src/cache/keys.py": {
+      "assignment": 1
+    },
+    "src/cache/metadata.py": {
+      "assignment": 1,
+      "no-untyped-call": 6,
+      "no-untyped-def": 3
+    },
+    "src/common_image_loader/__init__.py": {
+      "no-untyped-def": 2
+    },
+    "src/common_image_loader/edr.py": {
+      "arg-type": 1,
+      "call-overload": 1,
+      "no-any-return": 2,
+      "no-untyped-def": 2
+    },
+    "src/common_image_loader/exif_display.py": {
+      "call-overload": 2,
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 3
+    },
+    "src/common_image_loader/helpers.py": {
+      "arg-type": 1,
+      "attr-defined": 5,
+      "no-any-return": 2
+    },
+    "src/common_image_loader/loaders.py": {
+      "arg-type": 1,
+      "assignment": 5,
+      "call-overload": 7,
+      "name-defined": 2,
+      "no-any-return": 6,
+      "no-untyped-call": 1,
+      "no-untyped-def": 3,
+      "operator": 1
+    },
+    "src/common_image_loader/mipmap.py": {
+      "arg-type": 1,
+      "no-untyped-call": 3,
+      "no-untyped-def": 7,
+      "var-annotated": 1
+    },
+    "src/common_image_loader/runtime.py": {
+      "no-untyped-def": 2
+    },
+    "src/core/burst_grouping.py": {
+      "no-any-return": 1,
+      "no-untyped-def": 2
+    },
+    "src/core/download_progress.py": {
+      "no-untyped-def": 4
+    },
+    "src/core/events.py": {
+      "call-arg": 20
+    },
+    "src/core/perf_metrics.py": {
+      "no-untyped-def": 3
+    },
+    "src/core/profile.py": {
+      "no-untyped-def": 1
+    },
+    "src/core/ssl_certs.py": {
+      "assignment": 1,
+      "misc": 1
+    },
+    "src/core/theme.py": {
+      "no-untyped-def": 2
+    },
+    "src/enhanced_raw_processor/enhanced_processor.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "call-arg": 5,
+      "no-any-return": 1,
+      "no-untyped-call": 4,
+      "no-untyped-def": 6
+    },
+    "src/enhanced_raw_processor/exif_extractor.py": {
+      "assignment": 3,
+      "call-arg": 3,
+      "comparison-overlap": 3,
+      "no-untyped-def": 1
+    },
+    "src/enhanced_raw_processor/extraction.py": {
+      "attr-defined": 1,
+      "call-overload": 1,
+      "comparison-overlap": 1,
+      "no-any-return": 2,
+      "no-untyped-def": 1,
+      "union-attr": 1
+    },
+    "src/enhanced_raw_processor/optimized_processor.py": {
+      "assignment": 6,
+      "no-any-return": 2,
+      "no-untyped-def": 1
+    },
+    "src/enhanced_raw_processor/preload_manager.py": {
+      "call-arg": 2,
+      "no-untyped-call": 1,
+      "no-untyped-def": 7,
+      "var-annotated": 1
+    },
+    "src/enhanced_raw_processor/thumbnail_extractor.py": {
+      "no-any-return": 1,
+      "no-untyped-call": 4,
+      "no-untyped-def": 3
+    },
+    "src/gallery_autotest.py": {
+      "arg-type": 3,
+      "attr-defined": 4,
+      "call-overload": 1,
+      "no-untyped-call": 5,
+      "no-untyped-def": 12,
+      "operator": 22
+    },
+    "src/image_load_manager/__init__.py": {
+      "no-untyped-def": 1
+    },
+    "src/image_load_manager/helpers.py": {
+      "no-any-return": 1,
+      "no-untyped-def": 5,
+      "type-arg": 2
+    },
+    "src/image_load_manager/manager.py": {
+      "misc": 5
+    },
+    "src/image_load_manager/manager_part1.py": {
+      "attr-defined": 1,
+      "call-arg": 8,
+      "has-type": 1,
+      "type-arg": 7,
+      "union-attr": 2,
+      "var-annotated": 2
+    },
+    "src/image_load_manager/manager_part2.py": {
+      "attr-defined": 90,
+      "no-untyped-def": 3,
+      "type-arg": 3,
+      "var-annotated": 2
+    },
+    "src/image_load_manager/manager_part3.py": {
+      "arg-type": 1,
+      "attr-defined": 93,
+      "misc": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 10,
+      "type-arg": 7,
+      "var-annotated": 1
+    },
+    "src/image_load_manager/worker.py": {
+      "assignment": 1,
+      "call-overload": 1,
+      "no-any-return": 1,
+      "no-untyped-call": 5,
+      "no-untyped-def": 8,
+      "type-arg": 1
+    },
+    "src/main.py": {
+      "attr-defined": 3,
+      "no-untyped-call": 12,
+      "unused-ignore": 1
+    },
+    "src/metadata/backend.py": {
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 1
+    },
+    "src/metadata/histogram.py": {
+      "arg-type": 3,
+      "no-untyped-def": 8,
+      "union-attr": 2
+    },
+    "src/nav_autotest.py": {
+      "arg-type": 8,
+      "assignment": 3,
+      "attr-defined": 15,
+      "index": 3,
+      "no-untyped-call": 5,
+      "no-untyped-def": 12,
+      "operator": 9
+    },
+    "src/platform_support/display_brightness.py": {
+      "arg-type": 1,
+      "attr-defined": 3,
+      "no-untyped-def": 6
+    },
+    "src/platform_support/windows_share.py": {
+      "arg-type": 1,
+      "assignment": 1,
+      "attr-defined": 7,
+      "call-arg": 1,
+      "no-untyped-def": 3,
+      "type-arg": 1
+    },
+    "src/processing/__init__.py": {
+      "no-untyped-def": 1
+    },
+    "src/processing/raw_decode/exposure_clipping.py": {
+      "attr-defined": 2,
+      "call-overload": 1,
+      "no-any-return": 1
+    },
+    "src/processing/raw_decode/fast.py": {
+      "arg-type": 1,
+      "no-any-return": 4,
+      "no-untyped-call": 3,
+      "no-untyped-def": 2,
+      "return-value": 1,
+      "type-arg": 2
+    },
+    "src/processing/raw_decode/gpu_bridge.py": {
+      "no-untyped-call": 4,
+      "no-untyped-def": 4
+    },
+    "src/processing/raw_decode/gpu_processor.py": {
+      "index": 2,
+      "no-any-return": 7,
+      "no-untyped-call": 1,
+      "no-untyped-def": 16,
+      "type-arg": 5,
+      "union-attr": 2
+    },
+    "src/processing/raw_decode/scunet.py": {
+      "attr-defined": 2,
+      "no-any-return": 2,
+      "no-untyped-call": 2,
+      "no-untyped-def": 3,
+      "return-value": 1,
+      "type-arg": 1,
+      "var-annotated": 2
+    },
+    "src/processing/unified/__init__.py": {
+      "attr-defined": 12
+    },
+    "src/processing/unified/helpers.py": {
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 4,
+      "type-arg": 7
+    },
+    "src/processing/unified/unified_part1.py": {
+      "attr-defined": 4,
+      "no-any-return": 1,
+      "no-untyped-call": 3,
+      "no-untyped-def": 6,
+      "type-arg": 3
+    },
+    "src/processing/unified/unified_part2.py": {
+      "attr-defined": 11,
+      "no-any-return": 1,
+      "no-untyped-call": 2
+    },
+    "src/processing/unified/unified_part3.py": {
+      "attr-defined": 6,
+      "no-any-return": 3,
+      "union-attr": 3
+    },
+    "src/processing/unified/unified_part4.py": {
+      "attr-defined": 18,
+      "no-any-return": 1,
+      "no-untyped-def": 4
+    },
+    "src/processing/unified/unified_part5.py": {
+      "attr-defined": 30,
+      "no-any-return": 6,
+      "no-untyped-call": 1
+    },
+    "src/processing/unified/unified_part6.py": {
+      "attr-defined": 20,
+      "no-any-return": 10,
+      "no-untyped-def": 1
+    },
+    "src/processing/unified/unified_part7.py": {
+      "assignment": 2,
+      "attr-defined": 74,
+      "no-any-return": 15,
+      "no-untyped-call": 3,
+      "no-untyped-def": 2
+    },
+    "src/pyi_rth_ssl_certs.py": {
+      "assignment": 1,
+      "misc": 1
+    },
+    "src/raw_adjustments/__init__.py": {
+      "attr-defined": 1
+    },
+    "src/raw_adjustments/apply.py": {
+      "no-any-return": 3,
+      "no-untyped-call": 1,
+      "no-untyped-def": 3,
+      "type-arg": 1
+    },
+    "src/raw_adjustments/auto_adjust.py": {
+      "assignment": 1,
+      "no-any-return": 1,
+      "type-arg": 2
+    },
+    "src/raw_adjustments/chroma_denoise.py": {
+      "no-any-return": 2
+    },
+    "src/raw_adjustments/color_calibration.py": {
+      "arg-type": 2,
+      "no-any-return": 5
+    },
+    "src/raw_adjustments/detail_enhance.py": {
+      "no-any-return": 1
+    },
+    "src/raw_adjustments/dodge_burn.py": {
+      "no-any-return": 4,
+      "type-arg": 6
+    },
+    "src/raw_adjustments/effects.py": {
+      "no-any-return": 2
+    },
+    "src/raw_adjustments/hsl.py": {
+      "assignment": 2
+    },
+    "src/raw_adjustments/lens_correction.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 3,
+      "type-arg": 5
+    },
+    "src/raw_adjustments/lut.py": {
+      "no-any-return": 2,
+      "no-untyped-call": 8,
+      "no-untyped-def": 1,
+      "type-arg": 9
+    },
+    "src/raw_adjustments/pipeline.py": {
+      "assignment": 1,
+      "attr-defined": 1,
+      "no-any-return": 3,
+      "no-untyped-call": 4,
+      "no-untyped-def": 14,
+      "type-arg": 4
+    },
+    "src/raw_adjustments/pv2012.py": {
+      "assignment": 2,
+      "no-any-return": 6
+    },
+    "src/raw_adjustments/refinery_denoise.py": {
+      "no-untyped-def": 2,
+      "type-arg": 1
+    },
+    "src/raw_adjustments/saved_edits.py": {
+      "no-any-return": 1,
+      "no-untyped-def": 5,
+      "type-arg": 1
+    },
+    "src/raw_adjustments/spot_heal.py": {
+      "arg-type": 1,
+      "attr-defined": 1,
+      "call-arg": 1,
+      "index": 7,
+      "misc": 1,
+      "no-any-return": 2,
+      "type-arg": 3
+    },
+    "src/raw_adjustments/tone_curve.py": {
+      "no-any-return": 7,
+      "no-untyped-def": 2
+    },
+    "src/raw_adjustments/tone_recovery.py": {
+      "no-any-return": 6,
+      "no-untyped-call": 1,
+      "no-untyped-def": 4,
+      "type-arg": 2
+    },
+    "src/raw_adjustments/transform.py": {
+      "no-any-return": 1,
+      "type-arg": 2,
+      "union-attr": 9
+    },
+    "src/raw_adjustments/xmp_read.py": {
+      "assignment": 7,
+      "no-untyped-def": 1,
+      "type-arg": 1
+    },
+    "src/raw_adjustments/xmp_write.py": {
+      "assignment": 2
+    },
+    "src/rawviewer_app/core/widgets/batch_export_dialog.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 2,
+      "type-arg": 2
+    },
+    "src/rawviewer_app/core/widgets/confirm_dialog.py": {
+      "no-untyped-call": 3,
+      "no-untyped-def": 11,
+      "union-attr": 2
+    },
+    "src/rawviewer_app/core/widgets/macos.py": {
+      "attr-defined": 1
+    },
+    "src/rawviewer_app/core/widgets/metadata_bar.py": {
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/core/widgets/overlays.py": {
+      "no-any-return": 2,
+      "no-untyped-call": 10,
+      "no-untyped-def": 26,
+      "type-arg": 3
+    },
+    "src/rawviewer_app/core/widgets/resize_grip.py": {
+      "no-untyped-call": 3,
+      "no-untyped-def": 8
+    },
+    "src/rawviewer_app/core/widgets/share.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 1,
+      "unused-ignore": 8
+    },
+    "src/rawviewer_app/core/widgets/task_progress_dialog.py": {
+      "call-arg": 1,
+      "no-untyped-def": 8
+    },
+    "src/rawviewer_app/core/widgets/thumbnail_label.py": {
+      "call-arg": 1,
+      "no-untyped-def": 4
+    },
+    "src/rawviewer_app/core/widgets/title_bar.py": {
+      "attr-defined": 9,
+      "method-assign": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 7
+    },
+    "src/rawviewer_app/core/widgets/warning_dialog.py": {
+      "no-untyped-def": 6
+    },
+    "src/rawviewer_app/processing/_pixmap_converters.py": {
+      "attr-defined": 1,
+      "call-arg": 2,
+      "no-untyped-def": 6
+    },
+    "src/rawviewer_app/processing/_raw_part1.py": {
+      "call-arg": 5,
+      "no-untyped-call": 6,
+      "no-untyped-def": 10
+    },
+    "src/rawviewer_app/processing/_raw_part2.py": {
+      "arg-type": 2,
+      "assignment": 5,
+      "no-untyped-call": 8,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/services/batch.py": {
+      "attr-defined": 1,
+      "call-arg": 2,
+      "no-untyped-call": 1,
+      "type-arg": 7
+    },
+    "src/rawviewer_app/viewer/session_mixin.py": {
+      "attr-defined": 52,
+      "no-untyped-call": 4,
+      "no-untyped-def": 6
+    },
+    "src/rawviewer_app/window/adjust_workers.py": {
+      "attr-defined": 1,
+      "call-arg": 7,
+      "no-untyped-call": 1,
+      "type-arg": 3
+    },
+    "src/rawviewer_app/window/bootstrap.py": {
+      "attr-defined": 2,
+      "no-untyped-def": 2
+    },
+    "src/rawviewer_app/window/logging_setup.py": {
+      "assignment": 1,
+      "no-untyped-def": 3
+    },
+    "src/rawviewer_app/window/macos.py": {
+      "attr-defined": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 22,
+      "type-arg": 1,
+      "unused-ignore": 1
+    },
+    "src/rawviewer_app/window/mixins/adjust_part1.py": {
+      "arg-type": 1,
+      "assignment": 1,
+      "attr-defined": 72,
+      "call-arg": 1,
+      "no-any-return": 5,
+      "no-untyped-call": 7,
+      "no-untyped-def": 26,
+      "union-attr": 2,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/adjust_part2.py": {
+      "assignment": 2,
+      "attr-defined": 88,
+      "no-untyped-def": 10,
+      "var-annotated": 2
+    },
+    "src/rawviewer_app/window/mixins/adjust_part3.py": {
+      "assignment": 4,
+      "attr-defined": 53,
+      "no-untyped-call": 4,
+      "no-untyped-def": 6,
+      "type-arg": 5
+    },
+    "src/rawviewer_app/window/mixins/adjust_part4.py": {
+      "assignment": 13,
+      "attr-defined": 28,
+      "index": 1,
+      "no-any-return": 2,
+      "no-untyped-call": 3,
+      "no-untyped-def": 5,
+      "type-arg": 4,
+      "var-annotated": 2
+    },
+    "src/rawviewer_app/window/mixins/adjust_part5.py": {
+      "assignment": 3,
+      "attr-defined": 24,
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 3,
+      "type-arg": 1,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/batch_part1.py": {
+      "arg-type": 2,
+      "assignment": 4,
+      "attr-defined": 35,
+      "no-untyped-call": 2,
+      "no-untyped-def": 2,
+      "type-arg": 3,
+      "union-attr": 1,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/dialogs_part1.py": {
+      "arg-type": 4,
+      "assignment": 2,
+      "attr-defined": 45,
+      "func-returns-value": 2,
+      "no-any-return": 2,
+      "no-untyped-call": 5,
+      "no-untyped-def": 8,
+      "type-arg": 4
+    },
+    "src/rawviewer_app/window/mixins/display_part1.py": {
+      "assignment": 3,
+      "attr-defined": 88,
+      "call-overload": 3,
+      "has-type": 4,
+      "no-any-return": 7,
+      "no-untyped-call": 1,
+      "no-untyped-def": 8,
+      "type-arg": 1
+    },
+    "src/rawviewer_app/window/mixins/display_part2.py": {
+      "assignment": 2,
+      "attr-defined": 57,
+      "no-any-return": 3,
+      "no-untyped-call": 3,
+      "no-untyped-def": 16,
+      "union-attr": 4
+    },
+    "src/rawviewer_app/window/mixins/display_part3.py": {
+      "arg-type": 1,
+      "attr-defined": 145,
+      "has-type": 8,
+      "no-any-return": 6,
+      "no-untyped-def": 13
+    },
+    "src/rawviewer_app/window/mixins/display_part4.py": {
+      "arg-type": 1,
+      "assignment": 9,
+      "attr-defined": 60,
+      "has-type": 5,
+      "no-any-return": 1,
+      "no-untyped-call": 3,
+      "no-untyped-def": 6,
+      "type-arg": 3,
+      "var-annotated": 2
+    },
+    "src/rawviewer_app/window/mixins/display_part5.py": {
+      "assignment": 8,
+      "attr-defined": 94,
+      "has-type": 4,
+      "no-any-return": 1,
+      "no-untyped-def": 2
+    },
+    "src/rawviewer_app/window/mixins/display_part6.py": {
+      "assignment": 3,
+      "attr-defined": 103,
+      "has-type": 2,
+      "misc": 2,
+      "no-any-return": 2,
+      "no-untyped-call": 4,
+      "no-untyped-def": 10
+    },
+    "src/rawviewer_app/window/mixins/external_part1.py": {
+      "attr-defined": 59,
+      "call-overload": 5,
+      "func-returns-value": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 15,
+      "union-attr": 4,
+      "unused-ignore": 2,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/external_part2.py": {
+      "attr-defined": 65,
+      "call-overload": 2,
+      "has-type": 1,
+      "no-any-return": 1,
+      "no-untyped-call": 5,
+      "no-untyped-def": 14,
+      "unused-ignore": 1,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/gallery_part1.py": {
+      "attr-defined": 89,
+      "has-type": 1,
+      "no-any-return": 2,
+      "no-untyped-call": 10,
+      "no-untyped-def": 12,
+      "type-arg": 6,
+      "var-annotated": 5
+    },
+    "src/rawviewer_app/window/mixins/gallery_part2.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "attr-defined": 86,
+      "has-type": 2,
+      "no-untyped-call": 4,
+      "no-untyped-def": 10,
+      "type-arg": 2,
+      "union-attr": 4,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/gallery_part3.py": {
+      "attr-defined": 32,
+      "no-any-return": 1,
+      "no-redef": 1,
+      "no-untyped-def": 5,
+      "type-arg": 1
+    },
+    "src/rawviewer_app/window/mixins/gallery_part4.py": {
+      "assignment": 4,
+      "attr-defined": 83,
+      "no-any-return": 12,
+      "no-untyped-call": 1,
+      "no-untyped-def": 10,
+      "var-annotated": 2
+    },
+    "src/rawviewer_app/window/mixins/gallery_part5.py": {
+      "attr-defined": 11,
+      "has-type": 1,
+      "no-untyped-call": 4,
+      "no-untyped-def": 4,
+      "type-arg": 3
+    },
+    "src/rawviewer_app/window/mixins/image_load_part1.py": {
+      "arg-type": 3,
+      "assignment": 1,
+      "attr-defined": 90,
+      "no-any-return": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 12,
+      "type-arg": 2,
+      "union-attr": 3,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/image_load_part2.py": {
+      "arg-type": 1,
+      "attr-defined": 106,
+      "has-type": 8,
+      "no-untyped-call": 1,
+      "no-untyped-def": 3
+    },
+    "src/rawviewer_app/window/mixins/image_load_part3.py": {
+      "assignment": 1,
+      "attr-defined": 90,
+      "has-type": 10,
+      "no-untyped-call": 4,
+      "no-untyped-def": 17
+    },
+    "src/rawviewer_app/window/mixins/lifecycle_part1.py": {
+      "arg-type": 7,
+      "attr-defined": 39,
+      "misc": 1,
+      "no-untyped-def": 8,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/lifecycle_part2.py": {
+      "assignment": 2,
+      "attr-defined": 80,
+      "comparison-overlap": 1,
+      "has-type": 6,
+      "misc": 5,
+      "no-untyped-def": 5
+    },
+    "src/rawviewer_app/window/mixins/metadata_part1.py": {
+      "assignment": 3,
+      "attr-defined": 55,
+      "has-type": 3,
+      "no-any-return": 2,
+      "no-untyped-call": 2,
+      "no-untyped-def": 8,
+      "type-arg": 5
+    },
+    "src/rawviewer_app/window/mixins/metadata_part2.py": {
+      "arg-type": 2,
+      "assignment": 1,
+      "attr-defined": 29,
+      "has-type": 1,
+      "no-any-return": 3,
+      "no-untyped-call": 5,
+      "no-untyped-def": 13,
+      "type-arg": 2,
+      "union-attr": 2
+    },
+    "src/rawviewer_app/window/mixins/misc_part1.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "attr-defined": 118,
+      "index": 1,
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 9,
+      "var-annotated": 5
+    },
+    "src/rawviewer_app/window/mixins/misc_part2.py": {
+      "arg-type": 2,
+      "attr-defined": 74,
+      "has-type": 5,
+      "no-any-return": 4,
+      "no-untyped-call": 1,
+      "no-untyped-def": 14
+    },
+    "src/rawviewer_app/window/mixins/misc_part3.py": {
+      "arg-type": 2,
+      "assignment": 1,
+      "attr-defined": 56,
+      "has-type": 9,
+      "no-untyped-call": 3,
+      "no-untyped-def": 6,
+      "type-arg": 1,
+      "union-attr": 2
+    },
+    "src/rawviewer_app/window/mixins/misc_part4.py": {
+      "attr-defined": 84,
+      "has-type": 3,
+      "no-any-return": 4,
+      "no-untyped-call": 6,
+      "no-untyped-def": 18
+    },
+    "src/rawviewer_app/window/mixins/navigation_part1.py": {
+      "arg-type": 3,
+      "attr-defined": 83,
+      "has-type": 3,
+      "no-any-return": 1,
+      "no-untyped-call": 16,
+      "no-untyped-def": 14,
+      "type-arg": 4,
+      "union-attr": 1,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/navigation_part2.py": {
+      "attr-defined": 28,
+      "has-type": 2,
+      "no-untyped-call": 5,
+      "no-untyped-def": 5,
+      "var-annotated": 3
+    },
+    "src/rawviewer_app/window/mixins/search_part1.py": {
+      "arg-type": 1,
+      "assignment": 3,
+      "attr-defined": 23,
+      "has-type": 1,
+      "no-any-return": 3,
+      "no-untyped-call": 5,
+      "no-untyped-def": 14,
+      "type-arg": 2
+    },
+    "src/rawviewer_app/window/mixins/search_part2.py": {
+      "arg-type": 1,
+      "assignment": 6,
+      "attr-defined": 108,
+      "has-type": 1,
+      "no-untyped-call": 7,
+      "no-untyped-def": 21
+    },
+    "src/rawviewer_app/window/mixins/search_part3.py": {
+      "arg-type": 5,
+      "assignment": 4,
+      "attr-defined": 110,
+      "has-type": 2,
+      "no-untyped-call": 9,
+      "no-untyped-def": 21,
+      "type-arg": 5,
+      "union-attr": 3,
+      "var-annotated": 2
+    },
+    "src/rawviewer_app/window/mixins/search_part4.py": {
+      "arg-type": 1,
+      "attr-defined": 48,
+      "has-type": 6,
+      "no-untyped-call": 8,
+      "no-untyped-def": 10,
+      "type-arg": 1
+    },
+    "src/rawviewer_app/window/mixins/settings_part1.py": {
+      "attr-defined": 47,
+      "no-untyped-call": 2,
+      "no-untyped-def": 4,
+      "var-annotated": 1
+    },
+    "src/rawviewer_app/window/mixins/shortcuts_part1.py": {
+      "attr-defined": 61,
+      "misc": 1,
+      "no-untyped-call": 3,
+      "no-untyped-def": 6
+    },
+    "src/rawviewer_app/window/mixins/status_part1.py": {
+      "arg-type": 1,
+      "attr-defined": 27,
+      "no-any-return": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 7,
+      "type-arg": 1
+    },
+    "src/rawviewer_app/window/mixins/status_part2.py": {
+      "attr-defined": 91,
+      "has-type": 1,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/window/mixins/ui_build_part1.py": {
+      "attr-defined": 6
+    },
+    "src/rawviewer_app/window/mixins/ui_build_part2.py": {
+      "arg-type": 3,
+      "assignment": 1,
+      "attr-defined": 132,
+      "call-overload": 15,
+      "no-untyped-call": 19,
+      "no-untyped-def": 11,
+      "union-attr": 7
+    },
+    "src/rawviewer_app/window/mixins/ui_build_part3.py": {
+      "attr-defined": 21,
+      "call-overload": 5,
+      "comparison-overlap": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 6
+    },
+    "src/rawviewer_app/window/paths.py": {
+      "assignment": 1,
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/window/platform_win.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/window/qt_helpers.py": {
+      "attr-defined": 1,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_app/window/raw_image_viewer.py": {
+      "assignment": 1,
+      "call-arg": 1,
+      "misc": 84
+    },
+    "src/rawviewer_app/window/splash.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 4,
+      "type-arg": 1
+    },
+    "src/rawviewer_app/window/windows_shell.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 1,
+      "unused-ignore": 8
+    },
+    "src/rawviewer_app/workers/workers.py": {
+      "arg-type": 4,
+      "assignment": 5,
+      "call-arg": 3,
+      "call-overload": 1,
+      "no-untyped-call": 6,
+      "no-untyped-def": 7,
+      "type-arg": 1,
+      "union-attr": 12
+    },
+    "src/rawviewer_ui/dialogs/color_calibration_dialog.py": {
+      "arg-type": 1,
+      "assignment": 4,
+      "call-arg": 1,
+      "call-overload": 2,
+      "no-any-return": 3,
+      "no-redef": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 4
+    },
+    "src/rawviewer_ui/dialogs/mobileclip_download_dialog.py": {
+      "call-arg": 1,
+      "no-untyped-def": 4
+    },
+    "src/rawviewer_ui/dialogs/release_update_dialog.py": {
+      "attr-defined": 1,
+      "no-untyped-def": 5
+    },
+    "src/rawviewer_ui/overlays/color_checker_overlay.py": {
+      "arg-type": 1,
+      "call-arg": 2,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "src/rawviewer_ui/overlays/composition_grid.py": {
+      "no-untyped-def": 1,
+      "override": 1
+    },
+    "src/rawviewer_ui/overlays/crop_overlay.py": {
+      "call-arg": 2,
+      "no-untyped-call": 1,
+      "no-untyped-def": 8,
+      "override": 1
+    },
+    "src/rawviewer_ui/overlays/location_map_overlay.py": {
+      "arg-type": 1,
+      "assignment": 1,
+      "attr-defined": 6,
+      "call-arg": 3,
+      "no-untyped-def": 3,
+      "override": 5,
+      "type-arg": 1,
+      "union-attr": 2,
+      "valid-type": 2,
+      "var-annotated": 1
+    },
+    "src/rawviewer_ui/widgets/__init__.py": {
+      "call-arg": 2,
+      "no-any-return": 3,
+      "no-untyped-call": 11,
+      "no-untyped-def": 25
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part1.py": {
+      "attr-defined": 69,
+      "call-arg": 29,
+      "call-overload": 8,
+      "no-untyped-call": 9,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part2.py": {
+      "attr-defined": 17
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part3.py": {
+      "attr-defined": 44,
+      "name-defined": 1,
+      "no-any-return": 1,
+      "no-untyped-call": 3,
+      "no-untyped-def": 3
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part4.py": {
+      "assignment": 6,
+      "attr-defined": 65,
+      "has-type": 4,
+      "no-redef": 1,
+      "no-untyped-def": 1,
+      "union-attr": 1
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part5.py": {
+      "attr-defined": 10,
+      "call-overload": 1,
+      "no-any-return": 1,
+      "no-untyped-def": 2,
+      "type-arg": 4
+    },
+    "src/rawviewer_ui/widgets/adjust/adjust_part6.py": {
+      "attr-defined": 7,
+      "call-overload": 1,
+      "no-untyped-def": 1,
+      "union-attr": 2
+    },
+    "src/rawviewer_ui/widgets/adjust/helpers.py": {
+      "call-arg": 5,
+      "call-overload": 1,
+      "method-assign": 1,
+      "no-any-return": 2,
+      "no-untyped-def": 18,
+      "override": 2,
+      "type-arg": 3,
+      "union-attr": 5
+    },
+    "src/rawviewer_ui/widgets/adjust/image_adjust_panel.py": {
+      "misc": 2,
+      "no-untyped-def": 1,
+      "type-arg": 2
+    },
+    "src/rawviewer_ui/widgets/filmstrip.py": {
+      "attr-defined": 9,
+      "call-arg": 4,
+      "call-overload": 2,
+      "no-any-return": 3,
+      "no-untyped-call": 2,
+      "no-untyped-def": 17,
+      "override": 2,
+      "type-arg": 4,
+      "union-attr": 18
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part1.py": {
+      "arg-type": 10,
+      "attr-defined": 42,
+      "call-arg": 1,
+      "no-any-return": 2,
+      "no-untyped-call": 1,
+      "no-untyped-def": 10,
+      "operator": 1,
+      "type-arg": 6,
+      "union-attr": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part2.py": {
+      "assignment": 3,
+      "attr-defined": 80,
+      "has-type": 5,
+      "misc": 1,
+      "no-any-return": 11,
+      "no-untyped-call": 1,
+      "no-untyped-def": 8,
+      "type-arg": 1,
+      "union-attr": 3
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part3.py": {
+      "attr-defined": 128,
+      "has-type": 4,
+      "misc": 3,
+      "no-any-return": 5,
+      "no-untyped-call": 1,
+      "no-untyped-def": 10,
+      "type-arg": 1,
+      "var-annotated": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part4.py": {
+      "assignment": 1,
+      "attr-defined": 109,
+      "has-type": 12,
+      "no-any-return": 5,
+      "no-redef": 1,
+      "no-untyped-call": 10,
+      "no-untyped-def": 10,
+      "type-arg": 2,
+      "union-attr": 9,
+      "var-annotated": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part5.py": {
+      "arg-type": 2,
+      "attr-defined": 130,
+      "has-type": 4,
+      "method-assign": 4,
+      "no-untyped-call": 5,
+      "no-untyped-def": 5,
+      "union-attr": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part6.py": {
+      "attr-defined": 184,
+      "has-type": 6,
+      "no-untyped-call": 6,
+      "no-untyped-def": 12,
+      "union-attr": 3
+    },
+    "src/rawviewer_ui/widgets/gallery/gallery_part7.py": {
+      "attr-defined": 68,
+      "call-overload": 2,
+      "has-type": 16,
+      "no-untyped-call": 7,
+      "no-untyped-def": 10,
+      "type-arg": 2,
+      "var-annotated": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/helpers.py": {
+      "assignment": 1,
+      "call-overload": 2,
+      "no-any-return": 3,
+      "no-untyped-call": 1,
+      "no-untyped-def": 1
+    },
+    "src/rawviewer_ui/widgets/gallery/justified_gallery.py": {
+      "misc": 5
+    },
+    "src/rawviewer_ui/widgets/gpu/gpu_item.py": {
+      "arg-type": 1,
+      "call-overload": 1,
+      "no-untyped-call": 2,
+      "no-untyped-def": 14,
+      "override": 3,
+      "type-arg": 1,
+      "union-attr": 24,
+      "unused-ignore": 1
+    },
+    "src/rawviewer_ui/widgets/gpu/gpu_view.py": {
+      "assignment": 2,
+      "call-arg": 10,
+      "misc": 3,
+      "no-untyped-call": 3,
+      "no-untyped-def": 1,
+      "union-attr": 3
+    },
+    "src/rawviewer_ui/widgets/gpu/gpu_view_part1.py": {
+      "assignment": 1,
+      "attr-defined": 123,
+      "call-overload": 2,
+      "has-type": 1,
+      "no-any-return": 6,
+      "no-untyped-def": 10,
+      "operator": 7
+    },
+    "src/rawviewer_ui/widgets/gpu/gpu_view_part2.py": {
+      "arg-type": 4,
+      "assignment": 1,
+      "attr-defined": 146,
+      "call-overload": 1,
+      "misc": 10,
+      "no-any-return": 5,
+      "no-untyped-def": 14
+    },
+    "src/rawviewer_ui/widgets/tone_curve_widget.py": {
+      "call-arg": 4,
+      "no-untyped-call": 4,
+      "no-untyped-def": 5,
+      "override": 4
+    },
+    "src/search/backends.py": {
+      "assignment": 6,
+      "call-overload": 1,
+      "misc": 1,
+      "no-untyped-call": 14,
+      "no-untyped-def": 19,
+      "type-arg": 1,
+      "var-annotated": 1
+    },
+    "src/search/engine/engine_part1.py": {
+      "assignment": 1,
+      "attr-defined": 3,
+      "no-any-return": 3,
+      "no-untyped-call": 1,
+      "no-untyped-def": 8
+    },
+    "src/search/engine/engine_part2.py": {
+      "arg-type": 3,
+      "assignment": 1,
+      "attr-defined": 39,
+      "call-overload": 5,
+      "has-type": 1,
+      "name-defined": 10,
+      "no-any-return": 4,
+      "no-untyped-def": 2
+    },
+    "src/search/engine/engine_part3.py": {
+      "assignment": 1,
+      "attr-defined": 31,
+      "has-type": 2,
+      "misc": 5,
+      "no-any-return": 1,
+      "no-untyped-call": 1,
+      "type-arg": 2
+    },
+    "src/search/engine/engine_part4.py": {
+      "attr-defined": 13,
+      "misc": 1,
+      "type-arg": 2
+    },
+    "src/search/engine/engine_part5.py": {
+      "attr-defined": 49,
+      "has-type": 1,
+      "misc": 2,
+      "no-untyped-call": 2,
+      "no-untyped-def": 2
+    },
+    "src/search/engine/engine_part7.py": {
+      "attr-defined": 54,
+      "misc": 2,
+      "no-any-return": 1,
+      "no-untyped-def": 2
+    },
+    "src/search/engine/semantic_index.py": {
+      "misc": 4
+    },
+    "src/search/indexer/_config.py": {
+      "assignment": 2,
+      "call-overload": 1,
+      "no-any-return": 1,
+      "no-untyped-def": 1
+    },
+    "src/search/indexer/_rest.py": {
+      "assignment": 2,
+      "attr-defined": 2,
+      "no-any-return": 1,
+      "no-untyped-call": 11,
+      "no-untyped-def": 14,
+      "type-arg": 1
+    },
+    "src/search/queries.py": {
+      "arg-type": 2,
+      "call-arg": 2,
+      "type-arg": 4
+    },
+    "testplan/auto/t_adjust_copy_paste_shortcuts.py": {
+      "attr-defined": 1,
+      "no-untyped-call": 18,
+      "no-untyped-def": 13,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_adjust_loading_overlay.py": {
+      "no-untyped-call": 9,
+      "no-untyped-def": 7,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_adjust_panel_dock.py": {
+      "no-untyped-call": 19,
+      "no-untyped-def": 5,
+      "var-annotated": 2
+    },
+    "testplan/auto/t_adjust_section_order.py": {
+      "no-untyped-call": 1,
+      "no-untyped-def": 1,
+      "type-arg": 1
+    },
+    "testplan/auto/t_adjust_workflow_restore.py": {
+      "no-untyped-call": 5,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_ai_denoise_amount.py": {
+      "no-untyped-call": 17,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_ai_denoise_gating.py": {
+      "no-untyped-call": 8,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_ai_denoise_preview_export_golden.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_batch_export_ai_amount.py": {
+      "no-untyped-call": 14,
+      "no-untyped-def": 3,
+      "var-annotated": 2
+    },
+    "testplan/auto/t_cache_semantics.py": {
+      "arg-type": 1,
+      "no-untyped-call": 7,
+      "no-untyped-def": 1,
+      "union-attr": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_capture_time_only_sort.py": {
+      "assignment": 2,
+      "no-untyped-call": 11,
+      "no-untyped-def": 5,
+      "return-value": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_channel_tone_curve.py": {
+      "no-untyped-call": 7,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_coreml_multiarray_bridge.py": {
+      "call-overload": 2,
+      "no-untyped-def": 3
+    },
+    "testplan/auto/t_cr3_preview_perf.py": {
+      "no-untyped-call": 3,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_crop_overlay.py": {
+      "no-untyped-call": 8,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_ctrl_wheel_zoom_anchor.py": {
+      "no-untyped-call": 8,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_detail_enhance_perf.py": {
+      "no-untyped-call": 7,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_display_brightness.py": {
+      "no-untyped-call": 27,
+      "no-untyped-def": 10,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_dodge_burn.py": {
+      "no-untyped-call": 36,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_dodge_burn_brush_wheel.py": {
+      "attr-defined": 2,
+      "no-untyped-call": 5,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_dodge_burn_reset.py": {
+      "no-untyped-call": 7,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_dodge_burn_undo.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_edit_base_max_edge.py": {
+      "no-untyped-call": 4,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_editor_skip_unsupported.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_exif_cache_concurrency.py": {
+      "no-untyped-call": 4,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_filmstrip_editor_hidden.py": {
+      "no-untyped-call": 8,
+      "no-untyped-def": 10,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_folder_fallback.py": {
+      "arg-type": 4,
+      "no-untyped-call": 62,
+      "no-untyped-def": 8,
+      "unused-ignore": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_full_decode_dedup.py": {
+      "no-untyped-call": 27,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_batch_selection.py": {
+      "assignment": 2,
+      "attr-defined": 31,
+      "func-returns-value": 1,
+      "has-type": 4,
+      "misc": 1,
+      "no-untyped-call": 57,
+      "no-untyped-def": 18,
+      "return-value": 1,
+      "var-annotated": 2
+    },
+    "testplan/auto/t_gallery_closes_editor.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 4,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_copy_path_button.py": {
+      "arg-type": 1,
+      "no-untyped-call": 16,
+      "no-untyped-def": 2,
+      "union-attr": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_hover_prefetch.py": {
+      "attr-defined": 2,
+      "no-untyped-call": 24,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_new_file.py": {
+      "arg-type": 7,
+      "no-untyped-call": 22,
+      "no-untyped-def": 9,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_scroll_date_bubble.py": {
+      "assignment": 4,
+      "misc": 29,
+      "no-untyped-call": 4,
+      "no-untyped-def": 3,
+      "type-arg": 1,
+      "union-attr": 9
+    },
+    "testplan/auto/t_gallery_thumb_perf.py": {
+      "no-untyped-call": 6,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gallery_thumb_recovery.py": {
+      "arg-type": 4,
+      "no-untyped-call": 19,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_gpu_return_linear.py": {
+      "no-untyped-call": 2,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_half_decode_return_linear.py": {
+      "no-untyped-call": 4,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_he_nef_thumbnail.py": {
+      "no-untyped-call": 12,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_hsl_correctness.py": {
+      "no-untyped-call": 5,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_idle_timer_structure.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_idle_timer_trigger.py": {
+      "no-untyped-call": 13,
+      "no-untyped-def": 7,
+      "type-arg": 1,
+      "var-annotated": 2
+    },
+    "testplan/auto/t_libraw_cache_stamp.py": {
+      "no-untyped-call": 10,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_lut_cube.py": {
+      "no-untyped-call": 20,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_macos_open_dialog.py": {
+      "no-untyped-def": 4,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_memory_tier_overlay.py": {
+      "no-untyped-call": 12,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_module_import_smoke.py": {
+      "assignment": 1
+    },
+    "testplan/auto/t_nef_he_detection.py": {
+      "arg-type": 1,
+      "no-untyped-call": 26,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_nef_he_editing_export.py": {
+      "no-untyped-call": 18,
+      "no-untyped-def": 4,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_params_supported_user_wb.py": {
+      "no-untyped-call": 6,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_perf_baseline.py": {
+      "no-untyped-def": 1
+    },
+    "testplan/auto/t_pv2012_preview_lite.py": {
+      "no-untyped-call": 8,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_queue_reprioritise.py": {
+      "assignment": 3,
+      "method-assign": 1,
+      "no-untyped-call": 26,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_raw_slot_accounting.py": {
+      "assignment": 2,
+      "method-assign": 1,
+      "no-untyped-call": 69,
+      "no-untyped-def": 7,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_search_bar_animation.py": {
+      "no-untyped-call": 16,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_shadow_edge_aware_damp.py": {
+      "no-untyped-call": 5,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_shadow_smoothed_ratio.py": {
+      "no-untyped-call": 2,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_sidecar_progressive.py": {
+      "index": 1,
+      "no-untyped-call": 10,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_skip_same_format_export.py": {
+      "assignment": 2,
+      "no-untyped-call": 15,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_slider_specs.py": {
+      "no-untyped-call": 4,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_splash_copy.py": {
+      "no-untyped-def": 3
+    },
+    "testplan/auto/t_spot_heal.py": {
+      "attr-defined": 1,
+      "no-untyped-call": 33,
+      "no-untyped-def": 6,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_tone_engine.py": {
+      "no-untyped-call": 38,
+      "no-untyped-def": 5,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_unpack_stash_lru.py": {
+      "no-untyped-call": 12,
+      "no-untyped-def": 2,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_visited_edit_bake.py": {
+      "arg-type": 7,
+      "assignment": 3,
+      "no-untyped-call": 16,
+      "no-untyped-def": 5,
+      "var-annotated": 2
+    },
+    "testplan/auto/t_wb_sanity.py": {
+      "no-untyped-call": 11,
+      "no-untyped-def": 4,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_worker_no_qpixmap.py": {
+      "assignment": 1,
+      "attr-defined": 2,
+      "no-untyped-call": 14,
+      "no-untyped-def": 3,
+      "var-annotated": 1
+    },
+    "testplan/auto/t_xmp_roundtrip.py": {
+      "arg-type": 1,
+      "assignment": 1,
+      "no-untyped-call": 16,
+      "no-untyped-def": 1,
+      "var-annotated": 1
+    },
+    "tests/test_exif_orientation.py": {
+      "arg-type": 4,
+      "call-overload": 1,
+      "no-any-return": 1,
+      "no-untyped-def": 1,
+      "union-attr": 1,
+      "untyped-decorator": 6
+    }
+  },
+  "any": {
+    "src/cache/image_cache/full_exif_util.py": 12,
+    "src/cache/image_cache/thumb_grid_preview.py": 10,
+    "src/cache/keys.py": 6,
+    "src/cache/memory.py": 18,
+    "src/cache/metadata.py": 9,
+    "src/common_image_loader/edr.py": 1,
+    "src/common_image_loader/exif_display.py": 8,
+    "src/common_image_loader/helpers.py": 8,
+    "src/common_image_loader/mipmap.py": 1,
+    "src/core/config.py": 5,
+    "src/core/release_update.py": 4,
+    "src/core/upgrade_compat.py": 2,
+    "src/enhanced_raw_processor/enhanced_processor.py": 5,
+    "src/enhanced_raw_processor/exif_extractor.py": 3,
+    "src/enhanced_raw_processor/extraction.py": 1,
+    "src/enhanced_raw_processor/optimized_processor.py": 7,
+    "src/image_load_manager/manager_part3.py": 1,
+    "src/main.py": 4,
+    "src/metadata/backend.py": 11,
+    "src/metadata/exifread_af.py": 6,
+    "src/metadata/subject_area.py": 20,
+    "src/platform_support/display_brightness.py": 3,
+    "src/processing/raw_decode/fast.py": 10,
+    "src/processing/raw_decode/gil.py": 1,
+    "src/processing/raw_decode/gpu_bridge.py": 6,
+    "src/processing/raw_decode/gpu_processor.py": 8,
+    "src/processing/unified/helpers.py": 1,
+    "src/processing/unified/unified_part2.py": 2,
+    "src/processing/unified/unified_part3.py": 2,
+    "src/processing/unified/unified_part4.py": 4,
+    "src/processing/unified/unified_part6.py": 2,
+    "src/processing/unified/unified_part7.py": 4,
+    "src/raw_adjustments/color_calibration.py": 12,
+    "src/raw_adjustments/tone_recovery.py": 2,
+    "src/rawviewer_app/services/batch.py": 2,
+    "src/rawviewer_app/window/adjust_workers.py": 7,
+    "src/rawviewer_app/window/lazy.py": 5,
+    "src/rawviewer_app/window/mixins/gallery_part1.py": 1,
+    "src/rawviewer_app/window/mixins/gallery_part2.py": 1,
+    "src/rawviewer_app/window/mixins/metadata_part2.py": 1,
+    "src/rawviewer_app/window/mixins/search_part1.py": 1,
+    "src/rawviewer_app/window/mixins/ui_build_part2.py": 6,
+    "src/rawviewer_app/window/qt_helpers.py": 1,
+    "src/rawviewer_app/window/raw_image_viewer.py": 9,
+    "src/rawviewer_app/window/state.py": 2,
+    "src/rawviewer_ui/dialogs/color_calibration_dialog.py": 1,
+    "src/rawviewer_ui/widgets/gallery/gallery_part1.py": 2,
+    "src/rawviewer_ui/widgets/gallery/gallery_part2.py": 1,
+    "src/rawviewer_ui/widgets/gpu/gpu_view.py": 1,
+    "src/search/backends.py": 8,
+    "src/search/engine/engine_part1.py": 1,
+    "src/search/engine/engine_part2.py": 1,
+    "src/search/engine/engine_part6.py": 8
+  },
+  "type_ignore": {
+    "build.py": 1,
+    "src/cache/image_cache/full_exif_util.py": 1,
+    "src/cache/image_cache/thumb_grid_preview.py": 5,
+    "src/main.py": 4,
+    "src/platform_support/windows_share.py": 1,
+    "src/rawviewer_app/core/widgets/share.py": 8,
+    "src/rawviewer_app/window/macos.py": 1,
+    "src/rawviewer_app/window/mixins/external_part1.py": 2,
+    "src/rawviewer_app/window/mixins/external_part2.py": 1,
+    "src/rawviewer_app/window/mixins/misc_part3.py": 1,
+    "src/rawviewer_app/window/windows_shell.py": 8,
+    "src/rawviewer_ui/widgets/gpu/gpu_item.py": 2,
+    "src/search/indexer/_config.py": 1,
+    "testplan/auto/t_folder_fallback.py": 1
+  }
+}
