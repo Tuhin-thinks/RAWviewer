@@ -37,6 +37,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from raw_adjustments.shared import (  # moved (P2b); re-exported
+    circular_brush_falloff,
+)
+
 MASK_KEY = "_dodge_burn_mask_v1"
 MASK_OBJ_KEY = "_dodge_burn_mask_obj"  # live DodgeBurnMask; never write to XMP
 STRENGTH_KEY = "DodgeBurnStrength"
@@ -264,29 +268,6 @@ def _edge_assist_gate(
     return np.clip(gate, 0.0, 1.0).astype(np.float32)
 
 
-def circular_brush_falloff(
-    y0: int,
-    y1: int,
-    x0: int,
-    x1: int,
-    cx: float,
-    cy: float,
-    radius: float,
-) -> np.ndarray:
-    """Soft circular brush kernel on ``[y0:y1, x0:x1]`` (peak 1 at center).
-
-    Raised-cosine (Hann) radial profile: full strength at the center, smooth
-    gradient to zero at ``radius``. Hard-clips outside ``radius`` so the
-    axis-aligned stamp bbox corners stay empty (avoids rectangular live blits).
-    """
-    r = max(1.0, float(radius))
-    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
-    dist = np.sqrt((xx - float(cx)) ** 2 + (yy - float(cy)) ** 2)
-    t = np.clip(dist / r, 0.0, 1.0)
-    # Hann window: 1 at center, 0 at edge, continuous first derivative.
-    falloff = (0.5 * (1.0 + np.cos(np.pi * t))).astype(np.float32)
-    falloff[dist > r] = 0.0
-    return falloff
 
 
 def stamp_brush(
@@ -503,7 +484,7 @@ def apply_dodge_burn(img: np.ndarray, mask: DodgeBurnMask | None, stops: float) 
     # here at 24MP: 220ms broadcast vs 109ms per-channel-out, bit-identical.
     # raw_detail_enhance._multiply_by_2d_factor documents the same finding --
     # dodge/burn simply was not using it.
-    from raw_adjustments.detail_enhance import _multiply_by_2d_factor
+    from raw_adjustments.shared import _multiply_by_2d_factor
 
     return _multiply_by_2d_factor(img, gain)
 

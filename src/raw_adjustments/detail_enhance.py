@@ -2,9 +2,13 @@
 
 import numpy as np
 
+from raw_adjustments.shared import (  # moved (P2b); re-exported
+    _multiply_by_2d_factor,
+)
+
 
 def _luma(img: np.ndarray) -> np.ndarray:
-    from raw_adjustments.tone_recovery import _luminance
+    from raw_adjustments.shared import _luminance
 
     return _luminance(img)
 
@@ -49,21 +53,6 @@ def _unsharp_luma(img: np.ndarray, sigma: float, amount: float) -> np.ndarray:
     return np.clip(_multiply_by_2d_factor(work, scale), 0.0, 1.0)
 
 
-def _multiply_by_2d_factor(rgb: np.ndarray, factor2d: np.ndarray) -> np.ndarray:
-    """rgb(H,W,3) * factor2d(H,W), broadcasting the 2D factor across channels.
-
-    A plain ``rgb * factor2d[..., np.newaxis]`` broadcast, or pre-tiling the
-    factor to (H,W,3) via np.repeat, are both slower than a per-channel loop
-    with a sliced ``out=`` (measured at 32MP: broadcast 142ms, repeat-tile
-    119ms, per-channel-out 91ms) -- numpy's broadcasting iterator doesn't
-    take the fast contiguous SIMD path for a trailing size-1 axis, and
-    np.repeat pays its own full-size allocation+copy. Bit-identical to the
-    broadcast result.
-    """
-    out = np.empty_like(rgb)
-    for c in range(rgb.shape[-1]):
-        np.multiply(rgb[:, :, c], factor2d, out=out[:, :, c])
-    return out
 
 
 def apply_sharpness(display_linear: np.ndarray, amount: float) -> np.ndarray:

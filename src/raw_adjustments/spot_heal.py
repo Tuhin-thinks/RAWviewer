@@ -24,10 +24,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-try:
-    from raw_adjustments.dodge_burn import DEFAULT_BRUSH_FEATHER
-except ImportError:
-    DEFAULT_BRUSH_FEATHER = 0.70
+DEFAULT_BRUSH_FEATHER = 0.70  # was a dead try-import of dodge_burn (never defined there)
 
 MASK_KEY = "_spot_heal_mask_v1"
 MASK_OBJ_KEY = "_spot_heal_mask_obj"  # live HealMask; never write to XMP
@@ -49,7 +46,7 @@ def _heal_brush_falloff(
     feather: float,
 ) -> np.ndarray:
     """Call dodge/burn falloff; pass ``feather`` only when that API exists."""
-    from raw_adjustments.dodge_burn import circular_brush_falloff
+    from raw_adjustments.shared import circular_brush_falloff
 
     global _FALLOFF_HAS_FEATHER
     if _FALLOFF_HAS_FEATHER is None:

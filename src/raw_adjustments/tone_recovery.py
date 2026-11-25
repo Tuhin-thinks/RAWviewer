@@ -8,6 +8,10 @@ from typing import Any
 
 import numpy as np
 
+from raw_adjustments.shared import (  # moved (P2b); re-exported
+    _luminance,
+)
+
 logger = logging.getLogger(__name__)
 
 RECOVERY_MAX_EDGE = 2048
@@ -28,8 +32,6 @@ _HARD_CLIP_SPREAD = 0.025
 _EDR_PEAK_DISPLAY = 4.0
 
 
-def _luminance(rgb_f: np.ndarray) -> np.ndarray:
-    return 0.2126 * rgb_f[:, :, 0] + 0.7152 * rgb_f[:, :, 1] + 0.0722 * rgb_f[:, :, 2]
 
 
 def _to_float01(rgb: np.ndarray) -> np.ndarray:
