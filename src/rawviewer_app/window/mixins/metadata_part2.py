@@ -140,7 +140,7 @@ class MetadataPart2:
             return
         self._full_exif_queued_norm = norm
         self._defer_full_exif_path = None
-        from image_load_manager import Priority as _BgPriority
+        from image_load_manager.helpers import Priority as _BgPriority
 
         self.image_manager.load_image(
             fp,
@@ -168,7 +168,7 @@ class MetadataPart2:
             if getattr(self, "current_file_path", None) != fp or not os.path.isfile(fp):
                 return
             try:
-                from enhanced_raw_processor import EXIFExtractor
+                from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
                 data = EXIFExtractor().extract_exif_data(fp)
                 if data:
@@ -287,8 +287,8 @@ class MetadataPart2:
         must not claim a profile is in effect.
         """
         try:
-            from raw_adjustments import resolve_xmp_path
             from raw_adjustments.color_calibration import describe_camera_profile
+            from raw_adjustments.xmp_read import resolve_xmp_path
 
             xmp = resolve_xmp_path(path)
             if xmp and os.path.isfile(xmp):
@@ -313,7 +313,7 @@ class MetadataPart2:
         if panel is None:
             return
         try:
-            from raw_adjustments import load_adjustments_for_file
+            from raw_adjustments.xmp_read import load_adjustments_for_file
 
             panel.set_adjustments(load_adjustments_for_file(path))
         except Exception:
@@ -338,7 +338,7 @@ class MetadataPart2:
         try:
             from PyQt6.QtWidgets import QDialog
 
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
             from rawviewer_ui.dialogs.color_calibration_dialog import ColorCalibrationDialog
 
             if target_path and os.path.isfile(target_path):
@@ -416,7 +416,7 @@ class MetadataPart2:
         never blocks the UI on exifread/rawpy as-shot temperature reads.
         """
         from common_image_loader import is_raw_file
-        from raw_adjustments import sidecar_adjustments_enabled
+        from raw_adjustments.xmp_read import sidecar_adjustments_enabled
 
         if not sidecar_adjustments_enabled():
             # Browse tiers show original pixels; never bake edits into the
@@ -435,11 +435,9 @@ class MetadataPart2:
                 import cv2
 
                 from image_cache import memory_preview_max_edge
-                from raw_adjustments import (
-                    apply_adjustments_to_rgb,
-                    is_default_adjustments,
-                    load_adjustments_for_file,
-                )
+                from raw_adjustments.apply import apply_adjustments_to_rgb
+                from raw_adjustments.checks import is_default_adjustments
+                from raw_adjustments.xmp_read import load_adjustments_for_file
 
                 a = load_adjustments_for_file(fp) if a is None else dict(a)
                 if not is_default_adjustments(a):
@@ -674,7 +672,7 @@ class MetadataPart2:
         if not file_path:
             return empty
         try:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             data = EXIFExtractor().extract_exif_data(file_path)
             if not isinstance(data, dict):

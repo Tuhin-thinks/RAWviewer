@@ -230,7 +230,7 @@ class ImageLoadPart1:
         except Exception:
             pass
         logger.info("[LOAD] _maybe_queue_background_full_decode: queueing for %s", os.path.basename(file_path))
-        from image_load_manager import Priority as _Priority
+        from image_load_manager.helpers import Priority as _Priority
 
         # On-screen image: CURRENT so GPU raw_limit reservation cannot let
         # neighbor PRELOAD full starve this demosaic.

@@ -905,7 +905,7 @@ class MiscPart2:
         if not use_libraw_consistent_preview_first(path):
             return False
         try:
-            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
             if os.path.normcase(os.path.abspath(path)) in _LIBRAW_UNSUPPORTED_PATHS:
                 return False

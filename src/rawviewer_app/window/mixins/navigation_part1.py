@@ -382,7 +382,7 @@ class NavigationPart1:
         # 1b. Persist to the XMP sidecar so the rating survives a restart
         # (in-memory/EXIF-cache updates above are lost when the app closes).
         try:
-            from raw_adjustments import write_rating_for_file
+            from raw_adjustments.xmp_write import write_rating_for_file
 
             write_rating_for_file(path, rating)
         except Exception:

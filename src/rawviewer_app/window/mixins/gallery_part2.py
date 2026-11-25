@@ -179,7 +179,7 @@ class GalleryPart2:
                 if hasattr(mgr, "cancel_queued_non_gallery_tasks"):
                     mgr.cancel_queued_non_gallery_tasks()
                 if hasattr(mgr, "cancel_tasks_by_priority"):
-                    from image_load_manager import Priority as _GalleryCancelPriority
+                    from image_load_manager.helpers import Priority as _GalleryCancelPriority
 
                     for prio in (
                         _GalleryCancelPriority.PRELOAD_NEXT,

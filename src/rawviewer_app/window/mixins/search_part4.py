@@ -186,7 +186,7 @@ class SearchPart4:
         # Check if there are active high-priority (CURRENT) tasks in the image manager
         if hasattr(self, "image_manager") and self.image_manager is not None:
             try:
-                from image_load_manager import Priority
+                from image_load_manager.helpers import Priority
 
                 with self.image_manager._queue_lock:
                     for task in self.image_manager._active_tasks.values():

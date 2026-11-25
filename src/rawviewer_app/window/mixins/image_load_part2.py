@@ -42,7 +42,7 @@ class ImageLoadPart2:
         old_path = getattr(self, "current_file_path", None)
         if old_path and file_path != old_path:
             try:
-                from raw_adjustments import sidecar_adjustments_enabled
+                from raw_adjustments.xmp_read import sidecar_adjustments_enabled
 
                 if sidecar_adjustments_enabled():
                     self._reencode_persisted_preview_for_sidecar(old_path, None)

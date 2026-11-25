@@ -95,7 +95,7 @@ class ImageLoadPart3:
                 return
             # Request full decode (CURRENT priority).
             try:
-                from image_load_manager import Priority as _Prio
+                from image_load_manager.helpers import Priority as _Prio
 
                 self.image_manager.load_image(
                     file_path=fp,
@@ -113,7 +113,7 @@ class ImageLoadPart3:
     def _request_full_res_decode(self, file_path, *, priority_current=True, force=False, urgent=False) -> bool:
         """Request a full-resolution decode for file_path. Returns True."""
         try:
-            from image_load_manager import Priority as _Prio
+            from image_load_manager.helpers import Priority as _Prio
 
             self.image_manager.load_image(
                 file_path=file_path,
@@ -265,7 +265,7 @@ class ImageLoadPart3:
 
     def _preload_adjacent_display_buffers(self):
         """Prefetch adjacent display buffers (embedded preview / half-res) for navigation."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         flag = os.environ.get("RAWVIEWER_NAV_PRELOAD_DISPLAY", "1").strip().lower()
         if flag not in ("1", "true", "yes", "on"):
@@ -325,7 +325,7 @@ class ImageLoadPart3:
 
     def _start_preloading(self):
         """Start preloading adjacent images for fast navigation using aggressive caching strategy."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         if not self.image_files or self.current_file_index < 0:
             return
@@ -527,7 +527,7 @@ class ImageLoadPart3:
             try:
                 import rawpy
 
-                from enhanced_raw_processor import _rawpy_global_lock
+                from enhanced_raw_processor.extraction import _rawpy_global_lock
 
                 with _rawpy_global_lock, rawpy.imread(path) as raw:
                     ow = int(raw.sizes.width)

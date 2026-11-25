@@ -693,7 +693,7 @@ class GalleryPart1:
             norm_fp = _norm_path(file_path)
             upgrade_attempted = norm_fp in getattr(self, "_preview_upgrade_attempted_paths", set())
             try:
-                from processing.unified import UnifiedImageProcessor
+                from processing.unified.processor import UnifiedImageProcessor
 
                 up = UnifiedImageProcessor()
                 upgraded = up.ensure_display_tier_preview(file_path, cast(Any, thumbnail))
@@ -724,7 +724,7 @@ class GalleryPart1:
                         os.path.basename(file_path),
                     )
                     self._pending_thumbnail = thumbnail
-                    from image_load_manager import Priority as _Prio
+                    from image_load_manager.helpers import Priority as _Prio
 
                     self.image_manager.load_image(
                         file_path,
@@ -753,7 +753,7 @@ class GalleryPart1:
                     os.path.basename(file_path),
                 )
                 self._pending_thumbnail = thumbnail
-                from image_load_manager import Priority as _Prio
+                from image_load_manager.helpers import Priority as _Prio
 
                 with contextlib.suppress(Exception):
                     self.image_manager.load_image(
@@ -881,7 +881,7 @@ class GalleryPart1:
                     # explicit request some loads end at the thumbnail stage and
                     # the viewport stays empty until the 5s watchdog fires.
                     try:
-                        from image_load_manager import Priority as _Priority
+                        from image_load_manager.helpers import Priority as _Priority
 
                         # Fit view: half-size LibRaw decode (~0.2-0.6s), not
                         # the sensor-res decode (1.5-4s) -- same tier the

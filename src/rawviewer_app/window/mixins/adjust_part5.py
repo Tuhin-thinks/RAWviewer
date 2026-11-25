@@ -27,7 +27,6 @@ class AdjustPart5:
         # request; the (comparatively slow) XMP write below doesn't block it.
         self._apply_adjust_panel_preview(full_quality=True)
         try:
-            from raw_adjustments import load_adjustments_for_file, write_xmp_adjustments_for_file
             from raw_adjustments.dodge_burn import (
                 DEFAULT_STRENGTH,
                 MASK_KEY,
@@ -42,6 +41,8 @@ class AdjustPart5:
                 MASK_OBJ_KEY as HEAL_MASK_OBJ_KEY,
             )
             from raw_adjustments.spot_heal import serialize_mask as serialize_heal_mask
+            from raw_adjustments.xmp_read import load_adjustments_for_file
+            from raw_adjustments.xmp_write import write_xmp_adjustments_for_file
 
             # Loaded unconditionally: the no-change check below needs it, and
             # it used to be bound only inside the undo branch -- so with undo
@@ -95,7 +96,7 @@ class AdjustPart5:
         # preview. See _reencode_persisted_preview_for_sidecar's docstring;
         # re-enable once root-caused.
         # self._reencode_persisted_preview_for_sidecar(path, adj)
-        from raw_adjustments import is_default_adjustments
+        from raw_adjustments.checks import is_default_adjustments
 
         cleared = is_default_adjustments(adj)
         self._invalidate_gallery_edited_memo(path)
@@ -186,7 +187,8 @@ class AdjustPart5:
             if getattr(array, "ndim", 0) != 3 or max(array.shape[0], array.shape[1]) < 1200:
                 return
 
-            from raw_adjustments import is_default_adjustments, load_adjustments_for_file
+            from raw_adjustments.checks import is_default_adjustments
+            from raw_adjustments.xmp_read import load_adjustments_for_file
 
             if is_default_adjustments(load_adjustments_for_file(path)):
                 return
@@ -316,8 +318,8 @@ class AdjustPart5:
                     3000,
                 )
             return
-        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.auto_adjust import estimate_auto_tone, estimate_neutral_rgb, estimate_straighten_angle
+        from raw_adjustments.checks import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.pipeline import _linear_float_from_buffer, linear_to_display_uint8
 
         fast = _make_fast_preview_base(base)
