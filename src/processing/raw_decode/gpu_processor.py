@@ -4,9 +4,12 @@ import os
 import threading
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from processing.raw_decode.gpu_bridge import DeviceRgb
 
 logger = logging.getLogger(__name__)
 
@@ -672,7 +675,7 @@ def _gpu_demosaic_pytorch_body(
     if return_linear:
         rgb_final16 = (rgb_srgb * 65535.0 + 0.5).to(torch.int32)
         _mark("gamma")
-        out = _download_device_rgb(rgb_final16, device, ws, as_uint16=True)
+        out: DeviceRgb | np.ndarray = _download_device_rgb(rgb_final16, device, ws, as_uint16=True)
         _mark("download")
     else:
         gamma_lut = _gpu_gamma_lut(device, torch)
@@ -688,9 +691,9 @@ def _gpu_demosaic_pytorch_body(
             # Synchronize producer stream so GUI-thread CUDA-GL map sees data.
             with contextlib.suppress(Exception):
                 torch.cuda.current_stream(device).synchronize()
-            from processing.raw_decode.gpu_bridge import DeviceRgb
+            from processing.raw_decode.gpu_bridge import DeviceRgb as _DeviceRgb
 
-            out = DeviceRgb(
+            out = _DeviceRgb(
                 tensor=rgb_final.contiguous(),
                 file_path=str(getattr(unpacked, "file_path", "") or ""),
             )

@@ -2,14 +2,14 @@
   "schema": 1,
   "command": "mypy --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases src scripts testplan tests build.py",
   "totals": {
-    "errors": 9374,
+    "errors": 9371,
     "any": 258,
     "type_ignore": 37,
     "by_code": {
       "attr-defined": 4878,
       "no-untyped-call": 1377,
       "no-untyped-def": 1319,
-      "no-any-return": 256,
+      "no-any-return": 255,
       "assignment": 233,
       "type-arg": 190,
       "misc": 177,
@@ -29,7 +29,7 @@
       "comparison-overlap": 6,
       "untyped-decorator": 6,
       "func-returns-value": 4,
-      "no-redef": 4,
+      "no-redef": 2,
       "valid-type": 2
     }
   },
@@ -1040,8 +1040,7 @@
       "assignment": 4,
       "call-arg": 1,
       "call-overload": 2,
-      "no-any-return": 3,
-      "no-redef": 1,
+      "no-any-return": 2,
       "no-untyped-call": 2,
       "no-untyped-def": 4
     },
@@ -1108,7 +1107,6 @@
       "assignment": 6,
       "attr-defined": 65,
       "has-type": 4,
-      "no-redef": 1,
       "no-untyped-def": 1,
       "union-attr": 1
     },
