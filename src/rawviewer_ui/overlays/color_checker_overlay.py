@@ -8,10 +8,7 @@ from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QWidget
 
-try:
-    import rawviewer_ui.theme as theme
-except ModuleNotFoundError:
-    from core import theme as theme
+from core import theme
 
 
 class ColorCheckerOverlay(QWidget):
