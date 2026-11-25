@@ -183,20 +183,18 @@ class AdjustPart1:
             self._tone_curve_stack.addWidget(self._tone_curve_param_tab)
             tabs_layout.addWidget(self._tone_curve_stack)
 
-            self._btn_point.clicked.connect(
-                lambda: (
-                    self._btn_point.setChecked(True),
-                    self._btn_param.setChecked(False),
-                    self._tone_curve_stack.setCurrentIndex(0),
-                )
-            )
-            self._btn_param.clicked.connect(
-                lambda: (
-                    self._btn_param.setChecked(True),
-                    self._btn_point.setChecked(False),
-                    self._tone_curve_stack.setCurrentIndex(1),
-                )
-            )
+            def _show_point_tab() -> None:
+                self._btn_point.setChecked(True)
+                self._btn_param.setChecked(False)
+                self._tone_curve_stack.setCurrentIndex(0)
+
+            def _show_param_tab() -> None:
+                self._btn_param.setChecked(True)
+                self._btn_point.setChecked(False)
+                self._tone_curve_stack.setCurrentIndex(1)
+
+            self._btn_point.clicked.connect(_show_point_tab)
+            self._btn_param.clicked.connect(_show_param_tab)
 
             self.sect_curve.add_widget(self._tone_curve_tabs)
 

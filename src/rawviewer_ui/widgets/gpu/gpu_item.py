@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QPointF, QRectF
 from PyQt6.QtGui import QColor, QImage, QPainter, QPen, QTransform
@@ -10,6 +11,9 @@ from PyQt6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsObject,
 )
+
+if TYPE_CHECKING:
+    from processing.raw_decode.gpu_bridge import CudaGlTextureSlot
 
 
 class CompareHandleItem(QGraphicsEllipseItem):
@@ -52,9 +56,9 @@ class RgbGlImageItem(QGraphicsObject):
         self._w = 0
         self._h = 0
         self._arr = None
-        self._qimage = None  # Optional[QImage]
+        self._qimage: QImage | None = None
         self._device_rgb = None
-        self._cuda_slot = None  # Optional[CudaGlTextureSlot]
+        self._cuda_slot: CudaGlTextureSlot | None = None
         # Slots dropped while no GL context was current; released at the next
         # paint. See _defer_cuda_gl_release.
         self._pending_cuda_release: list = []
