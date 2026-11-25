@@ -358,9 +358,9 @@ class ImageCacheFullExifUtil:
         anyway, so more workers would only pile up blocked threads).
         """
         try:
-            import common_image_loader
+            from common_image_loader.helpers import is_raw_file
 
-            if not common_image_loader.is_raw_file(file_path):
+            if not is_raw_file(file_path):
                 return
         except Exception:
             return

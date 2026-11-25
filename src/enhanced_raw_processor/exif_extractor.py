@@ -226,9 +226,9 @@ class EXIFExtractor(QObject):
             # one in the block below), and each rawpy.imread() on a RAW file is a
             # full LibRaw parse (tens of ms even for embedded-preview-only use) --
             # doubling that cost on every cold gallery thumbnail for no reason.
-            import common_image_loader
+            from common_image_loader.helpers import is_raw_file
 
-            if common_image_loader.is_raw_file(file_path):
+            if is_raw_file(file_path):
                 try:
                     if raw_object is not None:
                         sizes = raw_object.sizes
