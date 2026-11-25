@@ -277,7 +277,7 @@ def resolve_container_exif_for_file(
     exif_data = cache.get_exif(file_path, verify=True)
     if not exif_data:
         try:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             exif_data = EXIFExtractor().extract_exif_data(file_path)
         except Exception:

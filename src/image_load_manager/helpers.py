@@ -141,7 +141,7 @@ def _preview_is_best_possible(processor, file_path: str) -> bool:
     if cached is not None:
         return cached
     try:
-        from enhanced_raw_processor import _detect_nef_he_compression
+        from enhanced_raw_processor.extraction import _detect_nef_he_compression
 
         result = _detect_nef_he_compression(file_path) is True
     except Exception:

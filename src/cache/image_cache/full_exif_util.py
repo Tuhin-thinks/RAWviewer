@@ -275,7 +275,7 @@ class ImageCacheFullExifUtil:
         """Folder scope changed: free heavy RAM; leave disk thumbs for warm reopen."""
         self.clear_heavy_memory_tiers(keep_path=keep_path)
         try:
-            from processing.unified import prune_libraw_unsupported_paths
+            from processing.unified.helpers import prune_libraw_unsupported_paths
 
             prune_libraw_unsupported_paths(clear_all=False, max_keep=512)
         except Exception:
@@ -324,7 +324,7 @@ class ImageCacheFullExifUtil:
             return None
 
         try:
-            from enhanced_raw_processor import (
+            from enhanced_raw_processor.extraction import (
                 RAW_EXIF_SENSOR_META_VER,
                 cached_raw_exif_orientation_trustworthy,
             )
@@ -391,9 +391,7 @@ class ImageCacheFullExifUtil:
                     return
                 path = self._orient_verify_queue.pop(0)
             try:
-                from enhanced_raw_processor import (
-                    cached_raw_exif_orientation_trustworthy,
-                )
+                from enhanced_raw_processor.extraction import cached_raw_exif_orientation_trustworthy
 
                 cached = self.exif_memory_cache.peek(path)
                 if not cached:
@@ -492,7 +490,7 @@ class ImageCacheFullExifUtil:
         missing_paths = []
 
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
 
             has_ver = True
         except Exception:
@@ -567,7 +565,7 @@ class ImageCacheFullExifUtil:
         # critical-pressure purge freed everything except a couple of
         # hundred MB of float32 bases.
         try:
-            from processing.unified import (
+            from processing.unified.helpers import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,

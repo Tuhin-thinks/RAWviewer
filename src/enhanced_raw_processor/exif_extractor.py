@@ -15,7 +15,7 @@ from common_image_loader import (
     normalize_capture_time_string,
 )
 from image_cache import get_image_cache
-from image_load_manager import yield_if_current_task_active
+from image_load_manager.helpers import yield_if_current_task_active
 from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
@@ -360,7 +360,7 @@ class EXIFExtractor(QObject):
             for tag in ("XMP-xmp:Rating", "XMP Rating", "Rating", "EXIF Rating"):
                 if tag in tags:
                     try:
-                        from raw_adjustments import _parse_rating_value
+                        from raw_adjustments.xmp_write import _parse_rating_value
 
                         rating = _parse_rating_value(tags[tag])
                         if rating:
@@ -369,7 +369,7 @@ class EXIFExtractor(QObject):
                         pass
                 if tag in exif_dict:
                     try:
-                        from raw_adjustments import _parse_rating_value
+                        from raw_adjustments.xmp_write import _parse_rating_value
 
                         rating = _parse_rating_value(exif_dict[tag])
                         if rating:
@@ -378,7 +378,7 @@ class EXIFExtractor(QObject):
                         pass
             if not rating:
                 try:
-                    from raw_adjustments import load_rating_for_file
+                    from raw_adjustments.xmp_write import load_rating_for_file
 
                     rating = load_rating_for_file(file_path)
                 except Exception:

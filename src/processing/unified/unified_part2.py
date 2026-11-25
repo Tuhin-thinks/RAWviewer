@@ -26,7 +26,7 @@ class UnifiedPart2:
         if rgb_image is None:
             return None
         try:
-            from raw_adjustments import is_array_already_adjusted
+            from raw_adjustments.saved_edits import is_array_already_adjusted
 
             if is_array_already_adjusted(rgb_image):
                 return rgb_image
@@ -47,10 +47,8 @@ class UnifiedPart2:
 
             if isinstance(rgb_image, DeviceRgb):
                 # Editing still runs on host today; download only when needed.
-                from raw_adjustments import (
-                    is_default_adjustments,
-                    load_adjustments_for_file,
-                )
+                from raw_adjustments.checks import is_default_adjustments
+                from raw_adjustments.xmp_read import load_adjustments_for_file
 
                 adj = load_adjustments_for_file(file_path)
                 if is_default_adjustments(adj):
@@ -59,11 +57,9 @@ class UnifiedPart2:
         except Exception:
             pass
         try:
-            from raw_adjustments import (
-                apply_adjustments_to_rgb,
-                is_default_adjustments,
-                load_adjustments_for_file,
-            )
+            from raw_adjustments.apply import apply_adjustments_to_rgb
+            from raw_adjustments.checks import is_default_adjustments
+            from raw_adjustments.xmp_read import load_adjustments_for_file
 
             adj = load_adjustments_for_file(file_path)
             if is_default_adjustments(adj):
@@ -154,10 +150,8 @@ class UnifiedPart2:
                 return False
 
         try:
-            from raw_adjustments import (
-                is_default_adjustments,
-                load_adjustments_for_file,
-            )
+            from raw_adjustments.checks import is_default_adjustments
+            from raw_adjustments.xmp_read import load_adjustments_for_file
 
             adj = load_adjustments_for_file(file_path)
             if is_default_adjustments(adj):

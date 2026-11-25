@@ -232,7 +232,7 @@ def use_libraw_consistent_preview_first(file_path: str | None = None) -> bool:
             # JPEG was refused. Existence probe only (never
             # load_adjustments_for_file: its as-shot EXIF parse cost ~0.5s
             # per ARW on the UI thread via _check_cache).
-            from raw_adjustments import resolve_xmp_path, sidecar_adjustments_enabled
+            from raw_adjustments.xmp_read import resolve_xmp_path, sidecar_adjustments_enabled
 
             if sidecar_adjustments_enabled():
                 xmp = resolve_xmp_path(file_path)

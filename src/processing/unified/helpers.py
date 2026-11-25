@@ -17,11 +17,9 @@ from common_image_loader import (  # noqa: F401
     use_full_embedded_raw_preview,
     use_libraw_consistent_preview_first,
 )
-from enhanced_raw_processor import (  # noqa: F401
-    EXIFExtractor,
-    OptimizedRAWProcessor,
-    ThumbnailExtractor,
-)
+from enhanced_raw_processor.exif_extractor import EXIFExtractor  # noqa: F401
+from enhanced_raw_processor.optimized_processor import OptimizedRAWProcessor  # noqa: F401
+from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor  # noqa: F401
 from image_cache import get_image_cache  # noqa: F401
 from processing.raw_decode.gil import rawpy_imread_warm
 
@@ -329,7 +327,7 @@ def decode_raw_file(file_path: str, params: dict[str, Any]) -> np.ndarray:
     Helper function for process pool to decode RAW files.
     Must be at top level for pickling.
     """
-    from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
+    from enhanced_raw_processor.extraction import _heavy_fallback_semaphore, _rawpy_global_lock
 
     with _rawpy_global_lock:
         raw_ctx = rawpy_imread_warm(file_path)

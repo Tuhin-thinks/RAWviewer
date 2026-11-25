@@ -122,7 +122,7 @@ class ImageCacheCore(QObject):
     def _purge_stale_oriented_pixel_caches(self, cache_dir: str) -> None:
         """One-time purge of persisted PIXEL caches when orientation logic version bumps."""
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
 
             marker = os.path.join(cache_dir, "orient_pixel_ver.txt")
             stored = None
@@ -205,10 +205,7 @@ class ImageCacheCore(QObject):
                 with contextlib.suppress(Exception):
                     cache.clear()
             try:
-                from processing.unified import (
-                    prune_libraw_unsupported_paths,
-                    release_edit_base_cache,
-                )
+                from processing.unified.helpers import prune_libraw_unsupported_paths, release_edit_base_cache
             except Exception:
                 prune_libraw_unsupported_paths = None
                 release_edit_base_cache = None
@@ -317,7 +314,7 @@ class ImageCacheCore(QObject):
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
         try:
-            from processing.unified import (
+            from processing.unified.helpers import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,

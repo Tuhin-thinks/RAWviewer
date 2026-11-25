@@ -377,7 +377,7 @@ def _trim_image_cache() -> None:
 
 def _cap_unpack() -> None:
     try:
-        from enhanced_raw_processor import set_unpack_concurrency_cap
+        from enhanced_raw_processor.extraction import set_unpack_concurrency_cap
 
         set_unpack_concurrency_cap(1)
     except Exception:
@@ -386,7 +386,7 @@ def _cap_unpack() -> None:
 
 def _trim_edit_base_lru() -> None:
     try:
-        from processing.unified import trim_edit_base_lru
+        from processing.unified.helpers import trim_edit_base_lru
 
         trim_edit_base_lru(1)
     except Exception:

@@ -119,7 +119,7 @@ def publish_mipmap_tiers(
         return ""
 
     if isinstance(native_array, QImage):
-        from enhanced_raw_processor import _qimage_to_rgb_array
+        from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
         native_array = _qimage_to_rgb_array(native_array)
     if native_array is None or not isinstance(native_array, np.ndarray):

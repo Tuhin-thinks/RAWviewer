@@ -488,7 +488,7 @@ def indexing_loads_compete() -> bool:
     leaves the splash stuck after a cold start / clear-cache.
     """
     try:
-        from image_load_manager import peek_image_load_manager
+        from image_load_manager.helpers import peek_image_load_manager
 
         mgr = peek_image_load_manager()
         if mgr is None:
@@ -503,7 +503,7 @@ def indexing_loads_compete() -> bool:
 
 def gallery_idle_load_priority():
     """Queue priority for off-screen gallery thumbnail idle preload."""
-    from image_load_manager import Priority
+    from image_load_manager.helpers import Priority
 
     raw = os.environ.get("RAWVIEWER_GALLERY_IDLE_PRELOAD_PRIORITY", "").strip().lower()
     if raw in ("background", "low"):

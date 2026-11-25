@@ -419,14 +419,14 @@ def load_raw_preview_array(
                 return finalize_index_thumbnail_array(file_path, arr, cache=cache)
             return arr
 
-    from enhanced_raw_processor import ThumbnailExtractor
+    from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
     thumb = ThumbnailExtractor().extract_thumbnail_from_raw(file_path, max_size=max_size, allow_scan_fallback=True)
     if thumb is None:
         return None
 
     if hasattr(thumb, "width"):
-        from enhanced_raw_processor import _qimage_to_rgb_array
+        from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
         thumb = _qimage_to_rgb_array(thumb)
     if thumb is None or not isinstance(thumb, np.ndarray):

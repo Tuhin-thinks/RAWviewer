@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from image_load_manager import ImageLoadManager
+    from image_load_manager.manager import ImageLoadManager
 from PyQt6.QtCore import QRunnable, QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
 
@@ -126,7 +126,7 @@ class ImageLoadWorker(QRunnable):
         """獲取處理器實例（延遲初始化）"""
         if self._processor is None:
             # Lazy import to avoid circular import issues
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
 
             self._processor = UnifiedImageProcessor()
         return self._processor
@@ -308,11 +308,8 @@ class ImageLoadWorker(QRunnable):
                     if self._safe_emit():
                         self.manager.progress_updated.emit(file_path, "Processing image...")
 
-                from raw_adjustments import (
-                    is_default_adjustments,
-                    load_adjustments_for_file,
-                    sidecar_adjustments_enabled,
-                )
+                from raw_adjustments.checks import is_default_adjustments
+                from raw_adjustments.xmp_read import load_adjustments_for_file, sidecar_adjustments_enabled
 
                 # Sidecar edits on the full-res tier are only worth paying for
                 # the image actually on screen: the gamma-path apply costs
@@ -430,7 +427,7 @@ class ImageLoadWorker(QRunnable):
         # file must never land on the UI thread. Applied at delivery only --
         # the caches upstream keep the unadjusted base.
         try:
-            from raw_adjustments import apply_saved_edits_for_display
+            from raw_adjustments.saved_edits import apply_saved_edits_for_display
 
             thumbnail = apply_saved_edits_for_display(file_path, thumbnail)
         except Exception:

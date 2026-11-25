@@ -15,7 +15,7 @@ from common_image_loader import (
     decode_embedded_jpeg_bytes,
     is_slow_storage_path,
 )
-from image_load_manager import yield_if_current_task_active
+from image_load_manager.helpers import yield_if_current_task_active
 from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
