@@ -2,29 +2,30 @@
   "schema": 1,
   "command": "mypy --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases src scripts testplan tests build.py",
   "totals": {
-    "errors": 8332,
+    "errors": 8331,
     "any": 258,
     "type_ignore": 37,
     "by_code": {
       "attr-defined": 4886,
-      "no-untyped-def": 1187,
+      "no-untyped-def": 1186,
       "no-untyped-call": 437,
-      "no-any-return": 255,
+      "no-any-return": 254,
       "assignment": 238,
       "type-arg": 190,
       "misc": 177,
-      "arg-type": 168,
+      "arg-type": 164,
       "has-type": 150,
       "call-arg": 136,
       "var-annotated": 133,
-      "union-attr": 132,
-      "call-overload": 96,
+      "union-attr": 131,
+      "call-overload": 95,
       "operator": 41,
       "unused-ignore": 26,
       "override": 18,
       "index": 17,
       "name-defined": 13,
       "method-assign": 11,
+      "untyped-decorator": 7,
       "return-value": 6,
       "comparison-overlap": 6,
       "func-returns-value": 4,
@@ -1651,11 +1652,7 @@
       "var-annotated": 1
     },
     "tests/test_exif_orientation.py": {
-      "arg-type": 4,
-      "call-overload": 1,
-      "no-any-return": 1,
-      "no-untyped-def": 1,
-      "union-attr": 1
+      "untyped-decorator": 7
     }
   },
   "any": {
