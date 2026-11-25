@@ -33,7 +33,7 @@ def apply_adjustments_to_rgb(rgb_image: np.ndarray, adj: dict[str, float]) -> np
         return rgb_image
     if adj is None:
         return rgb_image
-    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.linear import linear_to_display_uint8, process_linear_edit_buffer
 
     merged = dict(DEFAULT_ADJUSTMENTS)
     merged.update(adj or {})
@@ -55,7 +55,7 @@ def apply_adjustments_to_rgb(rgb_image: np.ndarray, adj: dict[str, float]) -> np
 
 def apply_adjustments_to_linear(rgb_image: np.ndarray, adj: dict[str, float]) -> np.ndarray:
     """Scene-linear edit path: PV2012 + NLM chroma, tone-map, encode sRGB uint8."""
-    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.linear import linear_to_display_uint8, process_linear_edit_buffer
 
     if rgb_image is None:
         return rgb_image
@@ -71,7 +71,7 @@ def apply_adjustments_to_linear(rgb_image: np.ndarray, adj: dict[str, float]) ->
 
 def apply_adjustments_to_linear_uint16(rgb_image: np.ndarray, adj: dict[str, float]) -> np.ndarray:
     """Full-quality export: PV2012 pipeline ΓåÆ 16-bit display-referred sRGB."""
-    from raw_adjustments.pipeline import linear_to_export_uint16_srgb, process_linear_edit_buffer
+    from raw_adjustments.linear import linear_to_export_uint16_srgb, process_linear_edit_buffer
 
     if rgb_image is None:
         return rgb_image
@@ -349,7 +349,7 @@ def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
 def _linear_buffer_to_display_uint8(rgb_image: np.ndarray) -> np.ndarray:
     if rgb_image is None:
         return rgb_image
-    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
+    from raw_adjustments.linear import linear_to_display_uint8, process_linear_edit_buffer
 
     processed = process_linear_edit_buffer(rgb_image, {}, preview=True)
     return linear_to_display_uint8(processed)
