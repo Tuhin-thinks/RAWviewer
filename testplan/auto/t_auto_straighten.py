@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Auto-straighten estimator: synthetic tilted line → expected CropAngle."""
 
-from __future__ import annotations
-
 import os
 import sys
 

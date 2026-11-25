@@ -6,8 +6,6 @@ gallery fill. Those used to be applied with setdefault *before* the RAM tier,
 so an 8 GB Air inherited the 24 GB numbers and the tier caps never stuck.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

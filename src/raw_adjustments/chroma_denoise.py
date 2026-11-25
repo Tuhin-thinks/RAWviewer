@@ -11,8 +11,6 @@ sizes, with comparable noise reduction and negligible edge bleed (bilateral
 filter transition width across a hard edge stays ~0px even at max strength).
 """
 
-from __future__ import annotations
-
 import os
 
 import numpy as np

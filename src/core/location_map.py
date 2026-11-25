@@ -1,7 +1,5 @@
 """Simplified OSM tile map engine for displaying single-image GPS coordinates."""
 
-from __future__ import annotations
-
 import logging
 import math
 import os

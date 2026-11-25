@@ -3,8 +3,6 @@
 Kept out of main.py so tests can import it without constructing the app.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

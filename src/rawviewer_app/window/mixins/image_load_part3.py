@@ -1,7 +1,5 @@
 """image_load mixin, part 3 of 3 (25 methods, 747 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sys

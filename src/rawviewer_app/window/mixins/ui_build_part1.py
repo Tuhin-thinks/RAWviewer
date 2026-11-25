@@ -1,7 +1,5 @@
 """ui_build mixin, part 1 of 3 (2 methods, 60 lines)."""
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import QSize

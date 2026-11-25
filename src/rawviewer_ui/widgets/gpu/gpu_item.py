@@ -1,7 +1,5 @@
 """GPU-accelerated scene items: OpenGL RGB image item + comparison split handle."""
 
-from __future__ import annotations
-
 import contextlib
 from typing import TYPE_CHECKING
 

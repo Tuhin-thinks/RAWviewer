@@ -36,8 +36,6 @@ Canonical metric names (keep stable -- comparisons depend on them):
     db_apply          dodge/burn gain-map build inside apply_dodge_burn (cache miss)
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import time

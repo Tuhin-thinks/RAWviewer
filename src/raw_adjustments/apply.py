@@ -1,7 +1,5 @@
 """Apply adjustments: linear + gamma-space pipelines, banded processing, tone helpers."""
 
-from __future__ import annotations
-
 import math
 import os
 

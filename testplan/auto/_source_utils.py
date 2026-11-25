@@ -1,7 +1,5 @@
 """Helpers for tests that pin behaviour by inspecting source text."""
 
-from __future__ import annotations
-
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

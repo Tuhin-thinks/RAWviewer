@@ -1,7 +1,5 @@
 """Background workers for the adjust panel preview, masks and export."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sys

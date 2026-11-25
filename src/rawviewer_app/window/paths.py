@@ -1,7 +1,5 @@
 """Filesystem resource and path helpers for the main window."""
 
-from __future__ import annotations
-
 import os
 import platform
 import sys

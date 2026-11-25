@@ -1,7 +1,5 @@
 """CustomWarningDialog: warning dialog."""
 
-from __future__ import annotations
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget

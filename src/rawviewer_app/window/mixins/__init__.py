@@ -1,7 +1,5 @@
 """Semantic mixins that compose ``RAWImageViewer``."""
 
-from __future__ import annotations
-
 from .adjust_part1 import AdjustPart1
 from .adjust_part2 import AdjustPart2
 from .adjust_part3 import AdjustPart3

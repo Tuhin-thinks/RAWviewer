@@ -1,7 +1,5 @@
 """lifecycle mixin, part 2 of 2 (5 methods, 591 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import sys
 

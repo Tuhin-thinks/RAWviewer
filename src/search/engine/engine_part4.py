@@ -1,7 +1,5 @@
 """Engine mixin part 4 of 7 for SemanticImageIndex."""
 
-from __future__ import annotations
-
 import concurrent
 import os
 import sqlite3
@@ -85,7 +83,7 @@ class EnginePart4:
         conn: sqlite3.Connection,
         progress_callback: ProgressCallback,
         *,
-        conn_lock: threading.Lock | None = None,
+        conn_lock: "threading.Lock | None" = None,
         commit_every: int = 40,
         progress_album_total: int = 0,
         progress_indexed_base: int = 0,

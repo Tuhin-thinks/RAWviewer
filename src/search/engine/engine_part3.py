@@ -1,7 +1,5 @@
 """Engine mixin part 3 of 7 for SemanticImageIndex."""
 
-from __future__ import annotations
-
 import concurrent
 import contextlib
 import os

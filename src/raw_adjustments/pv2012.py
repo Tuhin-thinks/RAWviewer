@@ -6,8 +6,6 @@ then parametric Exposure / Contrast / Highlights / Shadows / Whites / Blacks in
 perceptual space. Tone work is luminance-only to preserve hue.
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 from raw_adjustments.tone_curve import apply_tone_curve_perceptual

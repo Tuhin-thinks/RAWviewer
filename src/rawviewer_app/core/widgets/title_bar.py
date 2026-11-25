@@ -1,7 +1,5 @@
 """CustomTitleBar: custom title bar for frameless windows."""
 
-from __future__ import annotations
-
 import os
 import sys
 

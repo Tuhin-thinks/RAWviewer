@@ -6,8 +6,6 @@ Installer progress: @RAWVIEWER_PROGRESS pct=N message=Downloading... N%
 Verbose details go to [INFO] log lines only.
 """
 
-from __future__ import annotations
-
 import os
 import shutil
 import sys

@@ -1,7 +1,5 @@
 """Engine mixin part 7 of 7 for SemanticImageIndex."""
 
-from __future__ import annotations
-
 import os
 import re
 import sqlite3

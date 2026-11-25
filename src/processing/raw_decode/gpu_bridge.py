@@ -14,8 +14,6 @@ True ISP→GL surface write without an intermediate device RGB buffer is left fo
 a later phase. CTA: GUI thread only for GL / ``cudaGraphics*``.
 """
 
-from __future__ import annotations
-
 import contextlib
 import ctypes
 import logging

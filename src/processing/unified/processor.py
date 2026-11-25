@@ -1,7 +1,5 @@
 """UnifiedImageProcessor: RAW/JPEG processing pipeline, assembled from mixin parts."""
 
-from __future__ import annotations
-
 from .unified_part1 import UnifiedPart1
 from .unified_part2 import UnifiedPart2
 from .unified_part3 import UnifiedPart3

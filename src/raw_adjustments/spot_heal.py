@@ -17,8 +17,6 @@ Design:
       pattern as DodgeBurnMask — not a Lightroom-compatible schema.
 """
 
-from __future__ import annotations
-
 import base64
 import inspect
 import threading
@@ -61,13 +59,13 @@ def _heal_brush_falloff(
     return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
 
-def mask_stage_fingerprint(mask: HealMask) -> str:
+def mask_stage_fingerprint(mask: "HealMask") -> str:
     """Cheap stage-cache key: shape + mutation version (no PNG encode)."""
     h, w = mask.data.shape[:2]
     return f"mem:{int(h)}x{int(w)}:v{int(mask.version)}"
 
 
-def resolve_mask_from_adj(adj: dict | None) -> HealMask | None:
+def resolve_mask_from_adj(adj: dict | None) -> "HealMask | None":
     """Prefer live mask object; fall back to XMP/base64 serial."""
     if not adj:
         return None
@@ -94,7 +92,7 @@ class HealMask:
     _geom_cache: object = field(default=None, repr=False, compare=False)
 
     @classmethod
-    def empty(cls, h: int, w: int) -> HealMask:
+    def empty(cls, h: int, w: int) -> "HealMask":
         return cls(np.zeros((int(h), int(w)), dtype=np.float32))
 
     @property

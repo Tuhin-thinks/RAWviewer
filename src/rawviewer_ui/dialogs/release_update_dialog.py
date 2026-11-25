@@ -1,7 +1,5 @@
 """RAWviewer-styled dialog for optional GitHub release updates."""
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import Qt

@@ -1,7 +1,5 @@
 """_ConfirmDialogButton + CustomConfirmDialog: shared confirmation dialog."""
 
-from __future__ import annotations
-
 import contextlib
 import sys
 import time

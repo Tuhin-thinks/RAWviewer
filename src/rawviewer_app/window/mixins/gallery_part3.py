@@ -1,7 +1,5 @@
 """gallery mixin, part 3 of 5 (8 methods, 881 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import sys
 

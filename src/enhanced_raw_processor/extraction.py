@@ -3,8 +3,6 @@ Embedded JPEG extraction, TIFF parsing, orientation helpers, and module-level
 state for the enhanced RAW processor package.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import threading

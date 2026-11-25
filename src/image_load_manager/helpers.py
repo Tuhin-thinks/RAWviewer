@@ -1,7 +1,5 @@
 """Module-level helpers and state for the ImageLoadManager package."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import threading
@@ -200,7 +198,7 @@ class Priority(Enum):
     BACKGROUND = 3  # 背景任務（最低優先級）
 
 
-def _task_queue_weight(task: ImageLoadTask) -> int:
+def _task_queue_weight(task: "ImageLoadTask") -> int:
     """Lower weight = scheduled sooner within the same Priority band."""
     stages = task.stages or set()
     if stages == {"thumbnail"}:
@@ -212,11 +210,11 @@ def _task_queue_weight(task: ImageLoadTask) -> int:
     return 2
 
 
-_global_manager: ImageLoadManager | None = None
+_global_manager: "ImageLoadManager | None" = None
 _manager_lock = threading.Lock()
 
 
-def peek_image_load_manager() -> ImageLoadManager | None:
+def peek_image_load_manager() -> "ImageLoadManager | None":
     """Return the manager if already constructed; never create one.
 
     Cache sizing and other early-startup helpers must use this. Calling
@@ -227,7 +225,7 @@ def peek_image_load_manager() -> ImageLoadManager | None:
     return _global_manager
 
 
-def get_image_load_manager(max_workers: int = 4) -> ImageLoadManager:
+def get_image_load_manager(max_workers: int = 4) -> "ImageLoadManager":
     """獲取全局圖像加載管理器實例（函數級單例模式）
 
     RAWVIEWER_LOAD_WORKERS overrides max_workers (clamped to [2, 16]); the

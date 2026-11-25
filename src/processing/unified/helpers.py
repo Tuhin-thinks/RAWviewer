@@ -1,7 +1,5 @@
 """Module-level helpers and state for the UnifiedImageProcessor package."""
 
-from __future__ import annotations
-
 import os
 from collections import OrderedDict
 from typing import Any

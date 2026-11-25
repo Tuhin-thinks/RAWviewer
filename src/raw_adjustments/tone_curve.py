@@ -1,7 +1,5 @@
 """PV2012 parametric tone curve + Lightroom ToneCurvePV2012 point LUT."""
 
-from __future__ import annotations
-
 import numpy as np
 
 TONE_CURVE_SERIAL_KEY = "_tone_curve_pv2012"

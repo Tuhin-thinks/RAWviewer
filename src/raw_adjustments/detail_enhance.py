@@ -1,7 +1,5 @@
 """Display-space sharpness, clarity, and chromatic defringe for the edit pipeline."""
 
-from __future__ import annotations
-
 import numpy as np
 
 

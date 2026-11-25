@@ -1,7 +1,5 @@
 """Bottom film-strip overlay for single-image view (virtualized justified thumbnails)."""
 
-from __future__ import annotations
-
 import bisect
 import contextlib
 import os

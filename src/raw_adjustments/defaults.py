@@ -3,8 +3,6 @@ RAW adjustments parser and NumPy math helper.
 Applies Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Saturation, and Vibrance.
 """
 
-from __future__ import annotations
-
 import os
 import threading
 from collections.abc import Callable
@@ -24,11 +22,11 @@ import numpy as np
 # hold a reference to it would defeat the whole point -- a second thread
 # creating a fresh Lock for the same path after eviction would no longer be
 # synchronized with the first.
-_xmp_write_locks: dict[str, threading.Lock] = {}
+_xmp_write_locks: "dict[str, threading.Lock]" = {}
 _xmp_write_locks_guard = threading.Lock()
 
 
-def _xmp_write_lock(xmp_path: str) -> threading.Lock:
+def _xmp_write_lock(xmp_path: str) -> "threading.Lock":
     key = os.path.normcase(os.path.abspath(xmp_path)) if xmp_path else ""
     with _xmp_write_locks_guard:
         lock = _xmp_write_locks.get(key)

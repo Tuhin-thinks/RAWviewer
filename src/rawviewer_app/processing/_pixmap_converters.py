@@ -1,7 +1,5 @@
 """PixmapConverter and RawEdrPixmapConverter."""
 
-from __future__ import annotations
-
 import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap

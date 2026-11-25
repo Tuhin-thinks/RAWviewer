@@ -1,7 +1,5 @@
 """Full image, EXIF, pixmap, orientation verify, and utility operations."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os
@@ -58,7 +56,7 @@ class ImageCacheFullExifUtil:
     disk_grid_cache: PersistentGridCache | MemoryOnlyPersistentCache
     disk_preview_cache: PersistentPreviewCache | MemoryOnlyPersistentCache
     exif_memory_cache: LRUCache
-    _orient_verify_lock: threading.Lock
+    _orient_verify_lock: "threading.Lock"
     _orient_verify_thread: threading.Thread | None
     _orient_verify_attempted: set[str]
     _orient_verify_queue: Any  # queue.Queue

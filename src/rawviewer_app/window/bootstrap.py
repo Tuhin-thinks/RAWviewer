@@ -1,7 +1,5 @@
 """Early process bootstrap: log redirection and crash diagnostics."""
 
-from __future__ import annotations
-
 import os
 import sys
 

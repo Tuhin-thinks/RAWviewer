@@ -1,7 +1,5 @@
 """dialogs mixin, part 1 of 1 (40 methods, 852 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

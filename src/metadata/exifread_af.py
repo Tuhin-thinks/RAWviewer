@@ -6,8 +6,6 @@ Autofocus / subject region hints via exifread (no ExifTool).
   for JPEG and others (``details=False`` is enough).
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 

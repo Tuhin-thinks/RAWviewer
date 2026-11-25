@@ -1,7 +1,5 @@
 """settings mixin, part 1 of 1 (21 methods, 474 lines)."""
 
-from __future__ import annotations
-
 import os
 import sys
 

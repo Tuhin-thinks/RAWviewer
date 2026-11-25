@@ -1,7 +1,5 @@
 """Adjust mixin part 5 of 5 for ImageAdjustPanelWidget."""
 
-from __future__ import annotations
-
 import contextlib
 
 from PyQt6.QtCore import QSettings, Qt, QThreadPool

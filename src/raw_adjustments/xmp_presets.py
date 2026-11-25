@@ -6,8 +6,6 @@ in the Adjust panel copies its global crs: settings onto the current image
 on the image — apply is a one-shot load of slider values.
 """
 
-from __future__ import annotations
-
 import os
 import shutil
 

@@ -47,8 +47,6 @@ back to the existing rawpy path. Disable entirely with
 ``RAWVIEWER_FAST_RAW_DECODE=0``.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import time

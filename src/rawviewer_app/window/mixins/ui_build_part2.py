@@ -1,7 +1,5 @@
 """ui_build mixin, part 2 of 3 (11 methods, split init_ui into helpers)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import platform

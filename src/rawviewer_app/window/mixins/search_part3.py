@@ -1,7 +1,5 @@
 """search mixin, part 3 of 4 (24 methods, 873 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

@@ -1,7 +1,5 @@
 """Camera color calibration engine using standard 24-patch ColorChecker targets and EXIF model registry."""
 
-from __future__ import annotations
-
 import contextlib
 import json
 import logging

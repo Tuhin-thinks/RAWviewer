@@ -12,8 +12,6 @@ overlays prefer :func:`read_exif_raw_string_dict` + ``exif_subject_area``; exifr
 fallback is in ``exifread_af``.
 """
 
-from __future__ import annotations
-
 import os
 import re
 from collections.abc import Mapping

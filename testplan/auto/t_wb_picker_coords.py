@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """WB dropper: display→buffer mapping + crop-framed linear sample."""
 
-from __future__ import annotations
-
 import os
 import sys
 

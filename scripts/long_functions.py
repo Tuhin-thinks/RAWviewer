@@ -8,8 +8,6 @@ Usage:
     python scripts/long_functions.py [--max 200] [--root src]
 """
 
-from __future__ import annotations
-
 import argparse
 import ast
 import sys

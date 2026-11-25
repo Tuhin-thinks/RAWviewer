@@ -1,7 +1,5 @@
 """XMP sidecar path resolution, parse helpers, and adjustment load logic."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import xml.etree.ElementTree as ET

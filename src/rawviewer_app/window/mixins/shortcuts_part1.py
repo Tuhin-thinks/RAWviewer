@@ -1,7 +1,5 @@
 """shortcuts mixin, part 1 of 1 (19 methods, 574 lines)."""
 
-from __future__ import annotations
-
 import os
 import sys
 

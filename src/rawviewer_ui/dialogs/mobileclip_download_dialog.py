@@ -1,7 +1,5 @@
 """MD3 dialog for optional MobileCLIP download (prompt + in-dialog progress)."""
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import Qt, pyqtSignal

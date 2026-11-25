@@ -1,7 +1,5 @@
 """GPU OpenGL environment toggles for the single-image view."""
 
-from __future__ import annotations
-
 import os
 
 

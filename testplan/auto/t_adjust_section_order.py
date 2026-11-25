@@ -5,8 +5,6 @@ Touches the real QSettings the app uses, because that persistence IS the
 feature under test. The original value is saved and put back at the end.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

@@ -1,7 +1,5 @@
 """Module-level helpers for the shared widget layer."""
 
-from __future__ import annotations
-
 import os
 
 

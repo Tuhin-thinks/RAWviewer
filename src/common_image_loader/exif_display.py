@@ -1,7 +1,5 @@
 """EXIF display-orientation helpers for image loading and thumbnails."""
 
-from __future__ import annotations
-
 import os
 from typing import Any
 

@@ -1,7 +1,5 @@
 """external mixin, part 2 of 2 (21 methods, 690 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

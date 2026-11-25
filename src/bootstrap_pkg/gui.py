@@ -1,7 +1,5 @@
 """InstallerGUI — the setup wizard window."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import subprocess

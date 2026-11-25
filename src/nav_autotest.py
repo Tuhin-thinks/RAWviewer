@@ -59,8 +59,6 @@ Env vars:
                              the end.
 """
 
-from __future__ import annotations
-
 import contextlib
 import os
 import time

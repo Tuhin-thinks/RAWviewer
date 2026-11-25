@@ -1,7 +1,5 @@
 """JustifiedGallery: adaptive justified gallery layout, assembled from mixin parts."""
 
-from __future__ import annotations
-
 from PyQt6.QtWidgets import QWidget
 
 from .gallery_part1 import GalleryPart1

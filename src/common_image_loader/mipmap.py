@@ -1,7 +1,5 @@
 """Mipmap tier publish/backfill helpers for the image cache."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 from typing import Any

@@ -1,7 +1,5 @@
 """Draggable GPS map overlay for single-image view."""
 
-from __future__ import annotations
-
 import logging
 import os
 from collections.abc import Callable

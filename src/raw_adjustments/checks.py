@@ -1,7 +1,5 @@
 """Tone curve, WB, as-shot temperature, and default-adjustment checks."""
 
-from __future__ import annotations
-
 import os
 from collections import OrderedDict
 

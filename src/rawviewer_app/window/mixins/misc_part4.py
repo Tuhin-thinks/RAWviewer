@@ -1,7 +1,5 @@
 """misc mixin, part 4 of 4 (28 methods, 536 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sys

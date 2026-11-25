@@ -4,8 +4,6 @@ Scene coordinates == image pixels. Insets are fractions of width/height
 (CropLeft/Right/Top/Bottom), matching raw_transform.apply_geometry.
 """
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal

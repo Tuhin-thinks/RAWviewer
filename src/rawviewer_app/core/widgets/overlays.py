@@ -1,7 +1,5 @@
 """Overlays built on the shared Qt widget layer."""
 
-from __future__ import annotations
-
 import contextlib
 
 from PyQt6.QtCore import QAbstractAnimation, QPoint, QRect, Qt, QTimer

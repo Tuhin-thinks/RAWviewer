@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Smoke tests for linear adjust pipeline."""
 
-from __future__ import annotations
-
 import os
 import sys
 

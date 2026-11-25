@@ -1,7 +1,5 @@
 """ui_build mixin, part 3 of 3 (8 methods, 229 lines)."""
 
-from __future__ import annotations
-
 import logging
 import os
 import sys

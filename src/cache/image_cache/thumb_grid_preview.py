@@ -1,7 +1,5 @@
 """Thumbnail, grid, and preview cache operations."""
 
-from __future__ import annotations
-
 import threading
 from typing import Any
 
@@ -30,7 +28,7 @@ class ImageCacheThumbGridPreview:
     _note_full_cache_reason: Any
     _load_libraw_preview_paths: Any
     _save_libraw_preview_paths: Any
-    _orient_verify_lock: threading.Lock
+    _orient_verify_lock: "threading.Lock"
     _orient_verify_thread: threading.Thread | None
     _orient_verify_attempted: set[str]
     _orient_verify_queue: Any

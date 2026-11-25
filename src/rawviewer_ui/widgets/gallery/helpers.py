@@ -1,7 +1,5 @@
 """Module-level helpers for the JustifiedGallery package (Phase 4 split)."""
 
-from __future__ import annotations
-
 import logging
 import os
 import sys

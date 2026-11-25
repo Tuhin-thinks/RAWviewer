@@ -1,7 +1,5 @@
 """sRGB decode, already-adjusted tracking, and apply_saved_edits_for_display."""
 
-from __future__ import annotations
-
 import os
 import threading
 import weakref

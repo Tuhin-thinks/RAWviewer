@@ -9,8 +9,6 @@ Example:
     python scripts/models/download_mobileclip_coreml.py --out-dir models/mobileclip2_coreml
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import shutil

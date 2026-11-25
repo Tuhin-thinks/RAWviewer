@@ -28,8 +28,6 @@ maker-note rectangles into the upright display pixmap (see
 with Y increasing upward; PowerShot-style Y-down is kept as a fallback.
 """
 
-from __future__ import annotations
-
 import functools
 import os
 import re

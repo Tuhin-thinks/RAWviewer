@@ -1,7 +1,5 @@
 """Build profile (full vs lite) and shared scroll / RAM-tier defaults."""
 
-from __future__ import annotations
-
 import json
 import os
 import sys

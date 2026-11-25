@@ -8,8 +8,6 @@ Usage:
     python scripts/size_report.py [--limit 40] [--root src] [--baseline PATH]
 """
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

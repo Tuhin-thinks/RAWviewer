@@ -1,7 +1,5 @@
 """batch mixin, part 1 of 1 (15 methods, 669 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

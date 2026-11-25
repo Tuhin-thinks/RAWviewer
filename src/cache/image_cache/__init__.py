@@ -1,7 +1,5 @@
 """Main image cache composing memory + persistent tiers (singleton accessor)."""
 
-from __future__ import annotations
-
 import atexit
 import contextlib
 import logging

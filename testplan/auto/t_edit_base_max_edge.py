@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Working Adjust edit base can be long-edge capped; export bases are not."""
 
-from __future__ import annotations
-
 import os
 import sys
 

@@ -1,7 +1,5 @@
 """ImageLoadManager part 1: init, watchdog, throttling, GPU profile, probe."""
 
-from __future__ import annotations
-
 import concurrent.futures
 import contextlib
 import os

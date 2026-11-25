@@ -11,8 +11,6 @@ land in the domain they expect. **Linear** restores the older
 display-linear (pre-encode) apply for scene-referred / identity cubes.
 """
 
-from __future__ import annotations
-
 import os
 import re
 import shutil

@@ -1,7 +1,5 @@
 """Logging configuration and uncaught-exception reporting."""
 
-from __future__ import annotations
-
 import logging
 import os
 import sys

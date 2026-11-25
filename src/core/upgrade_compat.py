@@ -6,8 +6,6 @@ Existing installs keep legacy behavior until RAWVIEWER_PERF_V2=1 or the user
 clears cache / opts in via env.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import sys

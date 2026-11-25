@@ -5,8 +5,6 @@ Usage (from repo root, Pixi env recommended):
   python scripts/packaging/make_app_icons.py
 """
 
-from __future__ import annotations
-
 import io
 import shutil
 import struct

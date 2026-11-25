@@ -1,7 +1,5 @@
 """MobileCLIP backends (CoreML + ONNX) and tokenizer."""
 
-from __future__ import annotations
-
 import contextlib
 import gzip
 import hashlib

@@ -10,8 +10,6 @@ touch only the handful of attributes the stub provides; nothing about them
 needs the host to be a QWidget.
 """
 
-from __future__ import annotations
-
 import datetime
 import os
 import sys

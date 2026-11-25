@@ -1,7 +1,5 @@
 """Adjust mixin part 6 of 6 for ImageAdjustPanelWidget."""
 
-from __future__ import annotations
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget

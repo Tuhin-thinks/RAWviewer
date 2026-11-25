@@ -1,7 +1,5 @@
 """Burst image grouping by EXIF capture time (H1)."""
 
-from __future__ import annotations
-
 import os
 
 from common_image_loader import parse_capture_time_to_timestamp

@@ -9,8 +9,6 @@ Usage:
     python scripts/check_file_sizes.py [--max 1000] [--warn 750] [--root src]
 """
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path

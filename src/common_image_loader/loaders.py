@@ -1,7 +1,5 @@
 """Common image loader: QImage/QPixmap/PIL/HDR/EDR decode entry points."""
 
-from __future__ import annotations
-
 import io
 import os
 

@@ -1,7 +1,5 @@
 """Unified mixin part 4 of 7 for UnifiedImageProcessor."""
 
-from __future__ import annotations
-
 import os
 from typing import Any
 

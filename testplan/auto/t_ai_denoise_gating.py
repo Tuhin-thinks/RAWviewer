@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Plus AI denoise: edition gate, platform model preference, export flag plumbing."""
 
-from __future__ import annotations
-
 import os
 import sys
 

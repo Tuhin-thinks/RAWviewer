@@ -1,7 +1,5 @@
 """metadata mixin, part 2 of 2 (30 methods, 708 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import platform

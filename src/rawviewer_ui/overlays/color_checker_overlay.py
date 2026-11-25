@@ -1,7 +1,5 @@
 """Interactive pin overlay for a 24-patch ColorChecker chart."""
 
-from __future__ import annotations
-
 import math
 
 from PyQt6.QtCore import QPointF, Qt, pyqtSignal

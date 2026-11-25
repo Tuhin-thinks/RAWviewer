@@ -1,7 +1,5 @@
 """macOS-specific integration: sharing, App Nap and AppKit tweaks."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

@@ -1,7 +1,5 @@
 """Thumbnail prep, ONNX/DNN/CoreML, and source image loading helpers."""
 
-from __future__ import annotations
-
 import contextlib
 import json
 import os

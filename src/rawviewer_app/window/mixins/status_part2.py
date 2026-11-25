@@ -1,7 +1,5 @@
 """status mixin, part 2 of 2 (1 methods, 695 lines)."""
 
-from __future__ import annotations
-
 import os
 import sys
 

@@ -1,7 +1,5 @@
 """adjust mixin, part 4 of 5 (19 methods, 894 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import math
 import sys

@@ -1,7 +1,5 @@
 """Windows platform integration (taskbar identity and native icons)."""
 
-from __future__ import annotations
-
 import contextlib
 import ctypes
 import os

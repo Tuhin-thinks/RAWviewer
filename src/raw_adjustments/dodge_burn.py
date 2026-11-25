@@ -31,8 +31,6 @@ Design:
       custom element, additive to the existing crs: attributes.
 """
 
-from __future__ import annotations
-
 import base64
 import threading
 from dataclasses import dataclass, field
@@ -46,13 +44,13 @@ DEFAULT_STRENGTH = 1.75  # stops at mask value +/-1.0
 MASK_CLIP = 1.5
 
 
-def mask_stage_fingerprint(mask: DodgeBurnMask) -> str:
+def mask_stage_fingerprint(mask: "DodgeBurnMask") -> str:
     """Cheap stage-cache key: shape + mutation version (no PNG encode)."""
     h, w = mask.data.shape[:2]
     return f"mem:{int(h)}x{int(w)}:v{int(mask.version)}"
 
 
-def resolve_mask_from_adj(adj: dict | None) -> DodgeBurnMask | None:
+def resolve_mask_from_adj(adj: dict | None) -> "DodgeBurnMask | None":
     """Prefer live mask object; fall back to XMP/base64 serial (not mem: fingerprints)."""
     if not adj:
         return None
@@ -86,7 +84,7 @@ class DodgeBurnMask:
     _gain_cache: tuple | None = field(default=None, compare=False, repr=False)
 
     @classmethod
-    def empty(cls, height: int, width: int) -> DodgeBurnMask:
+    def empty(cls, height: int, width: int) -> "DodgeBurnMask":
         return cls(np.zeros((height, width), dtype=np.float32))
 
     def touch(self) -> None:

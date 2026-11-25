@@ -1,7 +1,5 @@
 """Lite packaging: no torch/kornia in Windows Lite pixi; GPU decode default off."""
 
-from __future__ import annotations
-
 import os
 import sys
 from pathlib import Path

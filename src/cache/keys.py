@@ -1,7 +1,5 @@
 """Cache key, path, hash and environment helper functions for RAWviewer."""
 
-from __future__ import annotations
-
 import json
 import logging
 import os

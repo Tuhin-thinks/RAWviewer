@@ -1,7 +1,5 @@
 """navigation mixin, part 2 of 2 (9 methods, 336 lines)."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sys

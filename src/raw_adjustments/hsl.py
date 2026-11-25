@@ -5,8 +5,6 @@ OpenCV float32 ``COLOR_BGR2HSV`` uses H in [0, 360] and S/V in [0, 1]
 never rescale float HSV as if it were uint8 — that was Performance review #6.
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 HSL_COLOR_NAMES: tuple[str, ...] = (

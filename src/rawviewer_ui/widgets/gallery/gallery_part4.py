@@ -1,7 +1,5 @@
 """Gallery mixin part 4 of 7 for JustifiedGallery."""
 
-from __future__ import annotations
-
 import logging
 import os
 import time

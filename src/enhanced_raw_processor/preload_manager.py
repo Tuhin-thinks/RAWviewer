@@ -2,8 +2,6 @@
 Manages preloading of adjacent images for fast navigation.
 """
 
-from __future__ import annotations
-
 import os
 
 from PyQt6.QtCore import QObject

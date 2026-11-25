@@ -1,7 +1,5 @@
 """metadata mixin, part 1 of 2 (29 methods, 874 lines)."""
 
-from __future__ import annotations
-
 import datetime
 import os
 import sys

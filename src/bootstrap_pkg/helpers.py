@@ -1,7 +1,5 @@
 """Module-level helper functions for the bootstrap installer."""
 
-from __future__ import annotations
-
 import errno
 import os
 import re

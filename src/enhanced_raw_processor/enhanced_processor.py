@@ -2,8 +2,6 @@
 Enhanced RAW processor with progressive loading and caching.
 """
 
-from __future__ import annotations
-
 import contextlib
 import os
 from typing import Any

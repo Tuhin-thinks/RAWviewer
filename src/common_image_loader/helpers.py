@@ -1,7 +1,5 @@
 """Module-level helpers and state for the common image loader package."""
 
-from __future__ import annotations
-
 import os
 import time
 from datetime import datetime

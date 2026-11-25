@@ -1,7 +1,5 @@
 """Windows share helpers for the shared widget layer."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import struct

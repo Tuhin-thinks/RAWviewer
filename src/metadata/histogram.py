@@ -1,7 +1,5 @@
 """RGB and luminance histogram for single-image view."""
 
-from __future__ import annotations
-
 import numpy as np
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap

@@ -6,8 +6,6 @@ export stages inside a single file), so a cancel lands quickly. Nothing here
 touches caches or QPixmaps — file-system spread only.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import shutil

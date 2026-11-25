@@ -1,7 +1,5 @@
 """Shared logging helpers for RAWviewer."""
 
-from __future__ import annotations
-
 import logging
 
 

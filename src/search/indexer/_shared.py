@@ -1,7 +1,5 @@
 """Semantic indexer: build pipeline, shared executor, configuration."""
 
-from __future__ import annotations
-
 import concurrent.futures
 import os
 import sys

@@ -2,8 +2,6 @@
 Optimized RAW processor with format-specific optimizations.
 """
 
-from __future__ import annotations
-
 import os
 from typing import Any
 

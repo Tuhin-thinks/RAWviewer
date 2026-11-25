@@ -14,8 +14,6 @@ this module is the documented spawn target for frozen macOS packages and for
 explicit helper wiring in ``image_load_manager``.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

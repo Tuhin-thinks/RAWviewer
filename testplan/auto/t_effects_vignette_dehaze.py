@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Vignette / dehaze effect smoke tests."""
 
-from __future__ import annotations
-
 import os
 import sys
 

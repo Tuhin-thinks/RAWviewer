@@ -16,8 +16,6 @@ Example (from repository root, with a venv that has torch + coremltools + editab
     python scripts/models/export_mobileclip2_coreml.py --model MobileCLIP2-S0 --verify
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys

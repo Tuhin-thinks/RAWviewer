@@ -1,7 +1,5 @@
 """HTTPS certificate setup for bundled Python (PyInstaller) and urllib downloads."""
 
-from __future__ import annotations
-
 import os
 import shutil
 import ssl

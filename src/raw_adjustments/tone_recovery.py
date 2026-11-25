@@ -1,7 +1,5 @@
 """RAW-only shadow / highlight recovery for single-view preview (P key)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

@@ -1,7 +1,5 @@
 """Semantic query: capture times, location, reverse geocoding, text search."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sqlite3

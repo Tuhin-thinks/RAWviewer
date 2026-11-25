@@ -6,8 +6,6 @@ placeholders from here and call :func:`register`; :func:`_publish` then pushes
 the real objects into every registered module namespace.
 """
 
-from __future__ import annotations
-
 import contextlib
 import sys
 from typing import Any

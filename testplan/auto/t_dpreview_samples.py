@@ -4,8 +4,6 @@ The calibrate dialog only opens a browser URL. These tests lock the query
 built from EXIF make/model and the empty-EXIF fallback hub.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 from urllib.parse import parse_qs, unquote_plus, urlparse

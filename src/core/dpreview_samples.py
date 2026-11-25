@@ -5,8 +5,6 @@ browser search so the user can pick a studio/sample file themselves, then
 upload it with the existing file picker.
 """
 
-from __future__ import annotations
-
 import re
 import urllib.parse
 

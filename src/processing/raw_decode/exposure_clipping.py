@@ -1,7 +1,5 @@
 """Highlight / shadow clipping masks for single-image view."""
 
-from __future__ import annotations
-
 import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap

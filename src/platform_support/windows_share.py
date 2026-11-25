@@ -1,7 +1,5 @@
 """Windows system share sheet via DataTransferManager + IDataTransferManagerInterop."""
 
-from __future__ import annotations
-
 import asyncio
 import ctypes
 import os
@@ -42,7 +40,7 @@ else:
         ]
 
         @classmethod
-        def from_str(cls, value: str) -> _WinGuid:
+        def from_str(cls, value: str) -> "_WinGuid":
             import uuid
 
             u = uuid.UUID(value)

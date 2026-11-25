@@ -1,7 +1,5 @@
 """Small PyQt helper factories shared by the main window."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import sys

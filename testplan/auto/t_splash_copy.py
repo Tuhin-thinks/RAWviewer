@@ -1,7 +1,5 @@
 """Splash card includes version; status helper is a no-op without a widget."""
 
-from __future__ import annotations
-
 import os
 import sys
 import unittest

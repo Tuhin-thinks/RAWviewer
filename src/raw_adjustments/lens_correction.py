@@ -14,8 +14,6 @@ wired up here -- a reasonable future extension, not implied by "aspect
 correction".
 """
 
-from __future__ import annotations
-
 import re
 
 import numpy as np

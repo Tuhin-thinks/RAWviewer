@@ -8,8 +8,6 @@ slider. The Adjust panel also has a combined Auto that runs all three. Nothing
 here writes pixels or sidecars itself.
 """
 
-from __future__ import annotations
-
 import logging
 
 import numpy as np

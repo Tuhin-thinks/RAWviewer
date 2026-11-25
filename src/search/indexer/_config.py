@@ -1,7 +1,5 @@
 """Configuration and feature toggle functions for the semantic indexer."""
 
-from __future__ import annotations
-
 import os
 import shutil
 import sqlite3

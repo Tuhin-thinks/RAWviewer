@@ -1,7 +1,5 @@
 """XMP sidecar write: star ratings and adjustment sliders."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import tempfile

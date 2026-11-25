@@ -1,7 +1,5 @@
 """Draggable PV2012 point tone curve editor for the adjust panel."""
 
-from __future__ import annotations
-
 from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QCursor, QMouseEvent, QPainter, QPen
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget

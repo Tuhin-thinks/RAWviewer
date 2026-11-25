@@ -1,7 +1,5 @@
 """Windows shell integration: open-with and share helpers."""
 
-from __future__ import annotations
-
 import contextlib
 import ctypes
 import os

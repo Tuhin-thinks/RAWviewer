@@ -5,8 +5,6 @@ Usage (from repo root):
   python scripts/packaging/make_social_preview.py
 """
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 

@@ -1,7 +1,5 @@
 """In-memory cache tiers for RAWviewer (LRU + full-resolution + memory monitor)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import threading

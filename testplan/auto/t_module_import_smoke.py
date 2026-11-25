@@ -5,8 +5,6 @@ Would have caught the Lite ``name 'threading' is not defined`` crash in
 was present; ``compileall`` alone does not execute imports).
 """
 
-from __future__ import annotations
-
 import compileall
 import importlib
 import os

@@ -1,7 +1,5 @@
 """ImageLoadWorker: reusable QRunnable that executes one ImageLoadTask."""
 
-from __future__ import annotations
-
 import os
 import threading
 import time
@@ -85,7 +83,7 @@ class ImageLoadTask:
 class ImageLoadWorker(QRunnable):
     """可重用的工作線程"""
 
-    def __init__(self, task: ImageLoadTask, manager: ImageLoadManager):
+    def __init__(self, task: ImageLoadTask, manager: "ImageLoadManager"):
         super().__init__()
         self.task = task
         self.manager = manager

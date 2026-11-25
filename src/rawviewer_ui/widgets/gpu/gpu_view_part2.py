@@ -1,7 +1,5 @@
 """GPU view part 2: interactions, events, compare overlay, scroll state."""
 
-from __future__ import annotations
-
 import os
 
 from PyQt6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRectF, Qt, QUrl

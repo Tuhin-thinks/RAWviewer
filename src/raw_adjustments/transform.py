@@ -24,8 +24,6 @@ Order: distortion first (a capture property), then straighten/keystone,
 then crop insets, then anamorphic desqueeze.
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 TRANSFORM_KEYS = (

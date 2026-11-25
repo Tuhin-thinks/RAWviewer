@@ -1,7 +1,5 @@
 """Persistent SQLite disk caches (thumbnails, grid, previews) for RAWviewer."""
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import os

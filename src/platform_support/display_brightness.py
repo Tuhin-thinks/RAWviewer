@@ -9,8 +9,6 @@ Never uses ``SetDeviceGammaRamp`` — that would distort colour management.
 Callers must restore any saved value when leaving Adjust.
 """
 
-from __future__ import annotations
-
 import contextlib
 import sys
 from typing import Any, Protocol
@@ -18,7 +16,7 @@ from typing import Any, Protocol
 _core_display = None
 _cg = None
 _mac_ready = False
-_active_backend: _BrightnessBackend | None = None
+_active_backend: "_BrightnessBackend | None" = None
 
 
 class _BrightnessBackend(Protocol):

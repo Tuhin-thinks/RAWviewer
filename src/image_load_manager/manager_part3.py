@@ -1,7 +1,5 @@
 """ImageLoadManager part 3: cancellation, queue compaction, cache checks, stats."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import queue

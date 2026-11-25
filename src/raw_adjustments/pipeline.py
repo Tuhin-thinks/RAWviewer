@@ -1,7 +1,5 @@
 """Shared edit decode → denoise → PV2012 adjust → display / 16-bit export."""
 
-from __future__ import annotations
-
 import logging
 import os
 import threading

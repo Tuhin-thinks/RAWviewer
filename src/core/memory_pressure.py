@@ -11,8 +11,6 @@ auto-upgrade back to the full budgets (no oscillation).
 Kill switch: ``RAWVIEWER_MEMORY_PRESSURE_BACKOFF=0``.
 """
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os

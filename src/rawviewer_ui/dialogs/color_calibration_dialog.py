@@ -1,7 +1,5 @@
 """Interactive ColorChecker target alignment & camera calibration dialog for RAWviewer."""
 
-from __future__ import annotations
-
 import logging
 import os
 from typing import Any
@@ -468,6 +466,7 @@ class ColorCalibrationDialog(QDialog):
 
     def _alert(self, title: str, body: str) -> None:
         from rawviewer_app.core.widgets import CustomWarningDialog
+
         CustomWarningDialog(
             self,
             title=title,

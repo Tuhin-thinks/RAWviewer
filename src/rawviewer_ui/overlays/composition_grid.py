@@ -1,7 +1,5 @@
 """Composition guide overlays (rule of thirds, phi / golden-ratio grid) for single-image view."""
 
-from __future__ import annotations
-
 import math
 
 from PyQt6.QtCore import QRectF, Qt

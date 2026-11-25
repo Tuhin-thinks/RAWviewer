@@ -1,7 +1,5 @@
 """ImageLoadManager part 2: load scheduling, task registry, cancellation."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import queue

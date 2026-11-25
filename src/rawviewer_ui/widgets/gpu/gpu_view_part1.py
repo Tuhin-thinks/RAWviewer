@@ -1,7 +1,5 @@
 """GPU view part 1: scene item hosting, GL enable, overlays, fit/zoom state."""
 
-from __future__ import annotations
-
 import contextlib
 import sys
 

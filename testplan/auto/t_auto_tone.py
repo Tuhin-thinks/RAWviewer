@@ -15,8 +15,6 @@ DIRECTION and BOUNDS, not magnitudes. Asserting a magnitude here would lock
 the estimator to a distribution no camera produces.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 

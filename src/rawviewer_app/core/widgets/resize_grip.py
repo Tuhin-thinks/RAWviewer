@@ -1,7 +1,5 @@
 """ResizeGripIndicator: bottom-right resize hint for frameless windows."""
 
-from __future__ import annotations
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPainter
 from PyQt6.QtWidgets import QWidget
