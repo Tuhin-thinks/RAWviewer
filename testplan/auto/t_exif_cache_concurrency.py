@@ -18,6 +18,7 @@ thread's reads for that whole duration -- directly matching the observed
 This test holds cache.lock in a background thread (simulating a slow write
 in progress) and asserts a concurrent get() does NOT wait for it.
 """
+
 import os
 import shutil
 import sys

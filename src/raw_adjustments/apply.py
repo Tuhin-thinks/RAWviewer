@@ -191,9 +191,7 @@ def banded_executor():
 _BAND_PAD_PX = 48
 
 
-def _apply_adjustments_to_srgb_banded(
-    rgb_image: np.ndarray, merged: dict[str, float], n_workers: int
-) -> np.ndarray:
+def _apply_adjustments_to_srgb_banded(rgb_image: np.ndarray, merged: dict[str, float], n_workers: int) -> np.ndarray:
     """Row-band parallel version of _apply_adjustments_to_srgb's core pipeline."""
     h = rgb_image.shape[0]
     bands = band_ranges(h, n_workers, pad_px=_BAND_PAD_PX)
@@ -248,7 +246,7 @@ def _apply_adjustments_to_srgb_core(img: np.ndarray, merged: dict[str, float]) -
     # 2. Exposure
     exp_val = float(merged.get("Exposure2012", 0.0))
     if abs(exp_val) > 1e-4:
-        img *= 2.0 ** exp_val
+        img *= 2.0**exp_val
 
     # 2b. Dodge & burn (see raw_dodge_burn.py). This legacy gamma-space path
     # is used for cached uint8 full-image redisplay (browse revisit/zoom of
@@ -300,14 +298,16 @@ def _apply_adjustments_to_srgb_core(img: np.ndarray, merged: dict[str, float]) -
         lum = _channel_luminance(img)
         if abs(black_val) > 1e-4:
             img = _apply_masked_luminance_adjust(
-                img, lum, _black_region_weight(lum), black_val / 100.0, lift=True,
+                img,
+                lum,
+                _black_region_weight(lum),
+                black_val / 100.0,
+                lift=True,
                 lift_up_strength=0.03,
             )
             lum = _channel_luminance(img)
         if abs(white_val) > 1e-4:
-            img = _apply_masked_luminance_adjust(
-                img, lum, _highlight_region_weight(lum), white_val / 100.0, lift=True
-            )
+            img = _apply_masked_luminance_adjust(img, lum, _highlight_region_weight(lum), white_val / 100.0, lift=True)
 
     # 6. Saturation & Vibrance
     sat_val = float(merged.get("Saturation", 0.0))
@@ -443,18 +443,18 @@ def _apply_highlights_shadows(img: np.ndarray, hi_val: float, sh_val: float) -> 
     lum = _channel_luminance(img)
     if abs(sh_val) > 1e-4:
         img = _apply_masked_luminance_adjust(
-            img, lum, _shadow_region_weight(lum), sh_val / 100.0, lift=True,
+            img,
+            lum,
+            _shadow_region_weight(lum),
+            sh_val / 100.0,
+            lift=True,
             lift_up_strength=0.07,
         )
         lum = _channel_luminance(img)
     if abs(hi_val) > 1e-4:
         amt = hi_val / 100.0
         if amt < 0:
-            img = _apply_masked_luminance_adjust(
-                img, lum, _highlight_region_weight(lum), amt, lift=False
-            )
+            img = _apply_masked_luminance_adjust(img, lum, _highlight_region_weight(lum), amt, lift=False)
         else:
-            img = _apply_masked_luminance_adjust(
-                img, lum, _highlight_region_weight(lum), amt, lift=True
-            )
+            img = _apply_masked_luminance_adjust(img, lum, _highlight_region_weight(lum), amt, lift=True)
     return img

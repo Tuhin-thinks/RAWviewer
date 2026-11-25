@@ -85,9 +85,7 @@ def adjacent_preload_cap() -> int | None:
     return _preload_cap
 
 
-def scale_thumb_budget_bytes(
-    base_bytes: int, *, floor_bytes: int = 64 * 1024 * 1024
-) -> int:
+def scale_thumb_budget_bytes(base_bytes: int, *, floor_bytes: int = 64 * 1024 * 1024) -> int:
     return max(int(floor_bytes), int(base_bytes * thumb_budget_scale()))
 
 
@@ -207,18 +205,10 @@ def sample_memory() -> MemorySample:
 
 def classify_sample(sample: MemorySample) -> PressureLevel:
     """Map one snapshot to none / warn / critical. Missing data → none."""
-    crit_pct = _env_float(
-        "RAWVIEWER_MEMORY_PRESSURE_PERCENT_CRITICAL", 90.0, minimum=50.0, maximum=99.0
-    )
-    warn_pct = _env_float(
-        "RAWVIEWER_MEMORY_PRESSURE_PERCENT_WARN", 85.0, minimum=50.0, maximum=98.0
-    )
-    crit_avail_gb = _env_float(
-        "RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_CRITICAL", 2.0, minimum=0.25, maximum=32.0
-    )
-    warn_avail_gb = _env_float(
-        "RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_WARN", 4.0, minimum=0.5, maximum=64.0
-    )
+    crit_pct = _env_float("RAWVIEWER_MEMORY_PRESSURE_PERCENT_CRITICAL", 90.0, minimum=50.0, maximum=99.0)
+    warn_pct = _env_float("RAWVIEWER_MEMORY_PRESSURE_PERCENT_WARN", 85.0, minimum=50.0, maximum=98.0)
+    crit_avail_gb = _env_float("RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_CRITICAL", 2.0, minimum=0.25, maximum=32.0)
+    warn_avail_gb = _env_float("RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_WARN", 4.0, minimum=0.5, maximum=64.0)
     mac_crit = _env_float(
         "RAWVIEWER_MEMORY_PRESSURE_MACOS_AVAILABLE_MB_CRITICAL",
         512.0,
@@ -437,7 +427,7 @@ def _pause_viewer_preload(viewer: object) -> None:
         enforce(force=True)
     except TypeError:
         try:
-            gv._thumb_cache_puts_since_check = 10 ** 6
+            gv._thumb_cache_puts_since_check = 10**6
             enforce()
         except Exception:
             logger.debug("thumb budget enforce failed", exc_info=True)
@@ -479,9 +469,7 @@ def apply_backoff(level: PressureLevel, *, viewer: object | None = None) -> Pres
     return _applied
 
 
-def poll_and_apply(
-    *, viewer: object | None = None, sample: MemorySample | None = None
-) -> PressureLevel:
+def poll_and_apply(*, viewer: object | None = None, sample: MemorySample | None = None) -> PressureLevel:
     """Idle-timer entry: observe one sample, apply backoff if the latch rose."""
     if not backoff_enabled():
         return "none"

@@ -221,8 +221,6 @@ def _draw_pin(
     painter.drawPath(path)
 
 
-
-
 class LocationMapModel:
     """Model that handles coordinates for a single image, tile fetching, and stitching."""
 

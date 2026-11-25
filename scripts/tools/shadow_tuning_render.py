@@ -6,6 +6,7 @@ enough guide to the perceptual result.
 
 Usage: pixi run python3 scripts/tools/shadow_tuning_render.py [out_dir]
 """
+
 import os
 import sys
 

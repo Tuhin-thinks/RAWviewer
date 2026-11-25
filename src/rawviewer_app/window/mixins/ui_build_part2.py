@@ -1,4 +1,5 @@
 """ui_build mixin, part 2 of 3 (11 methods, split init_ui into helpers)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -54,9 +55,9 @@ lazy.register(sys.modules[__name__])
 
 class UiBuildPart2:
     def _init_window_chrome(self):
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setWindowTitle('RAWviewer')
+        self.setWindowTitle("RAWviewer")
 
         # Set simple background style (no rounded corners - simplifies window resizing)
         self.setStyleSheet(f"""
@@ -113,7 +114,7 @@ class UiBuildPart2:
         self._resize_start_geometry = None
 
         # Enable native window resizing for Windows (allows edge dragging)
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             self.setAttribute(Qt.WidgetAttribute.WA_NativeWindow, True)
             # Ensure no mask is set (allows mouse events at edges)
             self.setMask(QRegion())
@@ -121,7 +122,7 @@ class UiBuildPart2:
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
 
         # Create custom title bar only on Windows
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             self.title_bar = CustomTitleBar(self)
         else:
             self.title_bar = None
@@ -139,7 +140,6 @@ class UiBuildPart2:
         self.edit_loading_overlay = LoadingOverlay(self)
         self.edit_loading_overlay.hide()
 
-
     def _init_content(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -150,7 +150,7 @@ class UiBuildPart2:
         main_layout.setSpacing(0)  # Remove spacing
 
         # Add title bar first if it exists
-        if hasattr(self, 'title_bar') and self.title_bar is not None:
+        if hasattr(self, "title_bar") and self.title_bar is not None:
             main_layout.addWidget(self.title_bar)
             self.title_bar.setMouseTracking(True)
             self.title_bar.installEventFilter(self)
@@ -257,8 +257,7 @@ class UiBuildPart2:
         # Create instruction text with modern folder icon
         # Use modern folder icon (📁) instead of old style (🗁)
         self.image_label.setText(self._no_image_loaded_help_text())
-        self.image_label.setStyleSheet(
-            "QLabel { color: #666; font-size: 14px; background-color: transparent; }")
+        self.image_label.setStyleSheet("QLabel { color: #666; font-size: 14px; background-color: transparent; }")
         self.image_label.setMinimumSize(400, 300)
         self.image_label.setMouseTracking(True)
         cast(Any, self.image_label).mousePressEvent = self.image_mouse_press_event
@@ -266,7 +265,6 @@ class UiBuildPart2:
         cast(Any, self.image_label).mouseReleaseEvent = self.image_mouse_release_event
         cast(Any, self.image_label).mouseDoubleClickEvent = self.image_double_click_event
         self.scroll_area.setWidget(self.image_label)
-
 
     def _init_harness_and_overlays(self):
         self.scroll_area.viewport().setMouseTracking(True)
@@ -292,103 +290,45 @@ class UiBuildPart2:
         self._adjust_preview_stage_cache_fast = None
         if editing_features_enabled() and ImageAdjustPanelWidget is not None:
             self.single_image_adjust_histogram = ImageHistogramWidget()
-            self.single_image_adjust_panel = ImageAdjustPanelWidget(
-                histogram_widget=self.single_image_adjust_histogram
-            )
+            self.single_image_adjust_panel = ImageAdjustPanelWidget(histogram_widget=self.single_image_adjust_histogram)
             self.single_image_adjust_panel.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             self.single_image_adjust_panel.hide()
-            self.single_image_adjust_panel.editing_finished.connect(
-                self._on_adjust_panel_editing_finished
-            )
-            self.single_image_adjust_panel.preview_changed.connect(
-                self._on_adjust_panel_preview_changed
-            )
-            self.single_image_adjust_panel.transform_interaction.connect(
-                self._on_transform_interaction
-            )
-            self.single_image_adjust_panel.auto_wb_requested.connect(
-                self._on_auto_wb_requested
-            )
-            self.single_image_adjust_panel.auto_straighten_requested.connect(
-                self._on_auto_straighten_requested
-            )
+            self.single_image_adjust_panel.editing_finished.connect(self._on_adjust_panel_editing_finished)
+            self.single_image_adjust_panel.preview_changed.connect(self._on_adjust_panel_preview_changed)
+            self.single_image_adjust_panel.transform_interaction.connect(self._on_transform_interaction)
+            self.single_image_adjust_panel.auto_wb_requested.connect(self._on_auto_wb_requested)
+            self.single_image_adjust_panel.auto_straighten_requested.connect(self._on_auto_straighten_requested)
             if hasattr(self.single_image_adjust_panel, "auto_tone_requested"):
-                self.single_image_adjust_panel.auto_tone_requested.connect(
-                    self._on_auto_tone_requested
-                )
+                self.single_image_adjust_panel.auto_tone_requested.connect(self._on_auto_tone_requested)
             if hasattr(self.single_image_adjust_panel, "dock_side_requested"):
-                self.single_image_adjust_panel.dock_side_requested.connect(
-                    self._on_adjust_panel_dock_requested
-                )
-            self.single_image_adjust_panel.export_requested.connect(
-                self._on_adjust_panel_export_requested
-            )
+                self.single_image_adjust_panel.dock_side_requested.connect(self._on_adjust_panel_dock_requested)
+            self.single_image_adjust_panel.export_requested.connect(self._on_adjust_panel_export_requested)
             self.single_image_adjust_panel.recovery_baseline_requested.connect(
                 self._on_adjust_recovery_baseline_requested
             )
-            self.single_image_adjust_panel.wb_picker_toggled.connect(
-                self._on_adjust_wb_picker_toggled
-            )
-            self.single_image_adjust_panel.compare_toggled.connect(
-                self._on_adjust_compare_toggled
-            )
-            self.single_image_adjust_panel.lens_correction_toggled.connect(
-                self._on_adjust_lens_correction_toggled
-            )
-            self.single_image_adjust_panel.dodge_burn_mode_changed.connect(
-                self._on_dodge_burn_mode_changed
-            )
-            self.single_image_adjust_panel.dodge_burn_clear_requested.connect(
-                self._on_dodge_burn_clear_requested
-            )
-            self.single_image_adjust_panel.spot_heal_clear_requested.connect(
-                self._on_spot_heal_clear_requested
-            )
-            self.single_image_adjust_panel.dodgeBurnMaskToggled.connect(
-                self._on_dodge_burn_mask_toggled
-            )
-            self.single_image_adjust_panel.dodge_burn_brush_changed.connect(
-                self._sync_dodge_burn_brush_cursor
-            )
-            self.single_image_adjust_panel.xmp_preset_applied.connect(
-                self._on_xmp_preset_applied
-            )
-            self.single_image_adjust_panel.looks_drop_rejected.connect(
-                self._on_looks_drop_rejected
-            )
-            self.single_image_adjust_panel.ai_denoise_toggled.connect(
-                self._on_adjust_ai_denoise_toggled
-            )
-            self.single_image_adjust_panel.ai_preview_requested.connect(
-                self._on_adjust_ai_preview_requested
-            )
+            self.single_image_adjust_panel.wb_picker_toggled.connect(self._on_adjust_wb_picker_toggled)
+            self.single_image_adjust_panel.compare_toggled.connect(self._on_adjust_compare_toggled)
+            self.single_image_adjust_panel.lens_correction_toggled.connect(self._on_adjust_lens_correction_toggled)
+            self.single_image_adjust_panel.dodge_burn_mode_changed.connect(self._on_dodge_burn_mode_changed)
+            self.single_image_adjust_panel.dodge_burn_clear_requested.connect(self._on_dodge_burn_clear_requested)
+            self.single_image_adjust_panel.spot_heal_clear_requested.connect(self._on_spot_heal_clear_requested)
+            self.single_image_adjust_panel.dodgeBurnMaskToggled.connect(self._on_dodge_burn_mask_toggled)
+            self.single_image_adjust_panel.dodge_burn_brush_changed.connect(self._sync_dodge_burn_brush_cursor)
+            self.single_image_adjust_panel.xmp_preset_applied.connect(self._on_xmp_preset_applied)
+            self.single_image_adjust_panel.looks_drop_rejected.connect(self._on_looks_drop_rejected)
+            self.single_image_adjust_panel.ai_denoise_toggled.connect(self._on_adjust_ai_denoise_toggled)
+            self.single_image_adjust_panel.ai_preview_requested.connect(self._on_adjust_ai_preview_requested)
             self.single_image_adjust_panel.set_ai_denoise_enabled(
                 bool(self.get_settings().value("ai_denoise_enabled", False) in (True, "1", "true"))
             )
-            self.single_image_adjust_panel.crop_mode_changed.connect(
-                self._on_crop_mode_changed
-            )
-            self.single_image_adjust_panel.crop_aspect_changed.connect(
-                self._on_crop_aspect_changed
-            )
-            self.single_image_adjust_panel.crop_apply_requested.connect(
-                self._on_crop_apply_requested
-            )
-            self.single_image_adjust_panel.crop_cancel_requested.connect(
-                self._on_crop_cancel_requested
-            )
-            self.single_image_adjust_panel.crop_reset_requested.connect(
-                self._on_crop_reset_requested
-            )
-            self.single_image_adjust_panel.reset_requested.connect(
-                self._on_adjust_panel_reset
-            )
-            self.single_image_adjust_panel.calibrate_requested.connect(
-                self._on_calibrate_camera_requested
-            )
-            self.single_image_adjust_panel.camera_profile_removed.connect(
-                self._on_camera_profile_removed
-            )
+            self.single_image_adjust_panel.crop_mode_changed.connect(self._on_crop_mode_changed)
+            self.single_image_adjust_panel.crop_aspect_changed.connect(self._on_crop_aspect_changed)
+            self.single_image_adjust_panel.crop_apply_requested.connect(self._on_crop_apply_requested)
+            self.single_image_adjust_panel.crop_cancel_requested.connect(self._on_crop_cancel_requested)
+            self.single_image_adjust_panel.crop_reset_requested.connect(self._on_crop_reset_requested)
+            self.single_image_adjust_panel.reset_requested.connect(self._on_adjust_panel_reset)
+            self.single_image_adjust_panel.calibrate_requested.connect(self._on_calibrate_camera_requested)
+            self.single_image_adjust_panel.camera_profile_removed.connect(self._on_camera_profile_removed)
             self._adjust_edit_base_signals = _AdjustEditBaseSignals()
             self._adjust_edit_base_signals.finished.connect(self._on_adjust_edit_base_ready)
             self._adjust_mask_load_signals = _AdjustMaskLoadSignals()
@@ -409,9 +349,7 @@ class UiBuildPart2:
             self._adjust_compare_original_pixmap: Any = None
             self._adjust_compare_original_path: str | None = None
             self._adjust_compare_original_signals = _AdjustCompareOriginalSignals()
-            self._adjust_compare_original_signals.finished.connect(
-                self._on_adjust_compare_original_ready
-            )
+            self._adjust_compare_original_signals.finished.connect(self._on_adjust_compare_original_ready)
             self._adjust_edit_base_path: str | None = None
             self._adjust_edit_base_loading_norm: str | None = None
             self._adjust_export_in_progress = False
@@ -439,6 +377,7 @@ class UiBuildPart2:
         if _env_true("RAWVIEWER_GPU_VIEW", default=True):
             try:
                 from rawviewer_ui.widgets.gpu import GpuImageView
+
                 self.gpu_view = GpuImageView()
                 # Reuse the legacy instruction screen text as the empty-state placeholder.
                 self.gpu_view.set_placeholder_text(self.image_label.text())
@@ -449,29 +388,24 @@ class UiBuildPart2:
                 if editing_features_enabled():
                     self.gpu_view.colorPickRequested.connect(self._on_wb_color_picked)
                     self.gpu_view.dodgeBurnStroke.connect(self._on_dodge_burn_stroke)
-                    self.gpu_view.dodgeBurnBrushSizeWheel.connect(
-                        self._on_dodge_burn_brush_size_wheel
-                    )
-                    self.gpu_view.brushToolLeftImage.connect(
-                        self._on_brush_tool_left_image
-                    )
+                    self.gpu_view.dodgeBurnBrushSizeWheel.connect(self._on_dodge_burn_brush_size_wheel)
+                    self.gpu_view.brushToolLeftImage.connect(self._on_brush_tool_left_image)
                     self.gpu_view.cropInsetsChanged.connect(self._on_crop_insets_live)
-                    self.gpu_view.cropEditingFinished.connect(
-                        lambda: None
-                    )  # live only; commit via Apply
+                    self.gpu_view.cropEditingFinished.connect(lambda: None)  # live only; commit via Apply
                 self.gpu_view._shortcut_handler = self._handle_app_shortcut
                 self._sync_composition_grid_display()
             except Exception as _gpu_exc:
-                logging.getLogger(__name__).warning(
-                    "GPU view requested but failed to initialize: %s", _gpu_exc
-                )
+                logging.getLogger(__name__).warning("GPU view requested but failed to initialize: %s", _gpu_exc)
                 self.gpu_view = None
-
 
     def _init_splitter_and_status_bar(self):
         self.single_view_container = SingleImageViewOverlay(
-            self.scroll_area, self.single_image_histogram, viewer=self,
-            gpu_view=self.gpu_view, map_widget=self.single_image_location_map)
+            self.scroll_area,
+            self.single_image_histogram,
+            viewer=self,
+            gpu_view=self.gpu_view,
+            map_widget=self.single_image_location_map,
+        )
         self._wire_filmstrip()
 
         self.single_view_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -520,7 +454,6 @@ class UiBuildPart2:
             }}
         """)
 
-
     def _init_status_bar(self):
         status_widget = QWidget()
         status_widget.setObjectName("status_widget")  # Set object name for finding it later
@@ -531,15 +464,14 @@ class UiBuildPart2:
         # Left side buttons container -- fixed footprint; search field overlays beside it.
         left_buttons_widget = QWidget()
         left_buttons_widget.setFixedHeight(28)
-        left_buttons_widget.setSizePolicy(
-            QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed
-        )
+        left_buttons_widget.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         left_buttons_layout = QHBoxLayout(left_buttons_widget)
         left_buttons_layout.setContentsMargins(8, 0, 0, 0)
         # Add 8px spacing between buttons
         left_buttons_layout.setSpacing(8)
 
         import qtawesome as qta
+
         bottom_icon_only_btn_style = f"""
             QPushButton,
             QPushButton:flat {{
@@ -582,7 +514,6 @@ class UiBuildPart2:
         self.bottom_icon_only_btn_style = bottom_icon_only_btn_style
         self.qta = qta
 
-
     def _style_bottom_icon_button(self, btn: QPushButton) -> None:
         btn.setFlat(True)
         btn.setAutoDefault(False)
@@ -592,12 +523,11 @@ class UiBuildPart2:
         btn.setStyleSheet(self.bottom_icon_only_btn_style)
         btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
-
     def _init_bottom_actions(self):
 
         # Open button (left side) - Using qtawesome for reliability
         self.open_button = QPushButton()
-        self.open_button.setIcon(_qta_icon('fa5s.folder-open', color=theme.INK_MUTED))
+        self.open_button.setIcon(_qta_icon("fa5s.folder-open", color=theme.INK_MUTED))
         self.open_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.open_button.setToolTip("Open Image File")
         self.open_button.clicked.connect(self.open_file)
@@ -609,7 +539,7 @@ class UiBuildPart2:
         # Use qtawesome icon if available, otherwise fallback to text
         if self.qta is not None:
             try:
-                gallery_icon = _qta_icon('fa5s.th', color=theme.INK_MUTED)
+                gallery_icon = _qta_icon("fa5s.th", color=theme.INK_MUTED)
                 self.view_mode_button.setIcon(gallery_icon)
                 self.view_mode_button.setIconSize(QSize(20, 20))
             except Exception as e:
@@ -631,9 +561,7 @@ class UiBuildPart2:
             safe_print(f"[WARNING] Share icon unavailable: {e}, using text fallback", flush=True)
             self.share_bottom_button.setText("Open")
         self._style_bottom_icon_button(self.share_bottom_button)
-        self.share_bottom_button.setToolTip(
-            "Open in another app" if sys.platform == "win32" else "Share"
-        )
+        self.share_bottom_button.setToolTip("Open in another app" if sys.platform == "win32" else "Share")
         # pressed (mouse-down), not clicked (mouse-up): NSSharingServicePicker must not
         # open on mouseUp or the macOS share sheet spins empty (AppKit console warning).
         self.share_bottom_button.pressed.connect(self._on_share_bottom_button_clicked)
@@ -679,9 +607,7 @@ class UiBuildPart2:
                 f" QPushButton:hover {{ background: {theme.rgba(theme.INK_RGB, 18)}; border-radius: 3px; }}"
             )
             _star_btn.setToolTip(f"Rate {_star_n} star{'s' if _star_n != 1 else ''} ({_star_n})")
-            _star_btn.clicked.connect(
-                lambda checked=False, n=_star_n: self._on_rating_star_clicked(n)
-            )
+            _star_btn.clicked.connect(lambda checked=False, n=_star_n: self._on_rating_star_clicked(n))
             self._rating_star_buttons.append(_star_btn)
             _rating_stars_layout.addWidget(_star_btn, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         self.single_view_rating_stars.hide()
@@ -709,13 +635,9 @@ class UiBuildPart2:
                 f" QPushButton:hover {{ background: {theme.rgba(theme.INK_RGB, 18)}; border-radius: 3px; }}"
             )
             _star_btn.setToolTip(f"Show {_star_n}★ and above")
-            _star_btn.clicked.connect(
-                lambda checked=False, n=_star_n: self._on_gallery_rating_star_clicked(n)
-            )
+            _star_btn.clicked.connect(lambda checked=False, n=_star_n: self._on_gallery_rating_star_clicked(n))
             self._gallery_rating_filter_buttons.append(_star_btn)
-            _gallery_filter_stars_layout.addWidget(
-                _star_btn, 0, alignment=Qt.AlignmentFlag.AlignVCenter
-            )
+            _gallery_filter_stars_layout.addWidget(_star_btn, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         self.gallery_rating_filter_stars.hide()
 
         # Explicit "show all images" escape hatch for when the rating (or
@@ -735,9 +657,7 @@ class UiBuildPart2:
         self.gallery_clear_filter_button.hide()
         # Sits with the other view-scope controls (left side) rather than beside the
         # rating-filter stars on the right -- it toggles gallery scope, not rating.
-        self.left_buttons_layout.addWidget(
-            self.gallery_clear_filter_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
-        )
+        self.left_buttons_layout.addWidget(self.gallery_clear_filter_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         self.slideshow_bottom_button = QPushButton()
         self.slideshow_bottom_button.setObjectName("slideshowBottomButton")
@@ -755,7 +675,6 @@ class UiBuildPart2:
         self.rotate_bottom_button.clicked.connect(self._rotate_current_image_clockwise_persist)
         self.rotate_bottom_button.hide()
         self.left_buttons_layout.addWidget(self.rotate_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-
 
     def _init_more_buttons(self):
         self.adjust_bottom_button = QPushButton()
@@ -795,9 +714,7 @@ class UiBuildPart2:
             self.edr_toggle_button.clicked.connect(self.toggle_raw_edr_display)
             self.edr_toggle_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             self.edr_toggle_button.hide()
-            self.left_buttons_layout.addWidget(
-                self.edr_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
-            )
+            self.left_buttons_layout.addWidget(self.edr_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Sort toggle (gallery only) -- before search icon so Search sits beside the expand field.
         self.sort_toggle_button = QPushButton()
@@ -832,13 +749,12 @@ class UiBuildPart2:
             }}
         """)
         self.sort_toggle_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.left_buttons_layout.addWidget(
-            self.sort_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter
-        )
+        self.left_buttons_layout.addWidget(self.sort_toggle_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         self.sort_toggle_button.hide()  # Hidden by default (single view)
 
         # Size slider (gallery zoom)
         from rawviewer_ui.widgets import GalleryZoomSlider
+
         self.size_slider = GalleryZoomSlider(Qt.Orientation.Horizontal, self)
 
         # Read saved row height from settings
@@ -852,9 +768,7 @@ class UiBuildPart2:
         self.size_slider.hide()  # Hidden by default (single view)
 
         # Add to layout
-        self.left_buttons_layout.addWidget(
-            self.size_slider, 0, alignment=Qt.AlignmentFlag.AlignVCenter
-        )
+        self.left_buttons_layout.addWidget(self.size_slider, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Debounce timer for smooth dragging without layout lag
         self._zoom_debounce_timer = QTimer(self)
@@ -879,22 +793,17 @@ class UiBuildPart2:
         self.search_bottom_button.hide()
         self.left_buttons_layout.addWidget(self.search_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
-
     def _init_search_ui(self):
         self.search_expand_container = QWidget()
         self.search_expand_container.setFixedHeight(28)
-        self.search_expand_container.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
+        self.search_expand_container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.search_expand_container.setMinimumWidth(0)
         self.search_expand_container.setMaximumWidth(0)
         self.search_expand_layout = QStackedLayout(self.search_expand_container)
         self.search_expand_layout.setContentsMargins(0, 0, 0, 0)
         # Width animation clips a fixed-size field; layout must not fight setFixedWidth.
         with contextlib.suppress(Exception):
-            self.search_expand_layout.setSizeConstraint(
-                QLayout.SizeConstraint.SetNoConstraint
-            )
+            self.search_expand_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
         self.gallery_search_panel = QWidget()
         self.gallery_search_panel.setFixedHeight(28)
@@ -903,15 +812,11 @@ class UiBuildPart2:
         _gsp.setSpacing(8)
 
         self.gallery_search_status_label = QLabel("")
-        self.gallery_search_status_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.gallery_search_status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.gallery_search_status_label.setWordWrap(False)
         self.gallery_search_status_label.setMinimumWidth(0)
         self.gallery_search_status_label.setMaximumWidth(220)
-        self.gallery_search_status_label.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        self.gallery_search_status_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.gallery_search_status_label.setStyleSheet(f"""
             QLabel {{
                 color: {theme.INK_MUTED};
@@ -928,9 +833,7 @@ class UiBuildPart2:
         self.gallery_search_input.setMinimumWidth(140)
         self.gallery_search_input.setMaximumWidth(300)
         self.gallery_search_input.setFixedHeight(28)
-        self.gallery_search_input.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        self.gallery_search_input.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.gallery_search_style_input = f"""
             QLineEdit {{
                 color: {theme.INK};
@@ -950,9 +853,7 @@ class UiBuildPart2:
         """
         self.gallery_search_input.setStyleSheet(self.gallery_search_style_input)
         # macOS draws a bright blue native focus ring unless disabled (dialogs already do this).
-        self.gallery_search_input.setAttribute(
-            Qt.WidgetAttribute.WA_MacShowFocusRect, False
-        )
+        self.gallery_search_input.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)
         _macos_install_line_edit_completion_guard(self.gallery_search_input)
         self.gallery_search_input.returnPressed.connect(self._semantic_search_from_bar)
         self.gallery_search_input.textChanged.connect(self._on_gallery_search_text_changed)
@@ -964,7 +865,6 @@ class UiBuildPart2:
         self.search_expand_layout.setCurrentWidget(self.gallery_search_panel)
         self._gallery_search_status_full = ""
 
-
     def _init_semantic_and_status_flags(self):
         self.search_expand_container.hide()
         # Index progress in the search field only after the user opens search (not folder load).
@@ -975,9 +875,7 @@ class UiBuildPart2:
         self.burst_grouping_button = QPushButton()
         self.burst_grouping_button.setCheckable(True)
         self.burst_grouping_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.burst_grouping_button.setToolTip(
-            "Group burst sequences -- stack rapid captures into one tile"
-        )
+        self.burst_grouping_button.setToolTip("Group burst sequences -- stack rapid captures into one tile")
         self._style_bottom_icon_button(self.burst_grouping_button)
         self.burst_grouping_button.setStyleSheet(
             self.bottom_icon_only_btn_style
@@ -996,14 +894,10 @@ class UiBuildPart2:
 
         self.compare_bottom_button = QPushButton()
         self.compare_bottom_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.compare_bottom_button.setToolTip(
-            "Compare side by side (C) -- one burst group or multi-selection"
-        )
+        self.compare_bottom_button.setToolTip("Compare side by side (C) -- one burst group or multi-selection")
         if self.qta is not None:
             try:
-                self.compare_bottom_button.setIcon(
-                    _qta_icon("fa5s.columns", color=theme.INK_MUTED)
-                )
+                self.compare_bottom_button.setIcon(_qta_icon("fa5s.columns", color=theme.INK_MUTED))
             except Exception:
                 self.compare_bottom_button.setText("Compare")
         else:
@@ -1060,39 +954,28 @@ class UiBuildPart2:
         """
         self.status_counter_label = QLabel("")
         self.status_counter_label.setFixedHeight(28)
-        self.status_counter_label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.status_counter_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.status_counter_label.setStyleSheet(_counter_label_style)
 
         self.right_status_actions = QWidget()
         self.right_status_actions.setFixedHeight(28)
-        self.right_status_actions.setSizePolicy(
-            QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
-        )
+        self.right_status_actions.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         right_status_actions_layout = QHBoxLayout(self.right_status_actions)
         right_status_actions_layout.setContentsMargins(0, 0, 0, 0)
         right_status_actions_layout.setSpacing(8)
+        right_status_actions_layout.addWidget(self.burst_grouping_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        right_status_actions_layout.addWidget(self.compare_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        right_status_actions_layout.addWidget(self.batch_mark_indicator, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
         right_status_actions_layout.addWidget(
-            self.burst_grouping_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.compare_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.batch_mark_indicator, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.gallery_rating_filter_stars, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.single_view_rating_stars, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.share_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
-        right_status_actions_layout.addWidget(
-            self.shortcuts_hint_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+            self.gallery_rating_filter_stars, 0, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
+        right_status_actions_layout.addWidget(self.single_view_rating_stars, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        right_status_actions_layout.addWidget(self.share_bottom_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
+        right_status_actions_layout.addWidget(self.shortcuts_hint_button, 0, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         self.right_status_trailing = QWidget()
         self.right_status_trailing.setFixedHeight(28)
-        self.right_status_trailing.setSizePolicy(
-            QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
-        )
+        self.right_status_trailing.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         _rtl = QHBoxLayout(self.right_status_trailing)
         _rtl.setContentsMargins(0, 0, 0, 0)
         _rtl.setSpacing(12)
@@ -1126,7 +1009,6 @@ class UiBuildPart2:
         # Track mouse over client area so edge cursors / grip appear without clicking first.
         self.setMouseTracking(True)
 
-
     def _init_shortcuts_and_wiring(self):
         cw = self.centralWidget()
         if cw is not None:
@@ -1135,8 +1017,7 @@ class UiBuildPart2:
 
         # Status bar created - no rounded corners to update
 
-        self.setSizePolicy(QSizePolicy.Policy.Expanding,
-                           QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         # v2.1-style filters: image scroll + optional GPU view only (no status bar / container).
         self.scroll_area.installEventFilter(self)
@@ -1148,9 +1029,7 @@ class UiBuildPart2:
             self.gpu_view.setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
             self.gpu_view.viewport().setMouseTracking(True)
             self.gpu_view.viewport().setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-            self.gpu_view.viewport().setAttribute(
-                Qt.WidgetAttribute.WA_AcceptTouchEvents, True
-            )
+            self.gpu_view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
             self.gpu_view.installEventFilter(self)
             self.gpu_view.viewport().installEventFilter(self)
         self.single_image_histogram.installEventFilter(self)
@@ -1161,78 +1040,44 @@ class UiBuildPart2:
 
         # F must work even when no child widget accepts keyboard focus (QLabel default
         # is NoFocus). WindowShortcut fires while this window is active.
-        self._shortcut_toggle_focus_subject_outline = QShortcut(
-            QKeySequence(Qt.Key.Key_F), self
-        )
-        self._shortcut_toggle_focus_subject_outline.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_focus_subject_outline = QShortcut(QKeySequence(Qt.Key.Key_F), self)
+        self._shortcut_toggle_focus_subject_outline.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_focus_subject_outline.setAutoRepeat(False)
-        self._shortcut_toggle_focus_subject_outline.activated.connect(
-            self._toggle_focus_subject_outline
-        )
-        self._shortcut_toggle_composition_grid = QShortcut(
-            QKeySequence(Qt.Key.Key_G), self
-        )
-        self._shortcut_toggle_composition_grid.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_focus_subject_outline.activated.connect(self._toggle_focus_subject_outline)
+        self._shortcut_toggle_composition_grid = QShortcut(QKeySequence(Qt.Key.Key_G), self)
+        self._shortcut_toggle_composition_grid.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_composition_grid.setAutoRepeat(False)
-        self._shortcut_toggle_composition_grid.activated.connect(
-            self._toggle_composition_grid
-        )
-        self._shortcut_toggle_clipping_overlay = QShortcut(
-            QKeySequence(Qt.Key.Key_J), self
-        )
-        self._shortcut_toggle_clipping_overlay.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_composition_grid.activated.connect(self._toggle_composition_grid)
+        self._shortcut_toggle_clipping_overlay = QShortcut(QKeySequence(Qt.Key.Key_J), self)
+        self._shortcut_toggle_clipping_overlay.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_clipping_overlay.setAutoRepeat(False)
-        self._shortcut_toggle_clipping_overlay.activated.connect(
-            self._toggle_clipping_overlay
-        )
+        self._shortcut_toggle_clipping_overlay.activated.connect(self._toggle_clipping_overlay)
 
         self._shortcut_toggle_adjust_panel = None
         from raw_adjustments import editing_features_enabled as _editing_on
 
         if _editing_on():
             self._shortcut_toggle_adjust_panel = QShortcut(QKeySequence(Qt.Key.Key_E), self)
-            self._shortcut_toggle_adjust_panel.setContext(
-                Qt.ShortcutContext.ApplicationShortcut
-            )
+            self._shortcut_toggle_adjust_panel.setContext(Qt.ShortcutContext.ApplicationShortcut)
             self._shortcut_toggle_adjust_panel.setAutoRepeat(False)
-            self._shortcut_toggle_adjust_panel.activated.connect(
-                self._shortcut_activate_adjust_panel
-            )
+            self._shortcut_toggle_adjust_panel.activated.connect(self._shortcut_activate_adjust_panel)
 
         # H/M/P also use ApplicationShortcut; _handle_app_shortcut is the fallback when
         # focus is on overlay chrome or the OpenGL viewport swallows key delivery.
         self._shortcut_toggle_histogram = QShortcut(QKeySequence(Qt.Key.Key_H), self)
-        self._shortcut_toggle_histogram.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_histogram.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_histogram.setAutoRepeat(False)
-        self._shortcut_toggle_histogram.activated.connect(
-            self._shortcut_activate_histogram
-        )
+        self._shortcut_toggle_histogram.activated.connect(self._shortcut_activate_histogram)
 
         self._shortcut_toggle_location_map = QShortcut(QKeySequence(Qt.Key.Key_M), self)
-        self._shortcut_toggle_location_map.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_location_map.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_location_map.setAutoRepeat(False)
-        self._shortcut_toggle_location_map.activated.connect(
-            self._shortcut_activate_location_map
-        )
+        self._shortcut_toggle_location_map.activated.connect(self._shortcut_activate_location_map)
 
         self._shortcut_toggle_raw_recovery = QShortcut(QKeySequence(Qt.Key.Key_P), self)
-        self._shortcut_toggle_raw_recovery.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_toggle_raw_recovery.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_toggle_raw_recovery.setAutoRepeat(False)
-        self._shortcut_toggle_raw_recovery.activated.connect(
-            self._shortcut_activate_raw_recovery
-        )
+        self._shortcut_toggle_raw_recovery.activated.connect(self._shortcut_activate_raw_recovery)
 
         # Arrow keys must work when the GPU OpenGL viewport (or other NoFocus
         # children) holds focus; ApplicationShortcut matches the F-key pattern.
@@ -1267,9 +1112,7 @@ class UiBuildPart2:
         self._shortcut_gallery_down.activated.connect(self._shortcut_activate_gallery_down)
 
         self._shortcut_gallery_down_shift = QShortcut(QKeySequence("Shift+Down"), self)
-        self._shortcut_gallery_down_shift.setContext(
-            Qt.ShortcutContext.ApplicationShortcut
-        )
+        self._shortcut_gallery_down_shift.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_gallery_down_shift.activated.connect(self._shortcut_activate_gallery_down)
 
         app = QApplication.instance()

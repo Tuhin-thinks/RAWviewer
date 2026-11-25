@@ -1,4 +1,5 @@
 """Engine mixin part 7 of 7 for SemanticImageIndex."""
+
 from __future__ import annotations
 
 import os
@@ -13,10 +14,6 @@ from search.types import MetadataRow, SearchHit
 
 
 class EnginePart7:
-
-
-
-
     def _normalize_loose_metadata_query(self, raw: str) -> str:
         """
         Accept light natural-language metadata filters without an LLM.
@@ -42,9 +39,18 @@ class EnginePart7:
 
         numeric_phrases = [
             (r"\b(iso|year|month|width|height)\s+(?:under|below|less\s+than|smaller\s+than)\s+(\d+)\b", r"\1<\2"),
-            (r"\b(iso|year|month|width|height)\s+(?:at\s+most|up\s+to|no\s+more\s+than|less\s+than\s+or\s+equal\s+to)\s+(\d+)\b", r"\1<=\2"),
-            (r"\b(iso|year|month|width|height)\s+(?:over|above|more\s+than|greater\s+than|larger\s+than)\s+(\d+)\b", r"\1>\2"),
-            (r"\b(iso|year|month|width|height)\s+(?:at\s+least|no\s+less\s+than|greater\s+than\s+or\s+equal\s+to)\s+(\d+)\b", r"\1>=\2"),
+            (
+                r"\b(iso|year|month|width|height)\s+(?:at\s+most|up\s+to|no\s+more\s+than|less\s+than\s+or\s+equal\s+to)\s+(\d+)\b",
+                r"\1<=\2",
+            ),
+            (
+                r"\b(iso|year|month|width|height)\s+(?:over|above|more\s+than|greater\s+than|larger\s+than)\s+(\d+)\b",
+                r"\1>\2",
+            ),
+            (
+                r"\b(iso|year|month|width|height)\s+(?:at\s+least|no\s+less\s+than|greater\s+than\s+or\s+equal\s+to)\s+(\d+)\b",
+                r"\1>=\2",
+            ),
             (r"\b(iso|year|month|width|height)\s+(?:is|equals?|equal\s+to)\s+(\d+)\b", r"\1=\2"),
         ]
         for pattern, replacement in numeric_phrases:
@@ -75,12 +81,37 @@ class EnginePart7:
         # Multi-word location detection pass
         # This joins known multi-word places into single tokens to prevent splitting
         _MULTI_WORD_LOCATIONS = [
-            "hong kong", "new york", "san francisco", "los angeles", "united states",
-            "united kingdom", "south korea", "north korea", "saudi arabia", "south africa",
-            "kuala Lumpur", "ho chi minh", "san diego", "las vegas", "new zealand",
-            "buenos aires", "rio de janeiro", "mexico city", "cape town", "saint petersburg",
-            "san jose", "nha trang", "da nang", "koh samui", "koh phangan", "bora bora",
-            "puerto rico", "costa rica", "el salvador", "gran canaria", "san sebastian"
+            "hong kong",
+            "new york",
+            "san francisco",
+            "los angeles",
+            "united states",
+            "united kingdom",
+            "south korea",
+            "north korea",
+            "saudi arabia",
+            "south africa",
+            "kuala Lumpur",
+            "ho chi minh",
+            "san diego",
+            "las vegas",
+            "new zealand",
+            "buenos aires",
+            "rio de janeiro",
+            "mexico city",
+            "cape town",
+            "saint petersburg",
+            "san jose",
+            "nha trang",
+            "da nang",
+            "koh samui",
+            "koh phangan",
+            "bora bora",
+            "puerto rico",
+            "costa rica",
+            "el salvador",
+            "gran canaria",
+            "san sebastian",
         ]
         for loc in _MULTI_WORD_LOCATIONS:
             # Match word boundaries to avoid partial matches (e.g., "Hong Kong" vs "Hong Konger")
@@ -208,9 +239,19 @@ class EnginePart7:
         """
         filtered = list(rows)
         remaining: list[str] = []
-        metadata_fields = ("city", "landmark", "admin1", "country", "country_code", "camera_model", "lens_model", "file_name")
+        metadata_fields = (
+            "city",
+            "landmark",
+            "admin1",
+            "country",
+            "country_code",
+            "camera_model",
+            "lens_model",
+            "file_name",
+        )
 
         import logging
+
         logger = logging.getLogger(__name__)
 
         for term in semantic_terms:
@@ -229,16 +270,13 @@ class EnginePart7:
                     continue
             is_location = self._is_strictly_location_name(needle)
             if is_location:
-                matched_rows = [
-                    r for r in filtered if self._row_matches_location_place(r, needle)
-                ]
+                matched_rows = [r for r in filtered if self._row_matches_location_place(r, needle)]
             else:
                 matched_rows = [
                     r
                     for r in filtered
                     if any(
-                        self._contains_loose(str(self._row_value(r, field) or ""), needle)
-                        for field in metadata_fields
+                        self._contains_loose(str(self._row_value(r, field) or ""), needle) for field in metadata_fields
                     )
                 ]
             if matched_rows:
@@ -260,7 +298,9 @@ class EnginePart7:
                                 # Contradiction! (Has location, but it's different)
                                 contradiction_count += 1
                     if contradiction_count > 0:
-                        logger.warning(f"[SEARCH] Contradiction Filter: Excluded {contradiction_count} image(s) from '{needle}' due to conflicting GPS metadata")
+                        logger.warning(
+                            f"[SEARCH] Contradiction Filter: Excluded {contradiction_count} image(s) from '{needle}' due to conflicting GPS metadata"
+                        )
                     filtered = new_filtered
                 elif is_location and semantic_embeddings_enabled():
                     # Ambiguous bare token that is also a GeoNames place (e.g. "train"
@@ -531,11 +571,7 @@ class EnginePart7:
             sync_search = True
 
         missing_paths = [
-            p
-            for p in candidate_paths
-            if p
-            and os.path.isfile(p)
-            and self._canonical_path(p) not in found_paths
+            p for p in candidate_paths if p and os.path.isfile(p) and self._canonical_path(p) not in found_paths
         ]
 
         if sync_search:
@@ -565,21 +601,13 @@ class EnginePart7:
             if missing_paths:
                 cached_rows = self._metadata_rows_from_exif_cache(missing_paths)
                 rows.extend(cached_rows)
-                cached_canonical = {
-                    self._canonical_path(str(r["file_path"])) for r in cached_rows
-                }
-                still_missing = [
-                    p
-                    for p in missing_paths
-                    if self._canonical_path(p) not in cached_canonical
-                ]
+                cached_canonical = {self._canonical_path(str(r["file_path"])) for r in cached_rows}
+                still_missing = [p for p in missing_paths if self._canonical_path(p) not in cached_canonical]
                 if still_missing:
                     self._enqueue_metadata_backfill(still_missing)
         return rows
 
-    def _metadata_rows_from_exif_cache(
-        self, file_paths: Sequence[str]
-    ) -> list[dict[str, object]]:
+    def _metadata_rows_from_exif_cache(self, file_paths: Sequence[str]) -> list[dict[str, object]]:
         """Read-only EXIF cache rows for search (no disk extract on UI thread)."""
         out: list[dict[str, object]] = []
         if not file_paths:
@@ -596,9 +624,7 @@ class EnginePart7:
             if not isinstance(exif, dict):
                 continue
             raw_exif_data = exif.get("exif_data")
-            exif_data: dict[str, object] = (
-                raw_exif_data if isinstance(raw_exif_data, dict) else {}
-            )
+            exif_data: dict[str, object] = raw_exif_data if isinstance(raw_exif_data, dict) else {}
             out.append(
                 {
                     "file_path": p,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """XMP sidecar round-trip: every persisted control survives write -> load."""
+
 import os
 import shutil
 import sys
@@ -43,11 +44,20 @@ def main() -> int:
         adj = dict(DEFAULT_ADJUSTMENTS)
         adj[AS_SHOT_TEMP_KEY] = 5500.0
         edits = {
-            "Exposure2012": 1.25, "Contrast2012": 10.0, "Highlights2012": -45.0,
-            "Shadows2012": 60.0, "Whites2012": -20.0, "Blacks2012": 30.0,
-            "Temperature": 4800.0, "Tint": 12.0, "Saturation": 5.0,
-            "Vibrance": 15.0, "Sharpness": 40.0, "Clarity2012": 8.0,
-            "ColorNoiseReduction": 50.0, "DenoiseMethod": 1.0,
+            "Exposure2012": 1.25,
+            "Contrast2012": 10.0,
+            "Highlights2012": -45.0,
+            "Shadows2012": 60.0,
+            "Whites2012": -20.0,
+            "Blacks2012": 30.0,
+            "Temperature": 4800.0,
+            "Tint": 12.0,
+            "Saturation": 5.0,
+            "Vibrance": 15.0,
+            "Sharpness": 40.0,
+            "Clarity2012": 8.0,
+            "ColorNoiseReduction": 50.0,
+            "DenoiseMethod": 1.0,
             "DenoiseDetail": 75.0,
             "AIDenoiseAmount": 30.0,
             "LensCorrectionEnabled": 1.0,
@@ -56,7 +66,11 @@ def main() -> int:
             TONE_CURVE_GREEN_KEY: "0,0;128,110;255,255",
             TONE_CURVE_BLUE_KEY: "0,10;128,140;255,245",
         }
-        hsl = [k for k in DEFAULT_ADJUSTMENTS if k.startswith(("HueAdjustment", "SaturationAdjustment", "LuminanceAdjustment"))][:3]
+        hsl = [
+            k
+            for k in DEFAULT_ADJUSTMENTS
+            if k.startswith(("HueAdjustment", "SaturationAdjustment", "LuminanceAdjustment"))
+        ][:3]
         for k in hsl:
             edits[k] = 25.0
         adj.update(edits)

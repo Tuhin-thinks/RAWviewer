@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Plus AI denoise: edition gate, platform model preference, export flag plumbing."""
+
 from __future__ import annotations
 
 import os
@@ -56,9 +57,7 @@ def main() -> int:
     prev_env = os.environ.get("RAWVIEWER_EXPORT_SCUNET_ONNX")
     try:
         os.environ["RAWVIEWER_EXPORT_SCUNET_ONNX"] = "0"
-        out = process_linear_edit_buffer(
-            img, {"Exposure2012": 0.25}, preview=False, use_ai_denoise=True
-        )
+        out = process_linear_edit_buffer(img, {"Exposure2012": 0.25}, preview=False, use_ai_denoise=True)
         check(
             "use_ai_denoise with ONNX disabled still returns an image",
             out is not None and out.shape == img.shape,

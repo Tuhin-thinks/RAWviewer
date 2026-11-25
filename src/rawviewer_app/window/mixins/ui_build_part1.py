@@ -1,4 +1,5 @@
 """ui_build mixin, part 1 of 3 (2 methods, 60 lines)."""
+
 from __future__ import annotations
 
 import sys
@@ -21,7 +22,6 @@ class UiBuildPart1:
             return
         enabled = self._is_burst_grouping_enabled()
         try:
-
             color = theme.INK if enabled else theme.INK_FAINT
             btn.blockSignals(True)
             btn.setChecked(enabled)
@@ -40,9 +40,7 @@ class UiBuildPart1:
                 self.search_bottom_button.hide()
             else:
                 self.search_bottom_button.setVisible(
-                    bool(getattr(self, "image_files", None))
-                    and self._is_exif_sort_ready()
-                    and vm == "gallery"
+                    bool(getattr(self, "image_files", None)) and self._is_exif_sort_ready() and vm == "gallery"
                 )
         if hasattr(self, "sort_toggle_button"):
             if burst:

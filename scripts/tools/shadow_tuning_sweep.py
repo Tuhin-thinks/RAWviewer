@@ -6,6 +6,7 @@ globals in-process only.
 
 Usage: pixi run python3 scripts/tools/shadow_tuning_sweep.py <file.CR3> <out_dir>
 """
+
 import os
 import sys
 

@@ -304,9 +304,7 @@ def _wb_correction_from_jpeg(
         cv2 = _import_cv2()
         if cv2 is None:
             return None
-        arr = cv2.imdecode(
-            np.frombuffer(thumb_bytes, np.uint8), cv2.IMREAD_REDUCED_COLOR_8
-        )
+        arr = cv2.imdecode(np.frombuffer(thumb_bytes, np.uint8), cv2.IMREAD_REDUCED_COLOR_8)
         if arr is None or arr.ndim != 3:
             return None
 
@@ -351,20 +349,19 @@ def _wb_correction_from_jpeg(
             cam3 = np.stack([acc["R"], acc["G"] / max(n_g, 1), acc["B"]], -1)
             render = np.clip(cam3 @ m3.T, 0, 65535) / 65535.0
             lr = 0.2126 * render[..., 0] + 0.7152 * render[..., 1] + 0.0722 * render[..., 2]
-            mask = (
-                (lr > 0.01) & (lr < 0.6) & (lj > 0.01) & (lj < 0.6)
-                & (render > 1e-4).all(-1) & (jpg > 1e-4).all(-1)
-            )
+            mask = (lr > 0.01) & (lr < 0.6) & (lj > 0.01) & (lj < 0.6) & (render > 1e-4).all(-1) & (jpg > 1e-4).all(-1)
             if int(mask.sum()) < 200:
                 return None
-            dr = float(np.median(
-                np.log(render[..., 0][mask] / render[..., 1][mask])
-                - np.log(jpg[..., 0][mask] / jpg[..., 1][mask])
-            ))
-            db = float(np.median(
-                np.log(render[..., 2][mask] / render[..., 1][mask])
-                - np.log(jpg[..., 2][mask] / jpg[..., 1][mask])
-            ))
+            dr = float(
+                np.median(
+                    np.log(render[..., 0][mask] / render[..., 1][mask]) - np.log(jpg[..., 0][mask] / jpg[..., 1][mask])
+                )
+            )
+            db = float(
+                np.median(
+                    np.log(render[..., 2][mask] / render[..., 1][mask]) - np.log(jpg[..., 2][mask] / jpg[..., 1][mask])
+                )
+            )
             cbar = cam3.reshape(-1, 3)[mask.reshape(-1)].mean(axis=0)
             return dr, db, max(abs(dr), abs(db)), cbar
 
@@ -383,11 +380,7 @@ def _wb_correction_from_jpeg(
         best = None  # (first_dist, jpg, lj)
         for src in cand_imgs:
             jpg_t = _build_jpg(src)
-            lj_t = (
-                0.2126 * jpg_t[..., 0]
-                + 0.7152 * jpg_t[..., 1]
-                + 0.0722 * jpg_t[..., 2]
-            )
+            lj_t = 0.2126 * jpg_t[..., 0] + 0.7152 * jpg_t[..., 1] + 0.0722 * jpg_t[..., 2]
             m0 = _render_and_metric(cam_mul, jpg_t, lj_t)
             if m0 is None:
                 continue
@@ -826,8 +819,14 @@ def _unpack_raw_impl(
                     _WB_CORRECTION_CACHE[wb_key] = None
                 else:
                     result = _wb_correction_from_jpeg(
-                        file_path, thumb_bytes, mosaic, pattern, black,
-                        scale_mul, rgb_cam, cam_mul,
+                        file_path,
+                        thumb_bytes,
+                        mosaic,
+                        pattern,
+                        black,
+                        scale_mul,
+                        rgb_cam,
+                        cam_mul,
                     )
                     _WB_CORRECTION_CACHE[wb_key] = result
                     # Record the model verdict only from a real measurement:
@@ -898,8 +897,7 @@ def finish_full_decode(
             )
             if mp_cap > 0 and mosaic_mp > mp_cap:
                 logger.info(
-                    "[FAST_RAW] Skipping GPU finish_full for %s "
-                    "(%.1f MP > %.1f MP cap); using CPU",
+                    "[FAST_RAW] Skipping GPU finish_full for %s (%.1f MP > %.1f MP cap); using CPU",
                     os.path.basename(unpacked.file_path or ""),
                     mosaic_mp,
                     mp_cap,
@@ -984,12 +982,7 @@ def finish_full_decode(
 def _scale_luts(unpacked: UnpackedRaw) -> list:
     """Per-channel 16-bit LUTs implementing dcraw black-subtract + WB scale."""
     x = np.arange(65536, dtype=np.float64)
-    return [
-        np.clip((x - unpacked.black[c]) * unpacked.scale_mul[c], 0, 65535).astype(
-            np.uint16
-        )
-        for c in range(4)
-    ]
+    return [np.clip((x - unpacked.black[c]) * unpacked.scale_mul[c], 0, 65535).astype(np.uint16) for c in range(4)]
 
 
 def decode_half_from_unpacked(
@@ -1043,11 +1036,7 @@ def _decode_half_from_unpacked_impl(
             greens.append(scaled)
     if acc["R"] is None or acc["B"] is None or not greens:
         return None
-    green = (
-        greens[0]
-        if len(greens) == 1
-        else cv2.addWeighted(greens[0], 0.5, greens[1], 0.5, 0.0)
-    )
+    green = greens[0] if len(greens) == 1 else cv2.addWeighted(greens[0], 0.5, greens[1], 0.5, 0.0)
     _abort_if_cancelled()
     cam3 = cv2.merge([acc["R"], green, acc["B"]])
     # uint16 in/out: saturates to [0, 65535], same as the full-res path.
@@ -1076,7 +1065,11 @@ def try_fast_raw_decode(
         return None
     try:
         is_half = params.get("half_size", False)
-        supported = params_supported_half(params, return_linear=return_linear) if is_half else params_supported(params, return_linear=return_linear)
+        supported = (
+            params_supported_half(params, return_linear=return_linear)
+            if is_half
+            else params_supported(params, return_linear=return_linear)
+        )
         if not supported:
             logger.info(
                 "[FAST_RAW] params not supported, using rawpy: %s",
@@ -1126,10 +1119,14 @@ def try_fast_raw_decode(
                     # existing `except Exception` path, same as any other GPU-decode
                     # failure.
                     import torch_bootstrap
+
                     if not torch_bootstrap.wait_for_gpu_backend_ready(timeout=10.0):
                         raise RuntimeError("GPU backend not ready within timeout")
                     from gpu_raw_processor import try_gpu_decode_from_unpacked
-                    gpu_out = try_gpu_decode_from_unpacked(unpacked, cancel_check=cancel_check, return_linear=return_linear)
+
+                    gpu_out = try_gpu_decode_from_unpacked(
+                        unpacked, cancel_check=cancel_check, return_linear=return_linear
+                    )
                     if gpu_out is not None:
                         logger.info(
                             "[FAST_RAW] %s decoded (GPU) %dx%d in %.0fms (pattern=%s)",
@@ -1145,9 +1142,7 @@ def try_fast_raw_decode(
             except Exception as e:
                 logger.warning("[FAST_RAW] GPU decode attempt failed, falling back to CPU: %s", e)
 
-        out = finish_full_decode(
-            unpacked, cancel_check=cancel_check, return_linear=return_linear, prefer_gpu=False
-        )
+        out = finish_full_decode(unpacked, cancel_check=cancel_check, return_linear=return_linear, prefer_gpu=False)
         if out is None:
             return None
         logger.info(

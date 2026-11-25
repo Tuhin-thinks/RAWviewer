@@ -128,9 +128,7 @@ class CompositionGridGraphicsItem(QGraphicsItem):
         return QRectF(0, 0, max(0.0, self._w), max(0.0, self._h))
 
     def paint(self, painter: QPainter, option, widget=None) -> None:
-        draw_composition_grid(
-            painter, int(self._w), int(self._h), self._mode, cosmetic=True
-        )
+        draw_composition_grid(painter, int(self._w), int(self._h), self._mode, cosmetic=True)
 
     def set_grid(self, width: int, height: int, mode: str) -> None:
         if mode not in GRID_MODES:

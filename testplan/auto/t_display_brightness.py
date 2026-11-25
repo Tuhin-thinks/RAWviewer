@@ -4,6 +4,7 @@
 Does not change the live panel in CI. Live get() may return None on a desktop
 without DDC/WMI.
 """
+
 from __future__ import annotations
 
 import os

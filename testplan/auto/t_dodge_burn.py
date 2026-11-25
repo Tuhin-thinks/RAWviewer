@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Dodge & burn engine invariants: stamping, apply, edge-snap, persistence."""
+
 import os
 import shutil
 import sys
@@ -117,9 +118,7 @@ def main() -> int:
     split[:, :100] = 0.15  # dark left half
     mask_e = DodgeBurnMask.empty(120, 200)
     # Brush centered on dark side, large enough to geometrically cover the bright side
-    stamp_brush(
-        mask_e, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=True
-    )
+    stamp_brush(mask_e, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=True)
     left = float(np.abs(mask_e.data[60, 70]).mean()) if False else float(np.abs(mask_e.data[55:65, 60:80]).mean())
     right = float(np.abs(mask_e.data[55:65, 120:140]).mean())
     check(
@@ -128,9 +127,7 @@ def main() -> int:
         f"left={left:.4f} right={right:.4f}",
     )
     mask_plain = DodgeBurnMask.empty(120, 200)
-    stamp_brush(
-        mask_plain, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=False
-    )
+    stamp_brush(mask_plain, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=False)
     right_plain = float(np.abs(mask_plain.data[55:65, 120:140]).mean())
     check(
         "without edge-assist bright side receives more paint",

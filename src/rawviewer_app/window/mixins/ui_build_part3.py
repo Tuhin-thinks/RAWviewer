@@ -1,4 +1,5 @@
 """ui_build mixin, part 3 of 3 (8 methods, 229 lines)."""
+
 from __future__ import annotations
 
 import logging
@@ -35,19 +36,19 @@ class UiBuildPart3:
             return
 
         # File menu
-        file_menu = menubar.addMenu('File')
+        file_menu = menubar.addMenu("File")
 
         # Open action
-        open_action = QAction('Open', self)
+        open_action = QAction("Open", self)
         open_action.setShortcut(QKeySequence.StandardKey.Open)
-        open_action.setStatusTip('Open a RAW image file')
+        open_action.setStatusTip("Open a RAW image file")
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
 
         # Open Folder action
-        open_folder_action = QAction('Open Folder', self)
-        open_folder_action.setShortcut('Ctrl+Shift+O')
-        open_folder_action.setStatusTip('Open a folder of images')
+        open_folder_action = QAction("Open Folder", self)
+        open_folder_action.setShortcut("Ctrl+Shift+O")
+        open_folder_action.setStatusTip("Open a folder of images")
         open_folder_action.triggered.connect(self.open_folder)
         file_menu.addAction(open_folder_action)
 
@@ -66,15 +67,15 @@ class UiBuildPart3:
         file_menu.addSeparator()
 
         # Exit action
-        exit_action = QAction('Exit', self)
+        exit_action = QAction("Exit", self)
         exit_action.setShortcut(QKeySequence.StandardKey.Quit)
-        exit_action.setStatusTip('Exit application')
+        exit_action.setStatusTip("Exit application")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
         # Keyboard Shortcuts action (direct in menu bar)
-        shortcuts_action = QAction('Keyboard Shortcuts', self)
-        shortcuts_action.setStatusTip('Show keyboard shortcuts')
+        shortcuts_action = QAction("Keyboard Shortcuts", self)
+        shortcuts_action.setStatusTip("Show keyboard shortcuts")
         shortcuts_action.triggered.connect(self.show_keyboard_shortcuts)
         menubar.addAction(shortcuts_action)
 
@@ -89,9 +90,7 @@ class UiBuildPart3:
         """Open a file this app just created, in single view."""
         try:
             parent = getattr(self, "current_folder", None) or ""
-            if parent and _is_in_folder_scope(
-                os.path.dirname(os.path.abspath(path)), parent
-            ):
+            if parent and _is_in_folder_scope(os.path.dirname(os.path.abspath(path)), parent):
                 # Parent-fallback scope: the file may sit one level down; keep
                 # the opened folder as the session scope instead of flipping to
                 # the file's own directory.
@@ -105,9 +104,7 @@ class UiBuildPart3:
         except Exception:
             import logging
 
-            logging.getLogger(__name__).warning(
-                "[GALLERY] could not open %s", path, exc_info=True
-            )
+            logging.getLogger(__name__).warning("[GALLERY] could not open %s", path, exc_info=True)
 
     def convert_widget_to_image_coords(self, widget_pos):
         """Convert widget coordinates to full-resolution image coordinates"""
@@ -150,13 +147,11 @@ class UiBuildPart3:
     def _setup_navigation_state(self, requested_file_path, force_reload):
         """Setup navigation state (pause preloading, indexing, etc.)"""
         try:
-            if hasattr(self, 'gallery_view') and hasattr(self.gallery_view, 'pause_idle_preload'):
+            if hasattr(self, "gallery_view") and hasattr(self.gallery_view, "pause_idle_preload"):
                 self.gallery_view.pause_idle_preload()
-                idle_timer = getattr(self.gallery_view, '_idle_preload_timer', None)
+                idle_timer = getattr(self.gallery_view, "_idle_preload_timer", None)
                 if idle_timer is not None:
-                    idle_timer.start(
-                        _env_int("RAWVIEWER_SINGLE_VIEW_THUMB_PRELOAD_MS", 4000, minimum=1000)
-                    )
+                    idle_timer.start(_env_int("RAWVIEWER_SINGLE_VIEW_THUMB_PRELOAD_MS", 4000, minimum=1000))
         except Exception as e:
             logger.debug(f"[LOAD] Failed to pause gallery idle preload: {e}")
 
@@ -243,15 +238,19 @@ class UiBuildPart3:
         if start_path:
             start_abs = os.path.abspath(start_path)
             start_norm = _norm_path(start_abs)
-            if not any(_norm_path(fp) == start_norm for fp in image_files) and self.is_image_file(start_abs) and os.path.isfile(start_abs):
-                    image_files.append(start_abs)
-                    if start_abs not in file_stats:
-                        try:
-                            st = os.stat(start_abs)
-                            file_stats[start_abs] = (st.st_size, st.st_mtime)
-                        except OSError:
-                            file_stats[start_abs] = (0, 0)
-                    image_files = self._mtime_sort_image_files(image_files, file_stats)
+            if (
+                not any(_norm_path(fp) == start_norm for fp in image_files)
+                and self.is_image_file(start_abs)
+                and os.path.isfile(start_abs)
+            ):
+                image_files.append(start_abs)
+                if start_abs not in file_stats:
+                    try:
+                        st = os.stat(start_abs)
+                        file_stats[start_abs] = (st.st_size, st.st_mtime)
+                    except OSError:
+                        file_stats[start_abs] = (0, 0)
+                image_files = self._mtime_sort_image_files(image_files, file_stats)
             for i, fp in enumerate(image_files):
                 if _norm_path(fp) == start_norm:
                     start_idx = i

@@ -88,7 +88,6 @@ except Exception:
 lazy.register(sys.modules[__name__])
 
 
-
 if not _IS_GUI_MAIN_PROCESS:
     # Pool workers re-run the frozen binary; dismiss boot splash immediately, skip Qt.
     close_native_splash()
@@ -109,12 +108,11 @@ if _IS_GUI_MAIN_PROCESS:
         from PyQt6.QtWidgets import QApplication, QSplashScreen
 
         # Silence qt.imageformats warnings, particularly for RAW files structured as TIFFs
-        QLoggingCategory.setFilterRules(
-            "qt.imageformats.warning=false\nqt.imageformats.tiff.warning=false"
-        )
+        QLoggingCategory.setFilterRules("qt.imageformats.warning=false\nqt.imageformats.tiff.warning=false")
 
         class RAWApplication(QApplication):  # type: ignore[no-redef]
             """Custom QApplication to handle macOS FileOpen events"""
+
             def __init__(self, argv: list[str]) -> None:
                 super().__init__(argv)
                 # Set explicit AppUserModelID on Windows so the taskbar groups and shows the app icon correctly
@@ -168,11 +166,7 @@ if _IS_GUI_MAIN_PROCESS:
 
         if _should_show_startup_splash():
             # SplashScreen keeps it out of the taskbar; Tool avoids an Alt+Tab entry.
-            _splash_flags = (
-                Qt.WindowType.SplashScreen
-                | Qt.WindowType.FramelessWindowHint
-                | Qt.WindowType.Tool
-            )
+            _splash_flags = Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
             if sys.platform != "darwin":
                 _splash_flags |= Qt.WindowType.WindowStaysOnTopHint
             state._startup_splash = QSplashScreen(_splash_pixmap, _splash_flags)
@@ -190,7 +184,6 @@ if _IS_GUI_MAIN_PROCESS:
 # Early diagnostics: redirect stdio and optionally install crash dumps.
 _redirect_stdio_to_file_if_needed()
 _enable_fatal_crash_dump_if_needed()
-
 
 
 # Public facade: names historically importable from ``main``.
@@ -342,7 +335,9 @@ def main() -> None:
         try:
             # Try to get real platform info, but don't block if it fails
             import threading
+
             platform_result: list[Any] = [None, None]
+
             def get_platform_info() -> None:
                 try:
                     platform_result[0] = platform.system()
@@ -372,7 +367,7 @@ def main() -> None:
 
     # Set up Windows exception handler to catch access violations
     # Use platform_system variable to avoid calling platform.system() again
-    is_windows = (platform_system == 'Windows')
+    is_windows = platform_system == "Windows"
     if is_windows:
         safe_print("  [Windows] Importing ctypes...", flush=True)
         safe_print("  [Windows] ctypes imported", flush=True)
@@ -390,11 +385,11 @@ def main() -> None:
                 error_msg = f"Access Violation (0xC0000005) at address {exception_address}"
                 logger.critical(f"Windows Access Violation: {error_msg}")
                 logger.critical("This usually indicates accessing invalid memory (null pointer, freed object, etc.)")
-                safe_print_err(f"\n{'='*80}")
+                safe_print_err(f"\n{'=' * 80}")
                 safe_print_err("WINDOWS ACCESS VIOLATION")
-                safe_print_err(f"{'='*80}")
+                safe_print_err(f"{'=' * 80}")
                 safe_print_err(f"{error_msg}")
-                safe_print_err(f"{'='*80}\n")
+                safe_print_err(f"{'=' * 80}\n")
                 return 1  # EXCEPTION_EXECUTE_HANDLER
             return 0  # EXCEPTION_CONTINUE_SEARCH
 
@@ -423,11 +418,7 @@ def main() -> None:
                 splash_pixmap = _make_splash_pixmap()
                 splash = QSplashScreen(
                     splash_pixmap,
-                    (
-                        Qt.WindowType.SplashScreen
-                        | Qt.WindowType.FramelessWindowHint
-                        | Qt.WindowType.Tool
-                    )
+                    (Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
                     if sys.platform == "darwin"
                     else (
                         Qt.WindowType.SplashScreen
@@ -505,12 +496,8 @@ def main() -> None:
             # session-restore nav preload; this paint-based path is the
             # fallback when restore staging did not run (empty session, etc.).
             viewer._defer_until_first_paint(
-                lambda: viewer._schedule_deferred_gpu_backend_import(
-                    reason="after_first_paint"
-                ),
-                fallback_ms=_env_int(
-                    "RAWVIEWER_GPU_IMPORT_DEFER_FALLBACK_MS", 8000, minimum=0
-                ),
+                lambda: viewer._schedule_deferred_gpu_backend_import(reason="after_first_paint"),
+                fallback_ms=_env_int("RAWVIEWER_GPU_IMPORT_DEFER_FALLBACK_MS", 8000, minimum=0),
                 label="gpu_backend_import",
             )
 
@@ -540,9 +527,9 @@ def main() -> None:
             logger.critical("[MAIN]   2. Qt object accessed from wrong thread")
             logger.critical("[MAIN]   3. Memory corruption in rawpy/Qt")
             logger.critical("[MAIN]   4. Signal/slot connection to deleted object")
-            safe_print_err(f"\n{'='*80}")
+            safe_print_err(f"\n{'=' * 80}")
             safe_print_err("ACCESS VIOLATION DETECTED (0xC0000005)")
-            safe_print_err(f"{'='*80}")
+            safe_print_err(f"{'=' * 80}")
             safe_print_err("This error indicates the application tried to access invalid memory.")
             safe_print_err("Possible causes:")
             safe_print_err("  - Qt object accessed from wrong thread")
@@ -550,7 +537,7 @@ def main() -> None:
             safe_print_err("  - Memory corruption in rawpy or Qt library")
             safe_print_err("  - Signal connected to deleted slot")
             safe_print_err("\nCheck the log file for detailed information.")
-            safe_print_err(f"{'='*80}\n")
+            safe_print_err(f"{'=' * 80}\n")
 
         logger.info(f"[MAIN] Application exited with code: {exit_code}")
         # Use os._exit to force kill any lingering background threads (like database connections or rawpy)
@@ -575,13 +562,13 @@ def main() -> None:
         logger.critical(f"Full traceback:\n{error_traceback}")
 
         # Also print to console/stderr so it's visible even if logging fails
-        safe_print_err(f"\n{'='*80}")
+        safe_print_err(f"\n{'=' * 80}")
         safe_print_err("FATAL ERROR")
-        safe_print_err(f"{'='*80}")
+        safe_print_err(f"{'=' * 80}")
         safe_print_err(f"{error_msg}")
         safe_print_err("\nFull traceback:")
         safe_print_err(f"{error_traceback}")
-        safe_print_err(f"{'='*80}\n")
+        safe_print_err(f"{'=' * 80}\n")
 
         # Try to show error dialog if possible
         try:
@@ -590,6 +577,7 @@ def main() -> None:
 
             if app is not None:
                 from PyQt6.QtWidgets import QMessageBox
+
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Icon.Critical)
                 msg.setWindowTitle("Fatal Error")
@@ -602,7 +590,7 @@ def main() -> None:
         sys.exit(1)
 
 
-if __name__ == '__main__' and _IS_GUI_MAIN_PROCESS:
+if __name__ == "__main__" and _IS_GUI_MAIN_PROCESS:
     # Print startup message to console immediately
     safe_print("=" * 80, flush=True)
     safe_print("RAWviewer Starting...", flush=True)
@@ -625,15 +613,17 @@ if __name__ == '__main__' and _IS_GUI_MAIN_PROCESS:
     except Exception as e:
         safe_print_err(f"ERROR: Failed to setup logging: {e}", flush=True)
         import traceback
+
         safe_print_err(f"Traceback: {traceback.format_exc()}", flush=True)
 
     try:
         safe_print("Calling main()...", flush=True)
         main()
     except Exception as e:
-        safe_print_err(f"\n{'='*80}", flush=True)
+        safe_print_err(f"\n{'=' * 80}", flush=True)
         safe_print_err(f"FATAL ERROR in main(): {type(e).__name__}: {e}", flush=True)
         import traceback
+
         safe_print_err(f"Traceback:\n{traceback.format_exc()}", flush=True)
-        safe_print_err(f"{'='*80}\n", flush=True)
+        safe_print_err(f"{'=' * 80}\n", flush=True)
         raise

@@ -80,8 +80,7 @@ def safe_print(*args: Any, **kwargs: Any) -> None:
             # Retry with error-character substitution (e.g. ❌ on cp1252)
             try:
                 args2 = tuple(
-                    a.encode(sys.stdout.encoding, "replace").decode(sys.stdout.encoding)
-                    if isinstance(a, str) else a
+                    a.encode(sys.stdout.encoding, "replace").decode(sys.stdout.encoding) if isinstance(a, str) else a
                     for a in args
                 )
                 print(*args2, **kwargs)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Editor mode: a failed/unsupported edit-base decode must silently skip
 to the next editable image, not leave the editor stuck with an error."""
+
 import os
 import sys
 

@@ -1,4 +1,5 @@
 """display mixin, part 3 of 6 (21 methods, 830 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -28,6 +29,7 @@ class DisplayPart3:
         import logging
         import os
         import time
+
         logger = logging.getLogger(__name__)
         if getattr(self, "view_mode", "single") == "gallery":
             logger.debug("[VIEW_MODE] _show_single_view skipped; view_mode is gallery")
@@ -42,6 +44,7 @@ class DisplayPart3:
             self._schedule_deferred_gpu_backend_import(reason="fallback")
         try:
             from PyQt6.QtCore import QTimer
+
             self._pause_semantic_indexing_deferred()
             if hasattr(self, "_resume_indexing_timer") and self._resume_indexing_timer:
                 self._resume_indexing_timer.stop()
@@ -58,7 +61,7 @@ class DisplayPart3:
             self._idle_display_prefetch_timer.stop()
         self._pause_prefetch_for_navigation()
         # Stop all gallery background loading when switching to single view
-        if hasattr(self, 'gallery_justified') and self.gallery_justified:
+        if hasattr(self, "gallery_justified") and self.gallery_justified:
             gj = self.gallery_justified
             gj._background_loading_active = False
             if hasattr(gj, "_stop_layout_rebuild_timers"):
@@ -68,7 +71,7 @@ class DisplayPart3:
             elif hasattr(gj, "suspend_thumbnail_display"):
                 gj.suspend_thumbnail_display()
             # Cancel any pending background loads
-            if hasattr(self.gallery_justified, '_load_queue'):
+            if hasattr(self.gallery_justified, "_load_queue"):
                 self.gallery_justified._load_queue.clear()
             # Drop queued gallery thumbnail decodes (all CURRENT priority) so the
             # image being opened is not stuck behind dozens of them in the worker
@@ -95,7 +98,7 @@ class DisplayPart3:
 
         # Step 1: Hide gallery widget
         hide_start = time.time()
-        if hasattr(self, 'gallery_widget') and self.gallery_widget:
+        if hasattr(self, "gallery_widget") and self.gallery_widget:
             self.gallery_widget.hide()
             self._position_gallery_frame_grip()
         if hasattr(self, "compare_widget") and self.compare_widget:
@@ -105,7 +108,7 @@ class DisplayPart3:
 
         # Step 2: Show single-image area (scroll + histogram)
         show_start = time.time()
-        if hasattr(self, 'single_view_container') and self.single_view_container:
+        if hasattr(self, "single_view_container") and self.single_view_container:
             self.single_view_container.show()
             if hasattr(self.single_view_container, "_layout_filmstrip"):
                 self.single_view_container._layout_filmstrip()
@@ -118,25 +121,25 @@ class DisplayPart3:
         # Step 3: Show UI elements
         ui_start = time.time()
         # Show status bar footer (metadata and image counter)
-        if hasattr(self, 'status_bar'):
+        if hasattr(self, "status_bar"):
             self.status_bar.show()
-        if hasattr(self, 'status_counter_label'):
+        if hasattr(self, "status_counter_label"):
             self._refresh_image_counter()
 
         # In single view mode: hide sort button and size slider, show Gallery button only if EXIF sort is ready
-        if hasattr(self, 'sort_toggle_button'):
+        if hasattr(self, "sort_toggle_button"):
             self.sort_toggle_button.hide()
-        if hasattr(self, 'size_slider'):
+        if hasattr(self, "size_slider"):
             self.size_slider.hide()
 
-        if hasattr(self, 'view_mode_button'):
+        if hasattr(self, "view_mode_button"):
             self.view_mode_button.setVisible(self._is_exif_sort_ready())
         if hasattr(self, "search_bottom_button"):
             self.search_bottom_button.setVisible(bool(self.image_files) and self._is_exif_sort_ready())
         # Update icon if using qtawesome
         if qta is not None:
             try:
-                gallery_icon = _qta_icon('fa5s.th', color=theme.INK_MUTED)
+                gallery_icon = _qta_icon("fa5s.th", color=theme.INK_MUTED)
                 self.view_mode_button.setIcon(gallery_icon)
                 self.view_mode_button.setIconSize(QSize(20, 20))
                 self.view_mode_button.setText("")  # Clear text if using icon
@@ -159,9 +162,8 @@ class DisplayPart3:
             last_path = getattr(self, "_last_loaded_path", None)
             displayed_path = getattr(self, "_displayed_content_path", None)
             from_gallery = getattr(self, "_loading_from_gallery", False)
-            path_changed = (
-                _norm_path(path) != _norm_path(last_path or "")
-                or _norm_path(path) != _norm_path(displayed_path or "")
+            path_changed = _norm_path(path) != _norm_path(last_path or "") or _norm_path(path) != _norm_path(
+                displayed_path or ""
             )
 
             gallery_instant = False
@@ -185,8 +187,7 @@ class DisplayPart3:
                 and self._single_view_pixels_on_screen(path)
             ):
                 logger.info(
-                    "[VIEW_MODE] Gallery→single: display-quality preview already painted, "
-                    "skipping load_raw_image"
+                    "[VIEW_MODE] Gallery→single: display-quality preview already painted, skipping load_raw_image"
                 )
                 self._finish_gallery_to_single_without_redisplay(path)
                 self.update_status_bar()
@@ -200,10 +201,7 @@ class DisplayPart3:
                             getattr(self, "_base_display_pixmap", None) is not None
                             and not self._base_display_pixmap.isNull()
                         )
-                        or (
-                            getattr(self, "current_pixmap", None) is not None
-                            and not self.current_pixmap.isNull()
-                        )
+                        or (getattr(self, "current_pixmap", None) is not None and not self.current_pixmap.isNull())
                     )
                 )
 
@@ -222,9 +220,7 @@ class DisplayPart3:
                         self.load_raw_image(self.current_file_path)
                     if hasattr(self, "loading_overlay"):
                         self.loading_overlay.hide_loading()
-                    logger.info(
-                        "[VIEW_MODE] Updating status bar to ensure metadata is displayed"
-                    )
+                    logger.info("[VIEW_MODE] Updating status bar to ensure metadata is displayed")
                     self.update_status_bar()
                 else:
                     cached_pixmap = None
@@ -233,10 +229,7 @@ class DisplayPart3:
                             if hasattr(self, "image_cache"):
                                 cached_pixmap = self.image_cache.get_pixmap(path)
                                 if cached_pixmap and not cached_pixmap.isNull():
-                                    logger.info(
-                                        "[VIEW_MODE] Using cached pixmap from image cache "
-                                        "for instant display"
-                                    )
+                                    logger.info("[VIEW_MODE] Using cached pixmap from image cache for instant display")
                                     # Cached pixmaps already have orientation applied, do not re-apply
                                     self._orientation_already_applied = True
                                     self.display_pixmap(cached_pixmap)
@@ -248,31 +241,24 @@ class DisplayPart3:
                     if getattr(self, "_skip_next_single_view_load", False):
                         self._skip_next_single_view_load = False
                         logger.info(
-                            "[VIEW_MODE] Skipping load_raw_image for %s "
-                            "(fast-open decode already started)",
+                            "[VIEW_MODE] Skipping load_raw_image for %s (fast-open decode already started)",
                             os.path.basename(path),
                         )
                     elif (
                         not from_gallery
-                        and _norm_path(path)
-                        == _norm_path(
-                            getattr(self, "_single_view_load_request_path", "") or ""
-                        )
+                        and _norm_path(path) == _norm_path(getattr(self, "_single_view_load_request_path", "") or "")
                         and getattr(self, "_single_view_first_render_logged", False)
                         and self._single_view_pixels_on_screen(path)
                     ):
                         logger.info(
-                            "[VIEW_MODE] Skipping load_raw_image for %s "
-                            "(first-render already on screen)",
+                            "[VIEW_MODE] Skipping load_raw_image for %s (first-render already on screen)",
                             os.path.basename(path),
                         )
                         if hasattr(self, "loading_overlay"):
                             self.loading_overlay.hide_loading()
                         self.update_status_bar()
                     else:
-                        logger.info(
-                            f"[VIEW_MODE] Triggering load_raw_image for {os.path.basename(path)}"
-                        )
+                        logger.info(f"[VIEW_MODE] Triggering load_raw_image for {os.path.basename(path)}")
                         self.load_raw_image(path)
             load_time = time.time() - load_start
             logger.info(f"[VIEW_MODE] Step 4: Image reload completed (elapsed: {load_time:.3f}s)")
@@ -303,6 +289,7 @@ class DisplayPart3:
         Handles all edge cases and ensures correct format.
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
@@ -332,7 +319,7 @@ class DisplayPart3:
                 return None
 
             # Ensure contiguous and uint8
-            if not numpy_array.flags['C_CONTIGUOUS']:
+            if not numpy_array.flags["C_CONTIGUOUS"]:
                 numpy_array = np.ascontiguousarray(numpy_array)
 
             if numpy_array.dtype == np.uint16:
@@ -340,9 +327,7 @@ class DisplayPart3:
             elif np.issubdtype(numpy_array.dtype, np.floating):
                 from raw_adjustments.tone_recovery import _encode_srgb8
 
-                numpy_array = _encode_srgb8(
-                    np.clip(numpy_array.astype(np.float32), 0.0, None)
-                )
+                numpy_array = _encode_srgb8(np.clip(numpy_array.astype(np.float32), 0.0, None))
             elif numpy_array.dtype != np.uint8:
                 numpy_array = np.clip(numpy_array, 0, 255).astype(np.uint8)
 
@@ -376,6 +361,7 @@ class DisplayPart3:
         except Exception as e:
             logger.warning(f"[GALLERY] Error converting numpy to QPixmap: {e}")
             import traceback
+
             logger.debug(f"Traceback: {traceback.format_exc()}")
             return None
 
@@ -406,8 +392,7 @@ class DisplayPart3:
                 self.last_pan_point = ev.globalPosition().toPoint()
                 self.start_scroll_x = self.scroll_area.horizontalScrollBar().value()
                 self.start_scroll_y = self.scroll_area.verticalScrollBar().value()
-                self.image_label.setCursor(
-                    QCursor(Qt.CursorShape.ClosedHandCursor))
+                self.image_label.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
             self.setFocus()
 
     def image_mouse_move_event(self, ev):
@@ -439,6 +424,7 @@ class DisplayPart3:
         # Defer the scroll update to the next event loop iteration to ensure
         # the scroll area layout is fully updated and scrollbars have correct maximums.
         from PyQt6.QtCore import QTimer
+
         QTimer.singleShot(0, self._complete_zoom_to_point)
 
     def _complete_zoom_to_point(self):
@@ -520,10 +506,8 @@ class DisplayPart3:
             scroll_y = target_y - round(scroll_area_size.height() / 2)
 
             # Clamp to valid range
-            max_scroll_x = max(0, image_size.width() -
-                               scroll_area_size.width())
-            max_scroll_y = max(0, image_size.height() -
-                               scroll_area_size.height())
+            max_scroll_x = max(0, image_size.width() - scroll_area_size.width())
+            max_scroll_y = max(0, image_size.height() - scroll_area_size.height())
 
             scroll_x = max(0, min(scroll_x, max_scroll_x))
             scroll_y = max(0, min(scroll_y, max_scroll_y))
@@ -557,9 +541,7 @@ class DisplayPart3:
         safe_height = max(1, scaled_height)
 
         scaled_pixmap = self.current_pixmap.scaled(
-            safe_width, safe_height,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
+            safe_width, safe_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
         )
 
         # Set the scaled pixmap
@@ -568,7 +550,7 @@ class DisplayPart3:
         # Apply zoom center point and panning
         if self.zoom_center_point is not None:
             # Check if we have restored scroll positions from navigation
-            if hasattr(self, '_restore_start_scroll_x') and self._restore_start_scroll_x is not None:
+            if hasattr(self, "_restore_start_scroll_x") and self._restore_start_scroll_x is not None:
                 # Use the restored scroll positions directly
                 scroll_x = self._restore_start_scroll_x
                 scroll_y = self._restore_start_scroll_y
@@ -595,13 +577,11 @@ class DisplayPart3:
                 image_size = scaled_pixmap.size()
 
                 # Convert image coordinates to scaled coordinates
-                center_x = int(self.zoom_center_point.x()
-                               * self.current_zoom_level)
-                center_y = int(self.zoom_center_point.y()
-                               * self.current_zoom_level)
+                center_x = int(self.zoom_center_point.x() * self.current_zoom_level)
+                center_y = int(self.zoom_center_point.y() * self.current_zoom_level)
 
                 # Calculate scroll position
-                if hasattr(self, 'zoom_cursor_offset') and self.zoom_cursor_offset:
+                if hasattr(self, "zoom_cursor_offset") and self.zoom_cursor_offset:
                     scroll_x = center_x - self.zoom_cursor_offset.x()
                     scroll_y = center_y - self.zoom_cursor_offset.y()
                     # Clear it after use so it doesn't affect other zoom actions (like double-click)
@@ -672,23 +652,19 @@ class DisplayPart3:
         """Apply a deferred Space/double-click zoom once full-res work completes or stalls."""
         if getattr(self, "_workflow_toggle_fit_until_display", False):
             return
-        if _norm_path(file_path or "") != _norm_path(
-            getattr(self, "current_file_path", "") or ""
-        ):
+        if _norm_path(file_path or "") != _norm_path(getattr(self, "current_file_path", "") or ""):
             return
         gv = getattr(self, "gpu_view", None)
         pm = getattr(self, "current_pixmap", None)
         if gv is not None and pm is not None and not pm.isNull():
-            if self._pending_zoom_ready_for_pixmap(pm, file_path) and self._apply_pending_gpu_point_zoom_in_place(pm, gv):
-                    return
-            if getattr(self, "_focus_zoom_anchor_active", False) or getattr(
-                self, "_pending_zoom_focus_subject", False
+            if self._pending_zoom_ready_for_pixmap(pm, file_path) and self._apply_pending_gpu_point_zoom_in_place(
+                pm, gv
             ):
+                return
+            if getattr(self, "_focus_zoom_anchor_active", False) or getattr(self, "_pending_zoom_focus_subject", False):
                 if self._apply_pending_gpu_point_zoom_in_place(pm, gv):
                     return
-                if self._single_view_is_fit_mode() or getattr(
-                    self, "_pending_zoom", False
-                ):
+                if self._single_view_is_fit_mode() or getattr(self, "_pending_zoom", False):
                     target = self._focus_zoom_target_for_pixmap(pm)
                     if target is not None:
                         gv.set_pixmap_zoomed_at(
@@ -702,9 +678,7 @@ class DisplayPart3:
                         self.current_zoom_level = float(gv.current_scale())
                 self._finish_focus_zoom_anchor_if_sensor_res()
                 return
-        if getattr(self, "_pending_zoom", False) or (
-            gv is not None and getattr(gv, "_zoom_intent_100", False)
-        ):
+        if getattr(self, "_pending_zoom", False) or (gv is not None and getattr(gv, "_zoom_intent_100", False)):
             self._gpu_zoom_in_to_point_finish()
 
     def _sync_displayed_half_size_flag(self, file_path: str | None = None) -> None:
@@ -756,17 +730,13 @@ class DisplayPart3:
         self.display_numpy_image(cached_full)
         self._is_half_size_displayed = False
         self._smooth_zoom_full_request_sent = False
-        if old_size is not None and self.current_pixmap is not None and getattr(self, "zoom_center_point", None) is not None:
-            scale_x = (
-                self.current_pixmap.width() / old_size.width()
-                if old_size.width() > 0
-                else 1.0
-            )
-            scale_y = (
-                self.current_pixmap.height() / old_size.height()
-                if old_size.height() > 0
-                else 1.0
-            )
+        if (
+            old_size is not None
+            and self.current_pixmap is not None
+            and getattr(self, "zoom_center_point", None) is not None
+        ):
+            scale_x = self.current_pixmap.width() / old_size.width() if old_size.width() > 0 else 1.0
+            scale_y = self.current_pixmap.height() / old_size.height() if old_size.height() > 0 else 1.0
             self.zoom_center_point = QPoint(
                 int(self.zoom_center_point.x() * scale_x),
                 int(self.zoom_center_point.y() * scale_y),
@@ -783,9 +753,7 @@ class DisplayPart3:
         if getattr(self, "_full_resolution_loading", False):
             self._pending_zoom = True
             self._pending_zoom_center = getattr(self, "zoom_center_point", None)
-            self._pending_zoom_thumbnail_size = (
-                self.current_pixmap.size() if self.current_pixmap else None
-            )
+            self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
             gv = getattr(self, "gpu_view", None)
             if gv is not None:
                 gv._zoom_intent_100 = True
@@ -793,9 +761,7 @@ class DisplayPart3:
         self._load_full_resolution_on_demand()
         self._pending_zoom = True
         self._pending_zoom_center = getattr(self, "zoom_center_point", None)
-        self._pending_zoom_thumbnail_size = (
-            self.current_pixmap.size() if self.current_pixmap else None
-        )
+        self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
         gv = getattr(self, "gpu_view", None)
         if gv is not None:
             gv._zoom_intent_100 = True

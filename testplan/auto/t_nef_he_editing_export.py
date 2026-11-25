@@ -7,6 +7,7 @@ display-referred edit base. Nikon HE/HE* and Sony ARW6 (before the packaging
 LibRaw pin) are the main cases. Composite DNGs that prefer embedded preview
 remain browse-only.
 """
+
 import inspect
 import os
 import sys
@@ -37,8 +38,7 @@ def main() -> int:
     )
     check(
         "unsupported-paths set does not refuse Adjust",
-        "if key in _LIBRAW_UNSUPPORTED_PATHS" not in src
-        and "key in _LIBRAW_UNSUPPORTED_PATHS" not in src,
+        "if key in _LIBRAW_UNSUPPORTED_PATHS" not in src and "key in _LIBRAW_UNSUPPORTED_PATHS" not in src,
         "that set is exactly the embedded-JPEG edit fallback population",
     )
     check(
@@ -81,8 +81,7 @@ def main() -> int:
     )
     check(
         "LibRaw unsupported uses LibRawFileUnsupportedError",
-        "_is_libraw_unsupported_error" in impl
-        or "LibRawFileUnsupportedError" in impl,
+        "_is_libraw_unsupported_error" in impl or "LibRawFileUnsupportedError" in impl,
     )
 
     # --- _nef_he_compressed helper still works for browse detection ---

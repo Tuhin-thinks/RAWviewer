@@ -49,9 +49,7 @@ class ToneCurveWidget(QWidget):
 
     def load_serial(self, serial: str) -> None:
         pts = deserialize_tone_curve_points(serial)
-        self._points = (
-            normalize_tone_curve_points(pts) if pts else default_tone_curve_points()
-        )
+        self._points = normalize_tone_curve_points(pts) if pts else default_tone_curve_points()
         self.update()
 
     def reset_linear(self) -> None:

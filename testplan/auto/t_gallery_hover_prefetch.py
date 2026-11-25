@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gallery hover-prefetch: warms a RAW's full decode when the cursor rests
 on a static tile, but never fires because of scroll-induced tile changes."""
+
 import os
 import sys
 

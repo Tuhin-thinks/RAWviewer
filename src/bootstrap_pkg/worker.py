@@ -1,4 +1,5 @@
 """InstallWorker: background installation logic."""
+
 from __future__ import annotations
 
 import os
@@ -105,9 +106,7 @@ class InstallWorker(QObject):
             manifest_name = f"pixi-{effective_mode}.toml"
             manifest_source = os.path.join(BUNDLE_DIR, manifest_name)
             if not os.path.isfile(manifest_source):
-                manifest_source = os.path.join(
-                    BUNDLE_DIR, f"pixi-{self.install_mode}.toml"
-                )
+                manifest_source = os.path.join(BUNDLE_DIR, f"pixi-{self.install_mode}.toml")
             if not os.path.isfile(manifest_source):
                 manifest_source = os.path.join(BUNDLE_DIR, "pixi.toml")
             shutil.copy2(manifest_source, os.path.join(target_dir, "pixi.toml"))
@@ -116,9 +115,7 @@ class InstallWorker(QObject):
             # (~2.4 GB+) or a mismatched CuPy/DirectML stack must not linger.
             pixi_env_root = os.path.join(target_dir, ".pixi")
             if os.path.isdir(pixi_env_root):
-                self.log_signal.emit(
-                    f"{effective_mode} install: clearing previous Pixi environment..."
-                )
+                self.log_signal.emit(f"{effective_mode} install: clearing previous Pixi environment...")
                 shutil.rmtree(pixi_env_root, ignore_errors=True)
 
             # Drop stale BYO config from older installers (external torch binding).
@@ -174,22 +171,16 @@ class InstallWorker(QObject):
             # Easy-to-find cache wipe next to RAWviewer.exe / uninstall.bat
             clear_src = os.path.join(BUNDLE_DIR, "clear_cache.bat")
             if not os.path.isfile(clear_src):
-                clear_src = os.path.join(
-                    BUNDLE_DIR, "scripts", "Launch", "windows", "clear_cache_user.bat"
-                )
+                clear_src = os.path.join(BUNDLE_DIR, "scripts", "Launch", "windows", "clear_cache_user.bat")
             if os.path.isfile(clear_src):
                 shutil.copy2(clear_src, os.path.join(target_dir, "clear_cache.bat"))
 
             # Debug-log launcher for freeze / gallery troubleshooting
             debug_log_src = os.path.join(BUNDLE_DIR, "run_with_debug_log.bat")
             if not os.path.isfile(debug_log_src):
-                debug_log_src = os.path.join(
-                    BUNDLE_DIR, "scripts", "Launch", "windows", "run_with_debug_log.bat"
-                )
+                debug_log_src = os.path.join(BUNDLE_DIR, "scripts", "Launch", "windows", "run_with_debug_log.bat")
             if os.path.isfile(debug_log_src):
-                shutil.copy2(
-                    debug_log_src, os.path.join(target_dir, "run_with_debug_log.bat")
-                )
+                shutil.copy2(debug_log_src, os.path.join(target_dir, "run_with_debug_log.bat"))
 
             target_exe = os.path.join(target_dir, "RAWviewer.exe")
             launcher_stub_src = os.path.join(BUNDLE_DIR, "RAWviewer.exe")
@@ -204,13 +195,9 @@ class InstallWorker(QObject):
                     # dirs_exist_ok: if the rmtree above silently failed on a
                     # still-held handle, overwrite in place instead of dying
                     # with WinError 183 ("file already exists").
-                    shutil.copytree(
-                        launcher_runtime_src, launcher_runtime_dst, dirs_exist_ok=True
-                    )
+                    shutil.copytree(launcher_runtime_src, launcher_runtime_dst, dirs_exist_ok=True)
             else:
-                self.log_signal.emit(
-                    "Warning: launcher stub missing from installer; creating launcher.vbs fallback."
-                )
+                self.log_signal.emit("Warning: launcher stub missing from installer; creating launcher.vbs fallback.")
 
             setup_exe = os.path.join(target_dir, "RAWviewer_Setup.exe")
             if getattr(sys, "frozen", False):
@@ -224,9 +211,7 @@ class InstallWorker(QObject):
             pixi_exe = os.path.join(pixi_dir, "pixi.exe")
 
             if not os.path.exists(pixi_exe):
-                self.log_signal.emit(
-                    f"Downloading Pixi environment manager (v{PIXI_VERSION})..."
-                )
+                self.log_signal.emit(f"Downloading Pixi environment manager (v{PIXI_VERSION})...")
                 zip_path = os.path.join(pixi_dir, "pixi.zip")
                 if not _download_file_with_retry(PIXI_DOWNLOAD_URL, zip_path, self.log_signal.emit):
                     _cleanup_partial_install(target_dir, self.log_signal.emit)
@@ -241,14 +226,10 @@ class InstallWorker(QObject):
                         for info in zf.infolist():
                             name = info.filename.replace("\\", "/")
                             if name.startswith("/") or ".." in name.split("/"):
-                                raise zipfile.BadZipFile(
-                                    f"refusing unsafe zip member: {info.filename!r}"
-                                )
+                                raise zipfile.BadZipFile(f"refusing unsafe zip member: {info.filename!r}")
                             dest = os.path.realpath(os.path.join(pixi_dir, name))
                             if dest != root and not dest.startswith(root + os.sep):
-                                raise zipfile.BadZipFile(
-                                    f"refusing zip path escape: {info.filename!r}"
-                                )
+                                raise zipfile.BadZipFile(f"refusing zip path escape: {info.filename!r}")
                         zf.extractall(pixi_dir)
                     os.remove(zip_path)
                 except (OSError, zipfile.BadZipFile) as exc:
@@ -260,13 +241,9 @@ class InstallWorker(QObject):
             self.progress_signal.emit(5)
 
             if effective_mode == "cuda":
-                self.log_signal.emit(
-                    "Downloading Python dependencies (CuPy CUDA demosaic, no PyTorch)..."
-                )
+                self.log_signal.emit("Downloading Python dependencies (CuPy CUDA demosaic, no PyTorch)...")
             else:
-                self.log_signal.emit(
-                    "Downloading Python dependencies. This may take several minutes..."
-                )
+                self.log_signal.emit("Downloading Python dependencies. This may take several minutes...")
             pixi_code = _run_subprocess_with_retry(
                 [pixi_exe, "install", "-v"],
                 target_dir,
@@ -291,15 +268,11 @@ class InstallWorker(QObject):
 
             success_note = ""
             if self.install_mode == "lite":
-                self.log_signal.emit(
-                    "Standard install: skipping AI models (no semantic search or face detection)."
-                )
+                self.log_signal.emit("Standard install: skipping AI models (no semantic search or face detection).")
                 self.progress_label_signal.emit("Finishing setup...")
                 self.progress_signal.emit(100)
             else:
-                self.log_signal.emit(
-                    "Downloading AI models (~600 MB). This may take several minutes..."
-                )
+                self.log_signal.emit("Downloading AI models (~600 MB). This may take several minutes...")
                 self.progress_label_signal.emit("Downloading... 0%")
                 self._model_download_log_pct = -1
 
@@ -363,21 +336,19 @@ oWS.Run "{pixi_exe} run start-windowless", 0, False
                 )
                 installed_icon = _installed_app_icon_path(target_dir)
                 icon_for_shortcuts = (
-                    installed_icon
-                    if installed_icon
-                    else (target_exe if os.path.isfile(target_exe) else setup_exe)
+                    installed_icon if installed_icon else (target_exe if os.path.isfile(target_exe) else setup_exe)
                 )
 
                 vbs_script = f"""
 Set oWS = WScript.CreateObject("WScript.Shell")
-sLinkFile = "{os.path.join(desktop, 'RAWviewer.lnk')}"
+sLinkFile = "{os.path.join(desktop, "RAWviewer.lnk")}"
 Set oLink = oWS.CreateShortcut(sLinkFile)
 oLink.TargetPath = "{launch_target}"
 oLink.WorkingDirectory = "{target_dir}"
 oLink.IconLocation = "{icon_for_shortcuts}"
 oLink.Save
 
-sLinkFile2 = "{os.path.join(programs, 'RAWviewer.lnk')}"
+sLinkFile2 = "{os.path.join(programs, "RAWviewer.lnk")}"
 Set oLink2 = oWS.CreateShortcut(sLinkFile2)
 oLink2.TargetPath = "{launch_target}"
 oLink2.WorkingDirectory = "{target_dir}"
@@ -422,9 +393,7 @@ oLink2.Save
                     winreg.SetValueEx(key, "NoModify", 0, winreg.REG_DWORD, 1)
                     winreg.SetValueEx(key, "NoRepair", 0, winreg.REG_DWORD, 1)
                     winreg.SetValueEx(key, "WindowsInstaller", 0, winreg.REG_DWORD, 0)
-                self.log_signal.emit(
-                    f"Registered uninstaller (EstimatedSize={_human_bytes(est_kb * 1024)})."
-                )
+                self.log_signal.emit(f"Registered uninstaller (EstimatedSize={_human_bytes(est_kb * 1024)}).")
                 result = ctypes.wintypes.DWORD()
                 ctypes.windll.user32.SendMessageTimeoutW(
                     0xFFFF, 0x001A, 0, "Environment", 0x0002, 1000, ctypes.byref(result)
@@ -443,6 +412,7 @@ oLink2.Save
             _cleanup_partial_install(target_dir, self.log_signal.emit)
             self.finished.emit(False, "")
 
+
 # Darkroom palette — keep in sync with src/theme.py (installer exe is built
 # standalone, so the module is not imported here).
 _VOID = "#14120f"
@@ -458,5 +428,3 @@ _EMBER = "#d9691e"
 _EMBER_HOVER = "#e87f39"
 _HIST_R = "#e5484d"
 _HIST_G = "#3dd68c"
-
-

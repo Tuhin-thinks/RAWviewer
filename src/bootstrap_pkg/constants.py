@@ -1,4 +1,5 @@
 """Constants and imports for the bootstrap/installer package."""
+
 import os
 import sys
 
@@ -6,8 +7,7 @@ import sys
 # break installs mid-flight (do not use .../releases/latest/...).
 PIXI_VERSION = "0.73.0"
 PIXI_DOWNLOAD_URL = (
-    f"https://github.com/prefix-dev/pixi/releases/download/v{PIXI_VERSION}/"
-    "pixi-x86_64-pc-windows-msvc.zip"
+    f"https://github.com/prefix-dev/pixi/releases/download/v{PIXI_VERSION}/pixi-x86_64-pc-windows-msvc.zip"
 )
 DOWNLOAD_RETRIES = 3
 RETRY_DELAY_SEC = 3
@@ -20,13 +20,11 @@ MODEL_DOWNLOAD_PROGRESS_END = 100
 # Bundle directory — IMPORTANT: Keep PyInstaller bundle dir
 # __file__ is .../src/bootstrap_pkg/constants.py, so we need
 # dirname(dirname(dirname())) to reach the repo root.
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     BUNDLE_DIR = sys._MEIPASS
     EXE_DIR = os.path.dirname(sys.executable)
 else:
-    BUNDLE_DIR = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    BUNDLE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     EXE_DIR = BUNDLE_DIR
 
 FILE_ASSOC_PROGID = "RAWviewer.Image"

@@ -233,15 +233,11 @@ def _reference_dimensions(row: dict[str, Any]) -> tuple[int, int]:
     # Maker-specific or RAW sensor dimensions often provide the true full-res canvas.
     sw = _to_int(_pick(row, "SensorWidth", "RawImageWidth", "AFImageWidth", "ImageWidth"))
     # Nikon NEF and some bodies expose height as ImageLength only (no ImageHeight).
-    sh = _to_int(
-        _pick(row, "SensorHeight", "RawImageHeight", "AFImageHeight", "ImageHeight", "ImageLength")
-    )
+    sh = _to_int(_pick(row, "SensorHeight", "RawImageHeight", "AFImageHeight", "ImageHeight", "ImageLength"))
     return max(ew or 0, sw or 0), max(eh or 0, sh or 0)
 
 
-def _rotate_rect(
-    rect: tuple[int, int, int, int], iw: int, ih: int, orientation: int
-) -> tuple[int, int, int, int]:
+def _rotate_rect(rect: tuple[int, int, int, int], iw: int, ih: int, orientation: int) -> tuple[int, int, int, int]:
     """Rotate (l, t, w, h) from sensor space (iw x ih) to display space."""
     if orientation <= 1:
         return rect
@@ -399,8 +395,14 @@ def _rect_ref_nikon_initial(row: dict[str, Any], ref_w: int, ref_h: int) -> tupl
         return None
     # Heuristic: signed small values are not pixel boxes; skip unless plausible pixels
     if (
-        abs(ix) < 400 and abs(iy) < 400 and iw <= 256 and ih <= 256
-        and ix >= 0 and iy >= 0 and ix + iw <= ref_w + 4 and iy + ih <= ref_h + 4
+        abs(ix) < 400
+        and abs(iy) < 400
+        and iw <= 256
+        and ih <= 256
+        and ix >= 0
+        and iy >= 0
+        and ix + iw <= ref_w + 4
+        and iy + ih <= ref_h + 4
     ):
         return _clamp_rect(float(ix), float(iy), float(iw), float(ih), ref_w, ref_h)
     return None
@@ -500,8 +502,6 @@ def _nikon_afinfo2_rect_and_reference(
     return best[1], best[2], best[3]
 
 
-
-
 def _rect_ref_sony(row: dict[str, Any], ref_w: int, ref_h: int) -> tuple[int, int, int, int] | None:
     """
     Sony ``FocusLocation`` (Exiv2 / Sony1 or Sony2):
@@ -589,9 +589,7 @@ def _ltwh_in_pixmap(
     return _clamp_rect(left * sx, t * sy, w * sx, h * sy, pw, ph)
 
 
-def _ensure_min_display_ltwh(
-    ltwh: tuple[int, int, int, int], pw: int, ph: int
-) -> tuple[int, int, int, int]:
+def _ensure_min_display_ltwh(ltwh: tuple[int, int, int, int], pw: int, ph: int) -> tuple[int, int, int, int]:
     """
     Expand very thin / tiny rectangles in **pixmap** space so outlines are not a
     single pixel dot or line after scaling (common for SubjectArea vs large ref).
@@ -624,9 +622,7 @@ def _row_from_exiv2_raw_dict(raw: dict[str, str]) -> dict[str, Any]:
     row: dict[str, Any] = {}
     for leaf, pairs in by_leaf.items():
         if len(pairs) > 1 and leaf in ("SubjectArea", "SubjectLocation"):
-            standard = [
-                kv for kv in pairs if "Exif.Photo." in kv[0] or "Exif.Image." in kv[0]
-            ]
+            standard = [kv for kv in pairs if "Exif.Photo." in kv[0] or "Exif.Image." in kv[0]]
             if standard:
                 row[leaf] = standard[0][1]
                 continue
@@ -659,6 +655,7 @@ def _get_focus_hint_sensor_space(path: str) -> tuple[tuple[int, int, int, int], 
 
         try:
             from exifread_af import pixmap_ltwh_af_from_exifread, pixmap_ltwh_subject_cipa_from_exifread
+
             # Use 1000x1000 as virtual pixmap to get a normalized rect_ref
             lt_sub = pixmap_ltwh_subject_cipa_from_exifread(path, 1000, 1000)
             if lt_sub:
@@ -714,7 +711,9 @@ def _get_focus_hint_sensor_space(path: str) -> tuple[tuple[int, int, int, int], 
     return None
 
 
-def _rect_ref_from_nikon_afinfo2_row_sensor_space(row: dict[str, Any], ref_w: int, ref_h: int) -> tuple[tuple[int, int, int, int], str, int, int] | None:
+def _rect_ref_from_nikon_afinfo2_row_sensor_space(
+    row: dict[str, Any], ref_w: int, ref_h: int
+) -> tuple[tuple[int, int, int, int], str, int, int] | None:
     raw_s = _pick(row, "AFInfo2")
     if raw_s is None:
         return None

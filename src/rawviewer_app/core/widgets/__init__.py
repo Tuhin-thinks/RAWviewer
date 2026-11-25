@@ -1,4 +1,5 @@
 """Shared Qt widgets: thin facade over the widget submodules."""
+
 from __future__ import annotations
 
 from .batch_export_dialog import BatchExportDialog

@@ -76,11 +76,7 @@ class ColorCheckerOverlay(QWidget):
         nxt = self._nearest_handle(pos, w, h)
         if nxt != self._hover_index:
             self._hover_index = nxt
-            shape = (
-                Qt.CursorShape.PointingHandCursor
-                if nxt >= 0
-                else Qt.CursorShape.ArrowCursor
-            )
+            shape = Qt.CursorShape.PointingHandCursor if nxt >= 0 else Qt.CursorShape.ArrowCursor
             self.setCursor(QCursor(shape))
             self.update()
         super().mouseMoveEvent(event)

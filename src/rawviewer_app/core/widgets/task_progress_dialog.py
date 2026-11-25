@@ -1,4 +1,5 @@
 """TaskProgressDialog: background task progress dialog."""
+
 from __future__ import annotations
 
 import contextlib
@@ -55,8 +56,10 @@ class TaskProgressDialog(QDialog):
         content.setStyleSheet("background-color: transparent;")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(
-            self._CONTENT_MARGIN_H, self._CONTENT_MARGIN_V,
-            self._CONTENT_MARGIN_H, self._CONTENT_MARGIN_V,
+            self._CONTENT_MARGIN_H,
+            self._CONTENT_MARGIN_V,
+            self._CONTENT_MARGIN_H,
+            self._CONTENT_MARGIN_V,
         )
         content_layout.setSpacing(12)
 

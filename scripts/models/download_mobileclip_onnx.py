@@ -150,6 +150,7 @@ def main() -> int:
     ]
 
     for remote_path, local_name, stage_start, stage_end in files_to_download:
+
         def _fetch(
             remote_path=remote_path,
             local_name=local_name,
@@ -159,9 +160,7 @@ def main() -> int:
             print(f"[INFO] Fetching {local_name} ({stage_start}-{stage_end}%)", flush=True)
             reset_installer_progress_state()
             emit_installer_progress(stage_start)
-            tqdm_class = make_byte_progress_tqdm(
-                stage_start, stage_end, emit_installer_progress, silent=True
-            )
+            tqdm_class = make_byte_progress_tqdm(stage_start, stage_end, emit_installer_progress, silent=True)
             cached_path = hf_hub_download(
                 repo_id=REPO_ID,
                 filename=remote_path,
@@ -181,6 +180,7 @@ def main() -> int:
 
     tokenizer_path = MODELS_DIR / "bpe_simple_vocab_16e6.txt.gz"
     if not tokenizer_path.exists():
+
         def _fetch_tokenizer():
             print("[INFO] Fetching tokenizer", flush=True)
             _download_url_with_progress(

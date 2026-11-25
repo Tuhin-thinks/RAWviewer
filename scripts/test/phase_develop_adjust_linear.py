@@ -102,9 +102,7 @@ def test_chroma_nlm_no_green_cast_on_neutral_gray() -> None:
     h, w = 64, 64
     base = 0.4
     rng = np.random.default_rng(0)
-    img = np.stack(
-        [base + rng.normal(0, 0.03, (h, w)) for _ in range(3)], axis=-1
-    ).astype(np.float32)
+    img = np.stack([base + rng.normal(0, 0.03, (h, w)) for _ in range(3)], axis=-1).astype(np.float32)
     img = np.clip(img, 0.0, 1.0)
     out = apply_chroma_denoise(img.copy(), strength=0.625, preview=False)
     delta = out.mean(axis=(0, 1)) - img.mean(axis=(0, 1))
@@ -224,8 +222,7 @@ def test_chroma_denoise_shadow_blotch_stronger_than_midtone() -> None:
     mid = reduction_at_base(0.40)
     shadow = reduction_at_base(0.03)
     assert shadow > mid + 0.03, (
-        f"shadow blotch reduction ({shadow * 100:.1f}%) should beat "
-        f"midtone ({mid * 100:.1f}%) by a clear margin"
+        f"shadow blotch reduction ({shadow * 100:.1f}%) should beat midtone ({mid * 100:.1f}%) by a clear margin"
     )
     assert shadow > 0.12, f"shadow blotch reduction too weak: {shadow * 100:.1f}%"
 
@@ -397,8 +394,11 @@ def test_pv2012_default_adjustments_are_true_identity() -> None:
     lum = np.array([0.0001, 0.001, 0.005, 0.01, 0.02, 0.03, 0.08], dtype=np.float32)
     img = np.stack([lum] * 3, axis=-1)[:, np.newaxis, :]
     base = {
-        "Contrast2012": 0, "Highlights2012": 0, "Shadows2012": 0,
-        "Whites2012": 0, "Blacks2012": 0,
+        "Contrast2012": 0,
+        "Highlights2012": 0,
+        "Shadows2012": 0,
+        "Whites2012": 0,
+        "Blacks2012": 0,
     }
     out = apply_pv2012_tone_rgb(img.copy(), base)
     assert np.allclose(out, img, atol=1e-5), "default adjustments must be a true no-op"
@@ -410,8 +410,11 @@ def test_pv2012_highlights_slider_does_not_touch_deep_shadows() -> None:
     lum = np.array([0.0001, 0.001, 0.005, 4.0], dtype=np.float32)
     img = np.stack([lum] * 3, axis=-1)[:, np.newaxis, :]
     adj = {
-        "Contrast2012": 0, "Highlights2012": -100, "Shadows2012": 0,
-        "Whites2012": 0, "Blacks2012": 0,
+        "Contrast2012": 0,
+        "Highlights2012": -100,
+        "Shadows2012": 0,
+        "Whites2012": 0,
+        "Blacks2012": 0,
     }
     out = apply_pv2012_tone_rgb(img.copy(), adj)
     ratio = out[:, 0, 0] / img[:, 0, 0]
@@ -428,9 +431,7 @@ def test_pv2012_shadows_lift_stays_monotonic() -> None:
     for sh in (40, 60, 80, 100):
         _assert_monotonic(_apply_pv2012_perceptual(y0, shadows=sh), f"PV2012 Shadows={sh}")
     _assert_monotonic(
-        _apply_pv2012_perceptual(
-            y0, contrast=100, highlights=100, shadows=100, whites=100, blacks=-100
-        ),
+        _apply_pv2012_perceptual(y0, contrast=100, highlights=100, shadows=100, whites=100, blacks=-100),
         "PV2012 all sliders maxed",
     )
 
@@ -490,8 +491,12 @@ def test_legacy_gamma_blacks_stays_monotonic() -> None:
     lum = ramp[np.newaxis, :]
     for amt in (40, 70, 100):
         out = _apply_masked_luminance_adjust(
-            img.copy(), lum, _black_region_weight(ramp)[np.newaxis, :], amt / 100.0,
-            lift=True, lift_up_strength=0.03,
+            img.copy(),
+            lum,
+            _black_region_weight(ramp)[np.newaxis, :],
+            amt / 100.0,
+            lift=True,
+            lift_up_strength=0.03,
         )
         _assert_monotonic(_channel_luminance(out)[0], f"legacy Blacks={amt}")
 
@@ -528,9 +533,7 @@ def test_tone_curve_affects_pv2012_tone_rgb_output() -> None:
     guard through the real entry point, not the isolated curve function."""
     from raw_pv2012 import apply_pv2012_tone_rgb
 
-    img = np.tile(
-        np.linspace(0.05, 0.5, 8).astype(np.float32)[:, None, None], (1, 1, 3)
-    )
+    img = np.tile(np.linspace(0.05, 0.5, 8).astype(np.float32)[:, None, None], (1, 1, 3))
     base = dict(DEFAULT_ADJUSTMENTS)
 
     point_curve_adj = dict(base)
@@ -559,8 +562,10 @@ def test_parametric_tone_curve_stays_monotonic() -> None:
 
     y = np.linspace(0.0, 1.0, 4000).astype(np.float32)
     base = {
-        "ParametricShadows": 0, "ParametricDarks": 0,
-        "ParametricLights": 0, "ParametricHighlights": 0,
+        "ParametricShadows": 0,
+        "ParametricDarks": 0,
+        "ParametricLights": 0,
+        "ParametricHighlights": 0,
     }
     combos = [
         {**base, "ParametricShadows": 100},
@@ -715,9 +720,7 @@ def test_export_tiff16_embeds_xmp() -> None:
         with open(xmp_path, "wb") as f:
             f.write(xmp_bytes)
         out_path = os.path.join(d, "out.tif")
-        export_adjusted_tiff16(
-            linear, dict(DEFAULT_ADJUSTMENTS), out_path, embed_xmp_path=xmp_path
-        )
+        export_adjusted_tiff16(linear, dict(DEFAULT_ADJUSTMENTS), out_path, embed_xmp_path=xmp_path)
         with _tifffile.TiffFile(out_path) as tf:
             xmp_tag = next((t for t in tf.pages[0].tags if t.code == 700), None)
             assert xmp_tag is not None
@@ -825,8 +828,8 @@ def test_preview_stage_cache_matches_full_recompute() -> None:
     from raw_adjustments import apply_adjustments_to_linear
 
     rng = np.random.default_rng(7)
-    img = (rng.random((48, 64, 3)).astype(np.float32) * 0.6 + 0.05)
-    img2 = (rng.random((40, 56, 3)).astype(np.float32) * 0.6 + 0.05)
+    img = rng.random((48, 64, 3)).astype(np.float32) * 0.6 + 0.05
+    img2 = rng.random((40, 56, 3)).astype(np.float32) * 0.6 + 0.05
 
     cache = PreviewStageCache()
     base = dict(DEFAULT_ADJUSTMENTS)
@@ -897,7 +900,7 @@ def test_preview_stage_cache_skips_upstream_recompute() -> None:
     import raw_edit_pipeline as rep
 
     rng = np.random.default_rng(3)
-    img = (rng.random((32, 40, 3)).astype(np.float32) * 0.5 + 0.05)
+    img = rng.random((32, 40, 3)).astype(np.float32) * 0.5 + 0.05
     cache = rep.PreviewStageCache()
 
     call_count = {"n": 0}

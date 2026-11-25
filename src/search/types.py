@@ -34,6 +34,7 @@ class SearchHit:
     country_code: str = ""
     face_count: int = 0
 
+
 # Re-export for convenience
 __all__ = [
     "IndexAborted",

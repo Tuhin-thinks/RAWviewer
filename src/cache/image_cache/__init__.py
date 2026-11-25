@@ -1,4 +1,5 @@
 """Main image cache composing memory + persistent tiers (singleton accessor)."""
+
 from __future__ import annotations
 
 import atexit
@@ -55,6 +56,7 @@ def _register_exif_cache_atexit() -> None:
         if _global_cache is not None:
             with contextlib.suppress(Exception):
                 _global_cache.flush_exif_disk_cache()
+
     atexit.register(_flush_exif_on_exit)
 
 
@@ -65,8 +67,7 @@ def get_image_cache() -> ImageCache:
         _global_cache = ImageCache(
             cache_dir=os.environ.get("RAWVIEWER_CACHE_DIR", None),
             persistent_cache_enabled=bool(
-                os.environ.get("RAWVIEWER_PERSISTENT_CACHE", "1")
-                not in ("0", "false", "no")
+                os.environ.get("RAWVIEWER_PERSISTENT_CACHE", "1") not in ("0", "false", "no")
             ),
         )
         _register_exif_cache_atexit()

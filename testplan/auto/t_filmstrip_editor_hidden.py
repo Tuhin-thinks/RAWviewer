@@ -11,6 +11,7 @@ that _set_adjust_panel_visible() had set up when the editor opened. Once
 re-enabled, the filmstrip's own hover-reveal logic (gated only on
 isEnabled()) could show it again mid-edit.
 """
+
 import os
 import sys
 

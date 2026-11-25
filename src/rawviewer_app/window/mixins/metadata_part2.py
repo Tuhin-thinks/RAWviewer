@@ -1,4 +1,5 @@
 """metadata mixin, part 2 of 2 (30 methods, 708 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -48,6 +49,7 @@ class MetadataPart2:
         """
         import logging
         import time
+
         logger = logging.getLogger(__name__)
 
         if not file_paths:
@@ -57,15 +59,14 @@ class MetadataPart2:
 
         # 1. Bulk fetch metadata for all files at once (MUCH faster than individual calls)
         from image_cache import get_image_cache
+
         cache = get_image_cache()
 
         # sort_meta holds only what the sort keys need (capture_time); it is what
         # we return as bulk_metadata EXCEPT in capture_time_only mode (see below).
         if capture_time_only:
             ct_map = cache.get_capture_times_for_sort(list(file_paths))
-            sort_meta = {
-                fp: {"capture_time": ct} for fp, ct in ct_map.items() if ct
-            }
+            sort_meta = {fp: {"capture_time": ct} for fp, ct in ct_map.items() if ct}
         else:
             # Pass the pre-collected file stats to avoid redundant os.stat calls
             sort_meta = cache.get_multiple_exif(file_paths, file_stats)
@@ -76,9 +77,7 @@ class MetadataPart2:
             # satisfy sorting even when the row it's stored alongside fails those
             # unrelated freshness checks and gets excluded from sort_meta above.
             # Without this, every folder re-open would re-probe the same files forever.
-            needs_capture_time = [
-                fp for fp in file_paths if not (sort_meta.get(fp) or {}).get("capture_time")
-            ]
+            needs_capture_time = [fp for fp in file_paths if not (sort_meta.get(fp) or {}).get("capture_time")]
             if needs_capture_time:
                 extra_capture_times = cache.get_capture_times_for_sort(needs_capture_time)
                 for fp, ct in extra_capture_times.items():
@@ -111,20 +110,12 @@ class MetadataPart2:
             probed_ts = probed_timestamps.get(fp, 0.0)
 
             _has_capture, timestamp, _source = resolve_folder_sort_timestamp(
-                fp,
-                metadata=meta,
-                file_mtime=mtime,
-                probe_file=False,
-                probed_capture_timestamp=probed_ts
+                fp, metadata=meta, file_mtime=mtime, probe_file=False, probed_capture_timestamp=probed_ts
             )
             sort_keys[fp] = (timestamp, os.path.basename(fp).lower())
 
         # 4. Perform the sort using pre-calculated keys
-        sorted_files = sorted(
-            file_paths,
-            key=lambda fp: sort_keys[fp],
-            reverse=newest_first
-        )
+        sorted_files = sorted(file_paths, key=lambda fp: sort_keys[fp], reverse=newest_first)
 
         sort_time = time.time() - sort_start
         logger.info(
@@ -133,14 +124,12 @@ class MetadataPart2:
             len(file_paths),
             sort_time,
         )
-        safe_print(f"[PERF] 🔄 Sorted {len(file_paths)} files in {sort_time*1000:.1f}ms")
+        safe_print(f"[PERF] 🔄 Sorted {len(file_paths)} files in {sort_time * 1000:.1f}ms")
         # capture_time_only: bulk_metadata is intentionally empty so the gallery
         # lazily fetches full per-file EXIF on first open (see the docstring).
         return sorted_files, ({} if capture_time_only else sort_meta)
 
-    def _flush_deferred_full_exif_after_first_paint(
-        self, file_path: str | None = None
-    ) -> None:
+    def _flush_deferred_full_exif_after_first_paint(self, file_path: str | None = None) -> None:
         fp = file_path or getattr(self, "_defer_full_exif_path", None)
         if not fp:
             return
@@ -198,13 +187,16 @@ class MetadataPart2:
         # Update status bar immediately with EXIF data when it becomes available
         # This ensures EXIF data is shown even in fit-to-window mode
         import logging
+
         logger = logging.getLogger(__name__)
         if self.current_file_path:
             # Set a flag to indicate EXIF data is ready
             self._exif_data_ready = True
             # Always update status bar when EXIF data is ready, even if pixmap is not yet available
             # This ensures original resolution is shown immediately
-            logger.info(f"[EXIF] EXIF data ready, updating status bar for {os.path.basename(_require_str_path(self.current_file_path))}")
+            logger.info(
+                f"[EXIF] EXIF data ready, updating status bar for {os.path.basename(_require_str_path(self.current_file_path))}"
+            )
             self.update_status_bar()
             logger.info("[EXIF] Status bar updated")
 
@@ -250,9 +242,7 @@ class MetadataPart2:
         self._sync_location_map()
         self._sync_adjust_panel()
 
-    def _map_adjust_display_point_to_buffer(
-        self, pt, buffer_w: int, buffer_h: int
-    ) -> tuple[float, float]:
+    def _map_adjust_display_point_to_buffer(self, pt, buffer_w: int, buffer_h: int) -> tuple[float, float]:
         """Display-pixmap point → same-framing buffer (dodge/burn + WB pick)."""
         from raw_adjustments.transform import map_display_point_to_buffer
 
@@ -311,9 +301,7 @@ class MetadataPart2:
                 panel.set_camera_profile_active("")
                 return
             label = describe_camera_profile(make, model, iso=iso_val, file_path=path)
-            panel.set_camera_profile_active(
-                label or "", make=make, model=model, iso=iso_val
-            )
+            panel.set_camera_profile_active(label or "", make=make, model=model, iso=iso_val)
         except Exception:
             with contextlib.suppress(Exception):
                 panel.set_camera_profile_active("")
@@ -373,12 +361,14 @@ class MetadataPart2:
                 except Exception:
                     factory = None
             elif hasattr(self, "status_bar") and self.status_bar:
-                self.status_bar.showMessage(
-                    "Choose a ColorChecker file, or find a DPReview sample.", 4000
-                )
+                self.status_bar.showMessage("Choose a ColorChecker file, or find a DPReview sample.", 4000)
 
             dlg = ColorCalibrationDialog(
-                img, make, model, iso=iso_val, parent=self,
+                img,
+                make,
+                model,
+                iso=iso_val,
+                parent=self,
                 has_factory_profile=factory,
                 source_file=source_file,
             )
@@ -405,14 +395,10 @@ class MetadataPart2:
                 camera_name = f"{dlg.make} {dlg.model}".strip() or "Camera"
                 iso_label = f" (ISO {dlg.iso})" if dlg.iso else ""
                 if hasattr(self, "status_bar") and self.status_bar:
-                    self.status_bar.showMessage(
-                        f"Calibrated profile saved for {camera_name}{iso_label}", 4000
-                    )
+                    self.status_bar.showMessage(f"Calibrated profile saved for {camera_name}{iso_label}", 4000)
 
         except Exception as exc:
-            QMessageBox.warning(
-                self, "Calibration Error", f"Failed to launch calibration dialog: {exc}"
-            )
+            QMessageBox.warning(self, "Calibration Error", f"Failed to launch calibration dialog: {exc}")
 
     def _reencode_persisted_preview_for_sidecar(self, path: str, adj: dict | None = None) -> None:
         """Re-encode the persisted LibRaw preview tier with just-saved sidecar adjustments.
@@ -599,7 +585,7 @@ class MetadataPart2:
         cached_exif = self.image_cache.get_exif(path)
         if not cached_exif:
             return 0
-        return cached_exif.get('rating', 0) or 0
+        return cached_exif.get("rating", 0) or 0
 
     def _shortcut_activate_histogram(self) -> None:
         if getattr(self, "view_mode", "") != "single":
@@ -615,9 +601,7 @@ class MetadataPart2:
             return
         if self._shortcut_blocked_by_text_input():
             return
-        self._histogram_overlay_visible = not getattr(
-            self, "_histogram_overlay_visible", False
-        )
+        self._histogram_overlay_visible = not getattr(self, "_histogram_overlay_visible", False)
         self._histogram_user_hidden = not self._histogram_overlay_visible
         if hasattr(self, "single_image_histogram"):
             pm = getattr(self, "current_pixmap", None)
@@ -719,10 +703,7 @@ class MetadataPart2:
 
     def _gallery_top_metadata_label(self) -> str:
         """Top metadata in gallery mode: burst stack stats or folder name."""
-        if (
-            getattr(self, "view_mode", "") == "gallery"
-            and getattr(self, "_burst_group_view_active", False)
-        ):
+        if getattr(self, "view_mode", "") == "gallery" and getattr(self, "_burst_group_view_active", False):
             return self._burst_group_view_status_label()
         return self._current_folder_label()
 
@@ -746,7 +727,5 @@ class MetadataPart2:
     def _is_exif_sort_ready(self) -> bool:
         """Check if the EXIF capture-time sort is ready/applied for the current folder."""
         current_gen = getattr(self, "_folder_load_generation", None)
-        refinement_applied = (
-            getattr(self, "_folder_sort_refinement_applied_token", None) == current_gen
-        )
+        refinement_applied = getattr(self, "_folder_sort_refinement_applied_token", None) == current_gen
         return refinement_applied or len(getattr(self, "image_files", [])) <= 1

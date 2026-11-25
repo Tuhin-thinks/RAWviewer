@@ -44,12 +44,8 @@ class PersistentThumbnailCache:
 
     def _get_connection(self):
         """Get thread-local database connection."""
-        if not hasattr(self._local, 'conn'):
-            conn = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False,
-                timeout=30.0
-            )
+        if not hasattr(self._local, "conn"):
+            conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=30.0)
             # Enable WAL mode for better concurrent performance
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
@@ -95,7 +91,7 @@ class PersistentThumbnailCache:
             with self._file_stats_cache_lock:
                 if len(self._file_stats_cache) >= self._file_stats_cache_max_size:
                     # Clear half of the cache (simple FIFO-like eviction)
-                    keys_to_remove = list(self._file_stats_cache.keys())[:self._file_stats_cache_max_size // 2]
+                    keys_to_remove = list(self._file_stats_cache.keys())[: self._file_stats_cache_max_size // 2]
                     for key in keys_to_remove:
                         del self._file_stats_cache[key]
                 self._file_stats_cache[file_path] = result
@@ -107,7 +103,7 @@ class PersistentThumbnailCache:
     def _get_cache_file_path(self, file_path: str) -> str:
         """Generate cache file path from source file path."""
         # Use hash of normalized path so case variants share one disk entry on Windows.
-        path_hash = hashlib.md5(_cache_path_key(file_path).encode('utf-8')).hexdigest()
+        path_hash = hashlib.md5(_cache_path_key(file_path).encode("utf-8")).hexdigest()
         return os.path.join(self.cache_dir, f"{path_hash}.jpg")
 
     def _jailed_cache_file(self, cache_file: str | None) -> str | None:
@@ -145,8 +141,7 @@ class PersistentThumbnailCache:
             # Use persistent connection instead of creating new one each time
             conn = self._get_connection()
             cursor = conn.execute(
-                "SELECT file_size, file_mtime, cache_file FROM thumbnail_cache WHERE file_path = ?",
-                (key,)
+                "SELECT file_size, file_mtime, cache_file FROM thumbnail_cache WHERE file_path = ?", (key,)
             )
             row = cursor.fetchone()
 
@@ -154,7 +149,7 @@ class PersistentThumbnailCache:
                 # Cache is valid, check if file exists (path-jailed)
                 cache_file = self._jailed_cache_file(row[2])
                 if cache_file and os.path.exists(cache_file):
-                    with open(cache_file, 'rb') as f:
+                    with open(cache_file, "rb") as f:
                         return f.read()
                 else:
                     # Cache file missing, remove from database
@@ -176,7 +171,7 @@ class PersistentThumbnailCache:
         with self.lock:
             try:
                 # Write JPEG data to disk
-                with open(cache_file, 'wb') as f:
+                with open(cache_file, "wb") as f:
                     f.write(jpeg_data)
 
                 # Update database using persistent connection
@@ -185,7 +180,7 @@ class PersistentThumbnailCache:
                     "INSERT OR REPLACE INTO thumbnail_cache "
                     "(file_path, file_size, file_mtime, cache_file, cached_time) "
                     "VALUES (?, ?, ?, ?, ?)",
-                    (key, file_size, file_mtime, cache_file, time.time())
+                    (key, file_size, file_mtime, cache_file, time.time()),
                 )
                 conn.commit()
                 return True
@@ -205,10 +200,7 @@ class PersistentThumbnailCache:
         with self.lock:
             try:
                 conn = self._get_connection()
-                cursor = conn.execute(
-                    "SELECT cache_file FROM thumbnail_cache WHERE file_path = ?",
-                    (key,)
-                )
+                cursor = conn.execute("SELECT cache_file FROM thumbnail_cache WHERE file_path = ?", (key,))
                 row = cursor.fetchone()
 
                 if row:
@@ -235,8 +227,7 @@ class PersistentThumbnailCache:
             try:
                 conn = self._get_connection()
                 cursor = conn.execute(
-                    "SELECT file_path, cache_file FROM thumbnail_cache WHERE cached_time < ?",
-                    (cutoff_time,)
+                    "SELECT file_path, cache_file FROM thumbnail_cache WHERE cached_time < ?", (cutoff_time,)
                 )
                 rows = cursor.fetchall()
 
@@ -284,9 +275,7 @@ class PersistentThumbnailCache:
         with self.lock:
             try:
                 conn = self._get_connection()
-                cursor = conn.execute(
-                    "SELECT file_path, cache_file FROM thumbnail_cache ORDER BY cached_time ASC"
-                )
+                cursor = conn.execute("SELECT file_path, cache_file FROM thumbnail_cache ORDER BY cached_time ASC")
                 rows = cursor.fetchall()
                 evicted_paths: list[str] = []
                 for file_path, cache_file in rows:
@@ -340,7 +329,7 @@ class PersistentThumbnailCache:
     def close(self):
         """Close the database connection for the current thread."""
         try:
-            if hasattr(self, '_local') and hasattr(self._local, 'conn'):
+            if hasattr(self, "_local") and hasattr(self._local, "conn"):
                 self._local.conn.close()
                 del self._local.conn
         except Exception:
@@ -355,20 +344,20 @@ class PersistentGridCache(PersistentThumbnailCache):
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         # Use 'grid' subdirectory
         self.base_cache_dir = cache_dir
-        super().__init__(cache_dir) # Init with base dir, will setup 'thumbnails'
+        super().__init__(cache_dir)  # Init with base dir, will setup 'thumbnails'
 
         # Override cache_dir and db_path for grid
         self.cache_dir = os.path.join(self.base_cache_dir, "grid")
         os.makedirs(self.cache_dir, exist_ok=True)
         self.db_path = os.path.join(self.base_cache_dir, "grid_cache.db")
-        self._init_db() # Re-init DB with new path
+        self._init_db()  # Re-init DB with new path
 
     def _init_db(self):
         """Initialize grid cache database."""
         with self.lock:
             try:
                 # Reset thread-local connection for new DB path
-                if hasattr(self._local, 'conn'):
+                if hasattr(self._local, "conn"):
                     del self._local.conn
 
                 conn = self._get_connection()
@@ -399,20 +388,20 @@ class PersistentPreviewCache(PersistentThumbnailCache):
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         # Use 'previews' subdirectory
         self.base_cache_dir = cache_dir
-        super().__init__(cache_dir) # Init with base dir, will setup 'thumbnails'
+        super().__init__(cache_dir)  # Init with base dir, will setup 'thumbnails'
 
         # Override cache_dir and db_path for previews
         self.cache_dir = os.path.join(self.base_cache_dir, "previews")
         os.makedirs(self.cache_dir, exist_ok=True)
         self.db_path = os.path.join(self.base_cache_dir, "preview_cache.db")
-        self._init_db() # Re-init DB with new path
+        self._init_db()  # Re-init DB with new path
 
     def _init_db(self):
         """Initialize preview cache database."""
         with self.lock:
             try:
                 # Reset thread-local connection for new DB path
-                if hasattr(self._local, 'conn'):
+                if hasattr(self._local, "conn"):
                     del self._local.conn
 
                 conn = self._get_connection()

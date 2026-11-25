@@ -1,4 +1,5 @@
-'''PixmapConverter and RawEdrPixmapConverter.'''
+"""PixmapConverter and RawEdrPixmapConverter."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,6 +9,7 @@ from PyQt6.QtGui import QImage, QPixmap
 
 class PixmapConverter(QThread):
     """Background thread to convert numpy array to QPixmap and cache it"""
+
     pixmap_ready = pyqtSignal(str, QPixmap)  # file_path, pixmap
 
     def __init__(self, file_path, rgb_image, image_cache):
@@ -38,11 +40,11 @@ class PixmapConverter(QThread):
 
             # Copy here (background thread), not in __init__ (main thread).
             # See __init__ docstring comment for why this moved.
-            if hasattr(self.rgb_image, 'copy'):
+            if hasattr(self.rgb_image, "copy"):
                 self.rgb_image = self.rgb_image.copy()
 
-            if not hasattr(self.rgb_image, 'shape'):
-                if hasattr(self.rgb_image, 'width') and hasattr(self.rgb_image, 'height'):
+            if not hasattr(self.rgb_image, "shape"):
+                if hasattr(self.rgb_image, "width") and hasattr(self.rgb_image, "height"):
                     height, width = self.rgb_image.height(), self.rgb_image.width()
                     channels = 3
                 else:
@@ -55,16 +57,15 @@ class PixmapConverter(QThread):
                     self.rgb_image = (self.rgb_image / 257.0).astype(np.uint8)
                 elif np.issubdtype(self.rgb_image.dtype, np.floating):
                     from raw_adjustments.tone_recovery import _encode_srgb8
-                    self.rgb_image = _encode_srgb8(
-                        np.clip(self.rgb_image.astype(np.float32), 0.0, None)
-                    )
+
+                    self.rgb_image = _encode_srgb8(np.clip(self.rgb_image.astype(np.float32), 0.0, None))
                 elif self.rgb_image.dtype != np.uint8:
                     self.rgb_image = np.clip(self.rgb_image, 0, 255).astype(np.uint8)
 
             bytes_per_line = channels * width
 
             # Ensure the data is contiguous
-            if not self.rgb_image.flags['C_CONTIGUOUS']:
+            if not self.rgb_image.flags["C_CONTIGUOUS"]:
                 self.rgb_image = np.ascontiguousarray(self.rgb_image)
 
             if self._should_stop:
@@ -77,8 +78,7 @@ class PixmapConverter(QThread):
             elif channels == 4:
                 q_format = QImage.Format.Format_RGBA8888
 
-            q_image = QImage(self.rgb_image.data, width, height,
-                             bytes_per_line, q_format)
+            q_image = QImage(self.rgb_image.data, width, height, bytes_per_line, q_format)
             q_image.ndarr = self.rgb_image  # Keep numpy array alive
             pixmap = QPixmap.fromImage(q_image)
 
@@ -95,6 +95,7 @@ class PixmapConverter(QThread):
 
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.debug(f"Error in PixmapConverter for {self.file_path}: {e}")
 
@@ -147,4 +148,3 @@ class RawEdrPixmapConverter(QThread):
             )
             if not self._should_stop:
                 self.pixmap_ready.emit(self.file_path, QPixmap())
-

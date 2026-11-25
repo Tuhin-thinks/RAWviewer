@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """UnifiedImageProcessor cache semantics: sidecar memo, stash consumption."""
+
 import os
 import shutil
 import sys

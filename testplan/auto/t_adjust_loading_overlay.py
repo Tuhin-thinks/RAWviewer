@@ -8,6 +8,7 @@ _set_adjust_panel_visible(True) -> _begin_adjust_editing_session() cancels
 that same image_manager task -- the only thing that would have hidden the
 overlay -- before it can complete.
 """
+
 import os
 import sys
 

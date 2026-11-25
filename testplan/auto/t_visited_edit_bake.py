@@ -69,7 +69,7 @@ def main() -> int:
     jpg = "/photos/shot.jpg"
 
     def with_adjustments(edited: bool):
-        raw_adjustments.load_adjustments_for_file = lambda p: ({"Exposure2012": 0.8} if edited else {})
+        raw_adjustments.load_adjustments_for_file = lambda p: {"Exposure2012": 0.8} if edited else {}
         raw_adjustments.is_default_adjustments = lambda a: not a
 
     try:

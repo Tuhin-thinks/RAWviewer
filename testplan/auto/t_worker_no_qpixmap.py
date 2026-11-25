@@ -57,8 +57,7 @@ def main() -> int:
                 f"{img.width()}x{img.height()}",
             )
         small = load_qimage_safe(jpg, max_edge=100)
-        check("max_edge is honoured", max(small.width(), small.height()) == 100,
-              f"{small.width()}x{small.height()}")
+        check("max_edge is honoured", max(small.width(), small.height()) == 100, f"{small.width()}x{small.height()}")
         check("missing file yields a null QImage", load_qimage_safe(os.path.join(d, "no.jpg")).isNull())
 
         # --- the thread predicate ---
@@ -100,9 +99,11 @@ def main() -> int:
             isinstance(buf, QImage) and not isinstance(buf, QPixmap),
             type(buf).__name__,
         )
-        check("worker QImage carries the pixels", buf is not None and not buf.isNull()
-              and (buf.width(), buf.height()) == (320, 240),
-              f"{buf.width()}x{buf.height()}" if buf is not None else "None")
+        check(
+            "worker QImage carries the pixels",
+            buf is not None and not buf.isNull() and (buf.width(), buf.height()) == (320, 240),
+            f"{buf.width()}x{buf.height()}" if buf is not None else "None",
+        )
 
     # --- the delivery path exists on both ends ---
     import image_load_manager as ilm
@@ -110,7 +111,9 @@ def main() -> int:
 
     check("manager exposes qimage_ready", hasattr(ilm.ImageLoadManager, "qimage_ready"))
     check("host has the converting slot", hasattr(mainmod.RAWImageViewer, "on_manager_qimage_ready"))
-    src = open(os.path.join(os.path.dirname(__file__), "..", "..", "src", "image_load_manager", "worker.py"), encoding="utf-8").read()
+    src = open(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "image_load_manager", "worker.py"), encoding="utf-8"
+    ).read()
     check("the worker emits QImage buffers rather than dropping them", "qimage_ready.emit" in src)
 
     # --- the conversion must not be paid for a photo already navigated away ---

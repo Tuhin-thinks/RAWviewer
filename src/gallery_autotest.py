@@ -1,4 +1,4 @@
-﻿"""Gallery scroll benchmark harness (RAWVIEWER_GALLERY_AUTOTEST=1 only).
+"""Gallery scroll benchmark harness (RAWVIEWER_GALLERY_AUTOTEST=1 only).
 
 Flow (mirrors the manual repro: open file -> gallery button -> hold Up/Down):
   1. Wait for the single-view first render.
@@ -42,19 +42,11 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
     duration_s = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_SECONDS", "20"))
     repeat_hz = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_KEY_HZ", "30"))
     settle_s = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_SETTLE", "3.0"))
-    gallery_wait_s = float(
-        os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_GALLERY_WAIT", "600")
-    )
-    direction = (
-        os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_DIRECTION", "up").strip().lower()
-        or "up"
-    )
+    gallery_wait_s = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_GALLERY_WAIT", "600"))
+    direction = os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_DIRECTION", "up").strip().lower() or "up"
     if direction not in ("up", "down"):
         direction = "up"
-    input_mode = (
-        os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_INPUT", "keys").strip().lower()
-        or "keys"
-    )
+    input_mode = os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_INPUT", "keys").strip().lower() or "keys"
     drag_px_s = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_DRAG_PX_S", "2500"))
 
     harness_t0 = time.time()
@@ -222,9 +214,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             return
         gap_ms = (now - last) * 1000.0
         if gap_ms > 25.0:
-            state["stall_gaps"].append(
-                (round(now - state["t0"], 2), round(gap_ms, 1))
-            )
+            state["stall_gaps"].append((round(now - state["t0"], 2), round(gap_ms, 1)))
 
     def _finish():
         _poll()
@@ -251,9 +241,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             flush=True,
             force=True,
         )
-        safe_print(
-            f"[GALLERYTEST] timeline={state['samples']}", flush=True, force=True
-        )
+        safe_print(f"[GALLERYTEST] timeline={state['samples']}", flush=True, force=True)
         _quit_app("done")
 
     def _press():
@@ -273,8 +261,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             return
         if not _in_gallery():
             safe_print(
-                "[GALLERYTEST] refuse key-hold: view_mode="
-                f"{getattr(viewer, 'view_mode', None)}",
+                f"[GALLERYTEST] refuse key-hold: view_mode={getattr(viewer, 'view_mode', None)}",
                 flush=True,
                 force=True,
             )
@@ -293,13 +280,9 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
                 import faulthandler
 
                 state["stack_dump_fh"] = open(dump_path, "w")  # noqa: SIM115  # Intentional: must stay open for faulthandler
-                faulthandler.dump_traceback_later(
-                    0.4, repeat=True, file=state["stack_dump_fh"]
-                )
+                faulthandler.dump_traceback_later(0.4, repeat=True, file=state["stack_dump_fh"])
             state["wheel_phase_t0"] = state["t0"]
-            wheel_hz = float(
-                os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_WHEEL_HZ", "120")
-            )
+            wheel_hz = float(os.environ.get("RAWVIEWER_GALLERY_AUTOTEST_WHEEL_HZ", "120"))
             key_timer.setInterval(max(1, int(round(1000.0 / max(1.0, wheel_hz)))))
             key_timer.setTimerType(_Qt.TimerType.PreciseTimer)
             key_timer.timeout.connect(_wheel_tick)
@@ -350,8 +333,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         if n_files <= 1:
             if state["enter_attempts"] % 25 == 0:
                 safe_print(
-                    f"[GALLERYTEST] waiting for folder scan (files={n_files} "
-                    f"elapsed_s={waited:.1f})",
+                    f"[GALLERYTEST] waiting for folder scan (files={n_files} elapsed_s={waited:.1f})",
                     flush=True,
                     force=True,
                 )
@@ -363,12 +345,11 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
         # v2.5: toggle is a no-op until capture-time sort finishes.
         # v3: still enters on provisional order — try toggle below anyway.
         if not sort_ready and state["enter_attempts"] % 25 == 0:
-                safe_print(
-                    f"[GALLERYTEST] waiting for EXIF sort (files={n_files} "
-                    f"elapsed_s={waited:.1f})",
-                    flush=True,
-                    force=True,
-                )
+            safe_print(
+                f"[GALLERYTEST] waiting for EXIF sort (files={n_files} elapsed_s={waited:.1f})",
+                flush=True,
+                force=True,
+            )
 
         state["enter_attempts"] += 1
         try:
@@ -413,8 +394,7 @@ def run_gallery_autotest(viewer, *, safe_print) -> None:
             QTimer.singleShot(200, _wait_first_render)
 
     safe_print(
-        f"[GALLERYTEST] armed settle_s={settle_s} direction={direction} "
-        f"gallery_wait_s={gallery_wait_s}",
+        f"[GALLERYTEST] armed settle_s={settle_s} direction={direction} gallery_wait_s={gallery_wait_s}",
         flush=True,
         force=True,
     )

@@ -1,4 +1,5 @@
 """search mixin, part 1 of 4 (49 methods, 850 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -63,8 +64,7 @@ class SearchPart1:
                 SemanticImageIndex = _SemanticImageIndex
             except Exception as exc:
                 raise RuntimeError(
-                    "Semantic search module is unavailable. "
-                    "Please ensure Plus-edition dependencies are installed."
+                    "Semantic search module is unavailable. Please ensure Plus-edition dependencies are installed."
                 ) from exc
         if self._semantic_index is None:
             self._semantic_index = SemanticImageIndex()
@@ -164,8 +164,12 @@ class SearchPart1:
         """Restore background indexing / load concurrency after gallery warmup."""
         self._gallery_indexing_deferred_until = 0.0
         try:
-            if hasattr(self, "image_manager") and self.image_manager is not None and hasattr(self.image_manager, "exit_gallery_warmup_throttle"):
-                    self.image_manager.exit_gallery_warmup_throttle()
+            if (
+                hasattr(self, "image_manager")
+                and self.image_manager is not None
+                and hasattr(self.image_manager, "exit_gallery_warmup_throttle")
+            ):
+                self.image_manager.exit_gallery_warmup_throttle()
         except Exception:
             pass
 
@@ -252,9 +256,7 @@ class SearchPart1:
 
     def _mark_gallery_search_index_session_complete(self, corpus_files) -> None:
         if corpus_files:
-            self._gallery_search_index_session_key = (
-                self._gallery_search_index_session_key_for(corpus_files)
-            )
+            self._gallery_search_index_session_key = self._gallery_search_index_session_key_for(corpus_files)
 
     def _is_gallery_search_index_session_complete(self, corpus_files) -> bool:
         key = getattr(self, "_gallery_search_index_session_key", None)
@@ -303,10 +305,7 @@ class SearchPart1:
             return
         if getattr(self, "_gallery_search_user_wants_semantic", False):
             return
-        if (
-            getattr(self, "_search_panel_expanded", False)
-            and not self._is_gallery_semantic_search_ready()
-        ):
+        if getattr(self, "_search_panel_expanded", False) and not self._is_gallery_semantic_search_ready():
             return
         self._gallery_search_show_index_progress = False
         self._gallery_search_user_wants_semantic = False
@@ -337,10 +336,7 @@ class SearchPart1:
             return
         if getattr(self, "_gallery_search_user_wants_semantic", False):
             return
-        if (
-            getattr(self, "_search_panel_expanded", False)
-            and not self._is_gallery_semantic_search_ready()
-        ):
+        if getattr(self, "_search_panel_expanded", False) and not self._is_gallery_semantic_search_ready():
             return
         full = (getattr(self, "_gallery_search_status_full", "") or "").strip()
         if full and self._should_show_search_index_progress(full):
@@ -383,9 +379,10 @@ class SearchPart1:
 
         now = time.time()
         cache = getattr(self, "_gallery_search_ready_cache", None)
-        if cache and (now - getattr(self, "_gallery_search_ready_cache_ts", 0.0)) < 3.0 and (
-            cache.get("folder") == getattr(self, "current_folder", None)
-            and cache.get("count") == len(corpus)
+        if (
+            cache
+            and (now - getattr(self, "_gallery_search_ready_cache_ts", 0.0)) < 3.0
+            and (cache.get("folder") == getattr(self, "current_folder", None) and cache.get("count") == len(corpus))
         ):
             return bool(cache.get("ready", False))
 
@@ -423,9 +420,7 @@ class SearchPart1:
             self._mark_gallery_search_index_session_complete(corpus)
         return ready
 
-    def _chain_face_index_after_semantic(
-        self, corpus_files, *, face_pending: int | None = None
-    ) -> None:
+    def _chain_face_index_after_semantic(self, corpus_files, *, face_pending: int | None = None) -> None:
         """Start face scan after semantic pass -- search field stays locked until done."""
         from search import face_scan_enabled
 
@@ -450,9 +445,7 @@ class SearchPart1:
             self._finish_gallery_search_unlock(corpus)
             return
         self._gallery_search_show_index_progress = True
-        self._set_gallery_search_status(
-            self._format_index_progress("Face", 0, pending)
-        )
+        self._set_gallery_search_status(self._format_index_progress("Face", 0, pending))
         self._invalidate_semantic_coverage_cache()
         self._start_face_index_background(corpus, show_search_progress=True)
         self._sync_gallery_search_input_editable()
@@ -486,10 +479,7 @@ class SearchPart1:
             inp.setToolTip(self._gallery_search_idle_tooltip())
         self._reset_gallery_search_panel_width()
         self._sync_gallery_search_input_editable()
-        if (
-            getattr(self, "_search_panel_expanded", False)
-            and inp is not None
-        ):
+        if getattr(self, "_search_panel_expanded", False) and inp is not None:
             inp.setFocus()
 
     def _sync_gallery_search_input_editable(self) -> None:
@@ -498,10 +488,7 @@ class SearchPart1:
         if inp is None:
             return
         expanded = bool(getattr(self, "_search_panel_expanded", False))
-        if (
-            self._gallery_search_semantic_work_active()
-            or getattr(self, "_face_indexing_in_progress", False)
-        ):
+        if self._gallery_search_semantic_work_active() or getattr(self, "_face_indexing_in_progress", False):
             ready = False
         else:
             ready = self._is_gallery_semantic_search_ready()
@@ -518,9 +505,7 @@ class SearchPart1:
                 getattr(self, "_face_indexing_in_progress", False),
             )
         self._gallery_search_input_locked_prev = bool(locked)
-        inp.setCursor(
-            QCursor(Qt.CursorShape.ArrowCursor if locked else Qt.CursorShape.IBeamCursor)
-        )
+        inp.setCursor(QCursor(Qt.CursorShape.ArrowCursor if locked else Qt.CursorShape.IBeamCursor))
 
     def _apply_gallery_search_status_placeholder(self) -> None:
         """Show indexing progress inside the search field placeholder."""
@@ -642,9 +627,7 @@ class SearchPart1:
             self._apply_gallery_search_input_width(input_idle, progress=False)
             inp.setToolTip(self._gallery_search_idle_tooltip())
 
-    def _set_gallery_search_status(
-        self, message: str, animate: bool = False, *, relayout: bool = True
-    ):
+    def _set_gallery_search_status(self, message: str, animate: bool = False, *, relayout: bool = True):
         has_msg = bool(message and str(message).strip())
         show_in_search = bool(getattr(self, "_gallery_search_show_index_progress", False))
         if has_msg and self._should_show_search_index_progress(message) and not show_in_search:
@@ -662,9 +645,7 @@ class SearchPart1:
         inp = getattr(self, "gallery_search_input", None)
         if inp is not None:
             if has_msg:
-                w = self._gallery_search_input_width_for_text(
-                    self._gallery_search_status_full
-                )
+                w = self._gallery_search_input_width_for_text(self._gallery_search_status_full)
                 self._search_panel_target_width = self._gallery_search_status_panel_width(
                     self._gallery_search_status_full
                 )
@@ -687,25 +668,19 @@ class SearchPart1:
             if not animating:
                 self._reset_gallery_search_panel_width()
         else:
-            self._search_panel_target_width = self._gallery_search_status_panel_width(
-                self._gallery_search_status_full
-            )
+            self._search_panel_target_width = self._gallery_search_status_panel_width(self._gallery_search_status_full)
 
         if getattr(self, "view_mode", "single") != "gallery" and not getattr(self, "_search_panel_expanded", False):
-                return
+            return
 
-        user_collapsed = getattr(
-            self, "_gallery_search_user_collapsed_while_busy", False
-        )
+        user_collapsed = getattr(self, "_gallery_search_user_collapsed_while_busy", False)
         if user_collapsed:
             return
         if not getattr(self, "_search_panel_expanded", False):
             self._apply_search_expand_container_width(0, animate=False)
             return
         if has_msg or busy:
-            self._apply_search_expand_container_width(
-                self._search_panel_target_width, animate=animate
-            )
+            self._apply_search_expand_container_width(self._search_panel_target_width, animate=animate)
 
     def _search_expand_overlay_anchor(self) -> tuple | None:
         """Top-left anchor (x, y, height) for the floating search field."""
@@ -785,9 +760,7 @@ class SearchPart1:
                 container.clearMask()
             container.hide()
 
-    def _apply_search_expand_overlay_geometry(
-        self, width: int, *, expanded: bool | None = None
-    ) -> None:
+    def _apply_search_expand_overlay_geometry(self, width: int, *, expanded: bool | None = None) -> None:
         """Resize/place the floating search strip (legacy name kept for callers)."""
         if expanded is None:
             expanded = int(width) > 0
@@ -813,9 +786,7 @@ class SearchPart1:
         if not getattr(self, "_search_panel_expanded", False):
             self._place_search_expand_overlay(0)
             return
-        self._place_search_expand_overlay(
-            int(getattr(self, "_search_panel_target_width", 310) or 310)
-        )
+        self._place_search_expand_overlay(int(getattr(self, "_search_panel_target_width", 310) or 310))
 
     def _schedule_search_expand_overlay_sync(self, delay_ms: int = 0) -> None:
         """Re-anchor the floating search field after the status bar relayouts."""
@@ -835,10 +806,7 @@ class SearchPart1:
         expanded = target > 0
         container = self.search_expand_container
         current_w = container.width() if container.isVisible() else 0
-        if (
-            current_w == target
-            and bool(getattr(self, "_search_panel_expanded", False)) == expanded
-        ):
+        if current_w == target and bool(getattr(self, "_search_panel_expanded", False)) == expanded:
             return
         if not animate and self._search_panel_animation_running():
             if target > 0:
@@ -875,12 +843,8 @@ class SearchPart1:
         if full:
             self._search_panel_target_width = self._gallery_search_status_panel_width(full)
         else:
-            self._search_panel_target_width = int(
-                getattr(self, "_search_panel_target_width_idle", 310) or 310
-            )
-        self._apply_search_expand_container_width(
-            self._search_panel_target_width, animate=animate
-        )
+            self._search_panel_target_width = int(getattr(self, "_search_panel_target_width_idle", 310) or 310)
+        self._apply_search_expand_container_width(self._search_panel_target_width, animate=animate)
         self._sync_gallery_search_input_editable()
         if hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
             _macos_install_line_edit_completion_guard(self.gallery_search_input)

@@ -29,6 +29,7 @@ fragile to be a reliable regression guard; this checks the fix via source
 inspection, but specifically replicates the real call order this time
 (view_mode already "gallery" at the point the check would run).
 """
+
 import inspect
 import os
 import sys
@@ -63,7 +64,7 @@ def main() -> int:
     )
     check(
         "close-editor check reads _adjust_overlay_visible directly instead",
-        "getattr(self, \"_adjust_overlay_visible\", False)" in src,
+        'getattr(self, "_adjust_overlay_visible", False)' in src,
     )
     check(
         "_show_gallery_view closes the panel via _close_adjust_panel_from_ui "

@@ -17,6 +17,7 @@ decode_raw_edit_base's own dtype check (`if rgb_image.dtype ==
 np.uint16`) already assumed the correct behavior; it just never actually
 ran because the upstream function silently returned uint8 instead.
 """
+
 import os
 import sys
 

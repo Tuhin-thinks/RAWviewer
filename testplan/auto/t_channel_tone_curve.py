@@ -9,6 +9,7 @@ IS expected to shift hue -- that is the feature. Checks:
     treating an all-empty CHANNEL_CURVE_KEYS as "no edit").
   - reset (all keys absent) equals doing nothing.
 """
+
 import os
 import sys
 

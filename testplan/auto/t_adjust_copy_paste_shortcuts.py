@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Regression guard: Ctrl/Cmd+C and Ctrl/Cmd+V to copy/paste settings in Adjust panel.
-"""
+"""Regression guard: Ctrl/Cmd+C and Ctrl/Cmd+V to copy/paste settings in Adjust panel."""
+
 import os
 import sys
 
@@ -85,6 +85,7 @@ def main() -> int:
     # Test 2: Paste settings via Ctrl+V
     # We must seed the clipboard so Paste is executed
     import rawviewer_ui.widgets.adjust as ap
+
     ap._EDIT_SETTINGS_CLIPBOARD = {"Exposure2012": 1.0}
 
     evt_paste_ctrl = MockEvent(Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
@@ -102,6 +103,7 @@ def main() -> int:
 
     # Test 4: Shortcut blocked by text input focus
     from PyQt6.QtWidgets import QLineEdit
+
     mock_line_edit = QLineEdit()
     m._focus_widget = mock_line_edit
     m.single_image_adjust_panel.copy_called = False

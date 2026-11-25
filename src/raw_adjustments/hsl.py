@@ -49,15 +49,11 @@ def _cv2_packs_hsv_as_uint8() -> bool:
             import numpy as np
 
             probe = np.array(
-                [[[0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
-                 [[1.0, 0.0, 0.0], [0.5, 0.5, 0.5]]],
+                [[[0.0, 0.0, 1.0], [0.0, 1.0, 0.0]], [[1.0, 0.0, 0.0], [0.5, 0.5, 0.5]]],
                 dtype=np.float32,
             )
             out = cv2.cvtColor(probe, cv2.COLOR_BGR2HSV)
-            _HSV_PACKING_PROBE = bool(
-                float(np.nanmax(out[:, :, 1])) > 1.5
-                or float(np.nanmax(out[:, :, 2])) > 1.5
-            )
+            _HSV_PACKING_PROBE = bool(float(np.nanmax(out[:, :, 1])) > 1.5 or float(np.nanmax(out[:, :, 2])) > 1.5)
         except Exception:
             _HSV_PACKING_PROBE = False
     return _HSV_PACKING_PROBE
@@ -85,9 +81,7 @@ def _rgb_to_hsv(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         h = h * (360.0 / 179.0) if float(np.nanmax(h)) <= 180.5 else h
         s = s / 255.0
         v = v / 255.0
-    return h.astype(np.float32, copy=False), s.astype(np.float32, copy=False), v.astype(
-        np.float32, copy=False
-    )
+    return h.astype(np.float32, copy=False), s.astype(np.float32, copy=False), v.astype(np.float32, copy=False)
 
 
 def _hsv_to_rgb(h: np.ndarray, s: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -124,8 +118,7 @@ def apply_hsl_adjustments(display_linear: np.ndarray, adj: dict[str, float]) -> 
     active = False
     for color in HSL_COLOR_NAMES:
         if any(
-            abs(float(adj.get(f"{kind}Adjustment{color}", 0.0))) > 1e-4
-            for kind in ("Hue", "Saturation", "Luminance")
+            abs(float(adj.get(f"{kind}Adjustment{color}", 0.0))) > 1e-4 for kind in ("Hue", "Saturation", "Luminance")
         ):
             active = True
             break

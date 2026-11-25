@@ -1,4 +1,5 @@
 """gallery mixin, part 2 of 5 (17 methods, 872 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -113,6 +114,7 @@ class GalleryPart2:
         import time
 
         from PyQt6.QtCore import QTimer
+
         logger = logging.getLogger(__name__)
         self._suppress_single_manager_callbacks = True
         try:
@@ -197,7 +199,7 @@ class GalleryPart2:
             pass
 
         # Track gallery loading start time for performance monitoring
-        if hasattr(self, 'gallery_justified') and self.gallery_justified:
+        if hasattr(self, "gallery_justified") and self.gallery_justified:
             gj = self.gallery_justified
             gj._is_scrolling_fast = False
             gj._current_scroll_speed = 0.0
@@ -214,18 +216,16 @@ class GalleryPart2:
             logger.info(f"[GALLERY] Gallery load timing started at {gj._gallery_load_start_time:.3f}")
 
         # Update title / top metadata for gallery mode
-        if hasattr(self, 'current_folder') and self.current_folder:
+        if hasattr(self, "current_folder") and self.current_folder:
             folder_name = os.path.basename(self.current_folder)
             title = f"RAWviewer - {folder_name}"
         else:
             title = "RAWviewer"
         if platform.system() == "Darwin":
-            self._apply_top_metadata_text(
-                os.path.basename(str(self.current_folder or ""))
-            )
+            self._apply_top_metadata_text(os.path.basename(str(self.current_folder or "")))
         else:
             self.setWindowTitle(title)
-            if hasattr(self, 'title_bar') and self.title_bar is not None:
+            if hasattr(self, "title_bar") and self.title_bar is not None:
                 self.title_bar.set_title(title)
 
         # Create gallery widget if needed (at most one container in the layout)
@@ -253,7 +253,7 @@ class GalleryPart2:
             self._close_adjust_panel_from_ui()
 
         # Hide single view before touching GPU/full-res buffers (Windows GL abort otherwise).
-        if hasattr(self, 'single_view_container') and self.single_view_container:
+        if hasattr(self, "single_view_container") and self.single_view_container:
             self.single_view_container.hide()
         else:
             self.scroll_area.hide()
@@ -261,35 +261,34 @@ class GalleryPart2:
             self.compare_widget.hide()
         # Let Qt finish hiding the single-view GL surface before teardown (Windows).
         release_delay_ms = 50 if sys.platform == "win32" else 0
-        QTimer.singleShot(
-            release_delay_ms, self._release_single_view_heavy_buffers_for_gallery
-        )
+        QTimer.singleShot(release_delay_ms, self._release_single_view_heavy_buffers_for_gallery)
         # Bottom chrome (sort/search/slideshow vs burst back-to-gallery) handled below.
 
         # In gallery mode: hide per-image metadata, but keep total count visible.
-        if hasattr(self, 'status_bar'):
+        if hasattr(self, "status_bar"):
             self.status_bar.show()  # Keep status_bar visible to show sort button
             self.status_bar.showMessage("")  # Clear message
-        if hasattr(self, 'status_metadata_label'):
+        if hasattr(self, "status_metadata_label"):
             self._apply_top_metadata_text(self._gallery_top_metadata_label())
-        if hasattr(self, 'status_counter_label'):
+        if hasattr(self, "status_counter_label"):
             self._update_gallery_counter()
         self._ensure_gallery_search_collapsed()
         if not self._is_gallery_search_indexing_active():
             self._clear_stale_gallery_search_index_progress()
-        elif (
-            getattr(self, "_search_panel_expanded", False)
-            and getattr(self, "_gallery_search_show_index_progress", False)
+        elif getattr(self, "_search_panel_expanded", False) and getattr(
+            self, "_gallery_search_show_index_progress", False
         ):
             progress = (getattr(self, "_gallery_search_status_full", "") or "").strip()
             if progress:
                 self._set_gallery_search_status(progress)
-        if self._search_panel_expanded and hasattr(self, "search_expand_layout") and hasattr(
-            self, "gallery_search_panel"
+        if (
+            self._search_panel_expanded
+            and hasattr(self, "search_expand_layout")
+            and hasattr(self, "gallery_search_panel")
         ):
             self.search_expand_layout.setCurrentWidget(self.gallery_search_panel)
         # Show size slider in gallery mode; sort/search/slideshow vs burst back via chrome sync.
-        if hasattr(self, 'size_slider'):
+        if hasattr(self, "size_slider"):
             self.size_slider.show()
         self._sync_burst_group_bottom_chrome()
         # Single-image actions stay in update_status_bar for single mode only; hide here
@@ -430,9 +429,7 @@ class GalleryPart2:
         self.gallery_export_selection_btn = QPushButton("Export…")
         self.gallery_export_selection_btn.setStyleSheet(_bar_btn_style)
         self.gallery_export_selection_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.gallery_export_selection_btn.setToolTip(
-            "Copy originals or export edited copies to a chosen folder"
-        )
+        self.gallery_export_selection_btn.setToolTip("Copy originals or export edited copies to a chosen folder")
         bar_layout.addWidget(self.gallery_export_selection_btn)
 
         self.gallery_delete_selection_btn = QPushButton("Delete")
@@ -624,290 +621,283 @@ class GalleryPart2:
             pass
 
     def _update_gallery_view(self):
-            """Update gallery view - using JustifiedGallery"""
-            import logging
-            import time
+        """Update gallery view - using JustifiedGallery"""
+        import logging
+        import time
 
-            from PyQt6.QtCore import QTimer
-            logger = logging.getLogger(__name__)
-            if getattr(self, "view_mode", "") != "gallery":
-                logger.debug(
-                    "[GALLERY] _update_gallery_view skipped; view_mode=%s",
-                    getattr(self, "view_mode", ""),
-                )
-                return
-            logger.debug("[MODESWITCH] _update_gallery_view called; widget=%s justified=%s files=%d",
-                           bool(self.gallery_widget), bool(self.gallery_justified), len(self.image_files))
-            start_time = time.time()
-            logger.info("[GALLERY] ========== _update_gallery_view() STARTED ==========")
-            self._update_gallery_counter()
-            self._sync_gallery_selection_chrome()
+        from PyQt6.QtCore import QTimer
 
-            if not self.gallery_widget or not self.gallery_justified:
-                logger.info("[GALLERY] Gallery widget not available, returning")
-                return
-            self._sync_gallery_scrollbar_policy()
-            if not self.image_files:
-                logger.info("[GALLERY] No image files for gallery update, returning")
-                query = getattr(self, "_last_semantic_query", "") or ""
-                if query.strip():
-                    bulk_meta = getattr(self, "_gallery_bulk_metadata", None)
-                    self.gallery_justified.set_images(
-                        [], bulk_meta if bulk_meta else None
-                    )
-                    self.gallery_justified.show_empty_message("No matching images")
-                return
+        logger = logging.getLogger(__name__)
+        if getattr(self, "view_mode", "") != "gallery":
+            logger.debug(
+                "[GALLERY] _update_gallery_view skipped; view_mode=%s",
+                getattr(self, "view_mode", ""),
+            )
+            return
+        logger.debug(
+            "[MODESWITCH] _update_gallery_view called; widget=%s justified=%s files=%d",
+            bool(self.gallery_widget),
+            bool(self.gallery_justified),
+            len(self.image_files),
+        )
+        start_time = time.time()
+        logger.info("[GALLERY] ========== _update_gallery_view() STARTED ==========")
+        self._update_gallery_counter()
+        self._sync_gallery_selection_chrome()
 
-            # IMPORTANT: Switching to gallery should be instant.
-            # Do NOT block the UI thread on metadata fetch for thousands of files.
-            # 1) Show gallery immediately with a fast layout (default aspect ratios or cached).
-            bulk_metadata = getattr(self, '_gallery_bulk_metadata', None) or {}
+        if not self.gallery_widget or not self.gallery_justified:
+            logger.info("[GALLERY] Gallery widget not available, returning")
+            return
+        self._sync_gallery_scrollbar_policy()
+        if not self.image_files:
+            logger.info("[GALLERY] No image files for gallery update, returning")
+            query = getattr(self, "_last_semantic_query", "") or ""
+            if query.strip():
+                bulk_meta = getattr(self, "_gallery_bulk_metadata", None)
+                self.gallery_justified.set_images([], bulk_meta if bulk_meta else None)
+                self.gallery_justified.show_empty_message("No matching images")
+            return
+
+        # IMPORTANT: Switching to gallery should be instant.
+        # Do NOT block the UI thread on metadata fetch for thousands of files.
+        # 1) Show gallery immediately with a fast layout (default aspect ratios or cached).
+        bulk_metadata = getattr(self, "_gallery_bulk_metadata", None) or {}
+        try:
+            # Pre-seed layout metadata from the fast semantic index if available
+            # to prevent the gallery from flashing as async EXIF arrives
             try:
-                # Pre-seed layout metadata from the fast semantic index if available
-                # to prevent the gallery from flashing as async EXIF arrives
-                try:
-                    idx = self._get_semantic_index()
-                    if idx and self.image_files:
-                        layout_meta = idx.get_layout_metadata_for_paths(self.image_files)
-                        if layout_meta:
-                            for fp, meta in layout_meta.items():
-                                if fp not in bulk_metadata:
-                                    bulk_metadata[fp] = {}
-                                # Don't overwrite if EXIF already arrived
-                                if "original_width" not in bulk_metadata[fp] and (
-                                    meta.get("original_width") or meta.get("width")
-                                ):
-                                    if meta.get("original_width"):
-                                        bulk_metadata[fp]["original_width"] = int(
-                                            meta["original_width"]
-                                        )
-                                        bulk_metadata[fp]["original_height"] = int(
-                                            meta.get("original_height") or 0
-                                        )
-                                        bulk_metadata[fp]["orientation"] = int(
-                                            meta.get("orientation") or 1
-                                        )
-                                    else:
+                idx = self._get_semantic_index()
+                if idx and self.image_files:
+                    layout_meta = idx.get_layout_metadata_for_paths(self.image_files)
+                    if layout_meta:
+                        for fp, meta in layout_meta.items():
+                            if fp not in bulk_metadata:
+                                bulk_metadata[fp] = {}
+                            # Don't overwrite if EXIF already arrived
+                            if "original_width" not in bulk_metadata[fp] and (
+                                meta.get("original_width") or meta.get("width")
+                            ):
+                                if meta.get("original_width"):
+                                    bulk_metadata[fp]["original_width"] = int(meta["original_width"])
+                                    bulk_metadata[fp]["original_height"] = int(meta.get("original_height") or 0)
+                                    bulk_metadata[fp]["orientation"] = int(meta.get("orientation") or 1)
+                                else:
+                                    w = int(meta.get("width") or 0)
+                                    h = int(meta.get("height") or 0)
+                                    o = int(meta.get("orientation") or 1)
+                                    bulk_metadata[fp]["original_width"] = w
+                                    bulk_metadata[fp]["original_height"] = h
+                                    bulk_metadata[fp]["orientation"] = o
+            except Exception as ex:
+                logger.warning(f"[GALLERY] Could not pre-seed semantic metadata: {ex}")
 
-                                        w = int(meta.get("width") or 0)
-                                        h = int(meta.get("height") or 0)
-                                        o = int(meta.get("orientation") or 1)
-                                        bulk_metadata[fp]["original_width"] = w
-                                        bulk_metadata[fp]["original_height"] = h
-                                        bulk_metadata[fp]["orientation"] = o
-                except Exception as ex:
-                    logger.warning(f"[GALLERY] Could not pre-seed semantic metadata: {ex}")
-
-                self._maybe_clear_empty_bookmark_filter()
-                self._maybe_clear_empty_rating_filter()
-                self._rebuild_burst_groups()
-                display_files = self._gallery_files_for_display()
-                self._prune_gallery_selection_to_displayed(display_files)
-                filter_active = bool(
-                    getattr(self, "_gallery_bookmark_filter_active", False)
-                ) or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
-                if not display_files and filter_active:
-                    self.gallery_justified.set_images(
-                        [], bulk_metadata if bulk_metadata else None
-                    )
-                    self.gallery_justified.show_empty_message(
-                        f"No {self._gallery_scope_filter_description()}"
-                    )
-                else:
-                    if hasattr(self.gallery_justified, "hide_empty_message"):
-                        self.gallery_justified.hide_empty_message()
-                    gj = self.gallery_justified
-                    display_files = self._gallery_files_for_display()
-                    preserve_viewport = bool(
-                        gj
-                        and gj._layout_matches_current_images(display_files)
-                        and getattr(gj, "_gallery_layout_items", None)
-                    )
-                    if not preserve_viewport:
-                        self._scroll_gallery_to_current_file(backup=False)
-                    self.gallery_justified.set_images(
-                        display_files, bulk_metadata if bulk_metadata else None
-                    )
-                    # Preserve path: scroll position is already correct -- calling
-                    # scroll_to_file() would reset attempt counters and park
-                    # load_visible behind entry-scroll retries (blank gallery).
-                    if not preserve_viewport:
-                        self._scroll_gallery_to_current_file()
-                # Avoid forced rebuild loops; set_images() already schedules build/layout.
-                # Only nudge visible-load passes after initial layout is expected ready.
-                self._warm_gallery_from_filmstrip_cache()
-                if hasattr(self.gallery_justified, "sync_visual_rotations"):
-                    # Fast path: layout already built (same folder/order). Full rebuild path
-                    # syncs at end of build_gallery() once _path_to_indices exists.
-                    self.gallery_justified.sync_visual_rotations()
-                current_file = getattr(self, "current_file_path", None)
-                if (
-                    current_file
-                    and hasattr(self.gallery_justified, "apply_visual_rotation_for_path")
-                ):
-                    self.gallery_justified.apply_visual_rotation_for_path(current_file)
-                file_count = len(self.image_files or [])
-                first_load_ms = min(200, max(80, 80 + file_count // 120))
+            self._maybe_clear_empty_bookmark_filter()
+            self._maybe_clear_empty_rating_filter()
+            self._rebuild_burst_groups()
+            display_files = self._gallery_files_for_display()
+            self._prune_gallery_selection_to_displayed(display_files)
+            filter_active = (
+                bool(getattr(self, "_gallery_bookmark_filter_active", False))
+                or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+            )
+            if not display_files and filter_active:
+                self.gallery_justified.set_images([], bulk_metadata if bulk_metadata else None)
+                self.gallery_justified.show_empty_message(f"No {self._gallery_scope_filter_description()}")
+            else:
+                if hasattr(self.gallery_justified, "hide_empty_message"):
+                    self.gallery_justified.hide_empty_message()
                 gj = self.gallery_justified
-                if hasattr(gj, "_request_load_visible_images"):
-                    gj._request_load_visible_images(0)
-                    gj._request_load_visible_images(first_load_ms)
-                    gj._request_load_visible_images(first_load_ms + 500)
-                else:
-                    QTimer.singleShot(first_load_ms, gj.load_visible_images)
-                    QTimer.singleShot(first_load_ms + 500, gj.load_visible_images)
-            except Exception as e:
-                logger.exception(f"[GALLERY] set_images failed: {e}")
-                self.show_error(
-                    "Gallery Error",
-                    f"Could not build the gallery view:\n{e}",
+                display_files = self._gallery_files_for_display()
+                preserve_viewport = bool(
+                    gj
+                    and gj._layout_matches_current_images(display_files)
+                    and getattr(gj, "_gallery_layout_items", None)
                 )
-                return
+                if not preserve_viewport:
+                    self._scroll_gallery_to_current_file(backup=False)
+                self.gallery_justified.set_images(display_files, bulk_metadata if bulk_metadata else None)
+                # Preserve path: scroll position is already correct -- calling
+                # scroll_to_file() would reset attempt counters and park
+                # load_visible behind entry-scroll retries (blank gallery).
+                if not preserve_viewport:
+                    self._scroll_gallery_to_current_file()
+            # Avoid forced rebuild loops; set_images() already schedules build/layout.
+            # Only nudge visible-load passes after initial layout is expected ready.
+            self._warm_gallery_from_filmstrip_cache()
+            if hasattr(self.gallery_justified, "sync_visual_rotations"):
+                # Fast path: layout already built (same folder/order). Full rebuild path
+                # syncs at end of build_gallery() once _path_to_indices exists.
+                self.gallery_justified.sync_visual_rotations()
+            current_file = getattr(self, "current_file_path", None)
+            if current_file and hasattr(self.gallery_justified, "apply_visual_rotation_for_path"):
+                self.gallery_justified.apply_visual_rotation_for_path(current_file)
+            file_count = len(self.image_files or [])
+            first_load_ms = min(200, max(80, 80 + file_count // 120))
+            gj = self.gallery_justified
+            if hasattr(gj, "_request_load_visible_images"):
+                gj._request_load_visible_images(0)
+                gj._request_load_visible_images(first_load_ms)
+                gj._request_load_visible_images(first_load_ms + 500)
+            else:
+                QTimer.singleShot(first_load_ms, gj.load_visible_images)
+                QTimer.singleShot(first_load_ms + 500, gj.load_visible_images)
+        except Exception as e:
+            logger.exception(f"[GALLERY] set_images failed: {e}")
+            self.show_error(
+                "Gallery Error",
+                f"Could not build the gallery view:\n{e}",
+            )
+            return
 
-            # 2) If metadata is missing, fetch it in the background and refresh once ready.
-            if not bulk_metadata and not getattr(self, "_gallery_metadata_fetch_in_progress", False):
-                self._gallery_metadata_fetch_in_progress = True
-                folder_at_request = getattr(self, "current_folder", None)
-                files_snapshot = list(self.image_files)
+        # 2) If metadata is missing, fetch it in the background and refresh once ready.
+        if not bulk_metadata and not getattr(self, "_gallery_metadata_fetch_in_progress", False):
+            self._gallery_metadata_fetch_in_progress = True
+            folder_at_request = getattr(self, "current_folder", None)
+            files_snapshot = list(self.image_files)
 
-                from PyQt6.QtCore import QRunnable
+            from PyQt6.QtCore import QRunnable
 
-                # Create signal carrier for this specific fetch
-                signals = GalleryMetadataSignals()
-                signals.ready.connect(self._on_gallery_metadata_ready)
+            # Create signal carrier for this specific fetch
+            signals = GalleryMetadataSignals()
+            signals.ready.connect(self._on_gallery_metadata_ready)
 
-                # Store references to prevent garbage collection while thread is running
-                self._active_metadata_signals = signals
+            # Store references to prevent garbage collection while thread is running
+            self._active_metadata_signals = signals
 
-                class _GalleryMetadataFetch(QRunnable):
-                    def __init__(self_inner, files, signals, folder_path):
-                        super().__init__()
-                        self_inner.files = files
-                        self_inner.signals = signals
-                        # Ensure folder_path is string (PyQt signals are strict)
-                        self_inner.folder_path = folder_path if folder_path is not None else ""
+            class _GalleryMetadataFetch(QRunnable):
+                def __init__(self_inner, files, signals, folder_path):
+                    super().__init__()
+                    self_inner.files = files
+                    self_inner.signals = signals
+                    # Ensure folder_path is string (PyQt signals are strict)
+                    self_inner.folder_path = folder_path if folder_path is not None else ""
 
-                    def run(self_inner):
+                def run(self_inner):
+                    try:
+                        from image_cache import get_image_cache
+
+                        cache = get_image_cache()
+                        # OPTIMIZATION: In large folders, avoid hitting the disk for every file
+                        # in a background thread while the gallery is also loading thumbnails.
+                        # Just use what's in the SQLite cache (opportunistic like v1.6.0).
+                        meta = cache.get_multiple_exif(self_inner.files, fast_mode=True)
                         try:
-                            from image_cache import get_image_cache
-                            cache = get_image_cache()
-                            # OPTIMIZATION: In large folders, avoid hitting the disk for every file
-                            # in a background thread while the gallery is also loading thumbnails.
-                            # Just use what's in the SQLite cache (opportunistic like v1.6.0).
-                            meta = cache.get_multiple_exif(self_inner.files, fast_mode=True)
-                            try:
-                                from PyQt6 import sip
-                                if not sip.isdeleted(self_inner.signals):
-                                    self_inner.signals.ready.emit(meta, self_inner.folder_path)
-                            except Exception:
-                                pass
-                        except Exception as e:
-                            import logging
-                            logger = logging.getLogger(__name__)
-                            logger.error(f"[GALLERY] Metadata fetch error: {e}")
-                            # Emit empty meta but still valid folder path string
-                            try:
-                                from PyQt6 import sip
-                                if not sip.isdeleted(self_inner.signals):
-                                    self_inner.signals.ready.emit({}, self_inner.folder_path)
-                            except Exception:
-                                pass
+                            from PyQt6 import sip
 
-                fetcher = _GalleryMetadataFetch(files_snapshot, signals, folder_at_request)
-                self._active_metadata_fetcher = fetcher
-                _get_bg_thread_pool().start(fetcher)
+                            if not sip.isdeleted(self_inner.signals):
+                                self_inner.signals.ready.emit(meta, self_inner.folder_path)
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        import logging
 
-            total_time = time.time() - start_time
-            logger.info(f"[GALLERY] ========== GALLERY LAYOUT COMPLETED in {total_time:.3f}s ==========")
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"[GALLERY] Metadata fetch error: {e}")
+                        # Emit empty meta but still valid folder path string
+                        try:
+                            from PyQt6 import sip
+
+                            if not sip.isdeleted(self_inner.signals):
+                                self_inner.signals.ready.emit({}, self_inner.folder_path)
+                        except Exception:
+                            pass
+
+            fetcher = _GalleryMetadataFetch(files_snapshot, signals, folder_at_request)
+            self._active_metadata_fetcher = fetcher
+            _get_bg_thread_pool().start(fetcher)
+
+        total_time = time.time() - start_time
+        logger.info(f"[GALLERY] ========== GALLERY LAYOUT COMPLETED in {total_time:.3f}s ==========")
 
     def _add_gallery_row(self, row_items, available_width, content_width, row_height, row_spacing):
-            """Add a single row - based on reference code add_row method"""
-            from PyQt6.QtWidgets import QHBoxLayout, QWidget
+        """Add a single row - based on reference code add_row method"""
+        from PyQt6.QtWidgets import QHBoxLayout, QWidget
 
-            row_widget = QWidget()
-            row_layout = QHBoxLayout(row_widget)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(0)
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(0)
 
-            # Remaining space after placing all thumbnails
-            free_space = max(0, available_width - content_width)
+        # Remaining space after placing all thumbnails
+        free_space = max(0, available_width - content_width)
 
-            # Spacing distributed evenly between items
-            gaps = len(row_items) - 1 if len(row_items) > 1 else 1
-            # Limit extra padding to prevent excessive spacing
-            # Use minimum of calculated padding or a maximum value (e.g., 8px)
-            extra_padding = min(free_space // gaps, 8) if gaps > 0 else 0
+        # Spacing distributed evenly between items
+        gaps = len(row_items) - 1 if len(row_items) > 1 else 1
+        # Limit extra padding to prevent excessive spacing
+        # Use minimum of calculated padding or a maximum value (e.g., 8px)
+        extra_padding = min(free_space // gaps, 8) if gaps > 0 else 0
 
-            for i, (file_path, w) in enumerate(row_items):
-                # Create thumbnail label (will be loaded async)
-                thumb_label = ThumbnailLabel()
-                thumb_label.file_path = file_path
+        for i, (file_path, w) in enumerate(row_items):
+            # Create thumbnail label (will be loaded async)
+            thumb_label = ThumbnailLabel()
+            thumb_label.file_path = file_path
 
-                if not hasattr(self, '_gallery_thumb_labels'):
-                    self._gallery_thumb_labels = {}
-                self._gallery_thumb_labels[file_path] = thumb_label
+            if not hasattr(self, "_gallery_thumb_labels"):
+                self._gallery_thumb_labels = {}
+            self._gallery_thumb_labels[file_path] = thumb_label
 
-                # Make clickable
-                thumb_label.clicked.connect(self._gallery_item_clicked)
+            # Make clickable
+            thumb_label.clicked.connect(self._gallery_item_clicked)
 
-                # Load pixmap and scale it
-                pixmap = self._get_gallery_pixmap(file_path)
-                if pixmap and not pixmap.isNull():
-                    # Scale to fixed height while preserving aspect ratio (like reference)
-                    # Ensure dimensions are at least 1px to prevent crash
-                    safe_width = max(1, w)
-                    safe_height = max(1, row_height)
-                    resized = pixmap.scaled(
-                        QSize(safe_width, safe_height),
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
-                    )
-                    thumb_label.setFixedSize(resized.size())  # CRITICAL: Like reference code
-                    thumb_label.setPixmap(resized)
-                    thumb_label.set_original_pixmap(pixmap)
-                else:
-                    # Placeholder size, will be updated when loaded
-                    thumb_label.setFixedSize(w, row_height)
-                    # Load asynchronously
-                    from PyQt6.QtCore import QTimer
-                    QTimer.singleShot(50, lambda fp=file_path, tl=thumb_label: self._load_gallery_thumbnail_simple(fp, tl))
+            # Load pixmap and scale it
+            pixmap = self._get_gallery_pixmap(file_path)
+            if pixmap and not pixmap.isNull():
+                # Scale to fixed height while preserving aspect ratio (like reference)
+                # Ensure dimensions are at least 1px to prevent crash
+                safe_width = max(1, w)
+                safe_height = max(1, row_height)
+                resized = pixmap.scaled(
+                    QSize(safe_width, safe_height),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                thumb_label.setFixedSize(resized.size())  # CRITICAL: Like reference code
+                thumb_label.setPixmap(resized)
+                thumb_label.set_original_pixmap(pixmap)
+            else:
+                # Placeholder size, will be updated when loaded
+                thumb_label.setFixedSize(w, row_height)
+                # Load asynchronously
+                from PyQt6.QtCore import QTimer
 
-                row_layout.addWidget(thumb_label)
+                QTimer.singleShot(50, lambda fp=file_path, tl=thumb_label: self._load_gallery_thumbnail_simple(fp, tl))
 
-                # Apply padding after each item (except last) - like reference code
-                if i < len(row_items) - 1:
-                    row_layout.addSpacing(row_spacing + extra_padding)
+            row_layout.addWidget(thumb_label)
 
-            self.gallery_content_layout.addWidget(row_widget)
+            # Apply padding after each item (except last) - like reference code
+            if i < len(row_items) - 1:
+                row_layout.addSpacing(row_spacing + extra_padding)
+
+        self.gallery_content_layout.addWidget(row_widget)
 
     def _load_gallery_thumbnail_simple(self, file_path, thumb_label):
-            """Load thumbnail simply - based on reference code"""
+        """Load thumbnail simply - based on reference code"""
 
-            pixmap = self._get_gallery_pixmap(file_path)
-            if not pixmap or pixmap.isNull():
-                # Try async load
-                self._load_gallery_pixmap_async(file_path)
-                return
+        pixmap = self._get_gallery_pixmap(file_path)
+        if not pixmap or pixmap.isNull():
+            # Try async load
+            self._load_gallery_pixmap_async(file_path)
+            return
 
-            # Get aspect ratio
-            aspect = pixmap.width() / pixmap.height() if pixmap.height() > 0 else 4.0 / 3.0
-            thumb_width = int(self.gallery_row_height * aspect)
+        # Get aspect ratio
+        aspect = pixmap.width() / pixmap.height() if pixmap.height() > 0 else 4.0 / 3.0
+        thumb_width = int(self.gallery_row_height * aspect)
 
-            # Scale to fixed height while preserving aspect ratio (like reference)
-            # Ensure dimensions are at least 1px to prevent crash
-            safe_width = max(1, thumb_width)
-            safe_height = max(1, self.gallery_row_height)
-            resized = pixmap.scaled(
-                QSize(safe_width, safe_height),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
+        # Scale to fixed height while preserving aspect ratio (like reference)
+        # Ensure dimensions are at least 1px to prevent crash
+        safe_width = max(1, thumb_width)
+        safe_height = max(1, self.gallery_row_height)
+        resized = pixmap.scaled(
+            QSize(safe_width, safe_height),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
 
-            # CRITICAL: Like reference code - thumb.setFixedSize(resized.size())
-            thumb_label.setFixedSize(resized.size())
-            thumb_label.setPixmap(resized)
-            thumb_label.set_original_pixmap(pixmap)
+        # CRITICAL: Like reference code - thumb.setFixedSize(resized.size())
+        thumb_label.setFixedSize(resized.size())
+        thumb_label.setPixmap(resized)
+        thumb_label.set_original_pixmap(pixmap)
 
-            if file_path in self._gallery_load_tracking:
-                self._gallery_load_tracking[file_path]['loaded'] = True
-                self._gallery_load_tracking[file_path]['displayed'] = True
+        if file_path in self._gallery_load_tracking:
+            self._gallery_load_tracking[file_path]["loaded"] = True
+            self._gallery_load_tracking[file_path]["displayed"] = True

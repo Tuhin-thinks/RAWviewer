@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ctrl+scroll zoom keeps the image point under the pointer fixed."""
+
 import os
 import sys
 
@@ -90,10 +91,13 @@ def main() -> int:
     app.processEvents()
     new_scene = view.mapToScene(pos)
     new_frac = (new_scene.x() / 8000.0, new_scene.y() / 6000.0)
-    drift = max(
-        abs(new_frac[0] - old_frac[0]) * 8000.0,
-        abs(new_frac[1] - old_frac[1]) * 6000.0,
-    ) * view.current_scale()
+    drift = (
+        max(
+            abs(new_frac[0] - old_frac[0]) * 8000.0,
+            abs(new_frac[1] - old_frac[1]) * 6000.0,
+        )
+        * view.current_scale()
+    )
     check("full-res swap keeps pointer point fixed", drift <= TOL_PX, f"drift={drift:.2f}px")
 
     view.fit_to_window()

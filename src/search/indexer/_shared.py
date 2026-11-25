@@ -31,5 +31,3 @@ def _bundled_resource_path(relative_path: str) -> str:
     if not base:
         base = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     return os.path.join(base, relative_path)
-
-

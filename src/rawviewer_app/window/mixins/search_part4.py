@@ -1,4 +1,5 @@
 """search mixin, part 4 of 4 (19 methods, 697 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -50,25 +51,17 @@ class SearchPart4:
                 )
                 return
             if not self._is_semantic_index_incomplete(folder):
-                logger.info(
-                    "[INDEX][RESUME] Skip: folder not marked incomplete "
-                    f"(folder={folder})"
-                )
+                logger.info(f"[INDEX][RESUME] Skip: folder not marked incomplete (folder={folder})")
                 return
 
             # Give folder view setup a short head start, then resume in background.
-            logger.info(
-                "[INDEX][RESUME] Schedule prep in 1200ms "
-                f"(folder={folder}, corpus_size={len(corpus)})"
-            )
+            logger.info(f"[INDEX][RESUME] Schedule prep in 1200ms (folder={folder}, corpus_size={len(corpus)})")
             QTimer.singleShot(
                 1200,
                 lambda f=folder, c=list(corpus): self._trigger_resume_semantic_indexing(f, c),
             )
         except Exception as e:
-            logging.getLogger(__name__).warning(
-                f"[INDEX][RESUME] Failed to schedule resume prep: {e}"
-            )
+            logging.getLogger(__name__).warning(f"[INDEX][RESUME] Failed to schedule resume prep: {e}")
 
     def _trigger_resume_semantic_indexing(self, folder, corpus):
         logger = logging.getLogger(__name__)
@@ -89,15 +82,9 @@ class SearchPart4:
         try:
             index = self._get_semantic_index()
             if not index.semantic_backend_available():
-                logger.info(
-                    "[INDEX][RESUME] Cancel: semantic backend unavailable "
-                    f"({index.semantic_backend_error()})"
-                )
+                logger.info(f"[INDEX][RESUME] Cancel: semantic backend unavailable ({index.semantic_backend_error()})")
                 return
-            logger.info(
-                "[INDEX][RESUME] Start prep worker "
-                f"(folder={folder}, corpus_size={len(corpus)})"
-            )
+            logger.info(f"[INDEX][RESUME] Start prep worker (folder={folder}, corpus_size={len(corpus)})")
             # Spin up the background prep worker instead of doing get_index_coverage and get_pending_paths on UI thread!
             self._run_semantic_index_prep_for_resume(folder, corpus)
         except Exception as e:
@@ -112,7 +99,11 @@ class SearchPart4:
         signals = SemanticIndexPrepSignals()
         self._semantic_index_prep_signals = signals
 
-        signals.done.connect(lambda coverage, pending, face_pending, extract_pending=None: self._on_semantic_index_resume_prep_done(folder, corpus_files, coverage, pending, face_pending))
+        signals.done.connect(
+            lambda coverage, pending, face_pending, extract_pending=None: self._on_semantic_index_resume_prep_done(
+                folder, corpus_files, coverage, pending, face_pending
+            )
+        )
         signals.error.connect(self._on_semantic_index_prep_error)
 
         worker = _SemanticIndexPrepWorker(corpus_files, index, signals)
@@ -152,14 +143,11 @@ class SearchPart4:
                     coverage=coverage,
                     pending_files=pending,
                     run_semantic_embeddings=semantic_embeddings_enabled(),
-                    show_search_progress=bool(
-                        getattr(self, "_gallery_search_show_index_progress", False)
-                    ),
+                    show_search_progress=bool(getattr(self, "_gallery_search_show_index_progress", False)),
                 )
             else:
                 logger.info(
-                    "[INDEX][RESUME] Semantic embeddings deferred until user opens search "
-                    f"(pending={len(pending)})"
+                    f"[INDEX][RESUME] Semantic embeddings deferred until user opens search (pending={len(pending)})"
                 )
                 self._set_semantic_index_incomplete(folder, True)
             return
@@ -185,9 +173,7 @@ class SearchPart4:
             self._get_semantic_index().pause_indexing(False)
             import logging
 
-            logging.getLogger(__name__).info(
-                "[VIEW_MODE] Background indexing resumed after idle period in single view"
-            )
+            logging.getLogger(__name__).info("[VIEW_MODE] Background indexing resumed after idle period in single view")
         except Exception:
             pass
 
@@ -196,21 +182,18 @@ class SearchPart4:
         if getattr(self, "view_mode", "") != "gallery":
             return
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Check if there are active high-priority (CURRENT) tasks in the image manager
         if hasattr(self, "image_manager") and self.image_manager is not None:
             try:
                 from image_load_manager import Priority
+
                 with self.image_manager._queue_lock:
                     for task in self.image_manager._active_tasks.values():
-                        if (
-                            getattr(task, "priority", None) == Priority.CURRENT
-                            and not task.is_cancelled()
-                        ):
-                            logger.debug(
-                                "[VIEW_MODE] Deferring background indexing: high-priority gallery task active"
-                            )
+                        if getattr(task, "priority", None) == Priority.CURRENT and not task.is_cancelled():
+                            logger.debug("[VIEW_MODE] Deferring background indexing: high-priority gallery task active")
                             if hasattr(self, "_resume_indexing_timer") and self._resume_indexing_timer:
                                 self._resume_indexing_timer.start(3000)
                             return
@@ -219,9 +202,7 @@ class SearchPart4:
 
         try:
             self._get_semantic_index().pause_indexing(False)
-            logger.info(
-                "[VIEW_MODE] Background indexing resumed after idle period in gallery view"
-            )
+            logger.info("[VIEW_MODE] Background indexing resumed after idle period in gallery view")
         except Exception as e:
             logger.error(f"Error resuming background indexing in gallery view: {e}")
 
@@ -285,9 +266,7 @@ class SearchPart4:
             return
         if getattr(self, "_metadata_index_run_done", False):
             return
-        if self._semantic_indexing_in_progress or getattr(
-            self, "_semantic_index_prep_in_progress", False
-        ):
+        if self._semantic_indexing_in_progress or getattr(self, "_semantic_index_prep_in_progress", False):
             return
         t = getattr(self, "_metadata_index_defer_timer", None)
         if t is None:
@@ -326,9 +305,7 @@ class SearchPart4:
         if self._gallery_blocks_background_indexing():
             import logging
 
-            logging.getLogger(__name__).info(
-                "[INDEX] Deferring background metadata indexing (gallery warming/loading)"
-            )
+            logging.getLogger(__name__).info("[INDEX] Deferring background metadata indexing (gallery warming/loading)")
             t = getattr(self, "_metadata_index_defer_timer", None)
             if t is not None:
                 t.start(_env_int("RAWVIEWER_METADATA_INDEX_GALLERY_RETRY_MS", 2000, minimum=250))
@@ -342,19 +319,16 @@ class SearchPart4:
             )
             t = getattr(self, "_metadata_index_defer_timer", None)
             if t is not None:
-                t.start(
-                    _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500)
-                )
+                t.start(_env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500))
             return
 
         folder = getattr(self, "current_folder", None)
-        corpus = getattr(self, "_semantic_search_corpus_files", None) or getattr(
-            self, "image_files", None
-        )
+        corpus = getattr(self, "_semantic_search_corpus_files", None) or getattr(self, "image_files", None)
         if not folder or not corpus:
             return
 
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"[INDEX] Starting background metadata indexing for folder: {folder}")
 
@@ -373,9 +347,7 @@ class SearchPart4:
 
         gj = getattr(self, "gallery_justified", None)
         opened = float(getattr(self, "_gallery_deferral_opened_ts", 0.0) or 0.0)
-        abs_ceiling_s = _env_int(
-            "RAWVIEWER_GALLERY_INDEX_FORCE_AFTER_MS", 60000, minimum=10000
-        ) / 1000.0
+        abs_ceiling_s = _env_int("RAWVIEWER_GALLERY_INDEX_FORCE_AFTER_MS", 60000, minimum=10000) / 1000.0
         if (
             gj is not None
             and not getattr(gj, "_first_thumb_ready_after_set", False)
@@ -392,9 +364,7 @@ class SearchPart4:
             return True
 
         # After first paint: soft ceiling so continuous scrolling does not defer forever.
-        scroll_ceiling_s = _env_int(
-            "RAWVIEWER_METADATA_INDEX_DEFER_MAX_MS", 30000, minimum=5000
-        ) / 1000.0
+        scroll_ceiling_s = _env_int("RAWVIEWER_METADATA_INDEX_DEFER_MAX_MS", 30000, minimum=5000) / 1000.0
         if opened and (time.time() - opened) > scroll_ceiling_s:
             return False
         return False
@@ -418,13 +388,9 @@ class SearchPart4:
             return
         if not getattr(self, "_metadata_index_prep_complete", False):
             return
-        if self._semantic_indexing_in_progress or getattr(
-            self, "_semantic_index_prep_in_progress", False
-        ):
+        if self._semantic_indexing_in_progress or getattr(self, "_semantic_index_prep_in_progress", False):
             return
-        pending_extract = int(
-            getattr(self, "_metadata_index_extract_pending_count", 0) or 0
-        )
+        pending_extract = int(getattr(self, "_metadata_index_extract_pending_count", 0) or 0)
         if getattr(self, "view_mode", "") == "gallery" and self._gallery_blocks_background_indexing():
             import logging
 
@@ -434,15 +400,9 @@ class SearchPart4:
             )
             t = getattr(self, "_metadata_index_defer_timer", None)
             if t is not None:
-                t.start(
-                    _env_int(
-                        "RAWVIEWER_METADATA_INDEX_GALLERY_RETRY_MS", 1500, minimum=250
-                    )
-                )
+                t.start(_env_int("RAWVIEWER_METADATA_INDEX_GALLERY_RETRY_MS", 1500, minimum=250))
             return
-        if self._should_defer_metadata_index_for_single_view(
-            pending_extract=pending_extract
-        ):
+        if self._should_defer_metadata_index_for_single_view(pending_extract=pending_extract):
             import logging
 
             logging.getLogger(__name__).info(
@@ -451,9 +411,7 @@ class SearchPart4:
             )
             t = getattr(self, "_metadata_index_defer_timer", None)
             if t is not None:
-                t.start(
-                    _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500)
-                )
+                t.start(_env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500))
             return
         corpus = getattr(self, "_metadata_index_deferred_corpus", None)
         pending = getattr(self, "_metadata_index_deferred_pending", None)
@@ -468,9 +426,7 @@ class SearchPart4:
             show_search_progress=False,
         )
 
-    def _should_defer_metadata_index_for_single_view(
-        self, *, pending_extract: int | None = None
-    ) -> bool:
+    def _should_defer_metadata_index_for_single_view(self, *, pending_extract: int | None = None) -> bool:
         """True while single-view navigation or heavy display loads are in flight."""
         if getattr(self, "view_mode", "single") != "single":
             return False
@@ -486,9 +442,7 @@ class SearchPart4:
         nav_grace_s = _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_AFTER_NAV_MS", 3500, minimum=0) / 1000.0
         if last_nav and (time.time() - last_nav) < nav_grace_s:
             return True
-        last_activity = float(
-            getattr(self, "_last_single_view_interactivity_ts", 0.0) or 0.0
-        )
+        last_activity = float(getattr(self, "_last_single_view_interactivity_ts", 0.0) or 0.0)
         idle_grace_s = _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_IDLE_MS", 12000, minimum=0) / 1000.0
         if last_activity and (time.time() - last_activity) < idle_grace_s:
             return True
@@ -504,22 +458,14 @@ class SearchPart4:
         except Exception:
             pass
         if pending_extract is None:
-            pending_extract = int(
-                getattr(self, "_metadata_index_extract_pending_count", 0) or 0
-            )
-        huge_threshold = _env_int(
-            "RAWVIEWER_SINGLE_VIEW_INDEX_HUGE_PENDING", 1000, minimum=200
-        )
+            pending_extract = int(getattr(self, "_metadata_index_extract_pending_count", 0) or 0)
+        huge_threshold = _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_HUGE_PENDING", 1000, minimum=200)
         if pending_extract >= huge_threshold:
-            opened = float(
-                getattr(self, "_single_view_index_defer_opened_ts", 0.0) or 0.0
-            )
+            opened = float(getattr(self, "_single_view_index_defer_opened_ts", 0.0) or 0.0)
             if not opened:
                 self._single_view_index_defer_opened_ts = time.time()
                 opened = self._single_view_index_defer_opened_ts
-            ceiling_s = _env_int(
-                "RAWVIEWER_SINGLE_VIEW_INDEX_HUGE_CEILING_MS", 45000, minimum=5000
-            ) / 1000.0
+            ceiling_s = _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_HUGE_CEILING_MS", 45000, minimum=5000) / 1000.0
             if (time.time() - opened) < ceiling_s:
                 return True
         return False
@@ -540,9 +486,7 @@ class SearchPart4:
         )
         signals.error.connect(self._on_semantic_index_prep_error)
 
-        worker = _SemanticIndexPrepWorker(
-            corpus_files, index, signals, metadata_only=True
-        )
+        worker = _SemanticIndexPrepWorker(corpus_files, index, signals, metadata_only=True)
         _get_bg_thread_pool().start(worker)
 
     def _on_metadata_index_prep_done(
@@ -559,6 +503,7 @@ class SearchPart4:
             return
 
         import logging
+
         logger = logging.getLogger(__name__)
         # extract_pending MUST come from the background worker. Re-scanning
         # thousands of paths here freezes gallery tile paint (measured ~11s on
@@ -579,34 +524,26 @@ class SearchPart4:
             if not pending:
                 logger.info("[INDEX] No pending metadata files. Index is up to date.")
             else:
-                logger.info(
-                    "[INDEX] Metadata-only pass: nothing to extract; skipping index worker (no ONNX probe)"
-                )
+                logger.info("[INDEX] Metadata-only pass: nothing to extract; skipping index worker (no ONNX probe)")
             # Always finish the silent-metadata chain (marks session complete /
             # unlocks search). Do not leave this to a later embedding scan.
             self._finish_silent_metadata_without_worker(corpus_files)
             if getattr(self, "_gallery_search_user_wants_semantic", False):
-                QTimer.singleShot(
-                    0, lambda: self._start_user_semantic_indexing(corpus_files)
-                )
+                QTimer.singleShot(0, lambda: self._start_user_semantic_indexing(corpus_files))
             return
 
         self._metadata_index_deferred_corpus = corpus_files
         self._metadata_index_deferred_coverage = coverage
         self._metadata_index_deferred_pending = pending
 
-        if self._should_defer_metadata_index_for_single_view(
-            pending_extract=len(extract_pending)
-        ):
+        if self._should_defer_metadata_index_for_single_view(pending_extract=len(extract_pending)):
             logger.info(
                 "[INDEX] Deferring metadata worker after prep (single-view load pressure, pending=%d)",
                 len(extract_pending),
             )
             t = getattr(self, "_metadata_index_defer_timer", None)
             if t is not None:
-                t.start(
-                    _env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500)
-                )
+                t.start(_env_int("RAWVIEWER_SINGLE_VIEW_INDEX_DEFER_MS", 4000, minimum=500))
             return
 
         self._start_semantic_index_build_background(
@@ -638,12 +575,11 @@ class SearchPart4:
 
                 try:
                     t0 = time.time()
-                    files, stats, start_idx = viewer._build_quick_folder_image_list(
-                        folder_path, start_path
-                    )
+                    files, stats, start_idx = viewer._build_quick_folder_image_list(folder_path, start_path)
                     scan_s = time.time() - t0
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(signals):
                             signals.ready.emit(token, files, stats, start_idx, scan_s)
                     except Exception:
@@ -653,9 +589,7 @@ class SearchPart4:
 
         _get_bg_thread_pool().start(_QuickFolderIndexWorker())
 
-    def _on_quick_folder_index_ready(
-        self, token, image_files, file_stats, start_idx, scan_s
-    ) -> None:
+    def _on_quick_folder_index_ready(self, token, image_files, file_stats, start_idx, scan_s) -> None:
         if token != getattr(self, "_folder_load_generation", None):
             return
         if token != getattr(self, "_folder_fast_open_token", None):
@@ -679,7 +613,9 @@ class SearchPart4:
             if idx and len(self.image_files) > 1:
                 coverage = idx.get_index_coverage(self.image_files)
                 if coverage and coverage.get("missing", 1) == 0:
-                    logger.info("[FOLDER] Folder is 100% cached in database. Performing instant EXIF sort refinement on main thread.")
+                    logger.info(
+                        "[FOLDER] Folder is 100% cached in database. Performing instant EXIF sort refinement on main thread."
+                    )
                     newest_first = self.get_sort_preference()
                     sorted_files, merged_meta = self.sort_files_by_capture_time(
                         self.image_files,

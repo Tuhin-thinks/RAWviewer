@@ -79,11 +79,7 @@ def main() -> int:
         )
         slug = "mobileclip2_s0"
     else:
-        out_dir = (
-            Path(args.out_dir).expanduser().resolve()
-            if args.out_dir
-            else default_out.expanduser().resolve()
-        )
+        out_dir = Path(args.out_dir).expanduser().resolve() if args.out_dir else default_out.expanduser().resolve()
         slug = args.model.replace("/", "-")
 
     hub_cache = _bootstrap_hf_cache(args, repo_root)

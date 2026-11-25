@@ -1,4 +1,5 @@
 """ImageAdjustPanelWidget: image adjustment panel, assembled from mixin parts."""
+
 from __future__ import annotations
 
 from collections import OrderedDict

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """WB embedded-JPEG sanity: model verdict cache + misparse correction (golden files)."""
+
 import glob
 import os
 import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+
 
 def _sample_dirs():
     return [
@@ -58,7 +60,7 @@ def main() -> int:
     frd.unpack_raw(GOOD_B)
     with_verdict = time.perf_counter() - t0
     check("second clean file uncorrected", frd.get_corrected_camera_wb(GOOD_B) is None)
-    print(f"INFO  second-file unpack with verdict skip: {with_verdict*1000:.0f}ms")
+    print(f"INFO  second-file unpack with verdict skip: {with_verdict * 1000:.0f}ms")
 
     # Body newer than the bundled LibRaw (EOS R6 III): LibRaw reports an
     # incomplete black level (deltas over a zero floor, e.g. [0, 33, 100, 67]),
@@ -71,10 +73,12 @@ def main() -> int:
     for p in BAD:
         u = frd.unpack_raw(p)
         name = os.path.basename(p)
-        check(f"black repaired {name}", u is not None and float(min(u.black)) > 0.0,
-              detail=f"black={[round(float(x)) for x in u.black]}" if u is not None else "")
-        check(f"flat black floor {name}",
-              u is not None and len(set(round(float(x)) for x in u.black)) == 1)
+        check(
+            f"black repaired {name}",
+            u is not None and float(min(u.black)) > 0.0,
+            detail=f"black={[round(float(x)) for x in u.black]}" if u is not None else "",
+        )
+        check(f"flat black floor {name}", u is not None and len(set(round(float(x)) for x in u.black)) == 1)
         check(f"WB left alone {name}", frd.get_corrected_camera_wb(p) is None)
 
     # Clean bodies keep LibRaw's own black untouched (the repair is gated on

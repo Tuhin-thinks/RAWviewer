@@ -1,4 +1,5 @@
 """CustomTitleBar: custom title bar for frameless windows."""
+
 from __future__ import annotations
 
 import os
@@ -13,6 +14,7 @@ from core import theme
 
 class CustomTitleBar(QFrame):
     """Material Design 3 style custom title bar for frameless window."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -41,9 +43,7 @@ class CustomTitleBar(QFrame):
         if getattr(sys, "frozen", False):
             bases = [getattr(sys, "_MEIPASS", ""), os.path.dirname(sys.executable)]
         else:
-            repo_root = os.path.abspath(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-            )
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
             bases = [repo_root, os.getcwd()]
 
         icon_paths: list[str] = []
@@ -99,12 +99,8 @@ class CustomTitleBar(QFrame):
         layout.addStretch(1)
 
         self.metadata_label = QLabel("")
-        self.metadata_label.setAlignment(
-            Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
-        )
-        self.metadata_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self.metadata_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.metadata_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.metadata_label.setStyleSheet(f"""
             color: {theme.INK_MUTED};
             font-size: 12px;
@@ -137,21 +133,21 @@ class CustomTitleBar(QFrame):
         """
 
         self.min_btn = QPushButton()
-        self.min_btn.setIcon(qta.icon('fa5s.minus', color=theme.INK))
+        self.min_btn.setIcon(qta.icon("fa5s.minus", color=theme.INK))
         self.min_btn.setIconSize(QSize(12, 12))
         self.min_btn.setStyleSheet(control_btn_style)
         self.min_btn.clicked.connect(self.parent.showMinimized)
         layout.addWidget(self.min_btn)
 
         self.max_btn = QPushButton()
-        self.max_btn.setIcon(qta.icon('fa5.square', color=theme.INK))
+        self.max_btn.setIcon(qta.icon("fa5.square", color=theme.INK))
         self.max_btn.setIconSize(QSize(12, 12))
         self.max_btn.setStyleSheet(control_btn_style)
         self.max_btn.clicked.connect(self._toggle_maximize)
         layout.addWidget(self.max_btn)
 
         self.close_btn = QPushButton()
-        self.close_btn.setIcon(qta.icon('fa5s.times', color=theme.INK))
+        self.close_btn.setIcon(qta.icon("fa5s.times", color=theme.INK))
         self.close_btn.setIconSize(QSize(12, 12))
         self.close_btn.setStyleSheet(control_btn_style + "QPushButton:hover { background-color: #f44336; }")
         self.close_btn.clicked.connect(self.parent.close)
@@ -180,10 +176,16 @@ class CustomTitleBar(QFrame):
         self._sync_maximize_state()
 
         # Trigger gallery layout update after maximize/restore
-        if hasattr(self.parent, 'view_mode') and self.parent.view_mode == 'gallery' and hasattr(self.parent, 'gallery_justified') and self.parent.gallery_justified:
-                from PyQt6.QtCore import QTimer
-                # Wait a bit for window size to settle
-                QTimer.singleShot(200, self.parent.gallery_justified.force_layout_update)
+        if (
+            hasattr(self.parent, "view_mode")
+            and self.parent.view_mode == "gallery"
+            and hasattr(self.parent, "gallery_justified")
+            and self.parent.gallery_justified
+        ):
+            from PyQt6.QtCore import QTimer
+
+            # Wait a bit for window size to settle
+            QTimer.singleShot(200, self.parent.gallery_justified.force_layout_update)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -237,6 +239,7 @@ class CustomTitleBar(QFrame):
 
         avail_w = max(200, self.width() - 250)
         from PyQt6.QtGui import QFontMetrics
+
         fm = QFontMetrics(self.metadata_label.font())
         elided = fm.elidedText(display, Qt.TextElideMode.ElideMiddle, avail_w)
         self.metadata_label.setText(elided)

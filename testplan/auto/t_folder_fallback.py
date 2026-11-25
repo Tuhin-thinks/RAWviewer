@@ -34,18 +34,22 @@ class _Host:
     # Real implementations, borrowed off the class.
     def _scan_folder_generator(self, *a, **k):
         import main as mainmod
+
         return mainmod.RAWImageViewer._scan_folder_generator(self, *a, **k)
 
     def _scan_subfolder_dirs(self, *a, **k):
         import main as mainmod
+
         return mainmod.RAWImageViewer._scan_subfolder_dirs(self, *a, **k)
 
     def _folder_has_supported_images(self, *a, **k):
         import main as mainmod
+
         return mainmod.RAWImageViewer._folder_has_supported_images(self, *a, **k)
 
     def _scan_folder_image_paths(self, *a, **k):
         import main as mainmod
+
         return mainmod.RAWImageViewer._scan_folder_image_paths(self, *a, **k)
 
 
@@ -85,8 +89,7 @@ def main() -> int:
         _touch(os.path.join(f, "101MSDCF"), "dsc_0101.arw")
         check(
             "card layout: both children flattened",
-            _paths(f) == [os.path.join("100MSDCF", "dsc_0001.arw"),
-                          os.path.join("101MSDCF", "dsc_0101.arw")],
+            _paths(f) == [os.path.join("100MSDCF", "dsc_0001.arw"), os.path.join("101MSDCF", "dsc_0101.arw")],
             str(_paths(f)),
         )
 
@@ -162,17 +165,18 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as f:
         _touch(os.path.join(f, "100MSDCF"), "dsc_0001.arw")
         host = _Host()
-        check("fallback scope: has-images check is True",
-              host._folder_has_supported_images(f))
-        check("has-images and scan agree (non-empty scan)",
-              bool(host._scan_folder_image_paths(f).gi_frame is not None)
-              if hasattr(host._scan_folder_image_paths(f), "gi_frame") else True)
+        check("fallback scope: has-images check is True", host._folder_has_supported_images(f))
+        check(
+            "has-images and scan agree (non-empty scan)",
+            bool(host._scan_folder_image_paths(f).gi_frame is not None)
+            if hasattr(host._scan_folder_image_paths(f), "gi_frame")
+            else True,
+        )
         got = _paths(f)
         check("has-images and scan agree on content", len(got) == 1, str(got))
     with tempfile.TemporaryDirectory() as f:
         host = _Host()
-        check("truly empty folder: has-images check is False",
-              not host._folder_has_supported_images(f))
+        check("truly empty folder: has-images check is False", not host._folder_has_supported_images(f))
 
     # --- 10. scope resolution helper (in-scope vs external) ---
     with tempfile.TemporaryDirectory() as scope, tempfile.TemporaryDirectory() as other:
@@ -196,9 +200,10 @@ def main() -> int:
         "dead discard_folder parameter removed",
         "discard_folder='Discard'" not in src and "_ = discard_folder" not in src,
     )
-    sm = open(os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                           "rawviewer_app", "viewer", "session_mixin.py"),
-              encoding="utf-8").read()
+    sm = open(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "viewer", "session_mixin.py"),
+        encoding="utf-8",
+    ).read()
     check(
         "dead _scan_top_level_only removed from the worker",
         "_scan_top_level_only" not in sm,

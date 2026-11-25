@@ -19,6 +19,7 @@ Uses the same real golden ARW already relied on elsewhere in this suite
 is actually present; skips (not fails) otherwise, matching this repo's
 convention for machine-local golden fixtures.
 """
+
 import os
 import sys
 import time
@@ -51,7 +52,9 @@ def main() -> int:
         small_dims = get_jpeg_dimensions(small[0])
         check(
             "gallery-tile request picks a smaller source JPEG than full-quality",
-            small_dims is not None and full_dims is not None and (small_dims[0] * small_dims[1]) < (full_dims[0] * full_dims[1]),
+            small_dims is not None
+            and full_dims is not None
+            and (small_dims[0] * small_dims[1]) < (full_dims[0] * full_dims[1]),
             f"full={full_dims} small={small_dims}",
         )
         check(
@@ -66,6 +69,7 @@ def main() -> int:
     # disk I/O variance -- it exists to catch a gross regression (e.g. the
     # duplicate-rawpy.imread bug coming back), not to enforce a tight bound.
     from image_cache import get_image_cache
+
     cache = get_image_cache()
     try:
         cache.exif_cache.remove(GOLDEN_ARW)

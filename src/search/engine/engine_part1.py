@@ -1,4 +1,5 @@
 """Engine mixin part 1 of 7 for SemanticImageIndex."""
+
 from __future__ import annotations
 
 import contextlib
@@ -26,8 +27,8 @@ try:
 except ImportError:
     pycountry = None
 
-class EnginePart1:
 
+class EnginePart1:
     _RAW_FILE_EXTENSIONS = RAW_FILE_EXTENSIONS
 
     _FORMAT_HINT_FILENAME_TOKENS: frozenset[str] = (
@@ -84,7 +85,7 @@ class EnginePart1:
             os.makedirs(cache_dir, exist_ok=True)
             db_path = os.path.join(cache_dir, "semantic_index.db")
         self.db_path = db_path
-        self._mobileclip_backend = None # Lazy load
+        self._mobileclip_backend = None  # Lazy load
         self._model_name = model_name
         self._index_conn = None
         self._rg_lock = threading.Lock()
@@ -210,13 +211,9 @@ class EnginePart1:
         if hasattr(backend, "release_gpu_sessions"):
             try:
                 backend.release_gpu_sessions()
-                logging.getLogger(__name__).info(
-                    "[INDEX][FACE] Released MobileCLIP ONNX sessions before face scan"
-                )
+                logging.getLogger(__name__).info("[INDEX][FACE] Released MobileCLIP ONNX sessions before face scan")
             except Exception as exc:
-                logging.getLogger(__name__).debug(
-                    "[INDEX][FACE] MobileCLIP GPU release skipped: %s", exc
-                )
+                logging.getLogger(__name__).debug("[INDEX][FACE] MobileCLIP GPU release skipped: %s", exc)
 
     def model_name(self):
         if self._model_name is None:
@@ -229,9 +226,7 @@ class EnginePart1:
     def _init_db_if_needed(self):
         self._model = None
         self._reverse_geocoder: CustomReverseGeocoder | Literal[False] | None = None
-        self._conn = sqlite3.connect(
-            self.db_path, check_same_thread=False, timeout=60.0
-        )
+        self._conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=60.0)
         self._conn.isolation_level = None
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
@@ -272,17 +267,10 @@ class EnginePart1:
             )
             """
         )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_semantic_capture_time ON semantic_index(capture_time)"
-        )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_semantic_camera_model ON semantic_index(camera_model)"
-        )
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_semantic_capture_time ON semantic_index(capture_time)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_semantic_camera_model ON semantic_index(camera_model)")
         # Backward-compatible migration for existing DBs created before GPS fields.
-        cols = {
-            r[1]
-            for r in self._conn.execute("PRAGMA table_info(semantic_index)").fetchall()
-        }
+        cols = {r[1] for r in self._conn.execute("PRAGMA table_info(semantic_index)").fetchall()}
         if "file_name" not in cols:
             self._conn.execute("ALTER TABLE semantic_index ADD COLUMN file_name TEXT")
         if "file_signature" not in cols:
@@ -290,12 +278,8 @@ class EnginePart1:
         if "mtime_ns" not in cols:
             self._conn.execute("ALTER TABLE semantic_index ADD COLUMN mtime_ns INTEGER")
         if "semantic_ready" not in cols:
-            self._conn.execute(
-                "ALTER TABLE semantic_index ADD COLUMN semantic_ready INTEGER DEFAULT 1"
-            )
-            self._conn.execute(
-                "UPDATE semantic_index SET semantic_ready = 1 WHERE semantic_ready IS NULL"
-            )
+            self._conn.execute("ALTER TABLE semantic_index ADD COLUMN semantic_ready INTEGER DEFAULT 1")
+            self._conn.execute("UPDATE semantic_index SET semantic_ready = 1 WHERE semantic_ready IS NULL")
         if "gps_lat" not in cols:
             self._conn.execute("ALTER TABLE semantic_index ADD COLUMN gps_lat REAL")
         if "gps_lon" not in cols:
@@ -327,9 +311,7 @@ class EnginePart1:
         # this index earlier crashes _init_db() on any pre-GPS-feature (pre-2.5.0)
         # database with "no such column: gps_lat" (found while verifying upgrade
         # compatibility from older versions).
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_semantic_gps_latlon ON semantic_index(gps_lat, gps_lon)"
-        )
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_semantic_gps_latlon ON semantic_index(gps_lat, gps_lon)")
         self._conn.commit()
         self._backfill_file_signatures()
 
@@ -362,9 +344,7 @@ class EnginePart1:
         backend = self.backend
         return bool(getattr(backend, "SUPPORTS_HUB_DOWNLOAD", False))
 
-    def download_semantic_backend_assets(
-        self, progress_callback: Callable[[str], None] | None = None
-    ) -> str:
+    def download_semantic_backend_assets(self, progress_callback: Callable[[str], None] | None = None) -> str:
         if self.model_name.startswith("mobileclip-"):
             backend = self._mobileclip_backend or resolve_mobileclip_backend()
             path = backend.download_assets(progress_callback=progress_callback)
@@ -390,19 +370,16 @@ class EnginePart1:
                 if not os.path.isfile(db_path):
                     db_path = os.path.join("src", "icons", "cities500.csv.gz")
 
-                logging.getLogger(__name__).info("[VISION] Loading custom reverse geocoder database from %s...", db_path)
+                logging.getLogger(__name__).info(
+                    "[VISION] Loading custom reverse geocoder database from %s...", db_path
+                )
                 cities = []
                 with gzip.open(db_path, "rt", encoding="utf-8") as f:
                     reader = csv.reader(f)
                     for row in reader:
-                        cities.append((
-                            float(row[0]),
-                            float(row[1]),
-                            row[2],
-                            row[3],
-                            row[4],
-                            row[5] if len(row) > 5 else ""
-                        ))
+                        cities.append(
+                            (float(row[0]), float(row[1]), row[2], row[3], row[4], row[5] if len(row) > 5 else "")
+                        )
 
                 # Load landmarks
                 landmarks_path = _bundled_resource_path(os.path.join("icons", "landmarks.csv.gz"))
@@ -414,17 +391,14 @@ class EnginePart1:
 
                 landmarks = []
                 if os.path.isfile(landmarks_path):
-                    logging.getLogger(__name__).info("[VISION] Loading custom landmarks database from %s...", landmarks_path)
+                    logging.getLogger(__name__).info(
+                        "[VISION] Loading custom landmarks database from %s...", landmarks_path
+                    )
                     try:
                         with gzip.open(landmarks_path, "rt", encoding="utf-8") as f:
                             reader = csv.reader(f)
                             for row in reader:
-                                landmarks.append((
-                                    float(row[0]),
-                                    float(row[1]),
-                                    row[2],
-                                    row[3]
-                                ))
+                                landmarks.append((float(row[0]), float(row[1]), row[2], row[3]))
                     except Exception as e:
                         logging.getLogger(__name__).warning("[VISION] Failed to parse landmarks file: %s", e)
 
@@ -435,6 +409,7 @@ class EnginePart1:
                 )
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning("[VISION] Failed to load custom reverse geocoder: %s", e)
                 self._reverse_geocoder = False
             return self._reverse_geocoder
@@ -614,7 +589,9 @@ class EnginePart1:
             aliases.append(np)
         return aliases
 
-    def _upsert_metadata(self, canonical_fp: str, st: os.stat_result, meta: dict[str, Any], conn: sqlite3.Connection | None = None) -> None:
+    def _upsert_metadata(
+        self, canonical_fp: str, st: os.stat_result, meta: dict[str, Any], conn: sqlite3.Connection | None = None
+    ) -> None:
         """Helper to insert or update metadata in the index."""
         db = conn if conn is not None else self._conn
         file_name = os.path.basename(canonical_fp)

@@ -26,6 +26,7 @@ gate, since these are deliberate, tiny, verified-imperceptible tradeoffs
 manually against real decoded image content, not narrated here since that
 needs a real RAW file this suite doesn't require).
 """
+
 import os
 import sys
 import time
@@ -54,10 +55,18 @@ def main() -> int:
     # exposed this bug): heavy sharpness/clarity/defringe + highlights/
     # shadows + vibrance, all of which touch the slow paths that were fixed.
     adj = {
-        "Exposure2012": 2.71, "Contrast2012": 71.0, "Highlights2012": -52.0,
-        "Shadows2012": 29.0, "Temperature": 6075.0, "Tint": 17.0,
-        "Saturation": 73.0, "Vibrance": 83.0, "Sharpness": 75.0,
-        "Clarity2012": 35.0, "Defringe": 100.0, "ColorNoiseReduction": 50.0,
+        "Exposure2012": 2.71,
+        "Contrast2012": 71.0,
+        "Highlights2012": -52.0,
+        "Shadows2012": 29.0,
+        "Temperature": 6075.0,
+        "Tint": 17.0,
+        "Saturation": 73.0,
+        "Vibrance": 83.0,
+        "Sharpness": 75.0,
+        "Clarity2012": 35.0,
+        "Defringe": 100.0,
+        "ColorNoiseReduction": 50.0,
         "LuminanceNoiseReduction": 48.0,
     }
 
@@ -112,9 +121,7 @@ def main() -> int:
             rgb = raw.postprocess(use_camera_wb=True, half_size=True, output_bps=8)
 
         merged = dict(adj)
-        ref = _apply_adjustments_to_srgb_core(
-            rgb.astype(np.float32) / 255.0, merged
-        )
+        ref = _apply_adjustments_to_srgb_core(rgb.astype(np.float32) / 255.0, merged)
         ref_u8 = (np.clip(ref, 0.0, 1.0) * 255.0).astype(np.uint8)
 
         for nw in (2, 4, 8):
@@ -129,8 +136,7 @@ def main() -> int:
         h = rgb.shape[0]
         band_h = -(-h // 4)
         diff4 = np.abs(
-            _apply_adjustments_to_srgb_banded(rgb, merged, 4).astype(np.int16)
-            - ref_u8.astype(np.int16)
+            _apply_adjustments_to_srgb_banded(rgb, merged, 4).astype(np.int16) - ref_u8.astype(np.int16)
         ).max(axis=-1)
         near = np.zeros(h, dtype=bool)
         for b in (band_h, 2 * band_h, 3 * band_h):

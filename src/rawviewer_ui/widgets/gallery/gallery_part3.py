@@ -1,4 +1,5 @@
 """Gallery mixin part 3 of 7 for JustifiedGallery."""
+
 from __future__ import annotations
 
 import contextlib
@@ -22,8 +23,8 @@ from .helpers import (
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart3:
 
+class GalleryPart3:
     def _thumb_cache_byte_budget(self) -> int:
         """RAM-tiered QPixmap budget (128–768 MiB), scaled under memory pressure."""
         cached = getattr(self, "_thumb_cache_byte_budget_cached", None)
@@ -108,9 +109,7 @@ class GalleryPart3:
         except Exception:
             return None
 
-    def _layout_aspect_for_path(
-        self, file_path: str, pixmap: QPixmap | None = None
-    ) -> float:
+    def _layout_aspect_for_path(self, file_path: str, pixmap: QPixmap | None = None) -> float:
         """Width/height for justified rows — measured pixels are ground truth once known.
 
         Like the filmstrip's _measured_widths, we remember the decoded thumbnail's raw
@@ -163,9 +162,7 @@ class GalleryPart3:
             return True
         return abs(old_aspect - new_aspect) > 0.05
 
-    def _frame_matches_pixmap_orientation(
-        self, rect, pixmap: QPixmap
-    ) -> bool:
+    def _frame_matches_pixmap_orientation(self, rect, pixmap: QPixmap) -> bool:
         """True when layout rect and pixmap agree on portrait vs landscape."""
         if rect is None or pixmap is None or pixmap.isNull():
             return True
@@ -179,9 +176,7 @@ class GalleryPart3:
             return True
         return r_o == p_o
 
-    def _any_visible_tile_frame_mismatch(
-        self, file_path: str, pixmap: QPixmap
-    ) -> bool:
+    def _any_visible_tile_frame_mismatch(self, file_path: str, pixmap: QPixmap) -> bool:
         for idx in self._path_to_indices.get(file_path, []):
             if idx not in self._visible_widgets:
                 continue
@@ -295,10 +290,7 @@ class GalleryPart3:
                 # was wiped on every folder change -- and being O(keys x paths)
                 # it took ~27 SECONDS on the GUI thread for a 3000-file folder.
                 # A set lookup on the path element is ~4 ms for the same input.
-                stale = [
-                    k for k in list(cache.cache.keys())
-                    if (k[0] if isinstance(k, tuple) and k else k) not in keep
-                ]
+                stale = [k for k in list(cache.cache.keys()) if (k[0] if isinstance(k, tuple) and k else k) not in keep]
                 for key in stale:
                     cache.cache.pop(key, None)
         except Exception:
@@ -337,9 +329,7 @@ class GalleryPart3:
             if w.file_path != file_path:
                 continue
             logical_size = w.size()
-            physical_size = QSize(
-                int(logical_size.width() * dpr), int(logical_size.height() * dpr)
-            )
+            physical_size = QSize(int(logical_size.width() * dpr), int(logical_size.height() * dpr))
             if base and not base.isNull():
                 fitted = self._fit_tile_pixmap(resolved, base, physical_size, dpr)
                 w.setPixmap(fitted)
@@ -371,15 +361,9 @@ class GalleryPart3:
         return Priority.CURRENT
 
     def _prefetch_active_count(self) -> int:
-        return sum(
-            1
-            for path in self._active_tasks
-            if self._active_task_priority(path) != Priority.CURRENT
-        )
+        return sum(1 for path in self._active_tasks if self._active_task_priority(path) != Priority.CURRENT)
 
-    def _should_protect_active_raw_thumbnail(
-        self, file_path: str, visible_paths: set[str]
-    ) -> bool:
+    def _should_protect_active_raw_thumbnail(self, file_path: str, visible_paths: set[str]) -> bool:
         """Keep in-flight visible RAW/DNG decodes when prefetch window moves away."""
         if file_path not in visible_paths or not is_raw_file(file_path):
             return False
@@ -443,9 +427,7 @@ class GalleryPart3:
             if timer is not None and timer.isActive():
                 timer.stop()
 
-    def on_visual_rotation_changed(
-        self, file_path: str, *, defer_rebuild: bool = False
-    ) -> bool:
+    def on_visual_rotation_changed(self, file_path: str, *, defer_rebuild: bool = False) -> bool:
         """Update layout and visible tiles when single-view rotation changes.
 
         Returns True when layout aspects changed and a rebuild is needed.
@@ -459,9 +441,7 @@ class GalleryPart3:
         self._invalidate_scaled_thumbnails_for_path(file_path)
         if file_path not in self._path_to_indices:
             return False
-        display_aspect = self._display_aspect(
-            resolved, self._base_aspect_for_path(resolved)
-        )
+        display_aspect = self._display_aspect(resolved, self._base_aspect_for_path(resolved))
         changed = False
         for idx in self._path_to_indices.get(resolved, []):
             if idx < len(self._gallery_layout_items):
@@ -486,10 +466,7 @@ class GalleryPart3:
 
     def sync_visual_rotations(self) -> None:
         """Refresh gallery tiles/layout for any paths with stored visual rotation."""
-        paths = [
-            p for p in (self.images or [])
-            if isinstance(p, str) and self._get_rotation_degrees_for_path(p)
-        ]
+        paths = [p for p in (self.images or []) if isinstance(p, str) and self._get_rotation_degrees_for_path(p)]
         if not paths:
             return
         layout_changed = False
@@ -604,11 +581,7 @@ class GalleryPart3:
     def eventFilter(self, obj, event):
         # QScrollArea child width is fixed (widgetResizable=False); viewport width changes
         # on window resize without resizing the gallery widget — watch viewport Resize.
-        if (
-            event.type() == QEvent.Type.Resize
-            and self._scroll_area is not None
-            and obj is self._scroll_area.viewport()
-        ):
+        if event.type() == QEvent.Type.Resize and self._scroll_area is not None and obj is self._scroll_area.viewport():
             self._schedule_viewport_width_rebuild()
             return False
 
@@ -715,9 +688,7 @@ class GalleryPart3:
         now = time.time()
         dt_ticks = 1.0
         if self._wheel_last_tick_t > 0.0:
-            dt_ticks = min(
-                4.0, max(0.25, (now - self._wheel_last_tick_t) * 1000.0 / self._wheel_tick_ms)
-            )
+            dt_ticks = min(4.0, max(0.25, (now - self._wheel_last_tick_t) * 1000.0 / self._wheel_tick_ms))
         self._wheel_last_tick_t = now
         frac = 1.0 - (1.0 - self._wheel_decay_per_tick) ** dt_ticks
         adaptive_step = self._wheel_accum_px * frac
@@ -762,9 +733,7 @@ class GalleryPart3:
         if scroll is None:
             return ""
         try:
-            idx = self._layout_index_at_scroll_y(
-                int(scroll.verticalScrollBar().value())
-            )
+            idx = self._layout_index_at_scroll_y(int(scroll.verticalScrollBar().value()))
             if idx is None:
                 return ""
             item = self._gallery_layout_items[idx]

@@ -4,6 +4,7 @@
 The SCUNet model is stubbed with a deterministic function, so no ONNX runtime
 or model file is needed. The image is tall enough to take the banded executor.
 """
+
 import os
 import sys
 
@@ -103,9 +104,7 @@ def main() -> int:
         )
 
         calls.clear()
-        amount_zero = rep.run_edit_pipeline(
-            img, {**adj, "AIDenoiseAmount": 0.0}, target="export", use_ai_denoise=True
-        )
+        amount_zero = rep.run_edit_pipeline(img, {**adj, "AIDenoiseAmount": 0.0}, target="export", use_ai_denoise=True)
         check(
             "amount 0 with AI on skips the model",
             calls == [],

@@ -181,9 +181,7 @@ class LRUCache:
         n = 0
         with self.lock:
             for k in list(self.cache.keys()):
-                if k == file_path or (
-                    isinstance(k, tuple) and len(k) > 0 and k[0] == file_path
-                ):
+                if k == file_path or (isinstance(k, tuple) and len(k) > 0 and k[0] == file_path):
                     del self.cache[k]
                     n += 1
         return n
@@ -275,9 +273,7 @@ class MemoryMonitor:
             "process_vms_mb": process_memory.vms / (1024**2),
         }
 
-    def system_memory_pressure_level(
-        self, memory_info: dict[str, float] | None = None
-    ) -> str:
+    def system_memory_pressure_level(self, memory_info: dict[str, float] | None = None) -> str:
         """Classify system RAM pressure ('critical', 'elevated', 'ok').
 
         Uses system-wide percent used and available GB only — not process RSS.
@@ -289,18 +285,10 @@ class MemoryMonitor:
         percent_used = memory_info["system_percent_used"]
         available_gb = memory_info["system_available_gb"]
 
-        crit_pct = _env_float(
-            "RAWVIEWER_MEMORY_PRESSURE_PERCENT_CRITICAL", 90.0, minimum=50.0, maximum=99.0
-        )
-        crit_avail_gb = _env_float(
-            "RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_CRITICAL", 2.0, minimum=0.25, maximum=32.0
-        )
-        elev_pct = _env_float(
-            "RAWVIEWER_MEMORY_PRESSURE_PERCENT_ELEVATED", 90.0, minimum=50.0, maximum=98.0
-        )
-        elev_avail_gb = _env_float(
-            "RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_ELEVATED", 2.0, minimum=0.5, maximum=64.0
-        )
+        crit_pct = _env_float("RAWVIEWER_MEMORY_PRESSURE_PERCENT_CRITICAL", 90.0, minimum=50.0, maximum=99.0)
+        crit_avail_gb = _env_float("RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_CRITICAL", 2.0, minimum=0.25, maximum=32.0)
+        elev_pct = _env_float("RAWVIEWER_MEMORY_PRESSURE_PERCENT_ELEVATED", 90.0, minimum=50.0, maximum=98.0)
+        elev_avail_gb = _env_float("RAWVIEWER_MEMORY_PRESSURE_AVAILABLE_GB_ELEVATED", 2.0, minimum=0.5, maximum=64.0)
 
         if percent_used >= crit_pct or available_gb <= crit_avail_gb:
             return "critical"

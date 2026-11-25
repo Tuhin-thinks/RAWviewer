@@ -69,8 +69,7 @@ def download_models(
         from huggingface_hub import snapshot_download
     except ImportError as exc:
         raise RuntimeError(
-            "MobileCLIP download requires 'huggingface_hub' and 'requests'. "
-            "Run: pip install huggingface-hub requests"
+            "MobileCLIP download requires 'huggingface_hub' and 'requests'. Run: pip install huggingface-hub requests"
         ) from exc
 
     snapshot_download(
@@ -97,9 +96,7 @@ def _download_via_hf_cli(target_dir: str) -> bool:
     os.makedirs(target_dir, exist_ok=True)
     for filename in MODEL_FILES:
         print(f"Downloading {filename} via hf CLI...", flush=True)
-        subprocess.check_call(
-            [hf, "download", MODEL_REPO, filename, "--local-dir", target_dir]
-        )
+        subprocess.check_call([hf, "download", MODEL_REPO, filename, "--local-dir", target_dir])
     tokenizer_path = os.path.join(target_dir, TOKENIZER_FILE)
     if not os.path.exists(tokenizer_path):
         print(f"Downloading {TOKENIZER_FILE}...", flush=True)

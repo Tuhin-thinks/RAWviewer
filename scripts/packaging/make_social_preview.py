@@ -4,6 +4,7 @@
 Usage (from repo root):
   python scripts/packaging/make_social_preview.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,15 +31,19 @@ EMBER = (217, 105, 30)
 def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     candidates = []
     if bold:
-        candidates.extend([
-            "C:/Windows/Fonts/segoeuib.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
-        ])
+        candidates.extend(
+            [
+                "C:/Windows/Fonts/segoeuib.ttf",
+                "C:/Windows/Fonts/arialbd.ttf",
+            ]
+        )
     else:
-        candidates.extend([
-            "C:/Windows/Fonts/segoeui.ttf",
-            "C:/Windows/Fonts/arial.ttf",
-        ])
+        candidates.extend(
+            [
+                "C:/Windows/Fonts/segoeui.ttf",
+                "C:/Windows/Fonts/arial.ttf",
+            ]
+        )
     for path in candidates:
         p = Path(path)
         if p.is_file():

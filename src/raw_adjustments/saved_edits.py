@@ -41,7 +41,6 @@ def _decode_srgb_uint8_to_linear(arr: np.ndarray) -> np.ndarray:
     return _SRGB_DECODE_LUT[arr]
 
 
-
 # id(arr) -> weakref to that exact array.
 #
 # This was a bare set of id()s, which was wrong in BOTH directions. numpy
@@ -84,6 +83,7 @@ def is_array_already_adjusted(arr) -> bool:
     with _already_adjusted_lock:
         ref = _already_adjusted_ids.get(id(arr))
     return ref is not None and ref() is arr
+
 
 def apply_saved_edits_for_display(file_path: str, arr):
     """Apply saved XMP edits to a display-bound uint8 RGB ndarray."""

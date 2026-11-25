@@ -1,4 +1,5 @@
 """Gallery mixin part 1 of 7 for JustifiedGallery."""
+
 from __future__ import annotations
 
 import contextlib
@@ -19,8 +20,8 @@ from .helpers import _env_int, _env_true
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart1:
 
+class GalleryPart1:
     TARGET_ROW_HEIGHT = 220
 
     HEIGHT_TOLERANCE = 0.25
@@ -81,7 +82,7 @@ class GalleryPart1:
         self._thumbnail_cache = LRUCache(10000)
         self._thumb_cache_puts_since_check = 0
         self._thumb_base_key = "__base__"
-        self._row_height_buckets = list(range(100, 400, 20)) # updated max to 400
+        self._row_height_buckets = list(range(100, 400, 20))  # updated max to 400
         self._width_bucket_px = 64  # quantize widths to avoid mismatched cached pixmaps
 
         # Zoom state variables
@@ -142,7 +143,7 @@ class GalleryPart1:
         self._wheel_timer.setTimerType(Qt.TimerType.PreciseTimer)
         self._wheel_timer.timeout.connect(self._apply_wheel_scroll_step)
         self._wheel_step_px = 18  # min px per nominal tick (tuned for smoothness)
-        self._wheel_tick_ms = 8   # 125Hz-ish
+        self._wheel_tick_ms = 8  # 125Hz-ish
         # Decay rate for the accumulator: consume 20% per nominal 8ms tick.
         # _apply_wheel_scroll_step scales this by the MEASURED elapsed time,
         # so a late tick consumes proportionally more -- constant on-screen
@@ -217,9 +218,7 @@ class GalleryPart1:
         # Trackpads emit many small deltas; a lower threshold causes "fast scroll" mode
         # and blank tiles. macOS defaults higher; override with RAWVIEWER_GALLERY_FAST_SCROLL_PX_S.
         default_fast = 12000 if sys.platform == "darwin" else 6000
-        self._scroll_optimize_threshold = _env_int(
-            "RAWVIEWER_GALLERY_FAST_SCROLL_PX_S", default_fast, minimum=2000
-        )
+        self._scroll_optimize_threshold = _env_int("RAWVIEWER_GALLERY_FAST_SCROLL_PX_S", default_fast, minimum=2000)
 
         # Metadata tracking for dynamic layout
         self._metadata_changed_paths = set()
@@ -241,7 +240,11 @@ class GalleryPart1:
     def _post_init(self):
         try:
             # Threading: Prefer viewer's manager to avoid creating a second global manager
-            if self.parent_viewer is not None and hasattr(self.parent_viewer, "image_manager") and self.parent_viewer.image_manager:
+            if (
+                self.parent_viewer is not None
+                and hasattr(self.parent_viewer, "image_manager")
+                and self.parent_viewer.image_manager
+            ):
                 self.load_manager = self.parent_viewer.image_manager
             else:
                 self.load_manager = get_image_load_manager()
@@ -584,7 +587,9 @@ class GalleryPart1:
         if tw <= 0 or th <= 0:
             return pixmap
 
-        transform_mode = Qt.TransformationMode.FastTransformation if fast else Qt.TransformationMode.SmoothTransformation
+        transform_mode = (
+            Qt.TransformationMode.FastTransformation if fast else Qt.TransformationMode.SmoothTransformation
+        )
         scaled = pixmap.scaled(
             target_size,
             Qt.AspectRatioMode.KeepAspectRatioByExpanding,
@@ -680,9 +685,7 @@ class GalleryPart1:
                 pending_match = False
                 if pending and resolved:
                     pending_resolved = self._resolve_gallery_path(pending)
-                    pending_match = bool(
-                        pending_resolved and pending_resolved == resolved
-                    )
+                    pending_match = bool(pending_resolved and pending_resolved == resolved)
                 if intersects or pending_match:
                     offset_px = int(rect.top() - scroll_y) if intersects else 12
                     return {
@@ -738,9 +741,7 @@ class GalleryPart1:
             viewport_fraction = float(state.get("viewport_fraction", 0.0))
             viewport_h = max(1, scroll.viewport().height())
             anchor_y = rect.top() + max(0.0, min(1.0, offset_in_item)) * tile_h
-            target = int(
-                anchor_y - max(0.0, min(1.0, viewport_fraction)) * viewport_h
-            )
+            target = int(anchor_y - max(0.0, min(1.0, viewport_fraction)) * viewport_h)
             upper = max(sb.maximum(), expected_max)
             sb.setValue(max(sb.minimum(), min(target, upper)))
             return True
@@ -771,11 +772,7 @@ class GalleryPart1:
                 continue
             top = int(rect.top())
             left = int(rect.left())
-            if (
-                best_idx < 0
-                or top < best_top
-                or (top == best_top and left < best_left)
-            ):
+            if best_idx < 0 or top < best_top or (top == best_top and left < best_left):
                 best_idx = i
                 best_top = top
                 best_left = left

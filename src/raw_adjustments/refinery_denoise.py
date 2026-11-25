@@ -78,10 +78,7 @@ def denoise(
         src = np.pad(src, ((0, ph - h), (0, pw - w), (0, 0)), mode="edge")
 
     starts = [(y, x) for y in _tile_starts(ph) for x in _tile_starts(pw)]
-    window = (
-        np.outer(np.hanning(TILE + 2)[1:-1], np.hanning(TILE + 2)[1:-1]).astype(np.float32)[..., None]
-        + 1e-3
-    )
+    window = np.outer(np.hanning(TILE + 2)[1:-1], np.hanning(TILE + 2)[1:-1]).astype(np.float32)[..., None] + 1e-3
     acc = np.zeros_like(src)
     wsum = np.zeros((ph, pw, 1), np.float32)
     cond = np.full((1, 1), ISO_CONDITIONING, np.float32)

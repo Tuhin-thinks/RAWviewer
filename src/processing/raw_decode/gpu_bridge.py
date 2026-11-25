@@ -288,9 +288,7 @@ def ensure_rgba_u8(dev: DeviceRgb) -> Any:
     t = t[..., :3].contiguous()
     if t.dtype != torch.uint8:
         t = t.clamp(0, 255).to(torch.uint8)
-    alpha = torch.full(
-        (t.shape[0], t.shape[1], 1), 255, dtype=torch.uint8, device=t.device
-    )
+    alpha = torch.full((t.shape[0], t.shape[1], 1), 255, dtype=torch.uint8, device=t.device)
     return torch.cat([t, alpha], dim=2).contiguous()
 
 
@@ -333,9 +331,7 @@ def upload_device_rgba_to_gl(
     if c < 4:
         raise ValueError("expected HxWx4 RGBA")
     if (w, h) != (slot.width, slot.height):
-        raise ValueError(
-            f"size mismatch texture {slot.width}x{slot.height} vs tensor {w}x{h}"
-        )
+        raise ValueError(f"size mismatch texture {slot.width}x{slot.height} vs tensor {w}x{h}")
 
     rgba.device  # noqa: B018 — keep tensor live
     # Sync only the producer stream (not torch.cuda.synchronize() device-wide)

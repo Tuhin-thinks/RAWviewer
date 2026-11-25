@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Creative .cube LUT parse / apply smoke tests."""
+
 import os
 import sys
 import tempfile
@@ -18,13 +19,11 @@ def check(name, ok, detail=""):
 
 
 def _write_identity_cube(path: str, size: int = 3) -> None:
-    lines = ["TITLE \"Identity\"", f"LUT_3D_SIZE {size}"]
+    lines = ['TITLE "Identity"', f"LUT_3D_SIZE {size}"]
     for b in range(size):
         for g in range(size):
             for r in range(size):
-                lines.append(
-                    f"{r / (size - 1):.6f} {g / (size - 1):.6f} {b / (size - 1):.6f}"
-                )
+                lines.append(f"{r / (size - 1):.6f} {g / (size - 1):.6f} {b / (size - 1):.6f}")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -184,8 +183,7 @@ def main() -> int:
         check(
             "as-shot thumb helper ignores Exposure in adj",
             u8_graded.shape == u8_plain.shape
-            and float(np.max(np.abs(u8_graded.astype(np.int16) - u8_plain.astype(np.int16))))
-            == 0.0,
+            and float(np.max(np.abs(u8_graded.astype(np.int16) - u8_plain.astype(np.int16)))) == 0.0,
         )
 
     print(f"\n{len(FAILURES)} failure(s)")

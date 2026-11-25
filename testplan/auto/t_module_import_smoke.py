@@ -4,6 +4,7 @@ Would have caught the Lite ``name 'threading' is not defined`` crash in
 ``rawviewer_app/processing.py`` (module imported fine once ``threading``
 was present; ``compileall`` alone does not execute imports).
 """
+
 from __future__ import annotations
 
 import compileall

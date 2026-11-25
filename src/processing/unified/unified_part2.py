@@ -1,4 +1,5 @@
 """Unified mixin part 2 of 7 for UnifiedImageProcessor."""
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ class UnifiedPart2:
                 if self.cache.is_libraw_preview(file_path):
                     h, w = rgb_image.shape[:2]
                     from image_cache import memory_preview_max_edge
+
                     if max(h, w) <= memory_preview_max_edge():
                         return rgb_image
             except Exception:
@@ -112,9 +114,7 @@ class UnifiedPart2:
                     # full multi-second apply.
                     # In place: rebinding self._adjusted_full_slots would give
                     # this instance a private list again and unshare the memo.
-                    kept = [
-                        e for e in self._adjusted_full_slots if e[0] != norm
-                    ][-5:]
+                    kept = [e for e in self._adjusted_full_slots if e[0] != norm][-5:]
                     kept.append((norm, adj_key, out))
                     self._adjusted_full_slots[:] = kept
                 return out
@@ -184,11 +184,7 @@ class UnifiedPart2:
 
             h, w = int(host.shape[0]), int(host.shape[1])
             cap = int(memory_preview_max_edge())
-            if (
-                on_interim is not None
-                and cap > 0
-                and max(h, w) > cap
-            ):
+            if on_interim is not None and cap > 0 and max(h, w) > cap:
                 import cv2
 
                 scale = cap / float(max(h, w))
@@ -197,9 +193,7 @@ class UnifiedPart2:
                 small = cv2.resize(host, (nw, nh), interpolation=cv2.INTER_AREA)
                 if _cancelled():
                     return None
-                interim = self._apply_sidecar_if_needed(
-                    file_path, small, force=True
-                )
+                interim = self._apply_sidecar_if_needed(file_path, small, force=True)
                 if interim is not None and not _cancelled():
                     try:
                         on_interim(interim)

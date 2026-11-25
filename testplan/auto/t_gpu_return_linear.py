@@ -9,6 +9,7 @@ the parameter at all, only referenced the name `if return_linear:` in its
 body. Every GPU (pytorch_mps/cuda) decode raised NameError and silently
 fell back to CPU decode.
 """
+
 import inspect
 import os
 import sys
@@ -35,6 +36,7 @@ def main() -> int:
 
     wrapper_src = inspect.getsource(g.gpu_demosaic_pytorch_unpacked)
     import ast
+
     tree = ast.parse(wrapper_src)
     passed = False
     for node in ast.walk(tree):

@@ -5,6 +5,7 @@ Packaging may swap raw_r.dll / libraw_r*.dylib while rawpy.libraw_version
 stays at 0.22.x. The stamp must include the native library fingerprint so
 persisted thumb/grid/preview tiers are purged on upgrade.
 """
+
 import os
 import sys
 import tempfile

@@ -92,8 +92,7 @@ def main() -> int:
         check("new file is added", added is True)
         check(
             "inserted in sort order, not appended",
-            [os.path.basename(p) for p in host.image_files]
-            == ["a.jpg", "b.jpg", "edit.jpg", "c.jpg"],
+            [os.path.basename(p) for p in host.image_files] == ["a.jpg", "b.jpg", "edit.jpg", "c.jpg"],
             str([os.path.basename(p) for p in host.image_files]),
         )
         check("gallery was handed the new list", host.gallery_justified.received is not None)
@@ -101,8 +100,7 @@ def main() -> int:
             "gallery list matches image_files",
             host.gallery_justified.received == host.image_files,
         )
-        check("current file index still points at the same photo",
-              host.image_files[host.current_file_index] == a)
+        check("current file index still points at the same photo", host.image_files[host.current_file_index] == a)
 
         # --- idempotent ---
         before = len(host.image_files)

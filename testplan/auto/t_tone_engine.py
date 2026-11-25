@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tone-engine invariants: identity, monotonicity, black anchor, recovery floor."""
+
 import os
 import sys
 
@@ -59,9 +60,12 @@ def main() -> int:
     xs = np.linspace(1e-5, 1.2, 800, dtype=np.float32)
     ramp = np.repeat(xs[None, :, None], 3, axis=2).reshape(1, -1, 3)
     extremes = (
-        {"Shadows2012": 100.0}, {"Shadows2012": -100.0},
-        {"Blacks2012": 100.0}, {"Blacks2012": -100.0},
-        {"Whites2012": 100.0}, {"Highlights2012": -100.0},
+        {"Shadows2012": 100.0},
+        {"Shadows2012": -100.0},
+        {"Blacks2012": 100.0},
+        {"Blacks2012": -100.0},
+        {"Whites2012": 100.0},
+        {"Highlights2012": -100.0},
         {"Shadows2012": 100.0, "Blacks2012": 100.0},
     )
     for adj in extremes:
@@ -90,8 +94,7 @@ def main() -> int:
         return int(render(img2, adj)[0, 0, 0])
 
     sb = {"Shadows2012": 100.0, "Blacks2012": 100.0}
-    check("noise floor (8.5 stops under) stays dark", lift(0.0005, sb) <= 6,
-          f"out={lift(0.0005, sb)}")
+    check("noise floor (8.5 stops under) stays dark", lift(0.0005, sb) <= 6, f"out={lift(0.0005, sb)}")
     # Relative, not a fixed pixel value: _MAX_TONE_RATIO was deliberately
     # lowered from 16x to 8x (real-photo chroma-noise speckle regression,
     # see raw_pv2012.py's comment on _MAX_TONE_RATIO) which intentionally
@@ -110,8 +113,7 @@ def main() -> int:
     s_only = lift(0.01, {"Shadows2012": 100.0})
     b_only = lift(0.01, {"Blacks2012": 100.0})
     both = lift(0.01, sb)
-    check("shadows+blacks >= max(individual)", both >= max(s_only, b_only) - 1,
-          f"s={s_only} b={b_only} both={both}")
+    check("shadows+blacks >= max(individual)", both >= max(s_only, b_only) - 1, f"s={s_only} b={b_only} both={both}")
 
     # 6. Recovery floor: >= 2x the old 3.0-ratio-cap engine's reach
     base = lift(0.01, {})
@@ -171,7 +173,9 @@ def main() -> int:
     # 8. Blacks-only push must be damped too (bug: damp used to gate on the
     # Shadows slider value specifically, so a Blacks-only push skipped it).
     out_blacks_only = render(noisy, {"Blacks2012": 94.0})
-    bg_blacks_only = float((out_blacks_only[..., 2].astype(np.float32) - out_blacks_only[..., 1].astype(np.float32)).std())
+    bg_blacks_only = float(
+        (out_blacks_only[..., 2].astype(np.float32) - out_blacks_only[..., 1].astype(np.float32)).std()
+    )
     check(
         "Blacks-only push also damped",
         bg_blacks_only <= luma_std * 1.5,

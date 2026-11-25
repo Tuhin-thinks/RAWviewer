@@ -1,4 +1,5 @@
 """Engine mixin part 4 of 7 for SemanticImageIndex."""
+
 from __future__ import annotations
 
 import concurrent
@@ -25,10 +26,6 @@ from search.types import ProgressCallback
 
 
 class EnginePart4:
-
-
-
-
     def backfill_search_metadata(
         self,
         file_paths: Sequence[str],
@@ -126,11 +123,7 @@ class EnginePart4:
                 len(cache_misses),
             )
             sample_path = cache_misses[0] if cache_misses else None
-            face_warm_workers = (
-                1
-                if sys.platform == "win32"
-                else min(semantic_encode_prep_workers(sample_path), 4)
-            )
+            face_warm_workers = 1 if sys.platform == "win32" else min(semantic_encode_prep_workers(sample_path), 4)
             self._ensure_index_thumbnails_cached(
                 cache_misses,
                 progress_callback,
@@ -191,9 +184,7 @@ class EnginePart4:
 
         if not parallel:
             for idx, cp in enumerate(face_pending, start=1):
-                if progress_callback and (
-                    idx <= 2 or idx >= total_face or idx % 10 == 0
-                ):
+                if progress_callback and (idx <= 2 or idx >= total_face or idx % 10 == 0):
                     progress_callback(
                         progress_indexed_base,
                         progress_album_total,
@@ -237,11 +228,7 @@ class EnginePart4:
                         conn.commit()
                         batch_writes = 0
                 completed += 1
-                if progress_callback and (
-                    completed <= 2
-                    or completed >= total_face
-                    or completed % 10 == 0
-                ):
+                if progress_callback and (completed <= 2 or completed >= total_face or completed % 10 == 0):
                     progress_callback(
                         progress_indexed_base,
                         progress_album_total,
@@ -272,9 +259,7 @@ class EnginePart4:
             return ".".join(parts[:-1]).lower()
         return base.lower()
 
-    def _filter_duplicate_raw_companions(
-        cls, file_paths: Sequence[str]
-    ) -> tuple[list[str], list[str]]:
+    def _filter_duplicate_raw_companions(cls, file_paths: Sequence[str]) -> tuple[list[str], list[str]]:
         """Return (indexable paths, skipped RAW paths with a non-raw companion)."""
         filtered_paths: list[str] = []
         skipped_raw: list[str] = []

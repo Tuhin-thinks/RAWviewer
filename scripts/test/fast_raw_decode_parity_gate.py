@@ -41,9 +41,7 @@ os.environ["RAWVIEWER_WB_SANITY"] = "0"
 # a demosaic-tolerant threshold when a GPU backend is available.
 os.environ["RAWVIEWER_GPU_BACKEND"] = "cpu_only"
 
-DEFAULT_SAMPLE_GLOBS = [
-    p for p in os.environ.get("RAWVIEWER_TEST_SAMPLES", "").split(os.pathsep) if p
-]
+DEFAULT_SAMPLE_GLOBS = [p for p in os.environ.get("RAWVIEWER_TEST_SAMPLES", "").split(os.pathsep) if p]
 
 
 def collect_files(args):
@@ -159,9 +157,8 @@ def main() -> int:
                 print(f"PASS  split unpack+finish byte-identical for {name}")
             with rawpy.imread(smoke) as raw:
                 ref = raw.postprocess(
-                    demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR, **{
-                        k: v for k, v in params.items() if k != "half_size"
-                    }
+                    demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR,
+                    **{k: v for k, v in params.items() if k != "half_size"},
                 )
             ok = out.dtype == np.uint8 and out.shape == ref.shape
             small_o = cv2.resize(out, (ref.shape[1] // 4, ref.shape[0] // 4), interpolation=cv2.INTER_AREA)
@@ -246,8 +243,13 @@ def main() -> int:
             with _rawpy.imread(path) as raw:
                 t = raw.extract_thumb()
             residual = frd._wb_correction_from_jpeg(
-                path, t.data, u.mosaic, u.pattern, u.black,
-                u.scale_mul, u.rgb_cam,
+                path,
+                t.data,
+                u.mosaic,
+                u.pattern,
+                u.black,
+                u.scale_mul,
+                u.rgb_cam,
                 np.asarray(corrected, dtype=np.float64),
             )
             if residual is not None:

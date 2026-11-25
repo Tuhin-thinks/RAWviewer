@@ -1,4 +1,3 @@
-
 """Common image loader: QImage/QPixmap/PIL/HDR/EDR decode entry points."""
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from image_cache import get_image_cache
 QLoggingCategory.setFilterRules("qt.imageformats.warning=false\\nqt.imageformats.tiff.warning=false")
 try:
     from pillow_heif import register_heif_opener
+
     register_heif_opener()
 except ImportError:
     pass
@@ -47,9 +47,11 @@ def decode_embedded_jpeg_bytes(
 ) -> np.ndarray | None:
     """Decode embedded JPEG to RGB; applies the JPEG segment's own EXIF orientation."""
     import logging
+
     logger = logging.getLogger(__name__)
     try:
         from PIL import Image, ImageFile
+
         ImageFile.LOAD_TRUNCATED_IMAGES = True
 
         im = Image.open(io.BytesIO(jpeg_bytes))
@@ -69,8 +71,7 @@ def decode_embedded_jpeg_bytes(
             0 < max_size <= draft_cap
             and im.format == "JPEG"
             and max(im.size) > max_size * 2
-            and os.environ.get("RAWVIEWER_JPEG_DRAFT_DECODE", "1").strip().lower()
-            not in {"0", "false", "no", "off"}
+            and os.environ.get("RAWVIEWER_JPEG_DRAFT_DECODE", "1").strip().lower() not in {"0", "false", "no", "off"}
         ):
             with contextlib.suppress(Exception):
                 im.draft("RGB", (max_size, max_size))
@@ -83,6 +84,8 @@ def decode_embedded_jpeg_bytes(
     except Exception as e:
         logger.error("[DECODE] Error decoding embedded JPEG bytes: %s", e)
         return None
+
+
 def orientation_from_embedded_jpeg_bytes(jpeg_bytes: bytes) -> int:
     """EXIF Orientation (1ΓÇô8) from an embedded JPEG; portrait pixels ΓåÆ 6 if tag missing."""
     try:
@@ -102,6 +105,8 @@ def orientation_from_embedded_jpeg_bytes(jpeg_bytes: bytes) -> int:
     except Exception:
         pass
     return 1
+
+
 def load_qimage_safe(file_path: str, max_edge: int = 0):
     """QImage twin of load_pixmap_safe, for WORKER THREADS.
 
@@ -147,6 +152,8 @@ def load_qimage_safe(file_path: str, max_edge: int = 0):
         return _pil_file_to_qimage(file_path, max_edge=max_edge)
     except Exception:
         return QImage()
+
+
 def _pil_file_to_qimage(file_path: str, max_edge: int = 0):
     """PIL load -> QImage, orientation applied. The QPixmap-free half of
     _pil_file_to_qpixmap, so worker threads can use it."""
@@ -166,12 +173,12 @@ def _pil_file_to_qimage(file_path: str, max_edge: int = 0):
         import numpy as np
 
         arr = np.ascontiguousarray(np.asarray(pil_image))
-        qimage = QImage(
-            arr.data, width, height, width * 3, QImage.Format.Format_RGB888
-        )
+        qimage = QImage(arr.data, width, height, width * 3, QImage.Format.Format_RGB888)
         # copy(): the QImage above borrows the numpy buffer, and this one
         # crosses a thread boundary where the array's lifetime is not ours.
         return qimage.copy()
+
+
 def _pil_file_to_qpixmap(file_path: str, max_edge: int = 0) -> QPixmap:
     """Load JPEG/PNG/WebP via PIL with EXIF orientation; optional downscale."""
     import logging
@@ -194,6 +201,7 @@ def _pil_file_to_qpixmap(file_path: str, max_edge: int = 0) -> QPixmap:
                 pil_image = pil_image.convert("RGB")
             width, height = pil_image.size
             import numpy as np
+
             arr = np.asarray(pil_image)
             qimage = QImage(
                 arr.data,
@@ -207,10 +215,10 @@ def _pil_file_to_qpixmap(file_path: str, max_edge: int = 0) -> QPixmap:
                 return QPixmap()
             return QPixmap.fromImage(qimage)
     except Exception as e:
-        logger.debug(
-            "PIL load failed for %s: %s", os.path.basename(file_path), e
-        )
+        logger.debug("PIL load failed for %s: %s", os.path.basename(file_path), e)
         return QPixmap()
+
+
 def pixmap_covers_requested_edge(file_path: str, pixmap, max_edge: int) -> bool:
     """True when a cached ``pixmap`` satisfies a load request of ``max_edge``.
 
@@ -249,6 +257,8 @@ def pixmap_covers_requested_edge(file_path: str, pixmap, max_edge: int) -> bool:
         return have[0] >= need[0] - 2 and have[1] >= need[1] - 2
     except Exception:
         return True
+
+
 def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
     """σ«ëσà¿Φ╝ëσàÑ QPixmap∩╝îσ░ì TIFF µûçΣ╗╢Σ╜┐τö¿ PIL Σ╗ÑΘü┐σàì Qt Φ¡ªσæè"""
     global _last_load_used_edr
@@ -258,8 +268,12 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
     # µ¬óµƒÑσ┐½σÅû (size-aware: a preview-capped entry must not satisfy a
     # larger/native-resolution request -- see pixmap_covers_requested_edge)
     cached_pixmap = cache.get_pixmap(file_path)
-    if cached_pixmap is not None and not cached_pixmap.isNull() and pixmap_covers_requested_edge(file_path, cached_pixmap, max_edge):
-            return cached_pixmap
+    if (
+        cached_pixmap is not None
+        and not cached_pixmap.isNull()
+        and pixmap_covers_requested_edge(file_path, cached_pixmap, max_edge)
+    ):
+        return cached_pixmap
 
     if is_raw_file(file_path):
         preview_max = max_edge if max_edge > 0 else 2048
@@ -275,21 +289,21 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
     if is_tiff_file(file_path):
         try:
             from PIL import Image, ImageOps
+
             with Image.open(file_path) as pil_image:
                 # Apply EXIF orientation correction
                 pil_image = ImageOps.exif_transpose(pil_image)
 
-                if pil_image.mode not in ('RGB', 'L'):
-                    pil_image = pil_image.convert('RGB')
-                if pil_image.mode == 'L':
-                    pil_image = pil_image.convert('RGB')
+                if pil_image.mode not in ("RGB", "L"):
+                    pil_image = pil_image.convert("RGB")
+                if pil_image.mode == "L":
+                    pil_image = pil_image.convert("RGB")
 
                 width, height = pil_image.size
                 import numpy as np
+
                 arr = np.asarray(pil_image)
-                qimage = QImage(arr.data,
-                               width, height, width * 3,
-                               QImage.Format.Format_RGB888)
+                qimage = QImage(arr.data, width, height, width * 3, QImage.Format.Format_RGB888)
                 qimage.ndarr = arr  # Keep array alive
 
                 if not qimage.isNull():
@@ -298,6 +312,7 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
                     return pixmap
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.debug(f"PIL fallback failed for TIFF: {os.path.basename(file_path)}: {e}")
             # σ░ìµû╝ TIFF µûçΣ╗╢∩╝îµ░╕ΘüáΣ╕ìΦªüΣ╜┐τö¿ QPixmap(file_path)∩╝îσ¢áτé║µ£âΦº╕τÖ╝Φ¡ªσæè
@@ -334,6 +349,7 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
             return pixmap
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug(f"QImageReader failed for {os.path.basename(file_path)}: {e}")
 
@@ -354,6 +370,8 @@ def load_pixmap_safe(file_path: str, max_edge: int = 0) -> QPixmap:
         if not pixmap.isNull():
             cache.put_pixmap(file_path, pixmap)
     return pixmap
+
+
 def rgb_array_to_qpixmap(rgb_image: np.ndarray) -> QPixmap:
     """Convert oriented uint8 RGB/grayscale ndarray to QPixmap.
 
@@ -372,24 +390,18 @@ def rgb_array_to_qpixmap(rgb_image: np.ndarray) -> QPixmap:
         rgb_image = np.ascontiguousarray(rgb_image)
     h, w = rgb_image.shape[:2]
     if len(rgb_image.shape) == 2:
-        qimg = QImage(
-            rgb_image.data, w, h, w, QImage.Format.Format_Grayscale8
-        )
+        qimg = QImage(rgb_image.data, w, h, w, QImage.Format.Format_Grayscale8)
     elif rgb_image.shape[2] >= 3:
         channels = int(rgb_image.shape[2])
-        q_format = (
-            QImage.Format.Format_RGB888
-            if channels == 3
-            else QImage.Format.Format_RGBA8888
-        )
-        qimg = QImage(
-            rgb_image.data, w, h, channels * w, q_format
-        )
+        q_format = QImage.Format.Format_RGB888 if channels == 3 else QImage.Format.Format_RGBA8888
+        qimg = QImage(rgb_image.data, w, h, channels * w, q_format)
     else:
         return QPixmap()
 
     qimg.ndarr = rgb_image  # Keep array alive explicitly
     return QPixmap.fromImage(qimg) if not qimg.isNull() else QPixmap()
+
+
 def load_raw_preview_array(
     file_path: str,
     max_size: int = 2048,
@@ -411,9 +423,7 @@ def load_raw_preview_array(
 
     from enhanced_raw_processor import ThumbnailExtractor
 
-    thumb = ThumbnailExtractor().extract_thumbnail_from_raw(
-        file_path, max_size=max_size, allow_scan_fallback=True
-    )
+    thumb = ThumbnailExtractor().extract_thumbnail_from_raw(file_path, max_size=max_size, allow_scan_fallback=True)
     if thumb is None:
         return None
 
@@ -428,6 +438,8 @@ def load_raw_preview_array(
         return thumb
 
     return finalize_index_thumbnail_array(file_path, thumb, cache=cache)
+
+
 def load_raw_preview_pixmap(file_path: str, max_size: int = 2048) -> QPixmap:
     """Oriented RAW preview as QPixmap (shared by single view fallbacks and gallery)."""
     cache = get_image_cache()
@@ -442,6 +454,8 @@ def load_raw_preview_pixmap(file_path: str, max_size: int = 2048) -> QPixmap:
     if not pixmap.isNull():
         cache.put_pixmap(file_path, pixmap)
     return pixmap
+
+
 def get_image_aspect_ratio(file_path: str) -> float:
     """τì▓σÅûσ£ûσâÅσ»¼Θ½ÿµ»ö∩╝êΣ╕ìΦ╝ëσàÑσ«îµò┤σ£ûσâÅ∩╝ë"""
     cache = get_image_cache()
@@ -449,26 +463,22 @@ def get_image_aspect_ratio(file_path: str) -> float:
     # σÿùΦ⌐ªσ╛₧ EXIF σ┐½σÅûτì▓σÅûσ░║σ»╕
     exif_data = cache.get_exif(file_path)
     if exif_data:
-        original_width = exif_data.get('original_width')
-        original_height = exif_data.get('original_height')
-        orientation = exif_data.get('orientation', 1)
+        original_width = exif_data.get("original_width")
+        original_height = exif_data.get("original_height")
+        orientation = exif_data.get("orientation", 1)
 
         if original_width and original_height and original_height > 0:
-            return exif_display_aspect_ratio(
-                int(original_width), int(original_height), int(orientation or 1)
-            )
+            return exif_display_aspect_ratio(int(original_width), int(original_height), int(orientation or 1))
 
     # σ░ìµû╝ RAW µûçΣ╗╢∩╝îσÿùΦ⌐ªσ╛₧σ┐½σÅûτì▓σÅûσ░║σ»╕∩╝îσÉªσëçΣ╜┐τö¿ rawpy σ┐½ΘÇƒτì▓σÅû
     if is_raw_file(file_path):
         # σä¬σàêσÿùΦ⌐ª EXIF σ┐½σÅû∩╝êµ£Çσ┐½Σ╕öσîàσÉ½µû╣σÉæ∩╝ë
         if exif_data:
-            orig_w = exif_data.get('original_width')
-            orig_h = exif_data.get('original_height')
-            orient = exif_data.get('orientation', 1)
+            orig_w = exif_data.get("original_width")
+            orig_h = exif_data.get("original_height")
+            orient = exif_data.get("orientation", 1)
             if orig_w and orig_h and orig_h > 0:
-                return exif_display_aspect_ratio(
-                    int(orig_w), int(orig_h), int(orient or 1)
-                )
+                return exif_display_aspect_ratio(int(orig_w), int(orig_h), int(orient or 1))
 
         try:
             # σÅ¬Φ«ÇσÅû Metadata∩╝îΣ╕ìΦÖòτÉåσ£ûσâÅ
@@ -492,12 +502,13 @@ def get_image_aspect_ratio(file_path: str) -> float:
                     return w / h
                 return 1.333
         except Exception:
-             pass
+            pass
 
     # σ░ìµû╝ TIFF µûçΣ╗╢∩╝îΣ╜┐τö¿ PIL
     if is_tiff_file(file_path):
         try:
             from PIL import Image
+
             with Image.open(file_path) as img:
                 width, height = img.size
                 if height > 0:
@@ -509,6 +520,7 @@ def get_image_aspect_ratio(file_path: str) -> float:
     if not is_raw_file(file_path):
         try:
             from PyQt6.QtGui import QImageReader
+
             reader = QImageReader(file_path)
             # Enable automatic EXIF orientation transformation
             reader.setAutoTransform(True)
@@ -558,6 +570,8 @@ def get_image_aspect_ratio(file_path: str) -> float:
             pass
 
     return 1.333  # Θ╗ÿΦ¬ìσ»¼Θ½ÿµ»ö (4:3)
+
+
 def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | None:
     """Try to decode HEIF/AVIF/TIFF HDR images with EDR on macOS or SDR tone-mapping."""
     import os
@@ -566,8 +580,8 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
 
     ext = file_path.lower()
 
-    is_heif_or_avif = ext.endswith(('.heic', '.heif', '.avif'))
-    is_tiff = ext.endswith(('.tif', '.tiff'))
+    is_heif_or_avif = ext.endswith((".heic", ".heif", ".avif"))
+    is_tiff = ext.endswith((".tif", ".tiff"))
 
     if not (is_heif_or_avif or is_tiff):
         return None
@@ -582,6 +596,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
 
         if is_heif_or_avif:
             import pillow_heif
+
             heif_file = pillow_heif.read_heif(file_path)
             bit_depth = heif_file.info.get("bit_depth", 8)
             nclx = heif_file.info.get("nclx", {})
@@ -589,7 +604,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
                 transfer = nclx.get("transfer_characteristics", 2)
             icc_profile = heif_file.info.get("icc_profile", b"")
             w, h = heif_file.size
-            channels = 4 if heif_file.mode == 'RGBA' else 3
+            channels = 4 if heif_file.mode == "RGBA" else 3
 
             # Check if HDR
             is_hdr = (bit_depth > 8) or (transfer in (16, 18))
@@ -619,6 +634,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
                 w, h = pil_img.size
 
             import cv2
+
             arr = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
             if arr is None:
                 return None
@@ -643,11 +659,12 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
         # above 4095) as 10/12-bit if its bright content is sparse enough to
         # get averaged below the threshold -- picking a denominator dozens of
         # times too small and rendering the preview badly over-bright.
-        max_val = (65535.0 if arr.max() > 4095 else 2 ** bit_depth - 1) if arr.dtype == np.uint16 else 255.0
+        max_val = (65535.0 if arr.max() > 4095 else 2**bit_depth - 1) if arr.dtype == np.uint16 else 255.0
 
         # Perform downsizing early to save memory and processing time
         if max_edge > 0 and max(w, h) > max_edge:
             import cv2
+
             if w >= h:
                 sw = max_edge
                 sh = max(1, int(h * max_edge / max(w, 1)))
@@ -681,7 +698,11 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
                 q_format = QImage.Format.Format_RGBA64
             else:  # Grayscale -> RGBX64
                 padded = np.empty((h, w, 4), dtype=np.uint16)
-                val_16 = (img_float[:, :, 0] * 65535.0).astype(np.uint16) if len(img_float.shape) == 3 else (img_float * 65535.0).astype(np.uint16)
+                val_16 = (
+                    (img_float[:, :, 0] * 65535.0).astype(np.uint16)
+                    if len(img_float.shape) == 3
+                    else (img_float * 65535.0).astype(np.uint16)
+                )
                 padded[:, :, 0] = val_16
                 padded[:, :, 1] = val_16
                 padded[:, :, 2] = val_16
@@ -690,13 +711,7 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
                 q_format = QImage.Format.Format_RGBX64
 
             arr_64 = np.ascontiguousarray(arr_64)
-            qimage = QImage(
-                arr_64.data,
-                w,
-                h,
-                w * 8,
-                q_format
-            )
+            qimage = QImage(arr_64.data, w, h, w * 8, q_format)
             qimage.ndarr = arr_64  # Keep array alive
 
             # Set the color space so Quartz/Metal rendering will treat values correctly
@@ -715,7 +730,15 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
 
         # 2. Windows / SDR Tone-mapping path
         else:
-            rgb_float = img_float[:, :, :3] if channels >= 3 else (np.stack([img_float]*3, axis=-1) if len(img_float.shape) == 2 else np.stack([img_float[:, :, 0]]*3, axis=-1))
+            rgb_float = (
+                img_float[:, :, :3]
+                if channels >= 3
+                else (
+                    np.stack([img_float] * 3, axis=-1)
+                    if len(img_float.shape) == 2
+                    else np.stack([img_float[:, :, 0]] * 3, axis=-1)
+                )
+            )
 
             # Linearize
             if transfer == 16:
@@ -750,6 +773,6 @@ def try_load_hdr_image_pixmap(file_path: str, max_edge: int = 0) -> QPixmap | No
 
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Failed to load HDR image {os.path.basename(file_path)}: {e}")
         return None
-

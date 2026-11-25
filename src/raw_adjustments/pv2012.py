@@ -134,15 +134,11 @@ def apply_regional_linear_exposure(
     lum = _luminance(img).astype(np.float32)
     log2_gain = np.zeros_like(lum, dtype=np.float32)
     if abs(sh) > 1e-6:
-        log2_gain = log2_gain + (sh * _SHADOW_LINEAR_MAX_STOPS) * _shadow_mask_scene_linear(
-            lum
-        )
+        log2_gain = log2_gain + (sh * _SHADOW_LINEAR_MAX_STOPS) * _shadow_mask_scene_linear(lum)
     if abs(hi) > 1e-6:
         # hi > 0 brightens highlights; hi < 0 compresses (recovery), same
         # stop language as Exposure but masked to the highlight region.
-        log2_gain = log2_gain + (
-            hi * _HIGHLIGHT_LINEAR_MAX_STOPS
-        ) * _highlight_mask_scene_linear(lum)
+        log2_gain = log2_gain + (hi * _HIGHLIGHT_LINEAR_MAX_STOPS) * _highlight_mask_scene_linear(lum)
 
     gain = np.power(2.0, log2_gain).astype(np.float32)
     out = img.astype(np.float32, copy=False) * gain[..., np.newaxis]
@@ -168,9 +164,7 @@ def _damp_chroma_after_lift(
     luma = luma_2d[..., np.newaxis]
     chroma = out - luma
     h, w = chroma.shape[:2]
-    ds = cv2.resize(
-        chroma, (max(1, w // 4), max(1, h // 4)), interpolation=cv2.INTER_AREA
-    )
+    ds = cv2.resize(chroma, (max(1, w // 4), max(1, h // 4)), interpolation=cv2.INTER_AREA)
     for c in range(3):
         ch = np.ascontiguousarray(ds[..., c])
         ds[..., c] = apply_guided_filter(ch, ch, 2, 0.0005)
@@ -187,17 +181,11 @@ def _damp_chroma_after_lift(
 # against 1.0 is therefore triple-attenuated into a no-op on the very pixels
 # Highlights exists for (measured: Highlights=-100 changed a clipped white by
 # 0.7%). Highlight-region math must normalize by this constant.
-_PERCEPTUAL_WHITE = float(
-    np.interp(1.0 / 1.25, _BASE_CURVE_XY[:, 0], _BASE_CURVE_XY[:, 1])
-)  # ~0.813
+_PERCEPTUAL_WHITE = float(np.interp(1.0 / 1.25, _BASE_CURVE_XY[:, 0], _BASE_CURVE_XY[:, 1]))  # ~0.813
 
 
 def _luminance(rgb: np.ndarray) -> np.ndarray:
-    return (
-        0.2126 * rgb[:, :, 0]
-        + 0.7152 * rgb[:, :, 1]
-        + 0.0722 * rgb[:, :, 2]
-    )
+    return 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
 
 
 def _region_weight_highlights(y: np.ndarray) -> np.ndarray:
@@ -345,15 +333,11 @@ def apply_pv2012_tone_rgb(
 
     # Chroma damp for the linear shadow lift (ratio-path damp below won't see
     # it once perceptual Shadows are zeroed). Skip in preview_lite / settle_fast.
-    if (
-        linear_gain is not None
-        and not skip_chroma_damp
-        and np.any(linear_gain > 1.0 + 1e-3)
-    ):
+    if linear_gain is not None and not skip_chroma_damp and np.any(linear_gain > 1.0 + 1e-3):
         lum_lifted = _luminance(img)
         # Normalize lift amount against the max shadow stops so damp ramps
         # similarly to the old ratio-based path.
-        max_gain = float(2.0 ** _SHADOW_LINEAR_MAX_STOPS)
+        max_gain = float(2.0**_SHADOW_LINEAR_MAX_STOPS)
         lift_frac = np.clip((linear_gain - 1.0) / max(max_gain - 1.0, 1e-6), 0.0, 1.0)
         # Region weight from pre-gain would need the original lum; approximate
         # with the inverse of how much we still consider "shadow" after lift
@@ -361,9 +345,7 @@ def apply_pv2012_tone_rgb(
         # lum/gain (gain>=1 in lifted areas).
         lum_pre = np.where(linear_gain > 1e-6, lum_lifted / linear_gain, lum_lifted)
         sw = _shadow_mask_scene_linear(lum_pre)
-        img = _damp_chroma_after_lift(
-            img, luma_2d=lum_lifted, region_weight=sw, lift_frac=lift_frac
-        )
+        img = _damp_chroma_after_lift(img, luma_2d=lum_lifted, region_weight=sw, lift_frac=lift_frac)
 
     lum = _luminance(img)
     y0_raw = _scene_to_perceptual(lum)
@@ -392,9 +374,7 @@ def apply_pv2012_tone_rgb(
         from raw_adjustments.chroma_denoise import apply_guided_filter
 
         y0 = np.clip(
-            apply_guided_filter(
-                y0_raw.astype(np.float32), y0_raw.astype(np.float32), 2, 0.0005
-            ),
+            apply_guided_filter(y0_raw.astype(np.float32), y0_raw.astype(np.float32), 2, 0.0005),
             0.0,
             None,
         )
@@ -441,9 +421,7 @@ def apply_pv2012_tone_rgb(
     over = ratio > _knee
     ratio = np.where(
         over,
-        _knee
-        + (_MAX_TONE_RATIO - _knee)
-        * np.tanh((ratio - _knee) / (_MAX_TONE_RATIO - _knee)),
+        _knee + (_MAX_TONE_RATIO - _knee) * np.tanh((ratio - _knee) / (_MAX_TONE_RATIO - _knee)),
         ratio,
     )
 
@@ -491,8 +469,6 @@ def apply_pv2012_tone_rgb(
         # lift, so damp strength should ramp up early, not only at the tail.
         lift_frac = np.clip((ratio - 1.0) / 3.0, 0.0, 1.0)
         luma_2d = lum * ratio
-        out = _damp_chroma_after_lift(
-            out, luma_2d=luma_2d, region_weight=sw, lift_frac=lift_frac
-        )
+        out = _damp_chroma_after_lift(out, luma_2d=luma_2d, region_weight=sw, lift_frac=lift_frac)
 
     return np.clip(out, 0.0, None)

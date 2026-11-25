@@ -1,4 +1,5 @@
 """adjust mixin, part 4 of 5 (19 methods, 894 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -206,9 +207,7 @@ class AdjustPart4:
                 if is_end or (now - last) >= 0.05:
                     self._heal_mask_overlay_last = now
                     wanted = bool(panel.dodge_burn_show_mask())
-                    gv.set_dodge_burn_mask_overlay(
-                        mask, True if not is_end else wanted
-                    )
+                    gv.set_dodge_burn_mask_overlay(mask, True if not is_end else wanted)
 
             if is_end:
                 self._sync_dodge_burn_mask_overlay()
@@ -219,9 +218,7 @@ class AdjustPart4:
         except Exception:
             import logging
 
-            logging.getLogger(__name__).warning(
-                "[SPOT_HEAL] stroke handling failed", exc_info=True
-            )
+            logging.getLogger(__name__).warning("[SPOT_HEAL] stroke handling failed", exc_info=True)
 
     def _on_dodge_burn_stroke(self, pt, pressure: float, is_end: bool) -> None:
         panel = getattr(self, "single_image_adjust_panel", None)
@@ -327,17 +324,9 @@ class AdjustPart4:
                         if b.shape[0] != mh or b.shape[1] != mw:
                             import cv2
 
-                            b = cv2.resize(
-                                b, (mw, mh), interpolation=cv2.INTER_AREA
-                            )
-                        luma = (
-                            0.2126 * b[..., 0]
-                            + 0.7152 * b[..., 1]
-                            + 0.0722 * b[..., 2]
-                        ).astype(np.float32)
-                        chroma_guide = np.stack(
-                            [b[..., 0] - luma, b[..., 2] - luma], axis=-1
-                        ).astype(np.float32)
+                            b = cv2.resize(b, (mw, mh), interpolation=cv2.INTER_AREA)
+                        luma = (0.2126 * b[..., 0] + 0.7152 * b[..., 1] + 0.0722 * b[..., 2]).astype(np.float32)
+                        chroma_guide = np.stack([b[..., 0] - luma, b[..., 2] - luma], axis=-1).astype(np.float32)
                         self._dodge_burn_luma_guide = luma
                         self._dodge_burn_chroma_guide = chroma_guide
                 except Exception:
@@ -350,9 +339,7 @@ class AdjustPart4:
             t_stamp = time.perf_counter()
             if mode == "erase":
                 # Flow × pressure → erase amount (1.0 clears center in one stamp).
-                erase_amt = panel.dodge_burn_brush_strength() * max(
-                    0.05, float(pressure)
-                )
+                erase_amt = panel.dodge_burn_brush_strength() * max(0.05, float(pressure))
                 bbox = erase_brush(
                     mask,
                     mx,
@@ -460,7 +447,7 @@ class AdjustPart4:
                     m_y0 = max(0, int(py0 * sy))
                     m_x1 = min(mw, max(m_x0 + 1, int(np.ceil(px1 * sx))))
                     m_y1 = min(mh, max(m_y0 + 1, int(np.ceil(py1 * sy))))
-                    d_patch = (mask.data[m_y0:m_y1, m_x0:m_x1] - mask_start[m_y0:m_y1, m_x0:m_x1])
+                    d_patch = mask.data[m_y0:m_y1, m_x0:m_x1] - mask_start[m_y0:m_y1, m_x0:m_x1]
                     ph, pw = py1 - py0, px1 - px0
                     if d_patch.size > 0 and min(d_patch.shape) >= 2:
                         if d_patch.shape != (ph, pw):
@@ -477,20 +464,18 @@ class AdjustPart4:
                         from raw_adjustments.dodge_burn import circular_brush_falloff
 
                         r_disp = max(2.0, float(panel.dodge_burn_brush_radius()))
-                        d_disp = circular_brush_falloff(
-                            0, ph, 0, pw, pt.x() - px0, pt.y() - py0, r_disp
-                        ) * float(delta) * (1.0 if mode == "dodge" else -1.0)
+                        d_disp = (
+                            circular_brush_falloff(0, ph, 0, pw, pt.x() - px0, pt.y() - py0, r_disp)
+                            * float(delta)
+                            * (1.0 if mode == "dodge" else -1.0)
+                        )
 
                     stops = float(
-                        (getattr(self, "_dodge_burn_stroke_baseline_adj", None) or {}).get(
-                            "DodgeBurnStrength", 1.75
-                        )
+                        (getattr(self, "_dodge_burn_stroke_baseline_adj", None) or {}).get("DodgeBurnStrength", 1.75)
                     )
                     gain = np.exp2(d_disp * stops).astype(np.float32)
                     patch = baseline[py0:py1, px0:px1].astype(np.float32)
-                    out8 = np.clip(patch * gain[..., np.newaxis] + 0.5, 0, 255).astype(
-                        np.uint8
-                    )
+                    out8 = np.clip(patch * gain[..., np.newaxis] + 0.5, 0, 255).astype(np.uint8)
                     # One full-frame working buffer per stroke; blit the dirty
                     # patch into the existing QPixmap instead of baseline.copy()
                     # + full tobytes every pointer sample.
@@ -530,15 +515,11 @@ class AdjustPart4:
                             getattr(self, "_dodge_burn_stroke_baseline_adj", None)
                             or (last[1] if last is not None else {}),
                         )
-                        self._adjust_last_render_norm = _norm_path(
-                            getattr(self, "current_file_path", "") or ""
-                        )
+                        self._adjust_last_render_norm = _norm_path(getattr(self, "current_file_path", "") or "")
                 patch_ms = (time.perf_counter() - t_patch) * 1000.0
                 if isinstance(perf_acc, dict):
                     perf_acc["patch_sum"] = float(perf_acc.get("patch_sum", 0.0)) + patch_ms
-                    perf_acc["patch_max"] = max(
-                        float(perf_acc.get("patch_max", 0.0)), patch_ms
-                    )
+                    perf_acc["patch_max"] = max(float(perf_acc.get("patch_max", 0.0)), patch_ms)
                 if patch_ms >= 5.0:
                     perf_mark(
                         "db_live_patch",
@@ -563,11 +544,7 @@ class AdjustPart4:
                         base = getattr(self, "_adjust_preview_base_rgb", None)
                         if base is not None and hasattr(base, "shape"):
                             b = base.astype(np.float32)
-                            luminance = (
-                                0.2126 * b[..., 0]
-                                + 0.7152 * b[..., 1]
-                                + 0.0722 * b[..., 2]
-                            )
+                            luminance = 0.2126 * b[..., 0] + 0.7152 * b[..., 1] + 0.0722 * b[..., 2]
                     except Exception:
                         luminance = None
                 if luminance is not None:
@@ -584,8 +561,7 @@ class AdjustPart4:
                     n = int(perf_acc["n"])
                     perf_mark(
                         "db_stroke",
-                        float(perf_acc.get("stamp_sum", 0.0))
-                        + float(perf_acc.get("patch_sum", 0.0)),
+                        float(perf_acc.get("stamp_sum", 0.0)) + float(perf_acc.get("patch_sum", 0.0)),
                         getattr(self, "current_file_path", None),
                         n=n,
                         stamp_max=float(perf_acc.get("stamp_max", 0.0)),
@@ -599,9 +575,7 @@ class AdjustPart4:
         except Exception:
             import logging
 
-            logging.getLogger(__name__).warning(
-                "[DODGE_BURN] stroke handling failed", exc_info=True
-            )
+            logging.getLogger(__name__).warning("[DODGE_BURN] stroke handling failed", exc_info=True)
             self._dodge_burn_stroke_active = False
             self._dodge_burn_stroke_baseline = None
             self._dodge_burn_stroke_work = None
@@ -708,9 +682,7 @@ class AdjustPart4:
         # None) also releases the overlay so it cannot get stuck.
         if _norm_path(file_path) == getattr(self, "_adjust_loading_edit_norm", None):
             submitted_map = getattr(self, "_adjust_preview_submitted_adj", None)
-            if array is None or self._render_reflects_loaded_edit(
-                (submitted_map or {}).get(generation)
-            ):
+            if array is None or self._render_reflects_loaded_edit((submitted_map or {}).get(generation)):
                 self._set_edit_loading_overlay(None)
         if getattr(self, "_adjust_preview_dirty", False):
             self._apply_adjust_panel_preview(full_quality=dirty_full_quality, ai_preview=dirty_ai)
@@ -786,12 +758,10 @@ class AdjustPart4:
             self._adjust_preview_dirty = True
             # A pending full_quality/AI request must not be downgraded by a
             # subsequent fast one arriving while still queued -- OR-combine.
-            self._adjust_preview_dirty_full_quality = (
-                full_quality or getattr(self, "_adjust_preview_dirty_full_quality", False)
+            self._adjust_preview_dirty_full_quality = full_quality or getattr(
+                self, "_adjust_preview_dirty_full_quality", False
             )
-            self._adjust_preview_dirty_ai = (
-                ai_preview or getattr(self, "_adjust_preview_dirty_ai", False)
-            )
+            self._adjust_preview_dirty_ai = ai_preview or getattr(self, "_adjust_preview_dirty_ai", False)
             return
         self._adjust_preview_dirty = False
         self._adjust_preview_dirty_full_quality = False
@@ -803,9 +773,7 @@ class AdjustPart4:
         # AI denoise preview is on-demand (the panel's "Preview AI" button)
         # and runs at full resolution, the same base as export, so it shows
         # the real result. Slider changes never run AI.
-        ai_preview = bool(
-            ai_preview and base_full is not None and self._ai_denoise_preview_ready()
-        )
+        ai_preview = bool(ai_preview and base_full is not None and self._ai_denoise_preview_ready())
         use_fast = not full_quality and base_fast is not None
         if ai_preview:
             base = base_full
@@ -916,6 +884,7 @@ class AdjustPart4:
         change every time and defeat the point. Their serialized twins are in
         the dict and are compared.
         """
+
         def _clean(d):
             out = {}
             for k, v in (d or {}).items():

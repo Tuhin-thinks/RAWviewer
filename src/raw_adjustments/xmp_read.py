@@ -1,4 +1,3 @@
-
 """XMP sidecar path resolution, parse helpers, and adjustment load logic."""
 
 from __future__ import annotations
@@ -24,6 +23,7 @@ def resolve_xmp_path(image_path: str) -> str:
     if not image_path:
         return ""
     from common_image_loader import is_raw_file
+
     if not is_raw_file(image_path):
         return ""
     companion = image_path + ".xmp"
@@ -89,6 +89,7 @@ def edited_previews_enabled() -> bool:
         "yes",
         "on",
     }
+
 
 # --- XMP parse helpers
 def _parse_point_curve_from_xmp(xmp_path: str, tag_name: str) -> str:
@@ -163,6 +164,7 @@ def _parse_crs_child_text_from_xmp(xmp_path: str, local_name: str) -> str:
         pass
     return ""
 
+
 def parse_creative_lut_name_from_xmp(xmp_path: str) -> str:
     """Read crs:CreativeLUTName (string basename of a managed .cube)."""
     return _parse_crs_string_from_xmp(xmp_path, "CreativeLUTName")
@@ -193,6 +195,7 @@ def _parse_crs_string_from_xmp(xmp_path: str, local_name: str) -> str:
     except Exception:
         pass
     return ""
+
 
 # --- load adjustments
 def load_adjustments_from_xmp(xmp_path: str) -> dict[str, float]:
@@ -271,17 +274,11 @@ def load_adjustments_for_file(image_path: str) -> dict[str, float]:
             if make or model:
                 prof = get_camera_profile(make, model, iso=iso_val)
                 if prof:
-                    _warn_if_profile_decode_stale(
-                        prof, make, model, iso_val, image_path
-                    )
+                    _warn_if_profile_decode_stale(prof, make, model, iso_val, image_path)
                     if "temperature_shift" in prof:
-                        adj["Temperature"] = float(
-                            adj.get("Temperature", as_shot)
-                        ) + float(prof["temperature_shift"])
+                        adj["Temperature"] = float(adj.get("Temperature", as_shot)) + float(prof["temperature_shift"])
                     if "tint_shift" in prof:
-                        adj["Tint"] = float(adj.get("Tint", 0.0)) + float(
-                            prof["tint_shift"]
-                        )
+                        adj["Tint"] = float(adj.get("Tint", 0.0)) + float(prof["tint_shift"])
                     from raw_adjustments.hsl import HSL_COLOR_NAMES
 
                     for band in HSL_COLOR_NAMES:
@@ -302,6 +299,7 @@ def load_adjustments_for_file(image_path: str) -> dict[str, float]:
                 exc_info=True,
             )
     return adj
+
 
 # --- profile warning
 def _warn_if_profile_decode_stale(
@@ -324,13 +322,13 @@ def _warn_if_profile_decode_stale(
         import logging
 
         logging.getLogger(__name__).warning(
-            "[CALIB] Camera profile for %s may no longer match this decode: %s "
-            "(still applied)",
+            "[CALIB] Camera profile for %s may no longer match this decode: %s (still applied)",
             key,
             reason,
         )
     except Exception:
         pass
+
 
 # --- parse XMP adjustments
 def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
@@ -341,39 +339,39 @@ def parse_xmp_adjustments(xmp_path: str) -> dict[str, float]:
         root = tree.getroot()
 
         ns = {
-            'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-            'x': 'adobe:ns:meta/',
-            'crs': 'http://adobe.com/camera-raw-settings/1.0/'
+            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "x": "adobe:ns:meta/",
+            "crs": "http://adobe.com/camera-raw-settings/1.0/",
         }
 
         # 1. Search attributes on rdf:Description elements
-        for desc in root.findall('.//rdf:Description', ns):
+        for desc in root.findall(".//rdf:Description", ns):
             for key, val in desc.attrib.items():
                 local_key = key
-                if '}' in key:
-                    ns_uri, local_key = key.split('}', 1)
-                    if ns_uri != '{' + ns['crs']:
+                if "}" in key:
+                    ns_uri, local_key = key.split("}", 1)
+                    if ns_uri != "{" + ns["crs"]:
                         continue
-                elif ':' in key:
-                    prefix, local_key = key.split(':', 1)
-                    if prefix != 'crs':
+                elif ":" in key:
+                    prefix, local_key = key.split(":", 1)
+                    if prefix != "crs":
                         continue
 
                 with contextlib.suppress(ValueError):
                     adjustments[local_key] = float(val)
 
         # 2. Search child elements in crs namespace under rdf:Description
-        for desc in root.findall('.//rdf:Description', ns):
+        for desc in root.findall(".//rdf:Description", ns):
             for child in desc:
                 tag = child.tag
                 local_key = tag
-                if '}' in tag:
-                    ns_uri, local_key = tag.split('}', 1)
-                    if ns_uri != '{' + ns['crs']:
+                if "}" in tag:
+                    ns_uri, local_key = tag.split("}", 1)
+                    if ns_uri != "{" + ns["crs"]:
                         continue
-                elif ':' in tag:
-                    prefix, local_key = tag.split(':', 1)
-                    if prefix != 'crs':
+                elif ":" in tag:
+                    prefix, local_key = tag.split(":", 1)
+                    if prefix != "crs":
                         continue
                 if child.text:
                     with contextlib.suppress(ValueError):

@@ -1,4 +1,5 @@
 """Adjust mixin part 1 of 5 for ImageAdjustPanelWidget."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -33,7 +34,6 @@ from .helpers import (
 
 
 class AdjustPart1:
-
     _PANEL_W = 440
 
     _PANEL_H = 520
@@ -115,9 +115,7 @@ class AdjustPart1:
         }
         self._section_order = _sanitize_section_order(self._load_section_order())
         for key, sect in self._global_sections.items():
-            sect.header.customContextMenuRequested.connect(
-                lambda _pos, k=key: self._on_section_context_menu(k)
-            )
+            sect.header.customContextMenuRequested.connect(lambda _pos, k=key: self._on_section_context_menu(k))
 
         # Build tone curve editor row inside the curve section first
         if _SHOW_TONE_CURVE_UI:
@@ -185,8 +183,20 @@ class AdjustPart1:
             self._tone_curve_stack.addWidget(self._tone_curve_param_tab)
             tabs_layout.addWidget(self._tone_curve_stack)
 
-            self._btn_point.clicked.connect(lambda: (self._btn_point.setChecked(True), self._btn_param.setChecked(False), self._tone_curve_stack.setCurrentIndex(0)))
-            self._btn_param.clicked.connect(lambda: (self._btn_param.setChecked(True), self._btn_point.setChecked(False), self._tone_curve_stack.setCurrentIndex(1)))
+            self._btn_point.clicked.connect(
+                lambda: (
+                    self._btn_point.setChecked(True),
+                    self._btn_param.setChecked(False),
+                    self._tone_curve_stack.setCurrentIndex(0),
+                )
+            )
+            self._btn_param.clicked.connect(
+                lambda: (
+                    self._btn_param.setChecked(True),
+                    self._btn_point.setChecked(False),
+                    self._tone_curve_stack.setCurrentIndex(1),
+                )
+            )
 
             self.sect_curve.add_widget(self._tone_curve_tabs)
 
@@ -263,7 +273,14 @@ class AdjustPart1:
                 continue
 
             target_layout = None
-            if spec.key in {"Exposure2012", "Contrast2012", "Highlights2012", "Shadows2012", "Whites2012", "Blacks2012"}:
+            if spec.key in {
+                "Exposure2012",
+                "Contrast2012",
+                "Highlights2012",
+                "Shadows2012",
+                "Whites2012",
+                "Blacks2012",
+            }:
                 target_sect = self.sect_light
             elif spec.key in {"Temperature", "Tint", "Saturation", "Vibrance"}:
                 target_sect = self.sect_color
@@ -287,7 +304,9 @@ class AdjustPart1:
                     continue
                 target_sect = self.sect_noise
             elif spec.key in {
-                "CropAngle", "PerspectiveVertical", "PerspectiveHorizontal",
+                "CropAngle",
+                "PerspectiveVertical",
+                "PerspectiveHorizontal",
                 "Distortion",
             }:
                 target_sect = self.sect_transform
@@ -328,15 +347,9 @@ class AdjustPart1:
             elif spec.key == "PostCropVignetteMidpoint":
                 # Default Midpoint is 50 (LR); fill from the middle like Amount.
                 slider.set_center_value(50.0)
-            slider.sliderMoved.connect(
-                lambda _v, k=spec.key, fmt=spec.format_value: self._update_slider_label(
-                    k, fmt
-                )
-            )
+            slider.sliderMoved.connect(lambda _v, k=spec.key, fmt=spec.format_value: self._update_slider_label(k, fmt))
             slider.valueChanged.connect(
-                lambda _v, k=spec.key, fmt=spec.format_value: self._on_slider_value_changed(
-                    k, fmt
-                )
+                lambda _v, k=spec.key, fmt=spec.format_value: self._on_slider_value_changed(k, fmt)
             )
             slider.sliderReleased.connect(self._on_slider_released)
             if spec.key == "DenoiseDetail":
@@ -352,18 +365,13 @@ class AdjustPart1:
                 )
             if spec.key == "Distortion":
                 slider.setToolTip(
-                    "Manual lens distortion: + pincushion, − barrel "
-                    "(use when no matched lens profile exists)"
+                    "Manual lens distortion: + pincushion, − barrel (use when no matched lens profile exists)"
                 )
             if spec.key in _TRANSFORM_SLIDER_KEYS:
                 # Alignment grid while straightening / correcting perspective:
                 # pressed -> grid on; released -> grid off (host-side).
-                slider.sliderPressed.connect(
-                    lambda: self.transform_interaction.emit(True)
-                )
-                slider.sliderReleased.connect(
-                    lambda: self.transform_interaction.emit(False)
-                )
+                slider.sliderPressed.connect(lambda: self.transform_interaction.emit(True))
+                slider.sliderReleased.connect(lambda: self.transform_interaction.emit(False))
             row.addWidget(slider, 1)
 
             if spec.key == "CropAngle":
@@ -372,9 +380,7 @@ class AdjustPart1:
                 auto_st.setFixedHeight(20)
                 auto_st.setFocusPolicy(Qt.FocusPolicy.NoFocus)
                 auto_st.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-                auto_st.setToolTip(
-                    "Auto straighten — detect dominant near-horizontal/vertical lines"
-                )
+                auto_st.setToolTip("Auto straighten — detect dominant near-horizontal/vertical lines")
                 auto_st.clicked.connect(lambda: self.auto_straighten_requested.emit())
                 row.addWidget(auto_st)
 
@@ -461,8 +467,7 @@ class AdjustPart1:
         )
         self._ai_preview_btn.clicked.connect(self.ai_preview_requested.emit)
         self._ai_preview_btn.setStyleSheet(
-            f"QPushButton[aiBusy=\"true\"] {{ background: {theme.EMBER}; color: {theme.VOID}; "
-            f"font-weight: 600; }}"
+            f'QPushButton[aiBusy="true"] {{ background: {theme.EMBER}; color: {theme.VOID}; font-weight: 600; }}'
         )
         self._ai_busy = False
         ai_row.addWidget(self._ai_preview_btn)
@@ -510,9 +515,7 @@ class AdjustPart1:
         self._lens_correction_btn.setCheckable(True)
         self._lens_correction_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._lens_correction_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._lens_correction_btn.setToolTip(
-            "Automatic distortion correction from a matched lens profile"
-        )
+        self._lens_correction_btn.setToolTip("Automatic distortion correction from a matched lens profile")
         self._lens_correction_btn.toggled.connect(self._on_lens_correction_toggled)
         self._lens_correction_row.addWidget(self._lens_correction_btn, 1)
         self._lens_correction_row_widget = QWidget()
@@ -661,9 +664,7 @@ class AdjustPart1:
             "With Dodge/Burn armed: two-finger scroll up/down also changes size "
             "(does not navigate images). Ctrl+scroll still zooms."
         )
-        self._db_size_slider.valueChanged.connect(
-            lambda _v: self.dodge_burn_brush_changed.emit()
-        )
+        self._db_size_slider.valueChanged.connect(lambda _v: self.dodge_burn_brush_changed.emit())
         db_size_row.addWidget(self._db_size_slider, 1)
         db_container_layout.addLayout(db_size_row)
 
@@ -684,9 +685,7 @@ class AdjustPart1:
             "Also sets how opaque the on-image brush preview looks.\n"
             "In Heal mode this is the only intensity control (Effect Strength is off)."
         )
-        self._db_strength_slider.valueChanged.connect(
-            lambda _v: self.dodge_burn_brush_changed.emit()
-        )
+        self._db_strength_slider.valueChanged.connect(lambda _v: self.dodge_burn_brush_changed.emit())
         db_strength_row.addWidget(self._db_strength_slider, 1)
         db_container_layout.addLayout(db_strength_row)
 
@@ -795,5 +794,3 @@ class AdjustPart1:
         layout.addStretch(1)
         self._apply_section_order()
         self.set_adjustments(dict(DEFAULT_ADJUSTMENTS))
-
-

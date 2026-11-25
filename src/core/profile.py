@@ -246,9 +246,7 @@ def snapshot_user_rawviewer_env() -> frozenset[str]:
     global _USER_RAWVIEWER_ENV
     if _USER_RAWVIEWER_ENV is None:
         _USER_RAWVIEWER_ENV = frozenset(
-            k
-            for k, v in os.environ.items()
-            if k.startswith("RAWVIEWER_") and str(v).strip()
+            k for k, v in os.environ.items() if k.startswith("RAWVIEWER_") and str(v).strip()
         )
     return _USER_RAWVIEWER_ENV
 

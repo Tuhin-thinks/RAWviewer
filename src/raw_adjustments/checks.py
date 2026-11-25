@@ -67,6 +67,7 @@ def recovery_baseline_slider_hints() -> dict[str, float]:
 def is_pv2012_tone_slider(key: str) -> bool:
     return key in _PV2012_TONE_SLIDER_KEYS
 
+
 _AS_SHOT_TEMP_CACHE: OrderedDict[str, float] = OrderedDict()
 _AS_SHOT_TEMP_CACHE_MAX = 2048
 
@@ -111,7 +112,6 @@ def read_as_shot_temperature(image_path: str) -> float:
         pass
     if not resolved:
         try:
-
             # Imported lazily: a module-level import of processing.* here creates
             # a cycle (processing -> common_image_loader -> raw_adjustments -> processing).
             from enhanced_raw_processor import _rawpy_global_lock
@@ -126,12 +126,13 @@ def read_as_shot_temperature(image_path: str) -> float:
                     rb_cam = cam[0] / cam[2]
                     rb_day = day[0] / day[2]
                     ratio = rb_cam / max(rb_day, 1e-6)
-                    est = 5500.0 * (ratio ** -0.35)
+                    est = 5500.0 * (ratio**-0.35)
                     result = float(np.clip(est, 2000.0, 12000.0))
         except Exception:
             pass
     _as_shot_temp_cache_put(cache_key, result)
     return result
+
 
 def wb_reference_temperature(adj: dict[str, float] | None) -> float:
     if not adj:
@@ -148,9 +149,7 @@ def is_neutral_wb(adj: dict[str, float] | None) -> bool:
     return abs(temp - ref) <= 0.5 and abs(tint) <= 1e-4
 
 
-def solve_white_balance_from_sample(
-    r: float, g: float, b: float, ref_temp: float
-) -> tuple[float, float]:
+def solve_white_balance_from_sample(r: float, g: float, b: float, ref_temp: float) -> tuple[float, float]:
     """
     White-balance dropper: solve Temperature/Tint so a sampled scene-linear RGB
     pixel (as-shot camera WB, pre Temperature/Tint) becomes neutral gray.
@@ -196,6 +195,7 @@ def solve_white_balance_from_sample(
     tint = ((1.0 - final_r / g) / 0.1) * 150.0 if g > 1e-6 else 0.0
     tint = max(-150.0, min(150.0, tint))
     return temperature, tint
+
 
 def is_default_adjustments(adj: dict[str, float] | None) -> bool:
     if not adj:

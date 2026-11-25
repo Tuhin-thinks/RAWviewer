@@ -15,6 +15,7 @@ real fold/object boundary) on one side and flat colored noise on the
 other, both requiring the same Shadows lift, and checks that the edge
 side keeps more of its chroma than the flat side.
 """
+
 import os
 import sys
 
@@ -68,8 +69,7 @@ def main() -> int:
     flat_chroma = chroma_rms(flat_region)
 
     check(
-        "edge/structured region keeps more chroma than flat/noisy region "
-        "at the same lift",
+        "edge/structured region keeps more chroma than flat/noisy region at the same lift",
         edge_chroma > flat_chroma * 1.05,
         f"edge={edge_chroma:.5f} flat={flat_chroma:.5f}",
     )

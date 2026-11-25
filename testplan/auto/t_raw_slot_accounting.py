@@ -229,8 +229,7 @@ def main() -> int:
     )
     check(
         "and that place is the finally, which owns the bookkeeping",
-        "finally:" in run_src.split("_task_finished(")[0].rsplit("def ", 1)[-1]
-        or "emit=self._safe_emit()" in run_src,
+        "finally:" in run_src.split("_task_finished(")[0].rsplit("def ", 1)[-1] or "emit=self._safe_emit()" in run_src,
     )
 
     # --- reconcile agrees with the holder set, not the task map ---

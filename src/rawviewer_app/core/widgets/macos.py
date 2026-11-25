@@ -1,4 +1,5 @@
 """_activate_macos_foreground_app: opt-in NSApplication foreground."""
+
 from __future__ import annotations
 
 import sys

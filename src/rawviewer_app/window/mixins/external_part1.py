@@ -1,5 +1,5 @@
-
 """external mixin, part 1 of 2 (48 methods, 882 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -49,9 +49,7 @@ class ExternalPart1:
             btn.hide()
             return
         vis = bool(self._gallery_share_target_paths())
-        if getattr(self, "view_mode", "single") == "single" and not getattr(
-            self, "image_files", None
-        ):
+        if getattr(self, "view_mode", "single") == "single" and not getattr(self, "image_files", None):
             vis = False
         if btn.isVisible() != vis:
             btn.setVisible(vis)
@@ -69,11 +67,7 @@ class ExternalPart1:
         else:
             p = getattr(self, "current_file_path", None)
             paths = [p] if p else []
-        return [
-            os.path.abspath(p)
-            for p in paths
-            if p and os.path.isfile(p)
-        ]
+        return [os.path.abspath(p) for p in paths if p and os.path.isfile(p)]
 
     def _open_folder_in_file_manager(self, folder: str) -> None:
         """Open a folder in the OS file manager ('Open destination when finished')."""
@@ -161,7 +155,7 @@ class ExternalPart1:
                         self,
                         title="No Supported Images",
                         message=f"The folder '{os.path.basename(file_path)}' does not contain any supported images.",
-                        informative_text=f"Supported formats: {', '.join(exts)}"
+                        informative_text=f"Supported formats: {', '.join(exts)}",
                     )
                     dialog.exec()
                 return True
@@ -171,16 +165,14 @@ class ExternalPart1:
                 if ext in exts:
                     folder_path = os.path.dirname(file_path)
                     filename = os.path.basename(file_path)
-                    self.load_folder_images(
-                        folder_path, start_file=filename, start_view="single"
-                    )
+                    self.load_folder_images(folder_path, start_file=filename, start_view="single")
                     return True
                 else:
                     dialog = CustomWarningDialog(
                         self,
                         title="Unsupported File Format",
                         message=f"The file '{os.path.basename(file_path)}' is not supported by RAWviewer.",
-                        informative_text=f"Supported formats: {', '.join(exts)}"
+                        informative_text=f"Supported formats: {', '.join(exts)}",
                     )
                     dialog.exec()
                     return True
@@ -233,9 +225,7 @@ class ExternalPart1:
             event.ignore()
 
     def _on_looks_drop_rejected(self, message: str) -> None:
-        msg = (message or "").strip() or (
-            "Only .cube and .xmp files can be added to Looks"
-        )
+        msg = (message or "").strip() or ("Only .cube and .xmp files can be added to Looks")
         self._show_auto_dismiss_notice(
             "Unsupported file",
             detail=msg,
@@ -300,17 +290,11 @@ class ExternalPart1:
         menu = QMenu(self)
 
         if sys.platform == "win32":
-            last_exe = str(
-                self.get_settings().value(self._windows_editing_app_settings_key(), "") or ""
-            )
+            last_exe = str(self.get_settings().value(self._windows_editing_app_settings_key(), "") or "")
             if last_exe and os.path.isfile(last_exe):
-                last_action = QAction(
-                    f"Open with {self._format_app_name(last_exe)}", self
-                )
+                last_action = QAction(f"Open with {self._format_app_name(last_exe)}", self)
                 last_action.triggered.connect(
-                    lambda _checked=False, ps=list(paths), exe=last_exe: self._open_with_windows_exe_path(
-                        ps, exe
-                    )
+                    lambda _checked=False, ps=list(paths), exe=last_exe: self._open_with_windows_exe_path(ps, exe)
                 )
                 menu.addAction(last_action)
             open_other = QAction("Open with other app...", self)
@@ -319,43 +303,29 @@ class ExternalPart1:
             )
             menu.addAction(open_other)
         elif sys.platform == "darwin":
-            last_app = str(
-                self.get_settings().value(self._macos_editing_app_settings_key(), "") or ""
-            )
+            last_app = str(self.get_settings().value(self._macos_editing_app_settings_key(), "") or "")
             if last_app and os.path.isdir(last_app):
-                last_action = QAction(
-                    f"Open with {self._format_app_name(last_app)}", self
-                )
+                last_action = QAction(f"Open with {self._format_app_name(last_app)}", self)
                 last_action.triggered.connect(
-                    lambda _checked=False, ps=list(paths), app=last_app: self._open_with_macos_app_path(
-                        ps, app
-                    )
+                    lambda _checked=False, ps=list(paths), app=last_app: self._open_with_macos_app_path(ps, app)
                 )
                 menu.addAction(last_action)
             open_other = QAction("Open with other app...", self)
-            open_other.triggered.connect(
-                lambda _checked=False, ps=list(paths): self._open_macos_choose_editing_app(ps)
-            )
+            open_other.triggered.connect(lambda _checked=False, ps=list(paths): self._open_macos_choose_editing_app(ps))
             menu.addAction(open_other)
         else:
             open_other = QAction("Open with other app...", self)
-            open_other.triggered.connect(
-                lambda _checked=False, ps=list(paths): self._open_paths_in_editing_app(ps)
-            )
+            open_other.triggered.connect(lambda _checked=False, ps=list(paths): self._open_paths_in_editing_app(ps))
             menu.addAction(open_other)
 
         menu.addSeparator()
         if sys.platform == "darwin":
             share_action = QAction("Share...", self)
-            share_action.triggered.connect(
-                lambda _checked=False, ps=list(paths): self._share_paths_os(ps)
-            )
+            share_action.triggered.connect(lambda _checked=False, ps=list(paths): self._share_paths_os(ps))
             menu.addAction(share_action)
         else:
             share_action = QAction("Copy for sharing (Mail, Teams, …)", self)
-            share_action.triggered.connect(
-                lambda _checked=False, ps=list(paths): self._share_paths_os(ps)
-            )
+            share_action.triggered.connect(lambda _checked=False, ps=list(paths): self._share_paths_os(ps))
             menu.addAction(share_action)
             if n > 1:
                 copy_action = QAction("Copy file paths", self)
@@ -419,6 +389,7 @@ class ExternalPart1:
     def _copy_paths_to_clipboard(self, paths: list[str]) -> None:
         try:
             from PyQt6.QtCore import QMimeData, QUrl
+
             mime = QMimeData()
             text_val = "\n".join(os.path.abspath(p) for p in paths)
             mime.setText(text_val)
@@ -428,6 +399,7 @@ class ExternalPart1:
             if sys.platform == "darwin":
                 try:
                     from AppKit import NSURL, NSPasteboard
+
                     pb = NSPasteboard.generalPasteboard()
                     pb.clearContents()
                     ns_urls = [NSURL.fileURLWithPath_(os.path.abspath(p)) for p in paths]
@@ -548,8 +520,7 @@ class ExternalPart1:
             with contextlib.suppress(Exception):
                 QApplication.clipboard().setText(joined)
         hint = (
-            "Share failed -- path(s) copied. "
-            "Set RAWVIEWER_FILE_LOG=1 and retry; check logs for [SHARE]."
+            "Share failed -- path(s) copied. Set RAWVIEWER_FILE_LOG=1 and retry; check logs for [SHARE]."
             if sys.platform == "darwin"
             else "Share unavailable -- path(s) copied to clipboard"
         )
@@ -733,14 +704,10 @@ class ExternalPart1:
             self.status_bar.showMessage("Share", 1500)
             return
         if _share_windows_clipboard_cf_hdrop(path):
-            self.status_bar.showMessage(
-                "File copied to clipboard -- paste into Mail, Teams, or other apps", 4500
-            )
+            self.status_bar.showMessage("File copied to clipboard -- paste into Mail, Teams, or other apps", 4500)
             return
         if _share_windows_clipboard_file_via_powershell(path):
-            self.status_bar.showMessage(
-                "File copied to clipboard -- paste into Mail, Teams, or other apps", 4500
-            )
+            self.status_bar.showMessage("File copied to clipboard -- paste into Mail, Teams, or other apps", 4500)
             return
         self._copy_current_file_path_to_clipboard()
         self.status_bar.showMessage("Share unavailable -- path copied to clipboard", 4000)

@@ -130,9 +130,7 @@ else:
         finally:
             WindowsDeleteString(hstring)
 
-        interop = comtypes.cast(raw, POINTER(IUnknown)).QueryInterface(
-            IDataTransferManagerInterop
-        )
+        interop = comtypes.cast(raw, POINTER(IUnknown)).QueryInterface(IDataTransferManagerInterop)
         _INTEROP_CACHE = interop
         return interop
 

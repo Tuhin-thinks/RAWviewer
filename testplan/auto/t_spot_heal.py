@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Spot heal (cv2.inpaint) invariants + undo restore wiring."""
+
 import inspect
 import os
 import sys
@@ -200,15 +201,9 @@ def main() -> int:
     stamp_heal_brush(m._spot_heal_mask, 8.0, 8.0, 4.0, 1.0)
     m.single_image_adjust_panel = FakePanel()
     m.gpu_view = None
-    m._apply_spot_heal_mask_from_adj = (
-        mainmod.RAWImageViewer._apply_spot_heal_mask_from_adj.__get__(m)
-    )
-    m._sync_dodge_burn_mask_overlay = (
-        mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
-    )
-    m._active_local_mask_for_overlay = (
-        mainmod.RAWImageViewer._active_local_mask_for_overlay.__get__(m)
-    )
+    m._apply_spot_heal_mask_from_adj = mainmod.RAWImageViewer._apply_spot_heal_mask_from_adj.__get__(m)
+    m._sync_dodge_burn_mask_overlay = mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
+    m._active_local_mask_for_overlay = mainmod.RAWImageViewer._active_local_mask_for_overlay.__get__(m)
     m._apply_spot_heal_mask_from_adj({})
     check("undo to empty clears heal mask", m._spot_heal_mask is None)
     check("panel told heal gone", m.single_image_adjust_panel.heal_calls == [False])
@@ -217,8 +212,7 @@ def main() -> int:
     check(
         "undo restores spot heal before editing_finished",
         "_apply_spot_heal_mask_from_adj" in undo_src
-        and undo_src.find("_apply_spot_heal_mask_from_adj")
-        < undo_src.find("_on_adjust_panel_editing_finished"),
+        and undo_src.find("_apply_spot_heal_mask_from_adj") < undo_src.find("_on_adjust_panel_editing_finished"),
     )
 
     # 5. Pipeline stage key includes heal mask

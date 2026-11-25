@@ -1,4 +1,5 @@
 """_ConfirmDialogButton + CustomConfirmDialog: shared confirmation dialog."""
+
 from __future__ import annotations
 
 import contextlib
@@ -16,6 +17,7 @@ from .macos import _activate_macos_foreground_app
 
 class _ConfirmDialogButton(QPushButton):
     """Pill button that uses stylesheet :focus for the whole control, not an inner focus rect."""
+
     pass
 
 
@@ -80,12 +82,8 @@ class CustomConfirmDialog(QDialog):
 
         self._message_label = QLabel(message)
         self._message_label.setWordWrap(True)
-        self._message_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
-        self._message_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self._message_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self._message_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._message_label.setStyleSheet(f"""
             QLabel {{
                 color: {theme.INK};
@@ -102,12 +100,8 @@ class CustomConfirmDialog(QDialog):
         if informative_text:
             self._info_label = QLabel(informative_text)
             self._info_label.setWordWrap(True)
-            self._info_label.setAlignment(
-                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-            )
-            self._info_label.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-            )
+            self._info_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self._info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             self._info_label.setStyleSheet(f"""
                 QLabel {{
                     color: {theme.INK_MUTED};
@@ -419,7 +413,7 @@ class CustomConfirmDialog(QDialog):
 
     def mouseMoveEvent(self, event):
         """Handle dragging"""
-        if hasattr(self, '_dragging') and self._dragging:
+        if hasattr(self, "_dragging") and self._dragging:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
@@ -427,7 +421,7 @@ class CustomConfirmDialog(QDialog):
 
     def mouseReleaseEvent(self, event):
         """Stop dragging"""
-        if hasattr(self, '_dragging'):
+        if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()
             return

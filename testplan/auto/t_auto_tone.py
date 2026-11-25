@@ -14,6 +14,7 @@ against a 0.04 threshold -- i.e. zero). These tests therefore assert
 DIRECTION and BOUNDS, not magnitudes. Asserting a magnitude here would lock
 the estimator to a distribution no camera produces.
 """
+
 from __future__ import annotations
 
 import os
@@ -47,9 +48,7 @@ def _scene(
     adds a flare/haze floor so nothing reaches black.
     """
     rng = np.random.RandomState(seed)
-    lum = np.exp(
-        rng.normal(np.log(median_lin), spread, (size, size))
-    ).astype(np.float32)
+    lum = np.exp(rng.normal(np.log(median_lin), spread, (size, size))).astype(np.float32)
     if clipped > 0:
         n = int(clipped * lum.size)
         lum.flat[rng.choice(lum.size, n, replace=False)] = 2.0
@@ -95,15 +94,20 @@ def main() -> int:
     # clipping, however dark its median is -- this is the highlight limiter,
     # and without it a night scene with a lamp gets +2 EV of mud.
     night = estimate_auto_tone(_scene(0.02, clipped=0.02, seed=3))
-    check("clipping caps the brightening", night is not None and night["Exposure2012"] <= 0.0,
-          f"EV {night['Exposure2012'] if night else None}")
+    check(
+        "clipping caps the brightening",
+        night is not None and night["Exposure2012"] <= 0.0,
+        f"EV {night['Exposure2012'] if night else None}",
+    )
 
     blown = estimate_auto_tone(_scene(0.25, clipped=0.12, seed=1))
-    check("heavily clipped recovers highlights", blown is not None and blown["Highlights2012"] < -20,
-          f"Hi {blown['Highlights2012'] if blown else None}")
+    check(
+        "heavily clipped recovers highlights",
+        blown is not None and blown["Highlights2012"] < -20,
+        f"Hi {blown['Highlights2012'] if blown else None}",
+    )
     if blown:
-        check("recovery does not also raise Whites", blown["Whites2012"] == 0.0,
-              f"Wh {blown['Whites2012']}")
+        check("recovery does not also raise Whites", blown["Whites2012"] == 0.0, f"Wh {blown['Whites2012']}")
         check(
             "CLIP_FULL Highlights stay bounded (not -100)",
             blown["Highlights2012"] > -100.0,
@@ -153,8 +157,11 @@ def main() -> int:
         )
 
     flat = estimate_auto_tone(_scene(0.16, spread=0.10, lift=0.06, seed=2))
-    check("flat scene gains contrast", flat is not None and flat["Contrast2012"] > 10,
-          f"Con {flat['Contrast2012'] if flat else None}")
+    check(
+        "flat scene gains contrast",
+        flat is not None and flat["Contrast2012"] > 10,
+        f"Con {flat['Contrast2012'] if flat else None}",
+    )
     if flat:
         check("hazy scene restores a black point", flat["Blacks2012"] < -5, f"Bl {flat['Blacks2012']}")
 

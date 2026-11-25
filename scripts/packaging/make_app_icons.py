@@ -4,6 +4,7 @@
 Usage (from repo root, Pixi env recommended):
   python scripts/packaging/make_app_icons.py
 """
+
 from __future__ import annotations
 
 import io
@@ -75,9 +76,7 @@ def flatten_macos_dock_icon(im: Image.Image) -> Image.Image:
 
 
 def write_png_ico(path: Path, src: Image.Image, sizes: list[int]) -> None:
-    images = [
-        clean_rounded_icon(src.resize((s, s), Image.Resampling.LANCZOS)) for s in sizes
-    ]
+    images = [clean_rounded_icon(src.resize((s, s), Image.Resampling.LANCZOS)) for s in sizes]
     pngs = [_png_bytes(im) for im in images]
     n = len(images)
     header = struct.pack("<HHH", 0, 1, n)
@@ -88,9 +87,7 @@ def write_png_ico(path: Path, src: Image.Image, sizes: list[int]) -> None:
         w, h = im.size
         entry_w = 0 if w >= 256 else w
         entry_h = 0 if h >= 256 else h
-        entries += struct.pack(
-            "<BBBBHHII", entry_w, entry_h, 0, 0, 1, 32, len(png), offset
-        )
+        entries += struct.pack("<BBBBHHII", entry_w, entry_h, 0, 0, 1, 32, len(png), offset)
         data += png
         offset += len(png)
     path.write_bytes(header + entries + data)
@@ -115,9 +112,7 @@ def build_icns(master: Image.Image, out_icns: Path) -> None:
         ("icon_512x512@2x.png", 1024),
     ]
     for name, size in pairs:
-        dock_master.resize((size, size), Image.Resampling.LANCZOS).save(
-            iconset / name
-        )
+        dock_master.resize((size, size), Image.Resampling.LANCZOS).save(iconset / name)
     subprocess.run(
         ["iconutil", "-c", "icns", str(iconset), "-o", str(out_icns)],
         check=True,
@@ -144,9 +139,7 @@ def main() -> int:
     print(f"[OK] {ICONS / 'appicon.ico'}")
 
     write_png_ico(ICONS / "favicon.ico", fav, [16, 32, 48])
-    clean_rounded_icon(fav.resize((64, 64), Image.Resampling.LANCZOS)).save(
-        ICONS / "favicon.png", optimize=True
-    )
+    clean_rounded_icon(fav.resize((64, 64), Image.Resampling.LANCZOS)).save(ICONS / "favicon.png", optimize=True)
     print(f"[OK] {ICONS / 'favicon.ico'} + favicon.png")
 
     if sys.platform == "darwin":

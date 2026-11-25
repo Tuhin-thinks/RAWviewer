@@ -158,6 +158,7 @@ def _ramp(value: float, start: float, full: float) -> float:
         return 1.0 if value >= full else 0.0
     return float(np.clip((value - start) / (full - start), 0.0, 1.0))
 
+
 _AUTO_TONE_KEYS = (
     "Exposure2012",
     "Contrast2012",
@@ -180,9 +181,7 @@ def _solve_ev_for_median(median_lum: float, target_y: float) -> float:
     from raw_adjustments.pv2012 import _scene_to_perceptual
 
     def y_at(ev: float) -> float:
-        return float(
-            _scene_to_perceptual(np.array([median_lum * (2.0**ev)], np.float32))[0]
-        )
+        return float(_scene_to_perceptual(np.array([median_lum * (2.0**ev)], np.float32))[0])
 
     lo, hi = -_AUTO_TONE_MAX_EV, _AUTO_TONE_MAX_EV
     if y_at(lo) >= target_y:
@@ -249,9 +248,7 @@ def estimate_auto_tone(linear_rgb: np.ndarray) -> dict | None:
         # half a percent of the pixels.
         ev_median = _solve_ev_for_median(median, _AUTO_TONE_MEDIAN_TARGET)
         p995 = float(np.percentile(lum, 99.5))
-        ev_headroom = (
-            float(np.log2(1.0 / p995)) if p995 > 1e-6 else _AUTO_TONE_MAX_EV
-        )
+        ev_headroom = float(np.log2(1.0 / p995)) if p995 > 1e-6 else _AUTO_TONE_MAX_EV
         ev = float(np.clip(min(ev_median, ev_headroom), -_AUTO_TONE_MAX_EV, _AUTO_TONE_MAX_EV))
 
         # Everything below is measured on the frame as Exposure will leave it,
@@ -265,33 +262,25 @@ def estimate_auto_tone(linear_rgb: np.ndarray) -> dict | None:
         highlights = -_AUTO_TONE_HIGHLIGHTS_MAX_SLIDER * _ramp(
             frac_clipped, _AUTO_TONE_CLIP_START, _AUTO_TONE_CLIP_FULL
         )
-        shadows = _AUTO_TONE_SHADOWS_MAX_SLIDER * _ramp(
-            frac_crushed, _AUTO_TONE_CRUSH_START, _AUTO_TONE_CRUSH_FULL
-        )
+        shadows = _AUTO_TONE_SHADOWS_MAX_SLIDER * _ramp(frac_crushed, _AUTO_TONE_CRUSH_START, _AUTO_TONE_CRUSH_FULL)
 
         # Endpoints. Whites fills unused headroom at the top; Blacks restores a
         # black point the scene never reached (haze, flare, a lifted profile).
         p_hi = float(np.percentile(y, 99.5))
         p_lo = float(np.percentile(y, 0.5))
         headroom_deficit = max(_PERCEPTUAL_WHITE - p_hi, 0.0) / _PERCEPTUAL_WHITE
-        whites = _AUTO_TONE_MAX_ENDPOINT * _ramp(
-            headroom_deficit, _AUTO_TONE_WHITES_START, _AUTO_TONE_WHITES_FULL
-        )
+        whites = _AUTO_TONE_MAX_ENDPOINT * _ramp(headroom_deficit, _AUTO_TONE_WHITES_START, _AUTO_TONE_WHITES_FULL)
         # Never both: raising Whites on a frame that is already clipping would
         # undo the Highlights recovery two lines up.
         if frac_clipped > _AUTO_TONE_CLIP_START:
             whites = 0.0
-        blacks = -_AUTO_TONE_MAX_ENDPOINT * _ramp(
-            max(p_lo, 0.0), _AUTO_TONE_BLACKS_START, _AUTO_TONE_BLACKS_FULL
-        )
+        blacks = -_AUTO_TONE_MAX_ENDPOINT * _ramp(max(p_lo, 0.0), _AUTO_TONE_BLACKS_START, _AUTO_TONE_BLACKS_FULL)
 
         # Contrast from the perceptual interquartile spread. Positive only --
         # see _AUTO_TONE_NORMAL_IQR.
         q25, q75 = (float(v) for v in np.percentile(y, (25.0, 75.0)))
         iqr = max(q75 - q25, 0.0)
-        contrast = _AUTO_TONE_MAX_ENDPOINT * _ramp(
-            _AUTO_TONE_NORMAL_IQR - iqr, 0.0, _AUTO_TONE_NORMAL_IQR
-        )
+        contrast = _AUTO_TONE_MAX_ENDPOINT * _ramp(_AUTO_TONE_NORMAL_IQR - iqr, 0.0, _AUTO_TONE_NORMAL_IQR)
 
         out = {
             "Exposure2012": round(ev, 2),
@@ -302,9 +291,7 @@ def estimate_auto_tone(linear_rgb: np.ndarray) -> dict | None:
             "Blacks2012": round(blacks),
         }
         if abs(out["Exposure2012"]) < _AUTO_TONE_EV_DEADZONE and all(
-            abs(out[k]) < _AUTO_TONE_SLIDER_DEADZONE
-            for k in _AUTO_TONE_KEYS
-            if k != "Exposure2012"
+            abs(out[k]) < _AUTO_TONE_SLIDER_DEADZONE for k in _AUTO_TONE_KEYS if k != "Exposure2012"
         ):
             return None
         return {k: float(out[k]) for k in _AUTO_TONE_KEYS}
@@ -326,9 +313,7 @@ def _to_uint8_gray(rgb: np.ndarray) -> np.ndarray | None:
         if float(np.percentile(a, 99)) > 1.5:
             a = a / (1.0 + a)
         g = np.clip(a, 0.0, 1.0) * 255.0
-    gray = (
-        0.2126 * g[..., 0] + 0.7152 * g[..., 1] + 0.0722 * g[..., 2]
-    ).astype(np.uint8)
+    gray = (0.2126 * g[..., 0] + 0.7152 * g[..., 1] + 0.0722 * g[..., 2]).astype(np.uint8)
     return gray
 
 

@@ -14,13 +14,18 @@ from .worker import ImageLoadTask
 
 
 class ImageLoadManagerPart2:
-    def load_image(self, file_path: str, priority: Priority = Priority.CURRENT,
-                   cancel_existing: bool = True, use_full_resolution: bool = False,
-                   stages: set | None = None,
-                   thumbnail_target_size: QSize | None = None,
-                   thumbnail_fit: str = "crop",
-                   bypass_cache: bool = False,
-                   gallery_thumbnail: bool = False):
+    def load_image(
+        self,
+        file_path: str,
+        priority: Priority = Priority.CURRENT,
+        cancel_existing: bool = True,
+        use_full_resolution: bool = False,
+        stages: set | None = None,
+        thumbnail_target_size: QSize | None = None,
+        thumbnail_fit: str = "crop",
+        bypass_cache: bool = False,
+        gallery_thumbnail: bool = False,
+    ):
         """請求加載圖像"""
         # Don't accept new tasks if stopped
         if self._stopped:
@@ -56,11 +61,9 @@ class ImageLoadManagerPart2:
         # request would have populated. `priority` is passed so a CURRENT
         # request won't defer to an owner it is about to cancel in the
         # supersede block below (see _full_stage_already_in_flight).
-        effective_stages = set(stages) if stages is not None else {'thumbnail', 'exif', 'full'}
-        if 'full' in effective_stages and self._full_stage_already_in_flight(
-            file_path, use_full_resolution, priority
-        ):
-            effective_stages.discard('full')
+        effective_stages = set(stages) if stages is not None else {"thumbnail", "exif", "full"}
+        if "full" in effective_stages and self._full_stage_already_in_flight(file_path, use_full_resolution, priority):
+            effective_stages.discard("full")
             if not effective_stages:
                 return
             stages = effective_stages
@@ -142,11 +145,7 @@ class ImageLoadManagerPart2:
         with self._queue_lock:
             for key in self._task_keys_by_path.get(file_path, ()):
                 task = self._active_tasks.get(key)
-                if (
-                    task is not None
-                    and not task.is_cancelled()
-                    and "full" in (task.stages or set())
-                ):
+                if task is not None and not task.is_cancelled() and "full" in (task.stages or set()):
                     return True
         return False
 
@@ -157,17 +156,11 @@ class ImageLoadManagerPart2:
         with self._queue_lock:
             for key in self._task_keys_by_path.get(file_path, ()):
                 task = self._active_tasks.get(key)
-                if (
-                    task is not None
-                    and task.priority == Priority.CURRENT
-                    and not task.is_cancelled()
-                ):
+                if task is not None and task.priority == Priority.CURRENT and not task.is_cancelled():
                     return True
         return False
 
-    def cancel_non_current_heavy_raw_except(
-        self, keep_path: str | None = None
-    ) -> int:
+    def cancel_non_current_heavy_raw_except(self, keep_path: str | None = None) -> int:
         """Cancel PRELOAD/BACKGROUND RAW ``full`` tasks (free GPU/raw heavy slots).
 
         Used when the on-screen CURRENT image needs a sensor demosaic but the
@@ -425,11 +418,9 @@ class ImageLoadManagerPart2:
                 task.cancel()
                 self._release_raw_slot_locked(task)
                 self._active_tasks.pop(key, None)
-                file_path = getattr(task, 'file_path', None)
+                file_path = getattr(task, "file_path", None)
                 if file_path and file_path in self._task_keys_by_path:
                     self._task_keys_by_path[file_path].discard(key)
                     if not self._task_keys_by_path.get(file_path):
                         self._task_keys_by_path.pop(file_path, None)
             self._compact_work_queue()
-
-

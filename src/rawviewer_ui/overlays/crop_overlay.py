@@ -91,15 +91,9 @@ class CropOverlayItem(QGraphicsObject):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(dim)
         painter.drawRect(QRectF(full.left(), full.top(), full.width(), crop.top() - full.top()))
-        painter.drawRect(
-            QRectF(full.left(), crop.bottom(), full.width(), full.bottom() - crop.bottom())
-        )
-        painter.drawRect(
-            QRectF(full.left(), crop.top(), crop.left() - full.left(), crop.height())
-        )
-        painter.drawRect(
-            QRectF(crop.right(), crop.top(), full.right() - crop.right(), crop.height())
-        )
+        painter.drawRect(QRectF(full.left(), crop.bottom(), full.width(), full.bottom() - crop.bottom()))
+        painter.drawRect(QRectF(full.left(), crop.top(), crop.left() - full.left(), crop.height()))
+        painter.drawRect(QRectF(crop.right(), crop.top(), full.right() - crop.right(), crop.height()))
 
         pen = QPen(QColor(theme.INK))
         pen.setWidthF(1.25)

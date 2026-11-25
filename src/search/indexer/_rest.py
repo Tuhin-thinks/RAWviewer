@@ -1,4 +1,5 @@
 """Thumbnail prep, ONNX/DNN/CoreML, and source image loading helpers."""
+
 from __future__ import annotations
 
 import contextlib
@@ -30,6 +31,7 @@ def _thumbnail_jpeg_bytes(arr: np.ndarray, quality: int = 85) -> bytes:
     pil = Image.fromarray(np.asarray(arr, dtype=np.uint8)).convert("RGB")
     return encode_tile_bytes(pil, quality=quality)
 
+
 def _maybe_persist_index_thumbnail(file_path: str, im: PilImage) -> None:
     """Disk-back index thumbnails so deferred face scan can reuse semantic loads."""
     try:
@@ -46,6 +48,7 @@ def _maybe_persist_index_thumbnail(file_path: str, im: PilImage) -> None:
     except Exception:
         pass
 
+
 def _prep_mobileclip_image_chw_resized(file_path: str, size: tuple[int, int] = (256, 256)) -> np.ndarray:
     """Load, resize to size (width, height), and return NCHW float tensor slice for one image."""
     im = _load_index_source_image(file_path, max_size=1024, qt_decode=False)
@@ -54,14 +57,15 @@ def _prep_mobileclip_image_chw_resized(file_path: str, size: tuple[int, int] = (
     rgb = np.asarray(im.convert("RGB"), dtype=np.float32) / 255.0
     return np.transpose(rgb, (2, 0, 1))
 
+
 def _prep_mobileclip_image_chw(file_path: str) -> np.ndarray:
     """Load, resize to 256, and return NCHW float tensor slice for one image."""
     return _prep_mobileclip_image_chw_resized(file_path, (256, 256))
 
+
 def _semantic_batch_cache_path() -> str:
-    return os.path.join(
-        os.path.expanduser("~"), ".rawviewer_cache", "semantic_batch_tuning.json"
-    )
+    return os.path.join(os.path.expanduser("~"), ".rawviewer_cache", "semantic_batch_tuning.json")
+
 
 def _load_semantic_batch_cache() -> dict[str, int]:
     try:
@@ -76,6 +80,7 @@ def _load_semantic_batch_cache() -> dict[str, int]:
         pass
     return {}
 
+
 def _save_semantic_batch_cache(cache: dict[str, int]) -> None:
     try:
         p = _semantic_batch_cache_path()
@@ -84,6 +89,7 @@ def _save_semantic_batch_cache(cache: dict[str, int]) -> None:
             json.dump(cache, f, indent=2, sort_keys=True)
     except Exception:
         pass
+
 
 def _import_onnxruntime():
     """Return onnxruntime module, or None if missing or broken (e.g. partial install)."""
@@ -95,12 +101,12 @@ def _import_onnxruntime():
         return None
     return ort
 
+
 def _onnxruntime_availability_error() -> str:
     ort = _import_onnxruntime()
     if ort is None:
         return (
-            "Broken or missing 'onnxruntime' dependency "
-            "(run: pixi run pip install --force-reinstall onnxruntime-gpu)"
+            "Broken or missing 'onnxruntime' dependency (run: pixi run pip install --force-reinstall onnxruntime-gpu)"
         )
     if not callable(getattr(ort, "get_available_providers", None)):
         return (
@@ -108,6 +114,7 @@ def _onnxruntime_availability_error() -> str:
             "run: pixi run pip install --force-reinstall onnxruntime-gpu)"
         )
     return ""
+
 
 def _ort_get_available_providers(ort=None) -> list[str]:
     if ort is None:
@@ -121,6 +128,7 @@ def _ort_get_available_providers(ort=None) -> list[str]:
         except Exception:
             pass
     return ["CPUExecutionProvider"]
+
 
 def resolve_onnx_execution_providers(
     available: Sequence[str] | None = None,
@@ -167,6 +175,7 @@ def resolve_onnx_execution_providers(
     selected = [p for p in preferred if p in available]
     return selected or ["CPUExecutionProvider"]
 
+
 def resolve_opencv_dnn_backend_target() -> tuple:
     """OpenCV DNN backend/target for YuNet / SSD face models (Windows).
 
@@ -201,6 +210,7 @@ def resolve_opencv_dnn_backend_target() -> tuple:
         pass
     return backend_opencv, target_cpu
 
+
 def _apply_opencv_dnn_acceleration(net) -> None:
     """Set preferable backend/target on an OpenCV dnn.Net (best-effort)."""
     import cv2
@@ -217,6 +227,7 @@ def _apply_opencv_dnn_acceleration(net) -> None:
         except Exception:
             pass
 
+
 def _yunet_model_path() -> str:
     cache_dir = os.path.expanduser("~/.rawviewer_cache/models")
     os.makedirs(cache_dir, exist_ok=True)
@@ -224,9 +235,7 @@ def _yunet_model_path() -> str:
     if not os.path.exists(model_path):
         import logging
 
-        logging.getLogger(__name__).info(
-            "[VISION] Downloading YuNet ONNX face detection model (353 KB)..."
-        )
+        logging.getLogger(__name__).info("[VISION] Downloading YuNet ONNX face detection model (353 KB)...")
         url = (
             "https://github.com/opencv/opencv_zoo/raw/main/models/"
             "face_detection_yunet/face_detection_yunet_2023mar.onnx"
@@ -236,6 +245,7 @@ def _yunet_model_path() -> str:
         urlretrieve(url, model_path)
         logging.getLogger(__name__).info("[VISION] YuNet ONNX model downloaded successfully.")
     return model_path
+
 
 def _yunet_warmup() -> None:
     """Initialize YuNet once on the calling thread before any worker pool starts."""
@@ -249,6 +259,7 @@ def _yunet_warmup() -> None:
         logging.getLogger(__name__).info("[VISION] YuNet warmup ok (faces=%d)", count)
     except Exception as exc:
         logging.getLogger(__name__).warning("[VISION] YuNet warmup failed: %s", exc)
+
 
 def _yunet_detect_faces_bgr(img_bgr) -> int:
     """Run YuNet on a BGR image using one shared detector (thread-safe, GPU-friendly)."""
@@ -298,8 +309,10 @@ def _yunet_detect_faces_bgr(img_bgr) -> int:
         _retval, faces = _YUNET_SINGLETON.detect(img_bgr)
     return len(faces) if faces is not None else 0
 
+
 _OPENCL_RUNTIME_LOGGED = False
 _FACE_BACKEND_LOGGED = False
+
 
 def _log_opencl_runtime_details_once(cv2_module=None) -> None:
     """Best-effort one-time OpenCL runtime/device details for diagnostics."""
@@ -315,6 +328,7 @@ def _log_opencl_runtime_details_once(cv2_module=None) -> None:
         cv2 = cv2_module
         if cv2 is None:
             import cv2 as _cv2
+
             cv2 = _cv2
 
         have = bool(cv2.ocl.haveOpenCL())
@@ -356,6 +370,7 @@ def _log_opencl_runtime_details_once(cv2_module=None) -> None:
     except Exception as e:
         logger.info("[ACCEL] OpenCL runtime details unavailable: %s", e)
 
+
 def _log_face_backend_once(backend_id: int, target_id: int, cv2_module=None) -> None:
     """One-time log of the actual selected OpenCV face backend/target."""
     global _FACE_BACKEND_LOGGED
@@ -370,6 +385,7 @@ def _log_face_backend_once(backend_id: int, target_id: int, cv2_module=None) -> 
         cv2 = cv2_module
         if cv2 is None:
             import cv2 as _cv2
+
             cv2 = _cv2
 
         backend_name = _dnn_get_backend_name(cv2, backend_id)
@@ -391,7 +407,9 @@ def _log_face_backend_once(backend_id: int, target_id: int, cv2_module=None) -> 
     except Exception as e:
         logger.info("[ACCEL] Face DNN backend selected: backend_id=%s target_id=%s (%s)", backend_id, target_id, e)
 
+
 _COREML_COMPUTE_UNITS_WARNED = False
+
 
 def _macos_version_major() -> int:
     if sys.platform != "darwin":
@@ -404,6 +422,7 @@ def _macos_version_major() -> int:
     except Exception:
         return 0
 
+
 def _coreml_compute_units_setting_for_indexing() -> str:
     """Compute units for the image encoder (indexing)."""
     env_index = os.environ.get("RAWVIEWER_COREML_COMPUTE_UNITS_INDEX")
@@ -413,6 +432,7 @@ def _coreml_compute_units_setting_for_indexing() -> str:
     if env_val is not None and env_val.strip():
         return env_val.strip().lower()
     return "all"
+
 
 def _coreml_compute_units_setting_for_search() -> str:
     """Compute units for the text encoder (semantic search queries)."""
@@ -427,10 +447,12 @@ def _coreml_compute_units_setting_for_search() -> str:
         return env_val.strip().lower()
     return "all"
 
+
 def _coreml_compute_units_setting(role: str = "index") -> str:
     if role == "search":
         return _coreml_compute_units_setting_for_search()
     return _coreml_compute_units_setting_for_indexing()
+
 
 def _log_coreml_compute_units_profile_once() -> None:
     global _COREML_COMPUTE_UNITS_WARNED
@@ -456,11 +478,11 @@ def _log_coreml_compute_units_profile_once() -> None:
         )
     elif macos_major >= 26 and search_cu in ("all", "gpu", "ane"):
         logger.warning(
-            "[ACCEL] RAWVIEWER_COREML_COMPUTE_UNITS_SEARCH=%s on macOS %d+ beta may crash "
-            "during semantic search.",
+            "[ACCEL] RAWVIEWER_COREML_COMPUTE_UNITS_SEARCH=%s on macOS %d+ beta may crash during semantic search.",
             search_cu,
             macos_major,
         )
+
 
 def _coreml_compute_units(role: str = "index"):
     """Core ML compute-unit preference for MobileCLIP on macOS."""
@@ -476,7 +498,9 @@ def _coreml_compute_units(role: str = "index"):
     }
     return mapping.get(raw, CoreML.MLComputeUnitsAll)
 
+
 _ACCEL_PROFILE_LOGGED = False
+
 
 def log_inference_acceleration_profile(force: bool = False) -> None:
     """Log once which inference accelerators are active (semantic + face)."""
@@ -527,6 +551,7 @@ def log_inference_acceleration_profile(force: bool = False) -> None:
 
     logger.info("[ACCEL] Inference profile: %s", "; ".join(parts))
 
+
 def _cached_index_source_array(cache, file_path: str) -> np.ndarray | None:
     """RGB array from ImageCache tiers usable for semantic/face indexing (gallery may warm preview/grid)."""
     for getter_name in ("get_preview", "get_grid", "get_thumbnail"):
@@ -537,6 +562,7 @@ def _cached_index_source_array(cache, file_path: str) -> np.ndarray | None:
         except Exception:
             continue
     return None
+
 
 def _index_source_cache_tier(cache, file_path: str) -> str:
     """Which ImageCache tier satisfied the lookup, or empty string if miss."""
@@ -553,8 +579,10 @@ def _index_source_cache_tier(cache, file_path: str) -> str:
             continue
     return ""
 
+
 def _index_source_image_cached(cache, file_path: str) -> bool:
     return _cached_index_source_array(cache, file_path) is not None
+
 
 def _index_source_thumbnail_present(cache, file_path: str) -> bool:
     """Fast presence check for index/face thumbnails (no JPEG decode)."""
@@ -577,9 +605,11 @@ def _index_source_thumbnail_present(cache, file_path: str) -> bool:
             continue
     return False
 
+
 def _index_thumbnail_needs_warm(cache, file_path: str) -> bool:
     """True when index tiers are missing."""
     return not _index_source_thumbnail_present(cache, file_path)
+
 
 def _load_face_scan_image(file_path: str, max_size: int) -> PilImage | None:
     """Face detection input from ImageCache only (semantic / gallery warm-up).
@@ -600,6 +630,7 @@ def _load_face_scan_image(file_path: str, max_size: int) -> PilImage | None:
         im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
     return im
 
+
 def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage:
     try:
         from PIL import ImageOps
@@ -610,6 +641,7 @@ def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage
         exif_data = cache.get_exif(file_path, verify=True)
         if not exif_data:
             from enhanced_raw_processor import EXIFExtractor
+
             exif_data = EXIFExtractor().extract_exif_data(file_path)
 
         if exif_data:
@@ -627,9 +659,8 @@ def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage
         pass
     return im
 
-def _load_index_source_image(
-    file_path: str, max_size: int = 1024, *, qt_decode: bool = True
-) -> PilImage:
+
+def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode: bool = True) -> PilImage:
     """Load a small RGB image suitable for indexing/detection, preferring app caches.
 
     When ``qt_decode`` is False, skip QImageReader / Qt-based decoders so face scan
@@ -637,6 +668,7 @@ def _load_index_source_image(
     """
     _INDEX_THREAD_LOCAL.last_original_sizes = (0, 0)
     from image_cache import get_image_cache
+
     cache = get_image_cache()
 
     try:
@@ -652,9 +684,7 @@ def _load_index_source_image(
                 if fixed is not None:
                     arr = fixed
                     with contextlib.suppress(Exception):
-                        cache.put_thumbnail(
-                            file_path, arr, _thumbnail_jpeg_bytes(arr)
-                        )
+                        cache.put_thumbnail(file_path, arr, _thumbnail_jpeg_bytes(arr))
             im = Image.fromarray(arr).convert("RGB")
             _INDEX_THREAD_LOCAL.last_original_sizes = (im.width, im.height)
             im.thumbnail((max_size, max_size), Image.Resampling.BICUBIC)
@@ -754,9 +784,7 @@ def _load_index_source_image(
             try:
                 from processing.unified import UnifiedImageProcessor
 
-                thumb = UnifiedImageProcessor().process_thumbnail(
-                    file_path, allow_heavy_fallback=True
-                )
+                thumb = UnifiedImageProcessor().process_thumbnail(file_path, allow_heavy_fallback=True)
                 if thumb is not None:
                     if isinstance(thumb, np.ndarray):
                         im = Image.fromarray(np.asarray(thumb, dtype=np.uint8)).convert("RGB")
@@ -777,6 +805,4 @@ def _load_index_source_image(
             except Exception:
                 pass
 
-    raise RuntimeError(
-        f"Cannot decode image for semantic index: {os.path.basename(file_path)}"
-    )
+    raise RuntimeError(f"Cannot decode image for semantic index: {os.path.basename(file_path)}")

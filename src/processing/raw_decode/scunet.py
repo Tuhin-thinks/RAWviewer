@@ -235,9 +235,7 @@ class SCUNetONNX:
             gain = max(0.0, min(1.0, float(detail_gain)))
             result = up + hf * w * gain
         else:
-            result = self._process_tiles(
-                rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check
-            )
+            result = self._process_tiles(rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check)
 
         if s < 1.0:
             # Blend toward the input: s=1 is byte-identical to the old path.

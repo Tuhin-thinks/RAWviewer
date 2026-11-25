@@ -1,4 +1,5 @@
 """image_load mixin, part 2 of 3 (3 methods, 883 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -28,6 +29,7 @@ class ImageLoadPart2:
         import logging
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
 
         load_start = time.time()
@@ -63,13 +65,11 @@ class ImageLoadPart2:
         # navigation restarts the single-shot timer, so it only fires after
         # ~4s without further navigation.
         try:
-            if hasattr(self, 'gallery_view') and hasattr(self.gallery_view, 'pause_idle_preload'):
+            if hasattr(self, "gallery_view") and hasattr(self.gallery_view, "pause_idle_preload"):
                 self.gallery_view.pause_idle_preload()
-                idle_timer = getattr(self.gallery_view, '_idle_preload_timer', None)
+                idle_timer = getattr(self.gallery_view, "_idle_preload_timer", None)
                 if idle_timer is not None:
-                    idle_timer.start(
-                        _env_int("RAWVIEWER_SINGLE_VIEW_THUMB_PRELOAD_MS", 4000, minimum=1000)
-                    )
+                    idle_timer.start(_env_int("RAWVIEWER_SINGLE_VIEW_THUMB_PRELOAD_MS", 4000, minimum=1000))
         except Exception as e:
             logger.debug(f"[LOAD] Failed to pause gallery idle preload: {e}")
 
@@ -157,13 +157,10 @@ class ImageLoadPart2:
             if getattr(self, "_loading_from_gallery", False):
                 if (
                     getattr(self, "_gallery_instant_display_quality", False)
-                    and _norm_path(getattr(self, "_displayed_content_path", ""))
-                    == _norm_path(requested_file_path)
+                    and _norm_path(getattr(self, "_displayed_content_path", "")) == _norm_path(requested_file_path)
                     and self._single_view_pixels_on_screen(requested_file_path)
                 ):
-                    logger.info(
-                        "[LOAD] Gallery→single: keeping on-screen display-quality buffer"
-                    )
+                    logger.info("[LOAD] Gallery→single: keeping on-screen display-quality buffer")
                     self._finish_gallery_to_single_without_redisplay(requested_file_path)
                     self._on_single_view_content_displayed()
                     return
@@ -181,8 +178,7 @@ class ImageLoadPart2:
                 and not getattr(self, "_loading_from_gallery", False)
                 and not getattr(self, "_loading_from_filmstrip", False)
                 and not getattr(self, "_preserve_nav_zoom_active", False)
-                and _norm_path(requested_file_path)
-                == _norm_path(getattr(self, "current_file_path", "") or "")
+                and _norm_path(requested_file_path) == _norm_path(getattr(self, "current_file_path", "") or "")
                 and getattr(self, "_single_view_first_render_logged", False)
                 and self._single_view_pixels_on_screen(requested_file_path)
             ):
@@ -201,9 +197,29 @@ class ImageLoadPart2:
 
             # Reset flags when loading new image
             # Assume preview-first until a full-resolution buffer is confirmed on-screen, but ONLY for RAW files
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                             '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+            raw_extensions = {
+                ".cr2",
+                ".cr3",
+                ".nef",
+                ".arw",
+                ".dng",
+                ".orf",
+                ".rw2",
+                ".pef",
+                ".srw",
+                ".x3f",
+                ".raf",
+                ".3fr",
+                ".fff",
+                ".iiq",
+                ".cap",
+                ".erf",
+                ".mef",
+                ".mos",
+                ".nrw",
+                ".rwl",
+                ".srf",
+            }
             is_raw = os.path.splitext(requested_file_path)[1].lower() in raw_extensions
             self._is_half_size_displayed = False
             self._full_resolution_loading = False
@@ -216,6 +232,7 @@ class ImageLoadPart2:
             # Pause background indexing during active image load/navigation to eliminate resource contention
             try:
                 from PyQt6.QtCore import QTimer
+
                 self._pause_semantic_indexing_deferred()
                 if hasattr(self, "_resume_indexing_timer") and self._resume_indexing_timer:
                     self._resume_indexing_timer.stop()
@@ -227,19 +244,19 @@ class ImageLoadPart2:
             except Exception:
                 pass
 
-            logger.info(f"[LOAD] Flags reset - half_size: {self._is_half_size_displayed}, full_res_loading: {self._full_resolution_loading}, orientation_applied: {self._orientation_already_applied}")
+            logger.info(
+                f"[LOAD] Flags reset - half_size: {self._is_half_size_displayed}, full_res_loading: {self._full_resolution_loading}, orientation_applied: {self._orientation_already_applied}"
+            )
 
             # Clear pending zoom restore when loading new image (will be set again if needed)
-            if hasattr(self, '_pending_zoom_restore'):
+            if hasattr(self, "_pending_zoom_restore"):
                 logger.debug("Clearing _pending_zoom_restore")
-                delattr(self, '_pending_zoom_restore')
+                delattr(self, "_pending_zoom_restore")
             # Keep deferred zoom when the same file is upgrading to full resolution.
             same_file_reload = _norm_path(requested_file_path) == _norm_path(
                 getattr(self, "current_file_path", "") or ""
             )
-            keep_pending_point_zoom = bool(
-                getattr(self, "_pending_zoom", False) and same_file_reload
-            )
+            keep_pending_point_zoom = bool(getattr(self, "_pending_zoom", False) and same_file_reload)
             if not keep_pending_point_zoom:
                 self._pending_zoom = False
                 if hasattr(self, "_pending_zoom_center"):
@@ -248,30 +265,27 @@ class ImageLoadPart2:
                 if hasattr(self, "_pending_zoom_thumbnail_size"):
                     with contextlib.suppress(AttributeError):
                         delattr(self, "_pending_zoom_thumbnail_size")
-            if hasattr(self, '_pending_zoom_level'):
+            if hasattr(self, "_pending_zoom_level"):
                 logger.debug("Clearing _pending_zoom_level")
-                delattr(self, '_pending_zoom_level')
+                delattr(self, "_pending_zoom_level")
             # Keep user-requested pending zoom for the same file currently loading.
             pending_zoom_target = getattr(self, "_pending_zoom_target_path", None)
-            same_pending_target = (
-                bool(pending_zoom_target)
-                and _norm_path(str(pending_zoom_target)) == _norm_path(str(requested_file_path))
+            same_pending_target = bool(pending_zoom_target) and _norm_path(str(pending_zoom_target)) == _norm_path(
+                str(requested_file_path)
             )
             if hasattr(self, "_pending_zoom_toggle") and not same_pending_target:
                 self._pending_zoom_toggle = False
                 if hasattr(self, "_pending_zoom_target_path"):
                     with contextlib.suppress(AttributeError):
                         delattr(self, "_pending_zoom_target_path")
-            if hasattr(self, "_pending_zoom_focus_subject") and not (
-                same_pending_target or keep_pending_point_zoom
-            ):
+            if hasattr(self, "_pending_zoom_focus_subject") and not (same_pending_target or keep_pending_point_zoom):
                 self._pending_zoom_focus_subject = False
             if hasattr(self, "_pending_gpu_zoom_point"):
                 with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_gpu_zoom_point")
             if not getattr(self, "_preserve_nav_zoom_active", False) and hasattr(self, "_maintain_zoom_on_navigation"):
-                    with contextlib.suppress(AttributeError):
-                        delattr(self, "_maintain_zoom_on_navigation")
+                with contextlib.suppress(AttributeError):
+                    delattr(self, "_maintain_zoom_on_navigation")
 
             # Clean up current processing (simplified with new architecture)
             cleanup_start = time.time()
@@ -284,14 +298,10 @@ class ImageLoadPart2:
                 _same_path_reload = False
                 self._manager_displayed_max_dim = 0
             if _prev_fp and not _same_path_reload:
-                self._nav_idle_full_generation = int(
-                    getattr(self, "_nav_idle_full_generation", 0)
-                ) + 1
+                self._nav_idle_full_generation = int(getattr(self, "_nav_idle_full_generation", 0)) + 1
                 # Drop CURRENT work for the file we left; keep PRELOAD/BACKGROUND prefetch.
                 self.image_manager.cancel_current_priority_tasks(_prev_fp)
-                self._single_view_display_generation = int(
-                    getattr(self, "_single_view_display_generation", 0)
-                ) + 1
+                self._single_view_display_generation = int(getattr(self, "_single_view_display_generation", 0)) + 1
                 self._cancel_content_crossfade()
                 # Keep the previous GPU/label pixels until the next pixmap lands (arrow-key nav).
             if _same_path_reload:
@@ -317,9 +327,7 @@ class ImageLoadPart2:
             # it is enqueued below.
             try:
                 if hasattr(self.image_manager, "cancel_non_current_heavy_raw_except"):
-                    preempted = self.image_manager.cancel_non_current_heavy_raw_except(
-                        requested_file_path
-                    )
+                    preempted = self.image_manager.cancel_non_current_heavy_raw_except(requested_file_path)
                     if preempted:
                         logger.info(
                             "[LOAD] Preempted %d neighbor heavy RAW task(s) for %s",
@@ -352,7 +360,7 @@ class ImageLoadPart2:
             # 3. current_file_path is always different from requested_file_path at this point
             #    (it's the old file), so the check would always cancel
             self.current_file_path = requested_file_path
-            self._last_loaded_path = requested_file_path # Track for view switching optimizations
+            self._last_loaded_path = requested_file_path  # Track for view switching optimizations
             if getattr(self, "view_mode", "single") == "single":
                 self._maybe_leave_burst_group_view_for_path(requested_file_path)
             if self.image_files and requested_file_path in self.image_files:
@@ -368,9 +376,7 @@ class ImageLoadPart2:
                 and is_raw_file(requested_file_path)
                 and self._nef_he_compressed(requested_file_path)
             ):
-                self._auto_revert_to_embedded_jpeg_workflow(
-                    requested_file_path, reason="proactive HE/HE* detect"
-                )
+                self._auto_revert_to_embedded_jpeg_workflow(requested_file_path, reason="proactive HE/HE* detect")
             np_req = _norm_path(requested_file_path)
             if getattr(self, "_manager_display_track_path", None) != np_req:
                 self._manager_display_track_path = np_req
@@ -386,8 +392,10 @@ class ImageLoadPart2:
 
             # Verify cleanup completed
             if self.current_processor is not None:
-                logger.warning(f"[LOAD] WARNING: current_processor still exists after cleanup: {type(self.current_processor).__name__}")
-                if hasattr(self.current_processor, 'isRunning') and self.current_processor.isRunning():
+                logger.warning(
+                    f"[LOAD] WARNING: current_processor still exists after cleanup: {type(self.current_processor).__name__}"
+                )
+                if hasattr(self.current_processor, "isRunning") and self.current_processor.isRunning():
                     logger.warning("[LOAD] WARNING: current_processor is still running after cleanup!")
             else:
                 logger.info("[LOAD] Cleanup verified: current_processor is None")
@@ -400,7 +408,7 @@ class ImageLoadPart2:
             # macOS: window title is updated from _apply_top_metadata_text (same HUD string).
             if platform.system() != "Darwin":
                 self.setWindowTitle(f"{filename} -- {app_title}")
-                if hasattr(self, 'title_bar') and self.title_bar is not None:
+                if hasattr(self, "title_bar") and self.title_bar is not None:
                     self.title_bar.set_title(app_title)
 
             # Reset EXIF data ready flag for new image
@@ -413,12 +421,8 @@ class ImageLoadPart2:
                 and bool(_prev_norm)
                 and _prev_norm != np_req
             )
-            if _is_single_view_step and self._try_paint_navigation_cache_preview(
-                requested_file_path
-            ):
-                logger.info(
-                    "[LOAD] Single-view navigation: instant display from prefetch cache"
-                )
+            if _is_single_view_step and self._try_paint_navigation_cache_preview(requested_file_path):
+                logger.info("[LOAD] Single-view navigation: instant display from prefetch cache")
                 if not self.image_cache.get_exif(requested_file_path):
                     self.image_manager.load_image(
                         requested_file_path,
@@ -427,10 +431,7 @@ class ImageLoadPart2:
                         use_full_resolution=False,
                         stages={"exif"},
                     )
-                if not (
-                    use_libraw_consistent_preview_first(requested_file_path)
-                    and is_raw_file(requested_file_path)
-                ):
+                if not (use_libraw_consistent_preview_first(requested_file_path) and is_raw_file(requested_file_path)):
                     self._queue_single_view_embedded_preview_load(requested_file_path)
                 elif getattr(self, "_nav_cache_paint_tier", None) != "full":
                     # RAW workflow revisit that painted only a persisted
@@ -457,7 +458,7 @@ class ImageLoadPart2:
             rating = 0
             cached_exif = self.image_cache.get_exif(requested_file_path)
             if cached_exif:
-                rating = cached_exif.get('rating', 0) or 0
+                rating = cached_exif.get("rating", 0) or 0
             self._update_single_view_rating_display(rating)
 
             # Prefer display-quality preview before full image (faster first paint on warm cache).
@@ -468,9 +469,9 @@ class ImageLoadPart2:
             # RAW workflow JPEG-interim suppression: decide BEFORE fetching --
             # get_preview_memory_only() avoids disk JPEG decode (~150ms, main thread)
             # that get_preview() would trigger on a memory miss.
-            if self._suppress_jpeg_interim(
+            if self._suppress_jpeg_interim(requested_file_path) and not self.image_cache.is_libraw_preview(
                 requested_file_path
-            ) and not self.image_cache.is_libraw_preview(requested_file_path):
+            ):
                 preview_cached = None
             else:
                 preview_cached = self.image_cache.get_preview_memory_only(requested_file_path)
@@ -478,35 +479,23 @@ class ImageLoadPart2:
                 not force_reload
                 and preview_cached is not None
                 and not self._preview_acceptable_for_single_view(
-                preview_cached,
-                file_path=requested_file_path,
-                context="navigation" if _is_single_view_step else "display",
-            )
+                    preview_cached,
+                    file_path=requested_file_path,
+                    context="navigation" if _is_single_view_step else "display",
+                )
             ):
                 px = self._cache_buffer_max_dim(preview_cached)
                 logger.info(
-                    f"[LOAD] Ignoring low-res preview cache ({px}px) for {filename}; "
-                    f"using embedded thumbnail pipeline"
+                    f"[LOAD] Ignoring low-res preview cache ({px}px) for {filename}; using embedded thumbnail pipeline"
                 )
                 preview_cached = None
             preserve_zoom_navigation = self._preserve_zoom_navigation_active()
-            if (
-                not force_reload
-                and preview_cached is not None
-                and not preserve_zoom_navigation
-            ):
+            if not force_reload and preview_cached is not None and not preserve_zoom_navigation:
                 cache_check_time = time.time() - cache_check_start
-                logger.info(
-                    f"[LOAD] Cache hit: display preview for {filename}, "
-                    f"shape: {preview_cached.shape}"
-                )
-                safe_print(
-                    f"[PERF] ✅ CACHE HIT: Preview loaded from cache in {cache_check_time*1000:.1f}ms"
-                )
+                logger.info(f"[LOAD] Cache hit: display preview for {filename}, shape: {preview_cached.shape}")
+                safe_print(f"[PERF] ✅ CACHE HIT: Preview loaded from cache in {cache_check_time * 1000:.1f}ms")
                 try:
-                    if self._display_cached_numpy_for_path(
-                        requested_file_path, preview_cached, from_cache="preview"
-                    ):
+                    if self._display_cached_numpy_for_path(requested_file_path, preview_cached, from_cache="preview"):
                         if not self.image_cache.get_exif(requested_file_path):
                             self.image_manager.load_image(
                                 requested_file_path,
@@ -523,9 +512,7 @@ class ImageLoadPart2:
                                     preview_cached.shape[0],
                                     exif,
                                 ):
-                                    self._schedule_deferred_sensor_full_after_first_paint(
-                                        requested_file_path
-                                    )
+                                    self._schedule_deferred_sensor_full_after_first_paint(requested_file_path)
                             except Exception:
                                 pass
                         return
@@ -540,18 +527,10 @@ class ImageLoadPart2:
             cache_check_time = time.time() - cache_check_start
             cached_image = self.image_cache.get_full_image(requested_file_path)
             if not force_reload and cached_image is not None:
-                logger.info(
-                    f"[LOAD] Cache hit: full image found for {filename}, "
-                    f"shape: {cached_image.shape}"
-                )
-                safe_print(
-                    f"[PERF] ✅ CACHE HIT: Full image loaded from cache in "
-                    f"{cache_check_time * 1000:.1f}ms"
-                )
+                logger.info(f"[LOAD] Cache hit: full image found for {filename}, shape: {cached_image.shape}")
+                safe_print(f"[PERF] ✅ CACHE HIT: Full image loaded from cache in {cache_check_time * 1000:.1f}ms")
                 try:
-                    if self._display_cached_numpy_for_path(
-                        requested_file_path, cached_image, from_cache="full_image"
-                    ):
+                    if self._display_cached_numpy_for_path(requested_file_path, cached_image, from_cache="full_image"):
                         if not self.image_cache.get_exif(requested_file_path):
                             self.image_manager.load_image(
                                 requested_file_path,
@@ -575,9 +554,29 @@ class ImageLoadPart2:
 
             # Check if we have a cached pixmap for non-RAW files ONLY
             # CRITICAL: Only check pixmap cache for non-RAW files to avoid loading JPEG when RAW is requested
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                             '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+            raw_extensions = {
+                ".cr2",
+                ".cr3",
+                ".nef",
+                ".arw",
+                ".dng",
+                ".orf",
+                ".rw2",
+                ".pef",
+                ".srw",
+                ".x3f",
+                ".raf",
+                ".3fr",
+                ".fff",
+                ".iiq",
+                ".cap",
+                ".erf",
+                ".mef",
+                ".mos",
+                ".nrw",
+                ".rwl",
+                ".srf",
+            }
             file_ext = os.path.splitext(file_path)[1].lower()
             is_raw_ext = file_ext in raw_extensions
 
@@ -588,8 +587,10 @@ class ImageLoadPart2:
                 cached_pixmap = self.image_cache.get_pixmap(requested_file_path)
                 cache_check_time = time.time() - cache_check_start
                 if cached_pixmap is not None:
-                    logger.info(f"[LOAD] Cache hit: pixmap found for {filename}, size: {cached_pixmap.width()}x{cached_pixmap.height()}")
-                    safe_print(f"[PERF] ✅ CACHE HIT: Pixmap loaded from cache in {cache_check_time*1000:.1f}ms")
+                    logger.info(
+                        f"[LOAD] Cache hit: pixmap found for {filename}, size: {cached_pixmap.width()}x{cached_pixmap.height()}"
+                    )
+                    safe_print(f"[PERF] ✅ CACHE HIT: Pixmap loaded from cache in {cache_check_time * 1000:.1f}ms")
                     self.status_bar.showMessage(f"Loaded {filename} from cache")
                     try:
                         # Cached pixmaps from load_pixmap_safe / load_raw_preview_pixmap already have orientation applied
@@ -623,7 +624,9 @@ class ImageLoadPart2:
                                 stages={"exif"},
                             )
 
-                        logger.info(f"[LOAD] Successfully displayed cached pixmap for {filename} (total: {time.time() - load_start:.3f}s)")
+                        logger.info(
+                            f"[LOAD] Successfully displayed cached pixmap for {filename} (total: {time.time() - load_start:.3f}s)"
+                        )
                         if hasattr(self, "loading_overlay"):
                             self.loading_overlay.hide_loading()
                         return
@@ -639,7 +642,7 @@ class ImageLoadPart2:
             # No cache hit, use new unified image load manager
             cache_miss_time = time.time() - load_start
             logger.info(f"[LOAD] No cache hit, starting unified image load manager (elapsed: {cache_miss_time:.3f}s)")
-            safe_print(f"[PERF] ❌ CACHE MISS: Starting processing (cache check took {cache_miss_time*1000:.1f}ms)")
+            safe_print(f"[PERF] ❌ CACHE MISS: Starting processing (cache check took {cache_miss_time * 1000:.1f}ms)")
             self.status_bar.showMessage(f"Loading {filename}...")
             # Set loading message with proper alignment (centered both vertically and horizontally)
             # Ensure label fills the viewport for proper centering
@@ -661,12 +664,8 @@ class ImageLoadPart2:
                 # zoom logic deterministic (no preview/full handoff race on first zoom).
                 preserve_zoom_navigation = self._preserve_zoom_navigation_active()
                 workflow_toggle = getattr(self, "_workflow_toggle_reload", False)
-                nav_single_step = (
-                    getattr(self, "view_mode", "single") == "single"
-                    and (
-                        getattr(self, "_navigation_in_progress", False)
-                        or getattr(self, "_loading_from_filmstrip", False)
-                    )
+                nav_single_step = getattr(self, "view_mode", "single") == "single" and (
+                    getattr(self, "_navigation_in_progress", False) or getattr(self, "_loading_from_filmstrip", False)
                 )
                 nav_fit_browse = nav_single_step and not preserve_zoom_navigation
                 is_dng_file = os.path.splitext(requested_file_path)[1].lower() == ".dng"
@@ -681,9 +680,7 @@ class ImageLoadPart2:
                 # Single-step navigation: only request full-res decode if navigating zoomed-in (preserve_zoom_navigation is active)
                 # to prevent slow demosaicing lag when simply browsing fit-to-window previews.
                 request_full_res = (
-                    preserve_zoom_navigation
-                    or force_full_res_for_dng
-                    or (nav_single_step and preserve_zoom_navigation)
+                    preserve_zoom_navigation or force_full_res_for_dng or (nav_single_step and preserve_zoom_navigation)
                 )
                 # Allow embedded JPEG first frame (libraw_fit = False) if:
                 # 1. Progressive RAW load is explicitly set
@@ -709,10 +706,7 @@ class ImageLoadPart2:
                     and not force_full_res_for_dng
                 )
                 quality_cached = self._display_quality_buffer_cached(requested_file_path)
-                quality_on_screen = (
-                    quality_cached
-                    and self._single_view_pixels_on_screen(requested_file_path)
-                )
+                quality_on_screen = quality_cached and self._single_view_pixels_on_screen(requested_file_path)
                 load_stages = (
                     {"exif", "full"}
                     if (
@@ -739,12 +733,7 @@ class ImageLoadPart2:
                     and not force_full_res_for_dng
                     and not (nav_single_step and preserve_zoom_navigation)
                     and not workflow_toggle
-                ) or (
-                    from_gallery
-                    and is_raw
-                    and not preserve_zoom_navigation
-                    and not force_full_res_for_dng
-                )
+                ) or (from_gallery and is_raw and not preserve_zoom_navigation and not force_full_res_for_dng)
                 if libraw_nav_fit and cached_exif:
                     load_stages = {"full"}
                     request_full_res = False
@@ -779,27 +768,17 @@ class ImageLoadPart2:
                     cancel_existing=True,
                     use_full_resolution=request_full_res,
                     stages=load_stages,
-                    bypass_cache=bool(
-                        force_reload or getattr(self, "_workflow_toggle_reload", False)
-                    ),
+                    bypass_cache=bool(force_reload or getattr(self, "_workflow_toggle_reload", False)),
                 )
                 if preview_first_stages:
                     # Gallery entry: idle full only -- do not kick sensor/LibRaw
                     # demosaic in the same breath as the first embedded paint.
                     if from_gallery:
-                        self._schedule_idle_full_decode_after_nav_preview(
-                            requested_file_path
-                        )
-                        self._schedule_deferred_full_exif_after_first_paint(
-                            requested_file_path
-                        )
+                        self._schedule_idle_full_decode_after_nav_preview(requested_file_path)
+                        self._schedule_deferred_full_exif_after_first_paint(requested_file_path)
                     else:
-                        self._schedule_deferred_sensor_full_after_first_paint(
-                            requested_file_path
-                        )
-                        self._schedule_deferred_full_exif_after_first_paint(
-                            requested_file_path
-                        )
+                        self._schedule_deferred_sensor_full_after_first_paint(requested_file_path)
+                        self._schedule_deferred_full_exif_after_first_paint(requested_file_path)
                 logger.info("[LOAD] Image load requested via ImageLoadManager")
             except Exception as manager_error:
                 logger.error(f"[LOAD] Failed to request image load: {manager_error}", exc_info=True)
@@ -813,9 +792,7 @@ class ImageLoadPart2:
                     is_raw = is_raw_file(requested_file_path)
                     fallback_full_res = is_raw and (file_ext == ".dng")
                     self.current_processor = RAWProcessor(
-                        requested_file_path,
-                        is_raw=is_raw,
-                        use_full_resolution=fallback_full_res
+                        requested_file_path, is_raw=is_raw, use_full_resolution=fallback_full_res
                     )
                     self.current_processor.image_processed.connect(self.on_image_processed)
                     self.current_processor.error_occurred.connect(self.on_processing_error)
@@ -829,7 +806,9 @@ class ImageLoadPart2:
 
             manager_request_time = time.time() - manager_start
             logger.info(f"[LOAD] Image load requested in {manager_request_time:.3f}s")
-            safe_print(f"[PERF] 📊 SETUP TIME: {manager_request_time*1000:.1f}ms (cleanup: {cleanup_time*1000:.1f}ms)")
+            safe_print(
+                f"[PERF] 📊 SETUP TIME: {manager_request_time * 1000:.1f}ms (cleanup: {cleanup_time * 1000:.1f}ms)"
+            )
 
             self.setFocus()
             # Save session state when image changes
@@ -848,21 +827,33 @@ class ImageLoadPart2:
 
             total_time = time.time() - load_start
             logger.info(f"[LOAD] ========== load_raw_image() COMPLETED for {filename} in {total_time:.3f}s ==========")
-            safe_print(f"[PERF] ✅ LOAD COMPLETE: {os.path.basename(requested_file_path)} in {total_time*1000:.1f}ms")
+            safe_print(f"[PERF] ✅ LOAD COMPLETE: {os.path.basename(requested_file_path)} in {total_time * 1000:.1f}ms")
         except Exception as e:
             total_time = time.time() - load_start
-            logger.error(f"[LOAD] ========== CRITICAL ERROR in load_raw_image (at {time.time():.3f}, duration: {total_time:.3f}s) ==========")
+            logger.error(
+                f"[LOAD] ========== CRITICAL ERROR in load_raw_image (at {time.time():.3f}, duration: {total_time:.3f}s) =========="
+            )
             logger.error(f"[LOAD] Exception type: {type(e).__name__}, message: {e}", exc_info=True)
             logger.error(f"[LOAD] Full traceback:\n{traceback.format_exc()}")
-            requested_file_name = requested_file_path if 'requested_file_path' in locals() else (file_path if 'file_path' in locals() else 'unknown')
-            safe_print(f"[PERF] ❌ LOAD ERROR: {os.path.basename(requested_file_name)} failed after {total_time*1000:.1f}ms - {type(e).__name__}: {e}")
+            requested_file_name = (
+                requested_file_path
+                if "requested_file_path" in locals()
+                else (file_path if "file_path" in locals() else "unknown")
+            )
+            safe_print(
+                f"[PERF] ❌ LOAD ERROR: {os.path.basename(requested_file_name)} failed after {total_time * 1000:.1f}ms - {type(e).__name__}: {e}"
+            )
             if hasattr(self, "loading_overlay"):
                 self.loading_overlay.hide_loading()
             # Try to show error to user
             try:
                 self.show_error("Load Error", f"Failed to load image: {str(e)}")
                 # Graceful handling for ejected volumes or missing files
-                target_path = requested_file_path if 'requested_file_path' in locals() else (file_path if 'file_path' in locals() else None)
+                target_path = (
+                    requested_file_path
+                    if "requested_file_path" in locals()
+                    else (file_path if "file_path" in locals() else None)
+                )
                 if target_path and not os.path.exists(target_path):
                     parent_dir = os.path.dirname(target_path)
                     if not os.path.exists(parent_dir):

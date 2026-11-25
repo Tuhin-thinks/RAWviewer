@@ -121,10 +121,7 @@ class ImageLoadManagerPart3:
                     far = int(distance_for(task.file_path)) > max_distance
                 except Exception:
                     far = False
-                drop_queued = far and (
-                    task.priority != Priority.CURRENT
-                    or getattr(task, "gallery_thumbnail", False)
-                )
+                drop_queued = far and (task.priority != Priority.CURRENT or getattr(task, "gallery_thumbnail", False))
                 if drop_queued:
                     task.cancel()
                     self._release_raw_slot_locked(task)
@@ -170,13 +167,14 @@ class ImageLoadManagerPart3:
     def shutdown(self):
         """關閉管理器並清理資源"""
         self._stopped = True
-        watchdog = getattr(self, '_dispatch_watchdog', None)
+        watchdog = getattr(self, "_dispatch_watchdog", None)
         if watchdog is not None:
             with contextlib.suppress(Exception):
                 watchdog.stop()
-        if hasattr(self, '_process_pool') and self._process_pool:
+        if hasattr(self, "_process_pool") and self._process_pool:
             import atexit
-            if hasattr(self, '_process_pool_shutdown_hook'):
+
+            if hasattr(self, "_process_pool_shutdown_hook"):
                 with contextlib.suppress(Exception):
                     atexit.unregister(self._process_pool_shutdown_hook)
             self._process_pool.shutdown(wait=False)
@@ -202,7 +200,7 @@ class ImageLoadManagerPart3:
             with lock:
                 self._running_tasks.discard(task)
         with self._queue_lock:
-            key = getattr(task, 'task_key', None)
+            key = getattr(task, "task_key", None)
             if key in self._active_tasks and self._active_tasks[key] is task:
                 del self._active_tasks[key]
                 self._task_keys_by_path[task.file_path].discard(key)
@@ -255,24 +253,30 @@ class ImageLoadManagerPart3:
                     continue
                 if key[1] != use_full_resolution:
                     continue
-                if 'full' not in key[2]:
+                if "full" not in key[2]:
                     continue
-                if (
-                    requesting_priority == Priority.CURRENT
-                    and task.priority.value > requesting_priority.value
-                ):
+                if requesting_priority == Priority.CURRENT and task.priority.value > requesting_priority.value:
                     # This CURRENT request will cancel this owner below; don't
                     # rely on it to finish the full decode.
                     continue
                 return True
         return False
 
-    def _make_task_key(self, file_path: str, use_full_resolution: bool,
-                       stages: set | None, thumbnail_target_size: QSize | None,
-                       thumbnail_fit: str) -> tuple:
+    def _make_task_key(
+        self,
+        file_path: str,
+        use_full_resolution: bool,
+        stages: set | None,
+        thumbnail_target_size: QSize | None,
+        thumbnail_fit: str,
+    ) -> tuple:
         """Build a stable key for de-duplicating queued/running work."""
-        wanted = tuple(sorted(stages if stages is not None else {'thumbnail', 'exif', 'full'}))
-        if thumbnail_target_size is not None and isinstance(thumbnail_target_size, QSize) and thumbnail_target_size.isValid():
+        wanted = tuple(sorted(stages if stages is not None else {"thumbnail", "exif", "full"}))
+        if (
+            thumbnail_target_size is not None
+            and isinstance(thumbnail_target_size, QSize)
+            and thumbnail_target_size.isValid()
+        ):
             target_key = (thumbnail_target_size.width(), thumbnail_target_size.height(), thumbnail_fit)
         else:
             target_key = None
@@ -304,15 +308,11 @@ class ImageLoadManagerPart3:
         )
 
         is_raw = is_raw_file(file_path)
-        wanted = stages if stages is not None else {'thumbnail', 'exif', 'full'}
+        wanted = stages if stages is not None else {"thumbnail", "exif", "full"}
         # Only the 'full' stage consults this, and computing it costs a
         # sidecar probe (and used to cost a per-file EXIF parse) — a gallery
         # thumbnail-only request must never pay that on the UI thread.
-        libraw_first = (
-            use_libraw_consistent_preview_first(file_path)
-            if 'full' in wanted
-            else False
-        )
+        libraw_first = use_libraw_consistent_preview_first(file_path) if "full" in wanted else False
 
         cache = self._cache
         preview_only = wanted == {"thumbnail"}
@@ -323,9 +323,7 @@ class ImageLoadManagerPart3:
             def _try_emit_display_thumb(buf) -> bool:
                 if buf is None:
                     return False
-                if not _gallery_memory_thumb_acceptable(
-                    buf, gallery_thumbnail=gallery_thumbnail
-                ):
+                if not _gallery_memory_thumb_acceptable(buf, gallery_thumbnail=gallery_thumbnail):
                     return False
                 if _skip_low_res_memory_thumb_for_display_tier(
                     buf,
@@ -378,14 +376,14 @@ class ImageLoadManagerPart3:
         # -> _queue_display_tier_prefetch_for_paths -> load_image). Let the
         # real load path do that verification when it actually decodes the
         # file; this is just a fast "is it already warm" check.
-        if 'exif' in wanted:
+        if "exif" in wanted:
             exif_data = cache.get_exif_memory_only(file_path)
             if exif_data is not None and not exif_data.get("minimal_preview_exif"):
                 self._emit_cached_result_later(self.exif_data_ready, file_path, exif_data)
                 # Note: EXIF hit alone doesn't terminate processing if pixels are also wanted
 
         # 3) Full stage: treat in-memory RAW preview as "full" when use_full_resolution=False
-        if 'full' in wanted:
+        if "full" in wanted:
             if is_raw:
                 if use_full_resolution:
                     full_img = cache.full_image_cache.get(file_path)
@@ -406,15 +404,11 @@ class ImageLoadManagerPart3:
                         preview = cache.preview_cache.get(file_path)
                         if preview is not None:
                             if cache.is_libraw_preview(file_path):
-                                self._emit_cached_result_later(
-                                    self.image_ready, file_path, preview
-                                )
+                                self._emit_cached_result_later(self.image_ready, file_path, preview)
                                 return True
                             h, w = preview.shape[:2]
                             if image_covers_sensor_resolution(w, h, exif_data):
-                                self._emit_cached_result_later(
-                                    self.image_ready, file_path, preview
-                                )
+                                self._emit_cached_result_later(self.image_ready, file_path, preview)
                                 return True
                         full_img = cache.get_full_image(file_path)
                         # Only a sensor-covering buffer satisfies RAW-mode full.
@@ -424,9 +418,7 @@ class ImageLoadManagerPart3:
                         if full_img is not None and hasattr(full_img, "shape"):
                             fh, fw = full_img.shape[:2]
                             if image_covers_sensor_resolution(fw, fh, exif_data):
-                                self._emit_cached_result_later(
-                                    self.image_ready, file_path, full_img
-                                )
+                                self._emit_cached_result_later(self.image_ready, file_path, full_img)
                                 return True
                     else:
                         # Preview cache is memory-only LRU (embedded JPEG path)
@@ -446,28 +438,30 @@ class ImageLoadManagerPart3:
                 return True
             if gallery_thumbnail:
                 grid_buf = cache.grid_cache.get(file_path)
-                if _gallery_memory_thumb_acceptable(
-                    grid_buf, gallery_thumbnail=True
-                ):
+                if _gallery_memory_thumb_acceptable(grid_buf, gallery_thumbnail=True):
                     return True
             preview_buf = cache.preview_cache.get(file_path)
-            if preview_buf is not None and _gallery_memory_thumb_acceptable(
-                preview_buf, gallery_thumbnail=gallery_thumbnail
-            ) and not _skip_low_res_memory_thumb_for_display_tier(
-                preview_buf,
-                wanted,
-                use_full_resolution,
-                gallery_thumbnail=gallery_thumbnail,
+            if (
+                preview_buf is not None
+                and _gallery_memory_thumb_acceptable(preview_buf, gallery_thumbnail=gallery_thumbnail)
+                and not _skip_low_res_memory_thumb_for_display_tier(
+                    preview_buf,
+                    wanted,
+                    use_full_resolution,
+                    gallery_thumbnail=gallery_thumbnail,
+                )
             ):
                 return True
             thumb = cache.thumbnail_cache.get(file_path)
-            return thumb is not None and _gallery_memory_thumb_acceptable(
-                thumb, gallery_thumbnail=gallery_thumbnail
-            ) and not _skip_low_res_memory_thumb_for_display_tier(
-                thumb,
-                wanted,
-                use_full_resolution,
-                gallery_thumbnail=gallery_thumbnail,
+            return (
+                thumb is not None
+                and _gallery_memory_thumb_acceptable(thumb, gallery_thumbnail=gallery_thumbnail)
+                and not _skip_low_res_memory_thumb_for_display_tier(
+                    thumb,
+                    wanted,
+                    use_full_resolution,
+                    gallery_thumbnail=gallery_thumbnail,
+                )
             )
 
         thumb_ok = _memory_thumb_ok()
@@ -477,10 +471,7 @@ class ImageLoadManagerPart3:
         elif preview_only:
             exif_ok = exif_cached is not None
         else:
-            exif_ok = (
-                exif_cached is not None
-                and not exif_cached.get("minimal_preview_exif")
-            )
+            exif_ok = exif_cached is not None and not exif_cached.get("minimal_preview_exif")
         full_ok = "full" not in wanted
         if "full" in wanted:
             if is_raw:
@@ -490,18 +481,16 @@ class ImageLoadManagerPart3:
                         full_ok = False
                     else:
                         fh, fw = full_img.shape[:2]
-                        full_ok = image_covers_sensor_resolution(
-                            fw, fh, cache.exif_cache.get(file_path)
-                        )
+                        full_ok = image_covers_sensor_resolution(fw, fh, cache.exif_cache.get(file_path))
                 elif libraw_first:
                     full_img = cache.get_full_image(file_path)
                     if full_img is None or not hasattr(full_img, "shape"):
                         full_ok = False
                     else:
                         fh, fw = full_img.shape[:2]
-                        full_ok = image_covers_sensor_resolution(
-                            fw, fh, cache.exif_cache.get(file_path)
-                        ) or bool(cache.is_libraw_preview(file_path))
+                        full_ok = image_covers_sensor_resolution(fw, fh, cache.exif_cache.get(file_path)) or bool(
+                            cache.is_libraw_preview(file_path)
+                        )
                 else:
                     full_ok = cache.preview_cache.get(file_path) is not None
             else:
@@ -520,6 +509,7 @@ class ImageLoadManagerPart3:
             return
 
         from common_image_loader import io_pressure_active, is_raw_file
+
         pressure = io_pressure_active()
 
         # If CURRENT full is queued but neighbor heavies hold every raw slot,
@@ -584,7 +574,7 @@ class ImageLoadManagerPart3:
                     task = self._work_queue.get_nowait()
 
                     if task.is_cancelled():
-                        key = getattr(task, 'task_key', None)
+                        key = getattr(task, "task_key", None)
                         if key in self._active_tasks and self._active_tasks[key] is task:
                             del self._active_tasks[key]
                             self._task_keys_by_path[task.file_path].discard(key)
@@ -596,7 +586,8 @@ class ImageLoadManagerPart3:
 
                     if pressure and task.priority != Priority.CURRENT:
                         active_prefetch = sum(
-                            1 for t in self._active_tasks.values()
+                            1
+                            for t in self._active_tasks.values()
                             if getattr(t, "priority", None) != Priority.CURRENT and not t.is_cancelled()
                         )
                         if active_prefetch >= 1:
@@ -604,7 +595,7 @@ class ImageLoadManagerPart3:
                             continue
 
                     is_raw = is_raw_file(task.file_path)
-                    is_heavy = is_raw and 'full' in (task.stages or set())
+                    is_heavy = is_raw and "full" in (task.stages or set())
 
                     heavy_limit = self._raw_load_limit
                     if getattr(self, "_gallery_view_active", False):
@@ -648,8 +639,7 @@ class ImageLoadManagerPart3:
                             # full cannot start until CURRENT's demosaic begins.
                             heavy_limit = max(0, int(heavy_limit) - 1)
                     if is_heavy and (
-                        provisional_raw >= heavy_limit
-                        or len(self._demosaic_in_flight) >= max(1, int(heavy_limit) or 1)
+                        provisional_raw >= heavy_limit or len(self._demosaic_in_flight) >= max(1, int(heavy_limit) or 1)
                     ):
                         deferred_put.append(task)
                         continue
@@ -707,12 +697,11 @@ class ImageLoadManagerPart3:
         """獲取管理器統計信息"""
         with self._queue_lock:
             return {
-                'queue_size': self._work_queue.qsize(),
-                'active_tasks': len(self._active_tasks),
-                'running_tasks': len(self._running_tasks),
-                'active_threads': self._thread_pool.activeThreadCount(),
-                'max_threads': self._thread_pool.maxThreadCount(),
-                'current_active_threads': self._current_thread_pool.activeThreadCount(),
-                'current_max_threads': self._current_thread_pool.maxThreadCount(),
+                "queue_size": self._work_queue.qsize(),
+                "active_tasks": len(self._active_tasks),
+                "running_tasks": len(self._running_tasks),
+                "active_threads": self._thread_pool.activeThreadCount(),
+                "max_threads": self._thread_pool.maxThreadCount(),
+                "current_active_threads": self._current_thread_pool.activeThreadCount(),
+                "current_max_threads": self._current_thread_pool.maxThreadCount(),
             }
-

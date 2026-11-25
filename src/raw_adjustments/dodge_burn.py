@@ -239,12 +239,7 @@ def _edge_assist_gate(
                 connected[y, x] = 1.0
                 for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     ny, nx = y + dy, x + dx
-                    if (
-                        0 <= ny < h
-                        and 0 <= nx < w
-                        and not seen[ny, nx]
-                        and similar[ny, nx]
-                    ):
+                    if 0 <= ny < h and 0 <= nx < w and not seen[ny, nx] and similar[ny, nx]:
                         seen[ny, nx] = True
                         q.append((ny, nx))
     else:
@@ -338,14 +333,8 @@ def stamp_brush(
 
     falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
-    if (
-        edge_assist
-        and luminance is not None
-        and luminance.shape[:2] == (h, w)
-    ):
-        falloff = falloff * _edge_assist_gate(
-            luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma
-        )
+    if edge_assist and luminance is not None and luminance.shape[:2] == (h, w):
+        falloff = falloff * _edge_assist_gate(luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma)
 
     delta = falloff * float(strength) * (1.0 if dodge else -1.0)
     region = mask.data[y0:y1, x0:x1]
@@ -400,14 +389,8 @@ def erase_brush(
 
     falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
-    if (
-        edge_assist
-        and luminance is not None
-        and luminance.shape[:2] == (h, w)
-    ):
-        falloff = falloff * _edge_assist_gate(
-            luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma
-        )
+    if edge_assist and luminance is not None and luminance.shape[:2] == (h, w):
+        falloff = falloff * _edge_assist_gate(luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma)
 
     # Multiplicative erase toward zero: factor 1 at edge, (1-strength) at center.
     amount = np.clip(falloff * float(strength), 0.0, 1.0)
@@ -475,9 +458,7 @@ def resize_mask_to(mask: DodgeBurnMask, height: int, width: int) -> np.ndarray:
     return cv2.resize(mask.data, (width, height), interpolation=cv2.INTER_LINEAR)
 
 
-def apply_dodge_burn(
-    img: np.ndarray, mask: DodgeBurnMask | None, stops: float
-) -> np.ndarray:
+def apply_dodge_burn(img: np.ndarray, mask: DodgeBurnMask | None, stops: float) -> np.ndarray:
     """Scene-linear per-pixel exposure multiplier: img * 2**(mask * stops).
 
     ``img`` is (H, W, 3) scene-linear float. No-op (returns img unchanged)
@@ -535,9 +516,7 @@ def serialize_mask(mask: DodgeBurnMask | None) -> str:
         return ""
     import cv2
 
-    u8 = np.clip(
-        (mask.data + MASK_CLIP) / (2.0 * MASK_CLIP) * 255.0 + 0.5, 0, 255
-    ).astype(np.uint8)
+    u8 = np.clip((mask.data + MASK_CLIP) / (2.0 * MASK_CLIP) * 255.0 + 0.5, 0, 255).astype(np.uint8)
     ok, buf = cv2.imencode(".png", u8)
     if not ok:
         return ""

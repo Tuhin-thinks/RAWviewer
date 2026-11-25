@@ -274,7 +274,7 @@ def _kelvin_to_rgb(k: float) -> tuple[float, float, float]:
         r = 255.0
     else:
         r = temp - 60.0
-        r = 329.698727446 * (r ** -0.1332047592)
+        r = 329.698727446 * (r**-0.1332047592)
         r = max(0.0, min(255.0, r))
 
     # Green
@@ -285,7 +285,7 @@ def _kelvin_to_rgb(k: float) -> tuple[float, float, float]:
         g = max(0.0, min(255.0, g))
     else:
         g = temp - 60.0
-        g = 288.1221695283 * (g ** -0.0755148492)
+        g = 288.1221695283 * (g**-0.0755148492)
         g = max(0.0, min(255.0, g))
 
     # Blue

@@ -305,87 +305,95 @@ def _macos_app_bundle_name(profile: str = "full") -> str:
 
 def update_macos_plist(app_path, profile: str = "full"):
     """Update Info.plist in macOS app bundle to add file associations"""
-    plist_path = os.path.join(app_path, 'Contents', 'Info.plist')
+    plist_path = os.path.join(app_path, "Contents", "Info.plist")
     if not os.path.exists(plist_path):
         print(f"[WARNING] Info.plist not found at {plist_path}")
         return False
 
     try:
         import plistlib
-        with open(plist_path, 'rb') as f:
+
+        with open(plist_path, "rb") as f:
             plist = plistlib.load(f)
 
         # Define supported extensions
         image_extensions = [
-            'jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp', 'tif', 'tiff', 'heic',
-            'cr2', 'cr3', 'nef', 'arw', 'dng', 'raf', 'orf', 'rw2', 'pef', 'srw', 'crw', 'mef', 'mrw'
+            "jpg",
+            "jpeg",
+            "png",
+            "bmp",
+            "gif",
+            "webp",
+            "tif",
+            "tiff",
+            "heic",
+            "cr2",
+            "cr3",
+            "nef",
+            "arw",
+            "dng",
+            "raf",
+            "orf",
+            "rw2",
+            "pef",
+            "srw",
+            "crw",
+            "mef",
+            "mrw",
         ]
 
         # Add CFBundleDocumentTypes if not present
-        if 'CFBundleDocumentTypes' not in plist:
-            plist['CFBundleDocumentTypes'] = []
+        if "CFBundleDocumentTypes" not in plist:
+            plist["CFBundleDocumentTypes"] = []
 
         # Check if our document type is already defined
-        doc_type_exists = any(
-            doc.get('CFBundleTypeName') == 'Image File' for doc in plist['CFBundleDocumentTypes']
-        )
+        doc_type_exists = any(doc.get("CFBundleTypeName") == "Image File" for doc in plist["CFBundleDocumentTypes"])
 
         if not doc_type_exists:
             doc_type = {
-                'CFBundleTypeName': 'Image File',
-                'CFBundleTypeRole': 'Viewer',
-                'LSHandlerRank': 'Alternate',
-                'LSItemContentTypes': [
-                    'public.image',
-                    'public.camera-raw-image'
-                ],
-                'CFBundleTypeExtensions': image_extensions
+                "CFBundleTypeName": "Image File",
+                "CFBundleTypeRole": "Viewer",
+                "LSHandlerRank": "Alternate",
+                "LSItemContentTypes": ["public.image", "public.camera-raw-image"],
+                "CFBundleTypeExtensions": image_extensions,
             }
-            plist['CFBundleDocumentTypes'].append(doc_type)
+            plist["CFBundleDocumentTypes"].append(doc_type)
 
         bundle_name = _macos_app_bundle_name(profile)
         is_standard = profile.strip().lower() in ("lite", "standard")
         # Bundle IDs kept stable (lite → Standard, default → Plus).
-        plist['CFBundleIdentifier'] = (
-            'com.markyip.rawviewer.lite' if is_standard else 'com.markyip.rawviewer'
-        )
-        plist['CFBundleName'] = bundle_name
-        plist['CFBundleDisplayName'] = 'RAWviewer' if is_standard else 'RAWviewer Plus'
-        plist['CFBundleExecutable'] = bundle_name
-        plist['CFBundlePackageType'] = 'APPL'
-        plist['CFBundleShortVersionString'] = VERSION
-        plist['CFBundleVersion'] = VERSION
+        plist["CFBundleIdentifier"] = "com.markyip.rawviewer.lite" if is_standard else "com.markyip.rawviewer"
+        plist["CFBundleName"] = bundle_name
+        plist["CFBundleDisplayName"] = "RAWviewer" if is_standard else "RAWviewer Plus"
+        plist["CFBundleExecutable"] = bundle_name
+        plist["CFBundlePackageType"] = "APPL"
+        plist["CFBundleShortVersionString"] = VERSION
+        plist["CFBundleVersion"] = VERSION
 
         # Add macOS permission usage descriptions
         # (Relevant if/when App Sandbox is enabled; current release is not sandboxed —
         #  file access follows normal POSIX permissions after the user picks a path.)
-        plist['NSDesktopFolderUsageDescription'] = (
-            'RAWviewer needs access to your Desktop to open and export images.'
+        plist["NSDesktopFolderUsageDescription"] = "RAWviewer needs access to your Desktop to open and export images."
+        plist["NSDocumentsFolderUsageDescription"] = (
+            "RAWviewer needs access to your Documents folder to open and export images."
         )
-        plist['NSDocumentsFolderUsageDescription'] = (
-            'RAWviewer needs access to your Documents folder to open and export images.'
+        plist["NSDownloadsFolderUsageDescription"] = (
+            "RAWviewer needs access to your Downloads folder to open and export images."
         )
-        plist['NSDownloadsFolderUsageDescription'] = (
-            'RAWviewer needs access to your Downloads folder to open and export images.'
+        plist["NSRemovableVolumesUsageDescription"] = (
+            "RAWviewer needs access to external volumes to open images from cameras or cards. "
+            "Exporting may require a writable folder (Desktop/Pictures) if the card is read-only."
         )
-        plist['NSRemovableVolumesUsageDescription'] = (
-            'RAWviewer needs access to external volumes to open images from cameras or cards. '
-            'Exporting may require a writable folder (Desktop/Pictures) if the card is read-only.'
-        )
-        plist['NSPhotoLibraryUsageDescription'] = (
-            'RAWviewer needs access to your photo library to display images.'
-        )
-        plist['NSAppleEventsUsageDescription'] = (
-            'RAWviewer uses AppleEvents for native file dialogs when needed.'
-        )
+        plist["NSPhotoLibraryUsageDescription"] = "RAWviewer needs access to your photo library to display images."
+        plist["NSAppleEventsUsageDescription"] = "RAWviewer uses AppleEvents for native file dialogs when needed."
 
         # macOS specific flags
-        plist['LSMinimumSystemVersion'] = '13.0'
-        plist['NSHighResolutionCapable'] = True
-        plist['LSSupportsOpeningDocumentsInPlace'] = True
-        plist['LSApplicationCategoryType'] = 'public.app-category.photography'
+        plist["LSMinimumSystemVersion"] = "13.0"
+        plist["NSHighResolutionCapable"] = True
+        plist["LSSupportsOpeningDocumentsInPlace"] = True
+        plist["LSApplicationCategoryType"] = "public.app-category.photography"
 
-        with open(plist_path, 'wb') as f:
+        with open(plist_path, "wb") as f:
             plistlib.dump(plist, f)
         print("[SUCCESS] Updated Info.plist with Bundle ID, file associations and usage descriptions")
         return True
@@ -449,9 +457,7 @@ def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full"):
     """Install required dependencies"""
     lite = profile.strip().lower() == "lite"
     if _build_skip_deps():
-        _build_log(
-            "Skipping dependency install (pixi/locked env or RAWVIEWER_BUILD_SKIP_DEPS=1)"
-        )
+        _build_log("Skipping dependency install (pixi/locked env or RAWVIEWER_BUILD_SKIP_DEPS=1)")
         return True
 
     uv = _uv_path()
@@ -459,18 +465,18 @@ def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full"):
     print(f"Installing/upgrading dependencies with {installer}...")
     system_name = platform.system()
     dependencies = [
-        'PyQt6',
-        'rawpy',
-        'send2trash',
-        'pyinstaller',
-        'natsort',
-        'exifread',
-        'Pillow',  # Added for NEF thumbnail fallback
-        'psutil',  # Added for system memory info in image_cache
-        'numpy',   # Required for image processing (used in all modules)
-        'qtawesome', # Required for icons in main.py
-        'pycountry',  # ISO country code -> full country name
-        'pillow-heif',
+        "PyQt6",
+        "rawpy",
+        "send2trash",
+        "pyinstaller",
+        "natsort",
+        "exifread",
+        "Pillow",  # Added for NEF thumbnail fallback
+        "psutil",  # Added for system memory info in image_cache
+        "numpy",  # Required for image processing (used in all modules)
+        "qtawesome",  # Required for icons in main.py
+        "pycountry",  # ISO country code -> full country name
+        "pillow-heif",
         # Required unconditionally by the Adjust panel (raw_edit_pipeline.py,
         # raw_chroma_denoise.py, raw_detail_enhance.py, raw_hsl.py,
         # raw_lens_correction.py / raw_tone_curve.py / raw_tone_recovery.py),
@@ -478,9 +484,9 @@ def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full"):
         # every profile (lite and full) and every platform, or Adjust panel
         # controls crash on first use once packaged. See
         # docs/EDIT_PIPELINE.md "Installer size".
-        'opencv-python-headless',
-        'tifffile',
-        'lensfunpy',
+        "opencv-python-headless",
+        "tifffile",
+        "lensfunpy",
     ]
 
     if system_name in ("Darwin", "Windows"):
@@ -492,19 +498,19 @@ def install_dependencies(windows_accel: str = "cuda", *, profile: str = "full"):
             # Windows semantic backend uses ONNX with selectable acceleration backend.
             accel = (windows_accel or "cuda").strip().lower()
             if accel == "cuda":
-                dependencies.append('onnxruntime-gpu')
+                dependencies.append("onnxruntime-gpu")
             elif accel == "directml":
-                dependencies.append('onnxruntime-directml')
+                dependencies.append("onnxruntime-directml")
             else:
                 print(f"[ERROR] Unsupported Windows acceleration backend: {windows_accel}")
                 return False
-            dependencies.append('huggingface-hub')
+            dependencies.append("huggingface-hub")
     elif system_name == "Darwin":
         if not lite:
-            dependencies.append('huggingface-hub')
-            dependencies.append('pyobjc-framework-CoreML')
-            dependencies.append('pyobjc-framework-Vision')
-        dependencies.append('pyobjc-framework-Quartz')
+            dependencies.append("huggingface-hub")
+            dependencies.append("pyobjc-framework-CoreML")
+            dependencies.append("pyobjc-framework-Vision")
+        dependencies.append("pyobjc-framework-Quartz")
     if system_name in ("Darwin", "Windows"):
         dependencies.append("pyexiv2")
 
@@ -547,9 +553,7 @@ def _darwin_ensure_homebrew_pyexiv2_libs() -> None:
             capture_output=True,
         )
         if listed.returncode != 0:
-            print(
-                f"[INFO] Installing Homebrew `{formula}` (native dependency for pyexiv2 / Exiv2)..."
-            )
+            print(f"[INFO] Installing Homebrew `{formula}` (native dependency for pyexiv2 / Exiv2)...")
             subprocess.run([brew, "install", formula], check=False)
 
 
@@ -700,10 +704,7 @@ def build_windows_launcher_stub(icon_path: str | None) -> tuple[Path, Path]:
     if not out_exe.is_file() or not out_runtime.is_dir():
         print(f"[ERROR] Launcher stub was not created under: {out_dir}")
         sys.exit(1)
-    print(
-        f"[INFO] Launcher stub ready: {out_exe} "
-        f"({out_exe.stat().st_size:,} bytes) + {out_runtime.name}/"
-    )
+    print(f"[INFO] Launcher stub ready: {out_exe} ({out_exe.stat().st_size:,} bytes) + {out_runtime.name}/")
     return out_exe, out_runtime
 
 
@@ -880,10 +881,7 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
             stub_src = hit.resolve() if hit.is_symlink() else hit
             break
     if stub_src is None:
-        raise RuntimeError(
-            "lensfunpy proxy libintl.8.dylib not found in app bundle "
-            "(needed by lensfunpy libglib)."
-        )
+        raise RuntimeError("lensfunpy proxy libintl.8.dylib not found in app bundle (needed by lensfunpy libglib).")
 
     gettext_src: Path | None = None
     for cand in _darwin_real_libintl_candidates(exe_path):
@@ -892,8 +890,7 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
             break
     if gettext_src is None:
         raise RuntimeError(
-            "Could not find a real gettext libintl.8.dylib for cv2/pyexiv2. "
-            "Install with: brew install gettext"
+            "Could not find a real gettext libintl.8.dylib for cv2/pyexiv2. Install with: brew install gettext"
         )
 
     # 1) Top-level @rpath slot = real gettext (OpenCV libgnutls / cv2 glib).
@@ -903,11 +900,7 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
     ):
         dest.parent.mkdir(parents=True, exist_ok=True)
         if dest.exists() or dest.is_symlink():
-            if (
-                not dest.is_symlink()
-                and _libintl_exports_bindtextdomain(dest)
-                and not _libintl_exports_g_libintl(dest)
-            ):
+            if not dest.is_symlink() and _libintl_exports_bindtextdomain(dest) and not _libintl_exports_g_libintl(dest):
                 pass  # already correct gettext
             else:
                 dest.unlink()
@@ -929,9 +922,7 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
     # Prefer the real on-disk stub path under the app (handles .dylibs vs __dot__dylibs).
     stub_in_app = stub_src
     try:
-        stub_rel_from_frameworks = stub_in_app.relative_to(
-            exe_path / "Contents" / "Frameworks"
-        )
+        stub_rel_from_frameworks = stub_in_app.relative_to(exe_path / "Contents" / "Frameworks")
     except ValueError:
         pass
 
@@ -977,9 +968,7 @@ def _ensure_macos_pyexiv2_libintl_in_app(exe_path: Path) -> None:
 
     # 3) pyexiv2 keeps a private gettext copy (stable even if Frameworks changes).
     libexiv2_hits = [
-        p
-        for p in exe_path.rglob("libexiv2.dylib")
-        if "pyexiv2" in p.parts and p.is_file() and not p.is_symlink()
+        p for p in exe_path.rglob("libexiv2.dylib") if "pyexiv2" in p.parts and p.is_file() and not p.is_symlink()
     ]
     for libexiv2 in libexiv2_hits:
         local_intl = libexiv2.parent / "libintl.8.dylib"
@@ -1042,7 +1031,7 @@ def _ensure_macos_openmp_libraw_in_app(exe_path: Path) -> None:
 
 
 def _prune_built_app(exe_path: Path, profile: str) -> None:
-    if platform.system() != 'Darwin':
+    if platform.system() != "Darwin":
         return
     print(f"[INFO] Starting post-build pruning for: {exe_path}")
 
@@ -1100,9 +1089,7 @@ def _prune_built_app(exe_path: Path, profile: str) -> None:
                 shutil.rmtree(fw_path, ignore_errors=True)
 
     # 3. Prune Qt6 translations (saves ~6.6 MB; app has no QTranslator)
-    qt_translations_dir = (
-        exe_path / "Contents" / "Resources" / "PyQt6" / "Qt6" / "translations"
-    )
+    qt_translations_dir = exe_path / "Contents" / "Resources" / "PyQt6" / "Qt6" / "translations"
     if qt_translations_dir.exists():
         print(f"  Pruning Qt6 translations from: {qt_translations_dir}")
         shutil.rmtree(qt_translations_dir, ignore_errors=True)
@@ -1208,10 +1195,10 @@ def main():
         print("[INFO] Windows lite: no semantic/face AI; EXIF+GPS gallery search only.")
     elif is_lite and system_name == "Darwin":
         print("[INFO] macOS lite: semantic/face AI off; EXIF+GPS metadata search only.")
-    if system_name == 'Windows':
+    if system_name == "Windows":
         print("RAWviewer Windows Build Script")
         print(f"[INFO] Windows acceleration backend: {args.windows_accel}")
-    elif system_name == 'Darwin':
+    elif system_name == "Darwin":
         print(f"RAWviewer macOS Build Script v{VERSION}")
     else:
         print(f"RAWviewer Build Script v{VERSION} ({system_name})")
@@ -1248,14 +1235,10 @@ def main():
     if incremental:
         _build_log("Incremental build: keeping PyInstaller cache in build/")
     print("Cleaning previous builds...")
-    windows_target_setup = (
-        "RAWviewer_Setup"
-        if platform.system() == "Windows"
-        else None
-    )
+    windows_target_setup = "RAWviewer_Setup" if platform.system() == "Windows" else None
 
     # Try to kill any running RAWviewer.exe processes on Windows
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         for image in (
             "RAWviewer.exe",
             "RAWviewer_Setup.exe",
@@ -1265,7 +1248,7 @@ def main():
         ):
             try:
                 result = subprocess.run(
-                    ['taskkill', '/F', '/IM', image, '/T'],
+                    ["taskkill", "/F", "/IM", image, "/T"],
                     capture_output=True,
                     text=True,
                 )
@@ -1276,20 +1259,20 @@ def main():
         time.sleep(1)
 
     # Clean build directory
-    if os.path.exists('build') and not incremental:
+    if os.path.exists("build") and not incremental:
         try:
             print("Cleaning build directory...")
-            shutil.rmtree('build')
+            shutil.rmtree("build")
         except PermissionError as e:
             print(f"[WARNING] Could not delete build directory: {e}")
             print("  Continuing anyway...")
         except Exception as e:
             print(f"[WARNING] Error cleaning build directory: {e}")
-    elif os.path.exists('build') and incremental:
+    elif os.path.exists("build") and incremental:
         _build_log("Reusing existing build/ directory")
 
     # Clean dist directory (try to delete specific files first)
-    if os.path.exists('dist'):
+    if os.path.exists("dist"):
         try:
             if args.keep_dist and platform.system() == "Windows" and windows_target_setup:
                 target_file = os.path.join("dist", f"{windows_target_setup}.exe")
@@ -1357,7 +1340,7 @@ def main():
                 # Full clean only — incremental keeps release zips / other dist artifacts.
                 if not incremental:
                     try:
-                        shutil.rmtree('dist')
+                        shutil.rmtree("dist")
                     except PermissionError:
                         print("[WARNING] Some files in dist directory are locked, but continuing...")
                     except Exception as e:
@@ -1376,36 +1359,33 @@ def main():
         except Exception as e:
             print(f"[WARNING] Could not clean src/logs: {e}")
     # Platform-agnostic icon
-    if platform.system() == 'Windows':
-        icon_file = os.path.join('icons', 'appicon.ico')
-    elif platform.system() == 'Darwin':
-        icon_file = os.path.join('icons', 'appicon.icns')
+    if platform.system() == "Windows":
+        icon_file = os.path.join("icons", "appicon.ico")
+    elif platform.system() == "Darwin":
+        icon_file = os.path.join("icons", "appicon.icns")
     else:
-        icon_file = os.path.join('icons', 'appicon.ico')  # fallback
+        icon_file = os.path.join("icons", "appicon.ico")  # fallback
     icon_path = os.path.abspath(icon_file)
     if not os.path.exists(icon_path):
         print(f"[ERROR] Icon file not found: {icon_path}")
         if platform.system() == "Windows":
             sys.exit(1)
-        icon_arg = ''
+        icon_arg = ""
     else:
         icon_arg = f'--icon "{icon_path}"'
     # Find PyQt6 imageformats plugin path
     pyqt_path = os.path.dirname(PyQt6.__file__)
-    if platform.system() == 'Windows':
-        imageformats_src = os.path.join(
-            pyqt_path, 'Qt6', 'plugins', 'imageformats')
-        add_data_sep = ';'
-    elif platform.system() == 'Darwin':
-        imageformats_src = os.path.join(
-            pyqt_path, 'Qt6', 'plugins', 'imageformats')
-        add_data_sep = ':'
+    if platform.system() == "Windows":
+        imageformats_src = os.path.join(pyqt_path, "Qt6", "plugins", "imageformats")
+        add_data_sep = ";"
+    elif platform.system() == "Darwin":
+        imageformats_src = os.path.join(pyqt_path, "Qt6", "plugins", "imageformats")
+        add_data_sep = ":"
     else:
-        imageformats_src = os.path.join(
-            pyqt_path, 'Qt6', 'plugins', 'imageformats')
-        add_data_sep = ':'
+        imageformats_src = os.path.join(pyqt_path, "Qt6", "plugins", "imageformats")
+        add_data_sep = ":"
     # Selectively copy icons and database files to avoid platform duplicates
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         add_data_args = [
             f'--add-data "{imageformats_src}{add_data_sep}imageformats"',
             f'--add-data "icons{os.sep}appicon.ico{add_data_sep}icons"',
@@ -1430,7 +1410,9 @@ def main():
         if is_lite:
             print("[INFO] macOS lite release: no MobileCLIP / face AI; EXIF+GPS gallery search only.")
         else:
-            print("[INFO] macOS release: MobileCLIP Core ML models are NOT bundled; users download in-app on first use.")
+            print(
+                "[INFO] macOS release: MobileCLIP Core ML models are NOT bundled; users download in-app on first use."
+            )
     elif platform.system() == "Windows":
         add_data_args.append('--add-data "uninstall.bat;."')
         add_data_args.append('--add-data "scripts;scripts"')
@@ -1449,33 +1431,45 @@ def main():
         add_data_args.append(f'--add-data "{lite_str};."')
 
         app_bundle_name = "RAWviewer_Setup"
-        launcher_exe, launcher_runtime = build_windows_launcher_stub(
-            icon_path if os.path.exists(icon_path) else None
-        )
+        launcher_exe, launcher_runtime = build_windows_launcher_stub(icon_path if os.path.exists(icon_path) else None)
         add_data_args.append(f'--add-data "{launcher_exe.resolve()};."')
         add_data_args.append(f'--add-data "{launcher_runtime.resolve()};_launcher"')
         print(f"[INFO] Windows installer output: dist\\{app_bundle_name}.exe")
         print("[INFO] Bundling Windows manifests (CUDA+CuPy, DirectML, Lite).")
     add_data_arg_str = " ".join(add_data_args)
 
-    src_path = os.path.abspath('src')
+    src_path = os.path.abspath("src")
 
     cmd_base = [
-        sys.executable, "-m", "PyInstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--noconfirm",
         "--windowed",
-        "--paths", src_path,
-        "--hidden-import", "rawviewer_ui.widgets.gallery",
-        "--hidden-import", "rawviewer_ui.widgets",
-        "--hidden-import", "rawviewer_ui.dialogs.mobileclip_download_dialog",
-        "--hidden-import", "natsort",
-        "--hidden-import", "send2trash",
-        "--hidden-import", "metadata.backend",
-        "--hidden-import", "processing.raw_decode.fast",
-        "--hidden-import", "core.profile",
-        "--hidden-import", "core.build_profile",
-        "--hidden-import", "core.app_version",
-        "--name", app_bundle_name
+        "--paths",
+        src_path,
+        "--hidden-import",
+        "rawviewer_ui.widgets.gallery",
+        "--hidden-import",
+        "rawviewer_ui.widgets",
+        "--hidden-import",
+        "rawviewer_ui.dialogs.mobileclip_download_dialog",
+        "--hidden-import",
+        "natsort",
+        "--hidden-import",
+        "send2trash",
+        "--hidden-import",
+        "metadata.backend",
+        "--hidden-import",
+        "processing.raw_decode.fast",
+        "--hidden-import",
+        "core.profile",
+        "--hidden-import",
+        "core.build_profile",
+        "--hidden-import",
+        "core.app_version",
+        "--name",
+        app_bundle_name,
     ]
     try:
         import pyexiv2  # noqa: F401
@@ -1490,50 +1484,76 @@ def main():
         )
 
     if platform.system() == "Darwin":
-        cmd_base.extend([
-            "--hidden-import", "objc",
-            "--hidden-import", "AppKit",
-            "--hidden-import", "Foundation",
-            "--hidden-import", "Quartz",
-            "--hidden-import", "certifi",
-            "--hidden-import", "core.ssl_certs",
-            "--collect-data", "certifi",
-            # PyInstaller 6.21 appends "__main__" to a *mutable* excludes list
-            # inside initialize_modgraph, so the cached Analysis guts never match
-            # the next run's input and every incremental build re-runs Analysis
-            # ("Building because excludes changed"). Listing it ourselves skips
-            # that append and keeps the Analysis cache valid.
-            "--exclude-module", "__main__",
-            "--exclude-module", "coremltools",
-            "--exclude-module", "torch",
-            "--exclude-module", "torchvision",
-            # GPU demosaic (gpu_raw_processor) is default-off on macOS
-            # (RAWVIEWER_PREFER_GPU_DECODE=0); kornia exists only for it, and
-            # its static import would otherwise drag the package in.
-            "--exclude-module", "kornia",
-            "--exclude-module", "kornia_rs",
-            "--exclude-module", "sentence_transformers",
-            "--exclude-module", "transformers",
-            "--exclude-module", "sklearn",
-            "--exclude-module", "tokenizers",
-            "--exclude-module", "safetensors",
-            # cv2 was excluded here (true at the time -- "unused native
-            # extensions & optional/future packages") but the scene-linear
-            # Adjust panel added since imports cv2 unconditionally
-            # (raw_edit_pipeline.py, raw_chroma_denoise.py,
-            # raw_detail_enhance.py, raw_hsl.py, raw_lens_correction.py) --
-            # excluding it here made every macOS build (Full and Lite) crash
-            # with ModuleNotFoundError the moment any Adjust panel control
-            # ran. Must stay bundled. See docs/EDIT_PIPELINE.md "Installer size".
-            "--exclude-module", "pyqtgraph",
-            "--exclude-module", "hf_xet",
-            # tkinter is only reachable via PIL.ImageTk (unused) but drags
-            # libtcl/libtk + _tcl_data/tcl8 (~12MB) into the bundle.
-            "--exclude-module", "tkinter",
-            "--exclude-module", "_tkinter",
-            "--exclude-module", "setuptools",
-            "--exclude-module", "PyObjCTest",
-        ])
+        cmd_base.extend(
+            [
+                "--hidden-import",
+                "objc",
+                "--hidden-import",
+                "AppKit",
+                "--hidden-import",
+                "Foundation",
+                "--hidden-import",
+                "Quartz",
+                "--hidden-import",
+                "certifi",
+                "--hidden-import",
+                "core.ssl_certs",
+                "--collect-data",
+                "certifi",
+                # PyInstaller 6.21 appends "__main__" to a *mutable* excludes list
+                # inside initialize_modgraph, so the cached Analysis guts never match
+                # the next run's input and every incremental build re-runs Analysis
+                # ("Building because excludes changed"). Listing it ourselves skips
+                # that append and keeps the Analysis cache valid.
+                "--exclude-module",
+                "__main__",
+                "--exclude-module",
+                "coremltools",
+                "--exclude-module",
+                "torch",
+                "--exclude-module",
+                "torchvision",
+                # GPU demosaic (gpu_raw_processor) is default-off on macOS
+                # (RAWVIEWER_PREFER_GPU_DECODE=0); kornia exists only for it, and
+                # its static import would otherwise drag the package in.
+                "--exclude-module",
+                "kornia",
+                "--exclude-module",
+                "kornia_rs",
+                "--exclude-module",
+                "sentence_transformers",
+                "--exclude-module",
+                "transformers",
+                "--exclude-module",
+                "sklearn",
+                "--exclude-module",
+                "tokenizers",
+                "--exclude-module",
+                "safetensors",
+                # cv2 was excluded here (true at the time -- "unused native
+                # extensions & optional/future packages") but the scene-linear
+                # Adjust panel added since imports cv2 unconditionally
+                # (raw_edit_pipeline.py, raw_chroma_denoise.py,
+                # raw_detail_enhance.py, raw_hsl.py, raw_lens_correction.py) --
+                # excluding it here made every macOS build (Full and Lite) crash
+                # with ModuleNotFoundError the moment any Adjust panel control
+                # ran. Must stay bundled. See docs/EDIT_PIPELINE.md "Installer size".
+                "--exclude-module",
+                "pyqtgraph",
+                "--exclude-module",
+                "hf_xet",
+                # tkinter is only reachable via PIL.ImageTk (unused) but drags
+                # libtcl/libtk + _tcl_data/tcl8 (~12MB) into the bundle.
+                "--exclude-module",
+                "tkinter",
+                "--exclude-module",
+                "_tkinter",
+                "--exclude-module",
+                "setuptools",
+                "--exclude-module",
+                "PyObjCTest",
+            ]
+        )
         # OpenMP LibRaw siblings (standalone libomp + libjpeg). build_macos.sh
         # installs these via scripts/libraw/build_libraw_openmp.sh before packaging.
         for bin_path in _macos_rawpy_openmp_binaries():
@@ -1542,96 +1562,203 @@ def main():
 
         # Exclude unused heavy PyQt6 modules to keep built bundle lightweight
         unused_pyqt6 = [
-            "PyQt6.Qt3DAnimation", "PyQt6.Qt3DCore", "PyQt6.Qt3DExtras", "PyQt6.Qt3DInput",
-            "PyQt6.Qt3DLogic", "PyQt6.Qt3DRender", "PyQt6.QtBluetooth", "PyQt6.QtCharts",
-            "PyQt6.QtDataVisualization", "PyQt6.QtDesigner", "PyQt6.QtHelp", "PyQt6.QtMultimedia",
-            "PyQt6.QtMultimediaWidgets", "PyQt6.QtNetwork", "PyQt6.QtNfc", "PyQt6.QtPdf",
-            "PyQt6.QtPdfWidgets", "PyQt6.QtPositioning", "PyQt6.QtQml", "PyQt6.QtQuick",
-            "PyQt6.QtQuick3D", "PyQt6.QtQuickWidgets", "PyQt6.QtRemoteObjects", "PyQt6.QtSensors",
-            "PyQt6.QtSerialBus", "PyQt6.QtSerialPort", "PyQt6.QtSpatialAudio", "PyQt6.QtSql",
-            "PyQt6.QtTest", "PyQt6.QtTextToSpeech", "PyQt6.QtWebChannel", "PyQt6.QtWebEngineCore",
-            "PyQt6.QtWebEngineWidgets", "PyQt6.QtWebSockets", "PyQt6.QtXml", "PyQt6.QtSvg",
-            "PyQt6.QtSvgWidgets"
+            "PyQt6.Qt3DAnimation",
+            "PyQt6.Qt3DCore",
+            "PyQt6.Qt3DExtras",
+            "PyQt6.Qt3DInput",
+            "PyQt6.Qt3DLogic",
+            "PyQt6.Qt3DRender",
+            "PyQt6.QtBluetooth",
+            "PyQt6.QtCharts",
+            "PyQt6.QtDataVisualization",
+            "PyQt6.QtDesigner",
+            "PyQt6.QtHelp",
+            "PyQt6.QtMultimedia",
+            "PyQt6.QtMultimediaWidgets",
+            "PyQt6.QtNetwork",
+            "PyQt6.QtNfc",
+            "PyQt6.QtPdf",
+            "PyQt6.QtPdfWidgets",
+            "PyQt6.QtPositioning",
+            "PyQt6.QtQml",
+            "PyQt6.QtQuick",
+            "PyQt6.QtQuick3D",
+            "PyQt6.QtQuickWidgets",
+            "PyQt6.QtRemoteObjects",
+            "PyQt6.QtSensors",
+            "PyQt6.QtSerialBus",
+            "PyQt6.QtSerialPort",
+            "PyQt6.QtSpatialAudio",
+            "PyQt6.QtSql",
+            "PyQt6.QtTest",
+            "PyQt6.QtTextToSpeech",
+            "PyQt6.QtWebChannel",
+            "PyQt6.QtWebEngineCore",
+            "PyQt6.QtWebEngineWidgets",
+            "PyQt6.QtWebSockets",
+            "PyQt6.QtXml",
+            "PyQt6.QtSvg",
+            "PyQt6.QtSvgWidgets",
         ]
         for mod in unused_pyqt6:
             cmd_base.extend(["--exclude-module", mod])
 
         if is_lite:
-            cmd_base.extend([
-                "--exclude-module", "huggingface_hub",
-                "--exclude-module", "httpx",
-                "--exclude-module", "CoreML",
-                "--exclude-module", "Vision",
-            ])
+            cmd_base.extend(
+                [
+                    "--exclude-module",
+                    "huggingface_hub",
+                    "--exclude-module",
+                    "httpx",
+                    "--exclude-module",
+                    "CoreML",
+                    "--exclude-module",
+                    "Vision",
+                ]
+            )
         else:
-            cmd_base.extend([
-                "--hidden-import", "requests",
-                "--hidden-import", "CoreML",
-                "--hidden-import", "Vision",
-                "--hidden-import", "huggingface_hub",
-            ])
+            cmd_base.extend(
+                [
+                    "--hidden-import",
+                    "requests",
+                    "--hidden-import",
+                    "CoreML",
+                    "--hidden-import",
+                    "Vision",
+                    "--hidden-import",
+                    "huggingface_hub",
+                ]
+            )
     elif platform.system() == "Windows":
-        cmd_base.extend([
-            "--hidden-import", "win32com.client",
-            "--hidden-import", "pythoncom",
-            "--hidden-import", "pywintypes",
-        ])
+        cmd_base.extend(
+            [
+                "--hidden-import",
+                "win32com.client",
+                "--hidden-import",
+                "pythoncom",
+                "--hidden-import",
+                "pywintypes",
+            ]
+        )
         # Exclude unused heavy PyQt6 modules to keep built bootstrapper lightweight
         unused_pyqt6 = [
-            "PyQt6.Qt3DAnimation", "PyQt6.Qt3DCore", "PyQt6.Qt3DExtras", "PyQt6.Qt3DInput",
-            "PyQt6.Qt3DLogic", "PyQt6.Qt3DRender", "PyQt6.QtBluetooth", "PyQt6.QtCharts",
-            "PyQt6.QtDataVisualization", "PyQt6.QtDesigner", "PyQt6.QtHelp", "PyQt6.QtMultimedia",
-            "PyQt6.QtMultimediaWidgets", "PyQt6.QtNetwork", "PyQt6.QtNfc", "PyQt6.QtPdf",
-            "PyQt6.QtPdfWidgets", "PyQt6.QtPositioning", "PyQt6.QtQml", "PyQt6.QtQuick",
-            "PyQt6.QtQuick3D", "PyQt6.QtQuickWidgets", "PyQt6.QtRemoteObjects", "PyQt6.QtSensors",
-            "PyQt6.QtSerialBus", "PyQt6.QtSerialPort", "PyQt6.QtSpatialAudio", "PyQt6.QtSql",
-            "PyQt6.QtTest", "PyQt6.QtTextToSpeech", "PyQt6.QtWebChannel", "PyQt6.QtWebEngineCore",
-            "PyQt6.QtWebEngineWidgets", "PyQt6.QtWebSockets", "PyQt6.QtXml", "PyQt6.QtSvg",
-            "PyQt6.QtSvgWidgets"
+            "PyQt6.Qt3DAnimation",
+            "PyQt6.Qt3DCore",
+            "PyQt6.Qt3DExtras",
+            "PyQt6.Qt3DInput",
+            "PyQt6.Qt3DLogic",
+            "PyQt6.Qt3DRender",
+            "PyQt6.QtBluetooth",
+            "PyQt6.QtCharts",
+            "PyQt6.QtDataVisualization",
+            "PyQt6.QtDesigner",
+            "PyQt6.QtHelp",
+            "PyQt6.QtMultimedia",
+            "PyQt6.QtMultimediaWidgets",
+            "PyQt6.QtNetwork",
+            "PyQt6.QtNfc",
+            "PyQt6.QtPdf",
+            "PyQt6.QtPdfWidgets",
+            "PyQt6.QtPositioning",
+            "PyQt6.QtQml",
+            "PyQt6.QtQuick",
+            "PyQt6.QtQuick3D",
+            "PyQt6.QtQuickWidgets",
+            "PyQt6.QtRemoteObjects",
+            "PyQt6.QtSensors",
+            "PyQt6.QtSerialBus",
+            "PyQt6.QtSerialPort",
+            "PyQt6.QtSpatialAudio",
+            "PyQt6.QtSql",
+            "PyQt6.QtTest",
+            "PyQt6.QtTextToSpeech",
+            "PyQt6.QtWebChannel",
+            "PyQt6.QtWebEngineCore",
+            "PyQt6.QtWebEngineWidgets",
+            "PyQt6.QtWebSockets",
+            "PyQt6.QtXml",
+            "PyQt6.QtSvg",
+            "PyQt6.QtSvgWidgets",
         ]
         for mod in unused_pyqt6:
             cmd_base.extend(["--exclude-module", mod])
 
         # Windows uses Pixi bootstrap. Exclude everything except PyQt6 and standard libs
-        cmd_base.extend([
-            "--exclude-module", "torch",
-            "--exclude-module", "torchvision",
-            "--exclude-module", "tensorboard",
-            "--exclude-module", "sentence_transformers",
-            "--exclude-module", "transformers",
-            "--exclude-module", "scipy",
-            "--exclude-module", "matplotlib",
-            "--exclude-module", "onnxruntime",
-            "--exclude-module", "rawpy",
-            "--exclude-module", "numpy",
-            "--exclude-module", "PIL",
-            "--exclude-module", "pyexiv2",
-            "--exclude-module", "pyqtgraph",
-            "--exclude-module", "natsort",
-            "--exclude-module", "send2trash",
-            "--exclude-module", "exifread",
-            "--exclude-module", "hf_xet",
-            "--exclude-module", "tkinter",
-            "--exclude-module", "_tkinter",
-            "--exclude-module", "setuptools",
-            # Torch-free era heavies: the bootstrapper's hidden-imports of the
-            # UI modules otherwise sweep these into the setup exe (~1.2 GB vs
-            # ~100 MB). The installed app gets them via pixi at install time.
-            "--exclude-module", "cupy",
-            "--exclude-module", "cupy_backends",
-            "--exclude-module", "cupyx",
-            "--exclude-module", "fastrlock",
-            "--exclude-module", "cv2",
-            "--exclude-module", "kornia",
-            "--exclude-module", "kornia_rs",
-            "--exclude-module", "sympy",
-            "--exclude-module", "mpmath",
-            "--exclude-module", "networkx",
-            "--exclude-module", "lensfunpy",
-            "--exclude-module", "pillow_heif",
-            "--exclude-module", "tifffile",
-            "--exclude-module", "huggingface_hub",
-        ])
+        cmd_base.extend(
+            [
+                "--exclude-module",
+                "torch",
+                "--exclude-module",
+                "torchvision",
+                "--exclude-module",
+                "tensorboard",
+                "--exclude-module",
+                "sentence_transformers",
+                "--exclude-module",
+                "transformers",
+                "--exclude-module",
+                "scipy",
+                "--exclude-module",
+                "matplotlib",
+                "--exclude-module",
+                "onnxruntime",
+                "--exclude-module",
+                "rawpy",
+                "--exclude-module",
+                "numpy",
+                "--exclude-module",
+                "PIL",
+                "--exclude-module",
+                "pyexiv2",
+                "--exclude-module",
+                "pyqtgraph",
+                "--exclude-module",
+                "natsort",
+                "--exclude-module",
+                "send2trash",
+                "--exclude-module",
+                "exifread",
+                "--exclude-module",
+                "hf_xet",
+                "--exclude-module",
+                "tkinter",
+                "--exclude-module",
+                "_tkinter",
+                "--exclude-module",
+                "setuptools",
+                # Torch-free era heavies: the bootstrapper's hidden-imports of the
+                # UI modules otherwise sweep these into the setup exe (~1.2 GB vs
+                # ~100 MB). The installed app gets them via pixi at install time.
+                "--exclude-module",
+                "cupy",
+                "--exclude-module",
+                "cupy_backends",
+                "--exclude-module",
+                "cupyx",
+                "--exclude-module",
+                "fastrlock",
+                "--exclude-module",
+                "cv2",
+                "--exclude-module",
+                "kornia",
+                "--exclude-module",
+                "kornia_rs",
+                "--exclude-module",
+                "sympy",
+                "--exclude-module",
+                "mpmath",
+                "--exclude-module",
+                "networkx",
+                "--exclude-module",
+                "lensfunpy",
+                "--exclude-module",
+                "pillow_heif",
+                "--exclude-module",
+                "tifffile",
+                "--exclude-module",
+                "huggingface_hub",
+            ]
+        )
 
         add_data_args.append('--add-data "src;src"')
         # AI denoise models (scunet.onnx, nafnet.onnx, rawrefinery_deep_128.onnx).
@@ -1642,7 +1769,7 @@ def main():
         if models_dir.is_dir():
             add_data_args.append(f'--add-data "{models_dir}{add_data_sep}models"')
 
-    if platform.system() == 'Darwin':
+    if platform.system() == "Darwin":
         cmd_base.append("--onedir")
         macos_pool_hook = os.path.join(src_path, "pyi_rth_macos_process_pool.py")
         release_defaults_hook = os.path.join(src_path, "pyi_rth_release_defaults.py")
@@ -1668,16 +1795,16 @@ def main():
             cmd_base.extend(["--runtime-hook", release_defaults_hook])
 
     if icon_arg:
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             cmd_base.extend(["--icon", icon_path])
         else:
             cmd_base.extend(["--icon", icon_path])
 
     # Add data
     for arg in add_data_args:
-        cmd_base.extend(["--add-data", arg.split('--add-data ')[-1].strip('"')])
+        cmd_base.extend(["--add-data", arg.split("--add-data ")[-1].strip('"')])
 
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         cmd_base.append("src/bootstrap.py")
     else:
         cmd_base.append("src/main.py")
@@ -1688,15 +1815,15 @@ def main():
         print("[ERROR] Build failed.")
         sys.exit(1)
     _build_log("PyInstaller finished")
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         exe_path = Path("dist") / f"{app_bundle_name}.exe"
-    elif platform.system() == 'Darwin':
+    elif platform.system() == "Darwin":
         exe_path = Path("dist") / f"{app_bundle_name}.app"
     else:
         exe_path = Path("dist") / app_bundle_name
     if exe_path.exists():
         print(f"[SUCCESS] Executable created: {exe_path}")
-        if platform.system() == 'Darwin':
+        if platform.system() == "Darwin":
             print("Patching macOS Info.plist...")
             update_macos_plist(str(exe_path), profile=args.profile)
             _prune_built_app(exe_path, args.profile)
@@ -1712,17 +1839,17 @@ def main():
                 print("Re-signing macOS app bundle (ad-hoc)...")
                 run_command(["codesign", "--force", "--deep", "-s", "-", str(exe_path)])
             print("Clearing macOS quarantine attribute...")
-            run_command(['xattr', '-cr', str(exe_path)])
+            run_command(["xattr", "-cr", str(exe_path)])
     else:
         print("[ERROR] Executable was not created!")
 
-    if platform.system() == 'Windows' and exe_path.exists():
+    if platform.system() == "Windows" and exe_path.exists():
         print("Build completed successfully.")
         print(f"  Installer: {exe_path}")
         print("  (Installs a separate RAWviewer.exe launcher stub into the chosen folder.)")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except Exception as e:

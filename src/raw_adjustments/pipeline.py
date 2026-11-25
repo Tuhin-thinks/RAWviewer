@@ -151,9 +151,7 @@ def _tone_map_recovery_display(img: np.ndarray) -> np.ndarray:
         return apply_local_shadow_highlight_recovery_display(display)
 
     small = _cap_max_edge_linear(rgb_f, RECOVERY_MAX_EDGE)
-    polished = apply_local_shadow_highlight_recovery_display(
-        linear_tone_map_to_display(small)
-    )
+    polished = apply_local_shadow_highlight_recovery_display(linear_tone_map_to_display(small))
     import cv2
 
     up = cv2.resize(polished, (w, h), interpolation=cv2.INTER_LINEAR)
@@ -181,9 +179,7 @@ def _apply_display_stage(
 
     display = _tone_map_for_display(img, merged)
     if merged:
-        display = _apply_display_color_adjustments(
-            display, merged, preview=False, y_range=y_range, total_h=total_h
-        )
+        display = _apply_display_color_adjustments(display, merged, preview=False, y_range=y_range, total_h=total_h)
         display = apply_hsl_adjustments(display, merged)
     display = apply_detail_enhancements(display, merged)
     return display
@@ -219,11 +215,7 @@ def process_linear_edit_buffer(
 
     # AI Denoise is export-only and independent of slider defaults: do not
     # skip the pipeline when the user explicitly chose it from the menu.
-    if (
-        is_default_adjustments(merged)
-        and not uses_recovery_tone_map(merged)
-        and not use_ai_denoise
-    ):
+    if is_default_adjustments(merged) and not uses_recovery_tone_map(merged) and not use_ai_denoise:
         return img
 
     # Geometry first: every later stage (dodge/burn coordinates included)
@@ -235,9 +227,14 @@ def process_linear_edit_buffer(
     n_workers = _linear_pipeline_worker_count(img.shape[0])
     if n_workers > 1:
         return _process_linear_edit_buffer_banded(
-            img, merged, n_workers, preview=preview, chroma_denoise=chroma_denoise,
+            img,
+            merged,
+            n_workers,
+            preview=preview,
+            chroma_denoise=chroma_denoise,
             use_ai_denoise=use_ai_denoise,
-            cancel_check=cancel_check, progress_cb=progress_cb,
+            cancel_check=cancel_check,
+            progress_cb=progress_cb,
         )
 
     return _process_linear_edit_tail(
@@ -291,7 +288,7 @@ def _process_linear_edit_pre_ai(
 
     exp_val = float(merged.get("Exposure2012", 0.0))
     if abs(exp_val) > 1e-4:
-        img = img * (2.0 ** exp_val)
+        img = img * (2.0**exp_val)
 
     # Dodge & burn: local per-pixel exposure, applied right after the
     # global exposure gain and before denoise/tone -- local brightness
@@ -310,14 +307,10 @@ def _process_linear_edit_pre_ai(
     if heal_mask is not None:
         from raw_adjustments.spot_heal import apply_spot_heal
 
-        img = apply_spot_heal(
-            img, heal_mask, row_offset=row_offset, full_height=full_height
-        )
+        img = apply_spot_heal(img, heal_mask, row_offset=row_offset, full_height=full_height)
 
     if not use_ai_denoise:
-        img = _apply_legacy_chroma_denoise(
-            img, merged, chroma_denoise=chroma_denoise, preview=preview
-        )
+        img = _apply_legacy_chroma_denoise(img, merged, chroma_denoise=chroma_denoise, preview=preview)
     return img
 
 
@@ -332,9 +325,7 @@ def _apply_legacy_chroma_denoise(
     nr_amount = float(merged.get("ColorNoiseReduction", 0.0))
     method = int(float(merged.get("DenoiseMethod", 0.0)))
     if nr_amount > 1e-4:
-        return apply_chroma_denoise(
-            img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview
-        )
+        return apply_chroma_denoise(img, strength=min(1.5, nr_amount / 100.0 * 1.25), method=method, preview=preview)
     if do_denoise and not preview:
         return apply_chroma_denoise(img, method=method, preview=False)
     return img
@@ -392,7 +383,8 @@ def _apply_ai_denoise_stage(
 
         model_path = scunet_model_path()
         scunet_enabled_env = (
-            os.environ.get("RAWVIEWER_EXPORT_SCUNET_ONNX", os.environ.get("RAWVIEWER_EXPORT_RESTORMER_ONNX", "1")) == "1"
+            os.environ.get("RAWVIEWER_EXPORT_SCUNET_ONNX", os.environ.get("RAWVIEWER_EXPORT_RESTORMER_ONNX", "1"))
+            == "1"
         )
         scunet_model_present = os.path.exists(model_path) if model_path else False
         # AI denoise is export-only and opt-in: the Adjust panel's Chroma NR
@@ -409,8 +401,7 @@ def _apply_ai_denoise_stage(
                 logger.info("[DENOISE] AI denoise (SCUNet ONNX) disabled via RAWVIEWER_EXPORT_SCUNET_ONNX=0")
             elif not scunet_model_present:
                 logger.warning(
-                    "[DENOISE] AI denoise model not found at %s -- falling back to legacy chroma/luma "
-                    "noise reduction.",
+                    "[DENOISE] AI denoise model not found at %s -- falling back to legacy chroma/luma noise reduction.",
                     model_path,
                 )
             else:
@@ -448,9 +439,7 @@ def _apply_ai_denoise_stage(
                 strength=ai_amount,
             )
         else:
-            logger.info(
-                "[DENOISE] AI denoise amount is 0%% -- exporting without AI denoise"
-            )
+            logger.info("[DENOISE] AI denoise amount is 0%% -- exporting without AI denoise")
     return img
 
 
@@ -643,13 +632,12 @@ _TONE_KEYS = (
     TONE_CURVE_SERIAL_KEY,
 )
 
+
 def _hsl_color_keys() -> tuple[str, ...]:
     from raw_adjustments.hsl import HSL_COLOR_NAMES
 
     return tuple(
-        f"{prefix}Adjustment{color}"
-        for color in HSL_COLOR_NAMES
-        for prefix in ("Hue", "Saturation", "Luminance")
+        f"{prefix}Adjustment{color}" for color in HSL_COLOR_NAMES for prefix in ("Hue", "Saturation", "Luminance")
     )
 
 
@@ -687,7 +675,9 @@ def _stage_key(merged: dict, keys: tuple) -> tuple:
         if isinstance(v, str):
             if v.startswith("mem:"):
                 parts.append(v)
-            elif len(v) > 256 or str(k).endswith("Mask") or "Mask" in str(k) or k.endswith("Curve") or "Curve" in str(k):
+            elif (
+                len(v) > 256 or str(k).endswith("Mask") or "Mask" in str(k) or k.endswith("Curve") or "Curve" in str(k)
+            ):
                 import hashlib
 
                 parts.append(hashlib.sha1(v.encode("utf-8", errors="replace")).hexdigest())
@@ -754,15 +744,12 @@ def process_linear_edit_buffer_staged(
             # Settle / export keep geometry-first order (correct for D&B).
             if preview_lite:
                 pre_geo_key = _stage_key(merged, _PRE_TONE_KEYS_NO_GEO)
-                if (
-                    cache.stage_keys.get("pre_geom") != pre_geo_key
-                    or "pre_geom" not in cache.stage_out
-                ):
+                if cache.stage_keys.get("pre_geom") != pre_geo_key or "pre_geom" not in cache.stage_out:
                     pre = img
                     pre = _apply_wb_tint(pre, merged)
                     exp_val = float(merged.get("Exposure2012", 0.0))
                     if abs(exp_val) > 1e-4:
-                        pre = pre * (2.0 ** exp_val)
+                        pre = pre * (2.0**exp_val)
                     mask = _resolve_db_mask(merged)
                     if mask is not None:
                         from raw_adjustments.dodge_burn import apply_dodge_burn
@@ -779,13 +766,8 @@ def process_linear_edit_buffer_staged(
                     cache.stage_out["pre_geom"] = pre
                     cache.stage_keys["pre_geom"] = pre_geo_key
                 geo_key = (pre_geo_key, _stage_key(merged, _TRANSFORM_KEYS))
-                if (
-                    cache.stage_keys.get("geom") != geo_key
-                    or "geom" not in cache.stage_out
-                ):
-                    cache.stage_out["geom"] = apply_geometry(
-                        cache.stage_out["pre_geom"], merged, preview=True
-                    )
+                if cache.stage_keys.get("geom") != geo_key or "geom" not in cache.stage_out:
+                    cache.stage_out["geom"] = apply_geometry(cache.stage_out["pre_geom"], merged, preview=True)
                     cache.stage_keys["geom"] = geo_key
                 img = cache.stage_out["geom"]
             else:
@@ -794,7 +776,7 @@ def process_linear_edit_buffer_staged(
 
                 exp_val = float(merged.get("Exposure2012", 0.0))
                 if abs(exp_val) > 1e-4:
-                    img *= 2.0 ** exp_val
+                    img *= 2.0**exp_val
 
                 mask = _resolve_db_mask(merged)
                 if mask is not None:
@@ -853,9 +835,7 @@ def process_linear_edit_buffer_staged(
         return cache.stage_out["tone"]
 
 
-def _apply_display_stage_staged(
-    img: np.ndarray, merged: dict[str, float], cache: PreviewStageCache
-) -> np.ndarray:
+def _apply_display_stage_staged(img: np.ndarray, merged: dict[str, float], cache: PreviewStageCache) -> np.ndarray:
     """Cached equivalent of _apply_display_stage for the preview path."""
     from raw_adjustments.detail_enhance import apply_detail_enhancements
     from raw_adjustments.hsl import apply_hsl_adjustments
@@ -958,10 +938,7 @@ def _apply_display_color_adjustments(
         out = apply_dehaze(out, dehaze, preview=preview)
     vignette = float(merged.get("PostCropVignetteAmount", 0.0) or 0.0)
     if abs(vignette) > 1e-3:
-        midpoint = float(
-            merged.get(VIGNETTE_MIDPOINT_KEY, VIGNETTE_MIDPOINT_DEFAULT)
-            or VIGNETTE_MIDPOINT_DEFAULT
-        )
+        midpoint = float(merged.get(VIGNETTE_MIDPOINT_KEY, VIGNETTE_MIDPOINT_DEFAULT) or VIGNETTE_MIDPOINT_DEFAULT)
         out = apply_vignette(out, vignette, midpoint=midpoint, y_range=y_range, total_h=total_h)
     return out
 
@@ -974,10 +951,7 @@ def _dither_tile() -> np.ndarray:
     global _dither_tile_cache
     if _dither_tile_cache is None:
         rng = np.random.default_rng(0xD17E)
-        _dither_tile_cache = (
-            rng.random((512, 512), dtype=np.float32)
-            - rng.random((512, 512), dtype=np.float32)
-        )
+        _dither_tile_cache = rng.random((512, 512), dtype=np.float32) - rng.random((512, 512), dtype=np.float32)
     return _dither_tile_cache
 
 
@@ -1027,9 +1001,7 @@ def linear_to_display_uint8(img: np.ndarray, adj: dict[str, float] | None = None
     return apply_channel_curves_encoded(encoded, merged, 255.0)
 
 
-def _apply_display_stage_banded(
-    img: np.ndarray, merged: dict[str, float], n_workers: int
-) -> np.ndarray:
+def _apply_display_stage_banded(img: np.ndarray, merged: dict[str, float], n_workers: int) -> np.ndarray:
     """Row-band parallel version of _apply_display_stage (tone map, sat/vib,
     HSL, detail-enhance). Only called for the clip tone-map path (the
     recovery path downsamples the whole image via cv2.resize and isn't
@@ -1050,9 +1022,7 @@ def _apply_display_stage_banded(
         # Copy, not view: guard against any in-place stage (same seam bug
         # class as the linear banded path -- see _process_linear_edit_buffer_banded).
         src = img[y0 - pad_top : y1 + pad_bot].copy()
-        out = _apply_display_stage(
-            src, merged, y_range=(y0 - pad_top, y1 + pad_bot), total_h=total_h
-        )
+        out = _apply_display_stage(src, merged, y_range=(y0 - pad_top, y1 + pad_bot), total_h=total_h)
         return out[pad_top : pad_top + (y1 - y0)]
 
     import cv2
@@ -1284,5 +1254,9 @@ def export_adjusted_image(
         export_adjusted_webp(rgb_linear, adj, output_path, **extra)
     else:
         export_adjusted_tiff16(
-            rgb_linear, adj, output_path, embed_xmp_path=embed_xmp_path, **extra,
+            rgb_linear,
+            adj,
+            output_path,
+            embed_xmp_path=embed_xmp_path,
+            **extra,
         )

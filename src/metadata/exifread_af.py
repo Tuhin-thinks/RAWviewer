@@ -111,9 +111,7 @@ def _scale_to_pixmap(
     return _clamp_ltwh(left * sx, t * sy, ww * sx, hh * sy, pixmap_w, pixmap_h)
 
 
-def _canon_af_ltwh_in_ref(
-    tags: dict[str, Any], ref_w: int, ref_h: int
-) -> tuple[int, int, int, int] | None:
+def _canon_af_ltwh_in_ref(tags: dict[str, Any], ref_w: int, ref_h: int) -> tuple[int, int, int, int] | None:
     """AF rectangle in EXIF / sensor reference pixel space."""
     fw_t = tags.get("MakerNote AFImageWidth")
     fh_t = tags.get("MakerNote AFImageHeight")
@@ -171,14 +169,10 @@ def _canon_af_ltwh_in_ref(
     # Map from AF window to full reference image (often 1:1 with JPEG)
     sx = ref_w / float(max(fw, 1))
     sy = ref_h / float(max(fh, 1))
-    return _clamp_ltwh(
-        left * sx, top * sy, aw * sx, ah * sy, ref_w, ref_h
-    )
+    return _clamp_ltwh(left * sx, top * sy, aw * sx, ah * sy, ref_w, ref_h)
 
 
-def _canon_tag_0x0012_fallback(
-    tags: dict[str, Any], ref_w: int, ref_h: int
-) -> tuple[int, int, int, int] | None:
+def _canon_tag_0x0012_fallback(tags: dict[str, Any], ref_w: int, ref_h: int) -> tuple[int, int, int, int] | None:
     """If sub-AF tags were not expanded, use raw short array layout (best-effort)."""
     t = tags.get("MakerNote Tag 0x0012")
     if t is None:
@@ -214,9 +208,7 @@ def _canon_tag_0x0012_fallback(
     return _clamp_ltwh(left * sx, top * sy, aw * sx, ah * sy, ref_w, ref_h)
 
 
-def _rect_ref_subject_area_nums(
-    nums: list[int], iw: int, ih: int
-) -> tuple[int, int, int, int] | None:
+def _rect_ref_subject_area_nums(nums: list[int], iw: int, ih: int) -> tuple[int, int, int, int] | None:
     """SubjectArea in reference pixel space (CIPA EXIF)."""
     if len(nums) < 2:
         return None
@@ -237,9 +229,7 @@ def _rect_ref_subject_area_nums(
     return _clamp_ltwh(cx - w / 2.0, cy - h / 2.0, float(w), float(h), iw, ih)
 
 
-def _rect_ref_subject_location_nums(
-    nums: list[int], iw: int, ih: int
-) -> tuple[int, int, int, int] | None:
+def _rect_ref_subject_location_nums(nums: list[int], iw: int, ih: int) -> tuple[int, int, int, int] | None:
     if len(nums) < 2:
         return None
     cx, cy = nums[0], nums[1]
@@ -247,9 +237,7 @@ def _rect_ref_subject_location_nums(
     return _clamp_ltwh(cx - side / 2.0, cy - side / 2.0, float(side), float(side), iw, ih)
 
 
-def pixmap_ltwh_subject_cipa_from_exifread(
-    path: str, pixmap_w: int, pixmap_h: int
-) -> tuple[int, int, int, int] | None:
+def pixmap_ltwh_subject_cipa_from_exifread(path: str, pixmap_w: int, pixmap_h: int) -> tuple[int, int, int, int] | None:
     """
     CIPA **SubjectArea** / **SubjectLocation** → (left, top, width, height) in pixmap pixels.
 
@@ -292,9 +280,7 @@ def pixmap_ltwh_subject_cipa_from_exifread(
     return None
 
 
-def pixmap_ltwh_af_from_exifread(
-    path: str, pixmap_w: int, pixmap_h: int
-) -> tuple[int, int, int, int] | None:
+def pixmap_ltwh_af_from_exifread(path: str, pixmap_w: int, pixmap_h: int) -> tuple[int, int, int, int] | None:
     """
     Return (left, top, width, height) in **pixmap** coordinates from MakerNote AF,
     or None if unavailable.

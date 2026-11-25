@@ -19,7 +19,7 @@ def check(name, ok, detail=""):
 
 class FullImageCache:
     """Simplified LRU(10) cache for full-resolution images.
-    
+
     Replaces the adaptive full_image_cache with byte-budget enforcement
     with a simple fixed-size LRU cache that stores up to 10 full-resolution images.
     """
@@ -27,6 +27,7 @@ class FullImageCache:
     def __init__(self, max_size: int = 10):
         import threading
         from collections import OrderedDict
+
         self.max_size = max_size
         self.cache = OrderedDict()
         self.lock = threading.RLock()
@@ -76,11 +77,11 @@ class FullImageCache:
             total_requests = self.hits + self.misses
             hit_rate = self.hits / total_requests if total_requests > 0 else 0
             return {
-                'size': len(self.cache),
-                'max_size': self.max_size,
-                'hits': self.hits,
-                'misses': self.misses,
-                'hit_rate': hit_rate
+                "size": len(self.cache),
+                "max_size": self.max_size,
+                "hits": self.hits,
+                "misses": self.misses,
+                "hit_rate": hit_rate,
             }
 
     # Alias methods for compatibility with existing code
@@ -142,12 +143,12 @@ def main() -> int:
 
     # Test stats
     stats = cache.get_stats()
-    check("Stats includes size", stats['size'] == 10)
-    check("Stats includes max_size", stats['max_size'] == 10)
-    check("Stats includes hit_rate", 'hit_rate' in stats)
+    check("Stats includes size", stats["size"] == 10)
+    check("Stats includes max_size", stats["max_size"] == 10)
+    check("Stats includes hit_rate", "hit_rate" in stats)
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Total checks: {len(FAILURES) + 16}")
     print(f"Failures: {len(FAILURES)}")
 

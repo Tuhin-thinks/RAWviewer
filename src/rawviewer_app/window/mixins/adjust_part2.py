@@ -1,4 +1,5 @@
 """adjust mixin, part 2 of 5 (37 methods, 889 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -88,11 +89,7 @@ class AdjustPart2:
             return
         if getattr(self, "_compare_sync_paused", False):
             return
-        target = (
-            self.compare_candidate_view
-            if source_view is self.compare_select_view
-            else self.compare_select_view
-        )
+        target = self.compare_candidate_view if source_view is self.compare_select_view else self.compare_select_view
         self._compare_apply_view_sync_from_source(source_view, target)
 
     def _on_compare_scroll_changed(self, source_view) -> None:
@@ -105,11 +102,7 @@ class AdjustPart2:
             return
         if getattr(self, "_compare_sync_paused", False):
             return
-        target = (
-            self.compare_candidate_view
-            if source_view is self.compare_select_view
-            else self.compare_select_view
-        )
+        target = self.compare_candidate_view if source_view is self.compare_select_view else self.compare_select_view
         self._compare_apply_view_sync_from_source(source_view, target)
 
     def _compare_handle_promote(self) -> None:
@@ -229,9 +222,7 @@ class AdjustPart2:
             self._request_full_res_decode(file_path, priority_current=True)
             return
         delay_ms = _env_int("RAWVIEWER_NAV_IDLE_FULL_MS", 1200, minimum=400)
-        self._nav_idle_full_generation = int(
-            getattr(self, "_nav_idle_full_generation", 0)
-        ) + 1
+        self._nav_idle_full_generation = int(getattr(self, "_nav_idle_full_generation", 0)) + 1
         gen = self._nav_idle_full_generation
         norm = _norm_path(file_path)
 
@@ -250,9 +241,7 @@ class AdjustPart2:
         """Show the best available preview immediately (preview cache, gallery thumb, or pixmap)."""
         if not file_path:
             return False
-        if self._suppress_jpeg_interim(file_path) and not self.image_cache.is_libraw_preview(
-            file_path
-        ):
+        if self._suppress_jpeg_interim(file_path) and not self.image_cache.is_libraw_preview(file_path):
             # RAW workflow: gallery thumbs / cached previews here are
             # embedded-JPEG pixels; wait for the LibRaw render instead.
             return False
@@ -286,12 +275,17 @@ class AdjustPart2:
             self.display_numpy_image(preview_arr)
             return True
 
-        if gal_pm is not None and not gal_pm.isNull() and gal_max >= min_quality and (arr_max <= 0 or gal_max >= int(arr_max * 0.95)):
-                self._gallery_preview_pending_full = False
-                self._clear_pending_resolution_crossfade()
-                self._gallery_instant_display_quality = True
-                self.display_pixmap(gal_pm)
-                return True
+        if (
+            gal_pm is not None
+            and not gal_pm.isNull()
+            and gal_max >= min_quality
+            and (arr_max <= 0 or gal_max >= int(arr_max * 0.95))
+        ):
+            self._gallery_preview_pending_full = False
+            self._clear_pending_resolution_crossfade()
+            self._gallery_instant_display_quality = True
+            self.display_pixmap(gal_pm)
+            return True
 
         # Do not paint grid-tier disk preview (~512px); wait for embedded thumbnail/full.
 
@@ -349,9 +343,7 @@ class AdjustPart2:
         try:
             full = self.image_cache.get_full_image(file_path)
             if full is not None:
-                if self._display_cached_numpy_for_path(
-                    file_path, full, from_cache="nav_full"
-                ):
+                if self._display_cached_numpy_for_path(file_path, full, from_cache="nav_full"):
                     self._nav_cache_paint_tier = "full"
                     return True
                 return False
@@ -365,13 +357,9 @@ class AdjustPart2:
             if (
                 preview is not None
                 and (not suppress_jpeg or self.image_cache.is_libraw_preview(file_path))
-                and self._preview_acceptable_for_single_view(
-                    preview, file_path=file_path, context="navigation"
-                )
+                and self._preview_acceptable_for_single_view(preview, file_path=file_path, context="navigation")
             ):
-                if self._display_cached_numpy_for_path(
-                    file_path, preview, from_cache="nav_preview"
-                ):
+                if self._display_cached_numpy_for_path(file_path, preview, from_cache="nav_preview"):
                     self._nav_cache_paint_tier = "preview"
                     return True
                 return False
@@ -385,9 +373,7 @@ class AdjustPart2:
             return True
         return False
 
-    def _retry_composite_dng_embedded_preview(
-        self, file_path: str, error_message: str
-    ) -> bool:
+    def _retry_composite_dng_embedded_preview(self, file_path: str, error_message: str) -> bool:
         """After LibRaw full decode fails on composite HDR DNG, load embedded thumbnail once."""
         from common_image_loader import dng_prefers_embedded_preview_first, is_raw_file
         from image_load_manager import Priority
@@ -432,9 +418,7 @@ class AdjustPart2:
             "thumbnail extraction returned none",
         )
 
-    def _retry_raw_preview_with_full_decode(
-        self, file_path: str, error_message: str
-    ) -> bool:
+    def _retry_raw_preview_with_full_decode(self, file_path: str, error_message: str) -> bool:
         """Auto-fallback: embedded/thumbnail preview failed -> queue sensor full decode once."""
         from common_image_loader import is_raw_file
 
@@ -506,11 +490,7 @@ class AdjustPart2:
         import json
 
         try:
-            data = {
-                k: int(v) % 360
-                for k, v in self._visual_rotation_degrees.items()
-                if int(v) % 360
-            }
+            data = {k: int(v) % 360 for k, v in self._visual_rotation_degrees.items() if int(v) % 360}
             self.get_settings().setValue(
                 "visual_rotations",
                 json.dumps(data, separators=(",", ":")),
@@ -681,9 +661,7 @@ class AdjustPart2:
             # Hide floating browse overlays -- Adjust has its own histogram.
             panel.setVisible(True)
             self.single_image_histogram.hide()
-            self._map_hidden_for_adjust = bool(
-                getattr(self, "_map_overlay_visible", False)
-            )
+            self._map_hidden_for_adjust = bool(getattr(self, "_map_overlay_visible", False))
             if self._map_hidden_for_adjust:
                 self._map_overlay_visible = False
                 self._clear_location_map()
@@ -785,9 +763,7 @@ class AdjustPart2:
         if env in ("1", "true", "yes", "on"):
             return True
         try:
-            return bool(
-                self.get_settings().value("adjust_maximize_brightness", True, type=bool)
-            )
+            return bool(self.get_settings().value("adjust_maximize_brightness", True, type=bool))
         except Exception:
             return True
 
@@ -802,9 +778,7 @@ class AdjustPart2:
         except Exception:
             return "right"
         try:
-            return normalize_adjust_dock(
-                self.get_settings().value(ADJUST_DOCK_SETTINGS_KEY, ADJUST_DOCK_DEFAULT)
-            )
+            return normalize_adjust_dock(self.get_settings().value(ADJUST_DOCK_SETTINGS_KEY, ADJUST_DOCK_DEFAULT))
         except Exception:
             return "right"
 
@@ -911,15 +885,10 @@ class AdjustPart2:
         if not editing_features_enabled():
             return
         opening = not getattr(self, "_adjust_overlay_visible", False)
-        if opening and not self._editing_supported_for_file(
-            getattr(self, "current_file_path", None)
-        ):
+        if opening and not self._editing_supported_for_file(getattr(self, "current_file_path", None)):
             self._show_auto_dismiss_notice(
                 "Editing not available for this file",
-                detail=(
-                    "This file has neither a demosaicable RAW base nor a "
-                    "usable embedded preview to edit."
-                ),
+                detail=("This file has neither a demosaicable RAW base nor a usable embedded preview to edit."),
                 duration_ms=2000,
             )
             return

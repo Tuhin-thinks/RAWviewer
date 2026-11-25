@@ -1,5 +1,5 @@
-
 """external mixin, part 2 of 2 (21 methods, 690 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -93,19 +93,13 @@ class ExternalPart2:
             self._macos_share_airdrop_finder(paths)
             return
         _share_log(logging.INFO, "AirDrop experimental perform paths=%s", paths)
-        self._perform_macos_share_service(
-            service, urls, is_airdrop=True, share_paths=paths
-        )
+        self._perform_macos_share_service(service, urls, is_airdrop=True, share_paths=paths)
         delay_ms = 1500
         with contextlib.suppress(ValueError):
             delay_ms = max(800, int(os.environ.get("RAWVIEWER_AIRDROP_WATCHDOG_MS", "1500")))
-        QTimer.singleShot(
-            delay_ms, lambda sps=paths: self._macos_share_airdrop_perform_watchdog(sps)
-        )
+        QTimer.singleShot(delay_ms, lambda sps=paths: self._macos_share_airdrop_perform_watchdog(sps))
 
-    def _perform_macos_share_service(
-        self, service, urls, *, is_airdrop: bool = False, share_paths = None
-    ) -> None:
+    def _perform_macos_share_service(self, service, urls, *, is_airdrop: bool = False, share_paths=None) -> None:
         def run() -> None:
             fallback_paths = [share_paths] if isinstance(share_paths, str) else list(share_paths or [])
 
@@ -230,9 +224,7 @@ class ExternalPart2:
                 title = "Share"
             action = QAction(title, self)
             action.triggered.connect(
-                lambda _checked=False, s=svc, us=urls, sps=share_paths: self._share_macos_menu_chose_service(
-                    s, us, sps
-                )
+                lambda _checked=False, s=svc, us=urls, sps=share_paths: self._share_macos_menu_chose_service(s, us, sps)
             )
             menu.addAction(action)
 
@@ -456,9 +448,7 @@ class ExternalPart2:
             urls, share_paths = self._macos_share_prepare_urls(paths)
             if not urls:
                 return False
-            if _env_true("RAWVIEWER_MACOS_FORCE_FOREGROUND") or _env_true(
-                "RAWVIEWER_SHARE_TRY_NATIVE_PICKER"
-            ):
+            if _env_true("RAWVIEWER_MACOS_FORCE_FOREGROUND") or _env_true("RAWVIEWER_SHARE_TRY_NATIVE_PICKER"):
                 _activate_macos_foreground_app()
 
             btn = getattr(self, "share_bottom_button", None)
@@ -594,9 +584,7 @@ class ExternalPart2:
         try:
             import win32com.client  # type: ignore
 
-            folder = win32com.client.Dispatch("Shell.Application").Namespace(
-                os.path.dirname(abs_path)
-            )
+            folder = win32com.client.Dispatch("Shell.Application").Namespace(os.path.dirname(abs_path))
             item = folder.ParseName(os.path.basename(abs_path))
             if item is None:
                 return False
@@ -636,9 +624,7 @@ class ExternalPart2:
             if sys.platform == "darwin":
                 subprocess.run(["/usr/bin/open", "-R", p], check=False)
             elif sys.platform == "win32":
-                subprocess.run(
-                    ["explorer", "/select,", os.path.normpath(p)], check=False
-                )
+                subprocess.run(["explorer", "/select,", os.path.normpath(p)], check=False)
             else:
                 subprocess.run(["xdg-open", os.path.dirname(p)], check=False)
             self.status_bar.showMessage("Revealed in file manager", 2000)
@@ -662,10 +648,7 @@ class ExternalPart2:
             new_geometry.setTop(start_geometry.top() + delta.y())
         if "bottom" in self._resize_edge_active:
             new_geometry.setBottom(start_geometry.bottom() + delta.y())
-        if (
-            new_geometry.width() >= self.minimumWidth()
-            and new_geometry.height() >= self.minimumHeight()
-        ):
+        if new_geometry.width() >= self.minimumWidth() and new_geometry.height() >= self.minimumHeight():
             self.setGeometry(new_geometry)
         return True
 
@@ -690,10 +673,15 @@ class ExternalPart2:
                     QTimer.singleShot(100, gallery.force_layout_update)
                 except Exception:
                     pass
-        if hasattr(self, "view_mode") and self.view_mode == "single" and getattr(self, "current_pixmap", None) is not None and getattr(self, "fit_to_window", False):
-                from PyQt6.QtCore import QTimer
+        if (
+            hasattr(self, "view_mode")
+            and self.view_mode == "single"
+            and getattr(self, "current_pixmap", None) is not None
+            and getattr(self, "fit_to_window", False)
+        ):
+            from PyQt6.QtCore import QTimer
 
-                QTimer.singleShot(100, self.scale_image_to_fit)
+            QTimer.singleShot(100, self.scale_image_to_fit)
         with contextlib.suppress(Exception):
             self._update_resize_edge_hover(self.mapFromGlobal(QCursor.pos()))
         return True

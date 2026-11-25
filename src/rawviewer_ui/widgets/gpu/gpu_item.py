@@ -13,11 +13,11 @@ from PyQt6.QtWidgets import (
 
 
 class CompareHandleItem(QGraphicsEllipseItem):
-
     """A custom comparison view split divider handle.
     It renders a prominent white circle with a dark border, and draws two vertical
     grip lines in the center to clearly convey that it can be dragged.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptHoverEvents(True)
@@ -37,6 +37,7 @@ class CompareHandleItem(QGraphicsEllipseItem):
         line_h = h * 0.4
         painter.drawLine(QPointF(cx - offset, cy - line_h / 2.0), QPointF(cx - offset, cy + line_h / 2.0))
         painter.drawLine(QPointF(cx + offset, cy - line_h / 2.0), QPointF(cx + offset, cy + line_h / 2.0))
+
 
 class RgbGlImageItem(QGraphicsObject):
     """Scene item that paints RGB via OpenGL (QImage or CUDA-registered texture).
@@ -73,6 +74,7 @@ class RgbGlImageItem(QGraphicsObject):
             arr = (arr / 257.0).astype(np.uint8)
         elif np.issubdtype(arr.dtype, np.floating):
             from raw_adjustments.tone_recovery import _encode_srgb8
+
             arr = _encode_srgb8(np.clip(arr.astype(np.float32), 0.0, None))
         elif arr.dtype != np.uint8:
             arr = np.clip(arr, 0, 255).astype(np.uint8)
@@ -334,9 +336,7 @@ class RgbGlImageItem(QGraphicsObject):
         except Exception as e:
             import logging
 
-            logging.getLogger(__name__).info(
-                "[CUDA_GL] register/upload failed; falling back: %s", e
-            )
+            logging.getLogger(__name__).info("[CUDA_GL] register/upload failed; falling back: %s", e)
             self._cuda_upload_failed = True
             with contextlib.suppress(Exception):
                 self._release_cuda_gl(None if context_already_current else widget)
@@ -466,9 +466,7 @@ class RgbGlImageItem(QGraphicsObject):
                         painter.endNativePainting()
                     import logging
 
-                    logging.getLogger(__name__).info(
-                        "[CUDA_GL] native paint failed; falling back: %s", e
-                    )
+                    logging.getLogger(__name__).info("[CUDA_GL] native paint failed; falling back: %s", e)
                     self._cuda_upload_failed = True
 
             # Fallback: host QImage path once CUDA-GL fails.

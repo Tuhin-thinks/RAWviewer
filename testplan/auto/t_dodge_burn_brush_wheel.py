@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Dodge/Burn brush: wheel changes size; preview uses flow; no hard ring."""
+
 import inspect
 import os
 import sys

@@ -9,6 +9,7 @@ what the "reset" dict contains. reset_requested was emitted by the panel
 but never connected to anything in main.py, so Reset silently left the
 mask (and its saved sidecar entry) in place.
 """
+
 import os
 import sys
 
@@ -47,9 +48,7 @@ def main() -> int:
         m.single_image_adjust_panel = FakePanel()
         m.gpu_view = None
         m._on_adjust_panel_reset = mainmod.RAWImageViewer._on_adjust_panel_reset.__get__(m)
-        m._sync_dodge_burn_mask_overlay = (
-            mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
-        )
+        m._sync_dodge_burn_mask_overlay = mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
         return m
 
     # 1. A painted mask must be cleared by reset.
@@ -70,9 +69,7 @@ def main() -> int:
     import re
 
     src = inspect.getsource(mainmod.RAWImageViewer.init_ui)
-    wired = re.search(
-        r"reset_requested\.connect\(\s*self\._on_adjust_panel_reset\s*\)", src
-    )
+    wired = re.search(r"reset_requested\.connect\(\s*self\._on_adjust_panel_reset\s*\)", src)
     check(
         "init_ui connects reset_requested to _on_adjust_panel_reset",
         wired is not None,

@@ -1,4 +1,5 @@
 """Adjust mixin part 5 of 5 for ImageAdjustPanelWidget."""
+
 from __future__ import annotations
 
 import contextlib
@@ -21,7 +22,6 @@ from .helpers import (
 
 
 class AdjustPart5:
-
     def _build_anamorphic_row(self, sect: CollapsibleSection) -> None:
         from raw_adjustments import ANAMORPHIC_DESQUEEZE_PRESETS
 
@@ -48,9 +48,7 @@ class AdjustPart5:
                 else f"Desqueeze {text} — stretch width to restore natural proportions"
             )
             btn.setProperty("anamorphic_ratio", float(value))
-            btn.clicked.connect(
-                lambda _checked=False, v=float(value): self._on_anamorphic_chosen(v)
-            )
+            btn.clicked.connect(lambda _checked=False, v=float(value): self._on_anamorphic_chosen(v))
             row.addWidget(btn, 1)
             self._anamorphic_btns.append(btn)
         col.addLayout(row)
@@ -131,9 +129,7 @@ class AdjustPart5:
         import json
 
         with contextlib.suppress(Exception):
-            self._settings().setValue(
-                _GLOBAL_SECTION_ORDER_SETTING, json.dumps(list(self._section_order))
-            )
+            self._settings().setValue(_GLOBAL_SECTION_ORDER_SETTING, json.dumps(list(self._section_order)))
 
     def _apply_section_order(self) -> None:
         """Lay Global sections out in ``self._section_order``; Export stays last."""
@@ -161,11 +157,7 @@ class AdjustPart5:
         layout.activate()
 
     def _visible_section_order(self) -> list:
-        return [
-            k
-            for k in self._section_order
-            if (s := self._global_sections.get(k)) is not None and not s.isHidden()
-        ]
+        return [k for k in self._section_order if (s := self._global_sections.get(k)) is not None and not s.isHidden()]
 
     def _set_visible_section_order(self, visible: list) -> None:
         slots = [i for i, k in enumerate(self._section_order) if k in visible]

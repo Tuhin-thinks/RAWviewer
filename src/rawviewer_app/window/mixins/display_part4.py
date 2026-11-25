@@ -1,5 +1,5 @@
-
 """display mixin, part 4 of 6 (14 methods, 859 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -74,9 +74,7 @@ class DisplayPart4:
             if _norm_path(prev_displayed or "") != _norm_path(cur_path or ""):
                 self._manager_displayed_max_dim = pm_max
             else:
-                self._manager_displayed_max_dim = max(
-                    getattr(self, "_manager_displayed_max_dim", 0), pm_max
-                )
+                self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
             with contextlib.suppress(Exception):
                 self._sync_single_image_histogram()
             with contextlib.suppress(Exception):
@@ -124,9 +122,7 @@ class DisplayPart4:
                 or not self._single_view_is_fit_mode()
             )
             gv.set_file_path(cur_path)
-            if not gv.set_device_rgb(
-                device_rgb, preserve_view=preserve if preserve else None
-            ):
+            if not gv.set_device_rgb(device_rgb, preserve_view=preserve if preserve else None):
                 return False
 
             self._orientation_already_applied = True
@@ -143,9 +139,7 @@ class DisplayPart4:
             if _norm_path(prev_displayed or "") != _norm_path(cur_path or ""):
                 self._manager_displayed_max_dim = pm_max
             else:
-                self._manager_displayed_max_dim = max(
-                    getattr(self, "_manager_displayed_max_dim", 0), pm_max
-                )
+                self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
             with contextlib.suppress(Exception):
                 self._sync_single_image_histogram()
             with contextlib.suppress(Exception):
@@ -197,9 +191,7 @@ class DisplayPart4:
             "width": width,
             "height": height,
             "is_half_size": is_half_size,
-            "orientation_already_applied": getattr(
-                self, "_orientation_already_applied", False
-            ),
+            "orientation_already_applied": getattr(self, "_orientation_already_applied", False),
             "use_edr": self._should_use_raw_edr_display(file_path),
             "fallback_rgb": fallback_rgb,
         }
@@ -230,9 +222,7 @@ class DisplayPart4:
         if live is None:
             live = self._live_display_pixmap_converters = set()
         live.add(converter)
-        converter.finished.connect(
-            lambda c=converter: self._live_display_pixmap_converters.discard(c)
-        )
+        converter.finished.connect(lambda c=converter: self._live_display_pixmap_converters.discard(c))
         self._display_pixmap_converter = converter
         logger.info(
             "[DISPLAY] Queued background %s conversion for %s (%dx%d)",
@@ -254,13 +244,8 @@ class DisplayPart4:
             return
         if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", None)):
             return
-        if (
-            getattr(self, "_raw_recovery_active", False)
-            and is_raw_file(file_path)
-        ):
-            logger.info(
-                "[DISPLAY] Skipping background pixmap -- RAW recovery preview active"
-            )
+        if getattr(self, "_raw_recovery_active", False) and is_raw_file(file_path):
+            logger.info("[DISPLAY] Skipping background pixmap -- RAW recovery preview active")
             self._pending_display_pixmap_context = None
             self._display_pixmap_converter = None
             return
@@ -293,9 +278,7 @@ class DisplayPart4:
             self._display_edr_mode = None
 
         if hasattr(self, "current_file_path") and self.current_file_path:
-            orientation_already_applied = bool(
-                ctx.get("orientation_already_applied")
-            )
+            orientation_already_applied = bool(ctx.get("orientation_already_applied"))
             if not orientation_already_applied:
                 orientation = self.get_orientation_from_exif(self.current_file_path)
                 if orientation != 1:
@@ -304,14 +287,10 @@ class DisplayPart4:
 
         self._is_half_size_displayed = is_half_size
         if is_half_size:
-            logger.debug(
-                f"[DISPLAY] Below sensor resolution on screen ({width}x{height})"
-            )
+            logger.debug(f"[DISPLAY] Below sensor resolution on screen ({width}x{height})")
         else:
             self._smooth_zoom_full_request_sent = False
-            logger.info(
-                f"[DISPLAY] Sensor-resolution buffer on screen ({width}x{height})"
-            )
+            logger.info(f"[DISPLAY] Sensor-resolution buffer on screen ({width}x{height})")
 
         if hasattr(self, "current_file_path") and self.current_file_path and not is_half_size:
             if not getattr(self, "_raw_recovery_skip_display_cache", False):
@@ -359,11 +338,9 @@ class DisplayPart4:
 
     def display_numpy_image(self, rgb_image):
         """Display a numpy image array."""
-        if self._adjust_panel_blocks_display_refresh() and not getattr(
-            self, "_adjust_preview_painting", False
-        ):
+        if self._adjust_panel_blocks_display_refresh() and not getattr(self, "_adjust_preview_painting", False):
             return
-        if hasattr(self, 'current_file_path') and self.is_animated_image(_require_str_path(self.current_file_path)):
+        if hasattr(self, "current_file_path") and self.is_animated_image(_require_str_path(self.current_file_path)):
             return
         # RAW workflow, JPEG-interim suppression: last line of defense against
         # sub-display-tier camera-JPEG buffers reaching the screen through any
@@ -390,10 +367,7 @@ class DisplayPart4:
                 # HE/HE* (and other LibRaw-unsupported RAW): the small embed may
                 # be the only pixels we will ever get. Mark the path unsupported
                 # so this buffer can paint without leaving RAW mode for other files.
-                if cur and (
-                    self._nef_he_compressed(cur)
-                    or self._path_marked_libraw_unsupported(cur)
-                ):
+                if cur and (self._nef_he_compressed(cur) or self._path_marked_libraw_unsupported(cur)):
                     self._auto_revert_to_embedded_jpeg_workflow(
                         cur,
                         reason="libraw-unsupported RAW (e.g. Nikon HE/HE*)",
@@ -413,9 +387,7 @@ class DisplayPart4:
                         # force+bypass: a gallery 512px entry may already sit in
                         # full_image_cache and (with bogus 160x120 EXIF) look like
                         # it "covers sensor", short-circuiting a non-forced re-queue.
-                        self._request_full_res_decode(
-                            cur, priority_current=True, force=True
-                        )
+                        self._request_full_res_decode(cur, priority_current=True, force=True)
                     # Do NOT clear the viewport here. Clearing showed the empty-state
                     # "No image loaded" placeholder while LibRaw was still decoding,
                     # and left RAW-mode navigation on a blank page (HUD updated,
@@ -427,15 +399,16 @@ class DisplayPart4:
 
         import logging
         import time
+
         logger = logging.getLogger(__name__)
         display_start = time.time()
 
         try:
-            if hasattr(rgb_image, 'shape'):
+            if hasattr(rgb_image, "shape"):
                 shape = rgb_image.shape
                 height, width = shape[0], shape[1]
                 channels = shape[2] if len(shape) > 2 else 1
-            elif hasattr(rgb_image, 'width') and hasattr(rgb_image, 'height'):
+            elif hasattr(rgb_image, "width") and hasattr(rgb_image, "height"):
                 height, width = rgb_image.height(), rgb_image.width()
                 channels = 3
             else:
@@ -448,7 +421,7 @@ class DisplayPart4:
             max_dim = max(height, width)
 
             # Check for resolution downgrade for the CURRENT file
-            if hasattr(self, 'current_file_path') and self.current_file_path:
+            if hasattr(self, "current_file_path") and self.current_file_path:
                 norm_current = _norm_path(self.current_file_path)
                 if (
                     not recovery_preview
@@ -466,24 +439,16 @@ class DisplayPart4:
 
                 if not hasattr(self, "_file_max_dim_map"):
                     self._file_max_dim_map = {}
-                self._file_max_dim_map[norm_current] = max(
-                    self._file_max_dim_map.get(norm_current, 0), max_dim
-                )
+                self._file_max_dim_map[norm_current] = max(self._file_max_dim_map.get(norm_current, 0), max_dim)
 
             logger.info(f"[DISPLAY] ========== display_numpy_image() STARTED at {display_start:.3f} ==========")
             logger.info(f"[DISPLAY] Image dimensions: {width}x{height}, channels: {channels}")
 
-            if (
-                self._should_use_raw_edr_display(path)
-                and hasattr(self, "current_file_path")
-                and self.current_file_path
-            ):
+            if self._should_use_raw_edr_display(path) and hasattr(self, "current_file_path") and self.current_file_path:
                 exif_for_edr = None
                 with contextlib.suppress(Exception):
                     exif_for_edr = self.image_cache.get_exif(self.current_file_path)
-                is_half_size_edr = not image_covers_sensor_resolution(
-                    width, height, exif_for_edr
-                )
+                is_half_size_edr = not image_covers_sensor_resolution(width, height, exif_for_edr)
                 self._start_display_numpy_pixmap_worker(
                     self.current_file_path,
                     rgb_image,
@@ -503,9 +468,7 @@ class DisplayPart4:
                 # fast SDR buffer now (fall through below) and upgrade to
                 # EDR in place if the user is still here after the idle
                 # window -- see _should_use_raw_edr_display's docstring.
-                self._maybe_arm_raw_edr_after_idle(
-                    self.current_file_path, rgb_image, width, height
-                )
+                self._maybe_arm_raw_edr_after_idle(self.current_file_path, rgb_image, width, height)
 
             self._display_edr_mode = None
 
@@ -534,8 +497,7 @@ class DisplayPart4:
                 and self._already_displaying_buffer_for_path(path, rgb_image)
             ):
                 logger.info(
-                    "[DISPLAY] Skipping redundant full-res re-display for %s "
-                    "(%dx%d already on screen)",
+                    "[DISPLAY] Skipping redundant full-res re-display for %s (%dx%d already on screen)",
                     os.path.basename(path),
                     width,
                     height,
@@ -546,8 +508,10 @@ class DisplayPart4:
             is_full_resolution = max_dimension >= 3000
 
             # Check if we have a cached pixmap first (fastest path)
-            if hasattr(self, 'current_file_path') and self.current_file_path:
-                logger.info(f"[DISPLAY] Full resolution check: {is_full_resolution} (max dimension: {max_dimension}, {width}x{height})")
+            if hasattr(self, "current_file_path") and self.current_file_path:
+                logger.info(
+                    f"[DISPLAY] Full resolution check: {is_full_resolution} (max dimension: {max_dimension}, {width}x{height})"
+                )
 
                 if is_full_resolution and not recovery_preview:
                     logger.info(f"[DISPLAY] Full resolution image ({width}x{height}), converting and displaying")
@@ -563,10 +527,14 @@ class DisplayPart4:
                     if cached_pixmap is not None:
                         input_aspect = width / height
                         cached_aspect = cached_pixmap.width() / cached_pixmap.height()
-                        aspect_mismatch = (input_aspect > 1.0 and cached_aspect < 1.0) or (input_aspect < 1.0 and cached_aspect > 1.0)
+                        aspect_mismatch = (input_aspect > 1.0 and cached_aspect < 1.0) or (
+                            input_aspect < 1.0 and cached_aspect > 1.0
+                        )
 
                         if aspect_mismatch:
-                            logger.warning(f"[DISPLAY] Aspect ratio mismatch (input={input_aspect:.2f}, cached={cached_aspect:.2f}), ignoring cache")
+                            logger.warning(
+                                f"[DISPLAY] Aspect ratio mismatch (input={input_aspect:.2f}, cached={cached_aspect:.2f}), ignoring cache"
+                            )
                             cached_pixmap = None
 
                             logger.info(f"[DISPLAY] Using cached pixmap for {width}x{height} image")
@@ -581,9 +549,7 @@ class DisplayPart4:
             if hasattr(self, "current_file_path") and self.current_file_path:
                 with contextlib.suppress(Exception):
                     exif_for_flag = self.image_cache.get_exif(self.current_file_path)
-            is_half_size = not image_covers_sensor_resolution(
-                width, height, exif_for_flag
-            )
+            is_half_size = not image_covers_sensor_resolution(width, height, exif_for_flag)
 
             if (
                 is_full_resolution
@@ -629,16 +595,15 @@ class DisplayPart4:
                 rgb_image = (rgb_image / 257.0).astype(np.uint8)
             elif np.issubdtype(rgb_image.dtype, np.floating):
                 from raw_adjustments.tone_recovery import _encode_srgb8
-                rgb_image = _encode_srgb8(
-                    np.clip(rgb_image.astype(np.float32), 0.0, None)
-                )
+
+                rgb_image = _encode_srgb8(np.clip(rgb_image.astype(np.float32), 0.0, None))
             elif rgb_image.dtype != np.uint8:
                 rgb_image = np.clip(rgb_image, 0, 255).astype(np.uint8)
 
             bytes_per_line = channels * width
             logger.info(f"[DISPLAY] Converting numpy array to QPixmap - bytes_per_line: {bytes_per_line}")
 
-            if not rgb_image.flags['C_CONTIGUOUS']:
+            if not rgb_image.flags["C_CONTIGUOUS"]:
                 logger.info("[DISPLAY] Making array contiguous")
                 rgb_image = np.ascontiguousarray(rgb_image)
 
@@ -661,9 +626,9 @@ class DisplayPart4:
             # CRITICAL: Apply orientation correction only if not already applied
             # Images from UnifiedImageProcessor (via ImageLoadManager) already have orientation applied
             # Images from old RAWProcessor path need orientation correction here
-            if hasattr(self, 'current_file_path') and self.current_file_path:
+            if hasattr(self, "current_file_path") and self.current_file_path:
                 # Check if orientation was already applied (e.g., by UnifiedImageProcessor)
-                orientation_already_applied = getattr(self, '_orientation_already_applied', False)
+                orientation_already_applied = getattr(self, "_orientation_already_applied", False)
                 # Console log: _orientation_already_applied value in display_numpy_image
                 # safe_print(f"[ORIENTATION] display_numpy_image: _orientation_already_applied = {orientation_already_applied}")
                 if not orientation_already_applied:
@@ -678,14 +643,10 @@ class DisplayPart4:
                     # safe_print(f"[ORIENTATION] display_numpy_image: Skipping orientation correction (already applied)")
             self._is_half_size_displayed = is_half_size
             if is_half_size:
-                logger.debug(
-                    f"[DISPLAY] Below sensor resolution on screen ({width}x{height})"
-                )
+                logger.debug(f"[DISPLAY] Below sensor resolution on screen ({width}x{height})")
             else:
                 self._smooth_zoom_full_request_sent = False
-                logger.info(
-                    f"[DISPLAY] Sensor-resolution buffer on screen ({width}x{height})"
-                )
+                logger.info(f"[DISPLAY] Sensor-resolution buffer on screen ({width}x{height})")
 
             # Cache the pixmap for future use (after orientation correction)
             # ONLY cache if it's the full resolution image, NOT a thumbnail/half_size
@@ -700,7 +661,7 @@ class DisplayPart4:
 
             # Check if we need to restore zoom after displaying full resolution
             # This handles the case when navigating from a zoomed image
-            if not is_half_size and hasattr(self, '_pending_zoom_restore') and self._pending_zoom_restore:
+            if not is_half_size and hasattr(self, "_pending_zoom_restore") and self._pending_zoom_restore:
                 logger.info("[DISPLAY] Full resolution loaded, will restore zoom after display")
 
             pixmap_display_start = time.time()
@@ -709,36 +670,42 @@ class DisplayPart4:
             pixmap_display_time = time.time() - pixmap_display_start
 
             # After displaying full resolution, check if we need to restore zoom
-            if not is_half_size and hasattr(self, '_pending_zoom_restore') and self._pending_zoom_restore:
+            if not is_half_size and hasattr(self, "_pending_zoom_restore") and self._pending_zoom_restore:
                 logger.info("[DISPLAY] Full resolution displayed, restoring zoom state")
                 self._pending_zoom_restore = False
                 self.fit_to_window = False
                 # Use getattr to safely get pending zoom parameters
-                pending_zoom_level = getattr(self, '_pending_zoom_level', None)
-                pending_zoom_center = getattr(self, '_pending_zoom_center', None)
+                pending_zoom_level = getattr(self, "_pending_zoom_level", None)
+                pending_zoom_center = getattr(self, "_pending_zoom_center", None)
                 self.current_zoom_level = pending_zoom_level or 1.0
                 self.zoom_center_point = pending_zoom_center
                 # Restore scroll position if available
-                if hasattr(self, '_restore_start_scroll_x') and hasattr(self, '_restore_start_scroll_y'):
+                if hasattr(self, "_restore_start_scroll_x") and hasattr(self, "_restore_start_scroll_y"):
                     self.start_scroll_x = self._restore_start_scroll_x
                     self.start_scroll_y = self._restore_start_scroll_y
                 # Must use fractional zoom scaling (pinch/trackpad/Ctrl-wheel); zoom_to_point() pins to native pixmap.
                 self.apply_zoom_and_pan()
                 self.update_status_bar()
                 # Clean up
-                if hasattr(self, '_pending_zoom_center'):
-                    delattr(self, '_pending_zoom_center')
-                if hasattr(self, '_pending_zoom_level'):
-                    delattr(self, '_pending_zoom_level')
+                if hasattr(self, "_pending_zoom_center"):
+                    delattr(self, "_pending_zoom_center")
+                if hasattr(self, "_pending_zoom_level"):
+                    delattr(self, "_pending_zoom_level")
                 logger.info("[DISPLAY] Zoom state restored after full resolution display")
                 self._finish_nav_zoom_preserve()
             total_time = time.time() - display_start
-            logger.info(f"[DISPLAY] RAW image displayed successfully: {width}x{height} (pixmap display: {pixmap_display_time:.3f}s, total: {total_time:.3f}s)")
-            safe_print(f"[PERF] 🖼️  DISPLAY COMPLETE: {width}x{height} (pixmap: {pixmap_display_time*1000:.1f}ms, total: {total_time*1000:.1f}ms)")
+            logger.info(
+                f"[DISPLAY] RAW image displayed successfully: {width}x{height} (pixmap display: {pixmap_display_time:.3f}s, total: {total_time:.3f}s)"
+            )
+            safe_print(
+                f"[PERF] 🖼️  DISPLAY COMPLETE: {width}x{height} (pixmap: {pixmap_display_time * 1000:.1f}ms, total: {total_time * 1000:.1f}ms)"
+            )
 
         except Exception as e:
             total_time = time.time() - display_start
-            logger.error(f"[DISPLAY] ========== ERROR in display_numpy_image (at {time.time():.3f}, duration: {total_time:.3f}s) ==========")
+            logger.error(
+                f"[DISPLAY] ========== ERROR in display_numpy_image (at {time.time():.3f}, duration: {total_time:.3f}s) =========="
+            )
             logger.error(f"[DISPLAY] Exception type: {type(e).__name__}, message: {e}", exc_info=True)
             error_msg = f"Error displaying numpy image: {str(e)}"
             self.show_error("Display Error", error_msg)

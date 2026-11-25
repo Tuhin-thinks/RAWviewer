@@ -15,12 +15,30 @@ logger = logging.getLogger(__name__)
 
 COLORCHECKER_24_REF = np.array(
     [
-        [115, 82, 68], [194, 150, 130], [98, 122, 157], [87, 108, 67],
-        [133, 128, 177], [103, 189, 170], [214, 126, 44], [80, 91, 166],
-        [193, 90, 99], [94, 60, 108], [157, 188, 64], [224, 163, 46],
-        [56, 61, 150], [70, 148, 73], [175, 54, 60], [231, 199, 31],
-        [187, 86, 149], [8, 133, 161], [243, 243, 242], [200, 200, 200],
-        [160, 160, 160], [122, 122, 121], [85, 85, 85], [52, 52, 52],
+        [115, 82, 68],
+        [194, 150, 130],
+        [98, 122, 157],
+        [87, 108, 67],
+        [133, 128, 177],
+        [103, 189, 170],
+        [214, 126, 44],
+        [80, 91, 166],
+        [193, 90, 99],
+        [94, 60, 108],
+        [157, 188, 64],
+        [224, 163, 46],
+        [56, 61, 150],
+        [70, 148, 73],
+        [175, 54, 60],
+        [231, 199, 31],
+        [187, 86, 149],
+        [8, 133, 161],
+        [243, 243, 242],
+        [200, 200, 200],
+        [160, 160, 160],
+        [122, 122, 121],
+        [85, 85, 85],
+        [52, 52, 52],
     ],
     dtype=np.float32,
 )
@@ -48,7 +66,10 @@ def camera_identity_from_exif(exif: dict[str, Any] | None) -> tuple[str, str, in
     model = _first("Image Model", "Model", "EXIF Model")
     iso_val: int | None = None
     raw_iso = _first(
-        "EXIF ISOSpeedRatings", "ISOSpeedRatings", "EXIF ISO", "ISO",
+        "EXIF ISOSpeedRatings",
+        "ISOSpeedRatings",
+        "EXIF ISO",
+        "ISO",
         "EXIF PhotographicSensitivity",
     )
     if raw_iso:
@@ -138,9 +159,7 @@ def _compare_signatures(saved: dict[str, Any], now: dict[str, Any]) -> str | Non
     return None
 
 
-def profile_decode_mismatch(
-    profile: dict[str, Any] | None, file_path: str | None = None
-) -> str | None:
+def profile_decode_mismatch(profile: dict[str, Any] | None, file_path: str | None = None) -> str | None:
     if not isinstance(profile, dict):
         return None
     saved = profile.get("decode_signature")
@@ -150,8 +169,11 @@ def profile_decode_mismatch(
 
 
 def save_camera_profile(
-    make: str, model: str, profile_data: dict[str, Any],
-    iso: int | None = None, source_file: str | None = None,
+    make: str,
+    model: str,
+    profile_data: dict[str, Any],
+    iso: int | None = None,
+    source_file: str | None = None,
 ) -> bool:
     key = normalize_camera_key(make, model, iso=iso)
     path = get_camera_profile_path()
@@ -167,9 +189,7 @@ def save_camera_profile(
     clean_data["model"] = model
     clean_data["iso"] = iso
     if "decode_signature" not in clean_data:
-        clean_data["decode_signature"] = _sanitize_for_json(
-            current_decode_signature(source_file)
-        )
+        clean_data["decode_signature"] = _sanitize_for_json(current_decode_signature(source_file))
     registry[key] = clean_data
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -228,7 +248,10 @@ def delete_camera_profile(make: str, model: str, iso: int | None = None) -> bool
 
 
 def describe_camera_profile(
-    make: str, model: str, iso: int | None = None, file_path: str | None = None,
+    make: str,
+    model: str,
+    iso: int | None = None,
+    file_path: str | None = None,
 ) -> str | None:
     prof = get_camera_profile(make, model, iso=iso)
     if not prof:
@@ -253,9 +276,7 @@ def has_factory_color_profile(file_path: str) -> bool | None:
     return bool(np.any(np.abs(mat) > 1e-6))
 
 
-def extract_patch_colors(
-    image: np.ndarray, corners: list[tuple[float, float]]
-) -> list[tuple[float, float, float]]:
+def extract_patch_colors(image: np.ndarray, corners: list[tuple[float, float]]) -> list[tuple[float, float, float]]:
     if len(corners) != 4 or image is None or image.size == 0:
         return []
     pts_src = np.array(corners, dtype=np.float32)
@@ -332,15 +353,28 @@ def calibrate_camera_curves_and_hsl(
     g_val = max(1e-3, float(samp_wb[1]))
     r_ratio = float(samp_wb[0]) / g_val
     temp_shift = round((1.0 - r_ratio) * 2000.0, 1)
-    tint_shift = round(
-        (1.0 - (g_val / ((float(samp_wb[0]) + float(samp_wb[2])) * 0.5 + 1e-4))) * 50.0, 1
-    )
+    tint_shift = round((1.0 - (g_val / ((float(samp_wb[0]) + float(samp_wb[2])) * 0.5 + 1e-4))) * 50.0, 1)
     display = _srgb_encode_0_255(_normalize_exposure(sampled))
     color_bands = ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"]
     patch_band_map = {
-        0: "Red", 1: "Orange", 2: "Blue", 3: "Green", 4: "Purple", 5: "Aqua",
-        6: "Orange", 7: "Blue", 8: "Red", 9: "Purple", 10: "Yellow", 11: "Yellow",
-        12: "Blue", 13: "Green", 14: "Red", 15: "Yellow", 16: "Magenta", 17: "Aqua",
+        0: "Red",
+        1: "Orange",
+        2: "Blue",
+        3: "Green",
+        4: "Purple",
+        5: "Aqua",
+        6: "Orange",
+        7: "Blue",
+        8: "Red",
+        9: "Purple",
+        10: "Yellow",
+        11: "Yellow",
+        12: "Blue",
+        13: "Green",
+        14: "Red",
+        15: "Yellow",
+        16: "Magenta",
+        17: "Aqua",
     }
     acc: dict[str, list[tuple[float, float, float]]] = {b: [] for b in color_bands}
     for idx, band in patch_band_map.items():

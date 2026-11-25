@@ -1,4 +1,5 @@
 """Module-level helpers and state for the UnifiedImageProcessor package."""
+
 from __future__ import annotations
 
 import os
@@ -33,7 +34,6 @@ import logging
 
 logging.getLogger("exifread").setLevel(logging.ERROR)
 # PIL Image, rawpy, and exifread will be imported lazily to avoid import delays
-
 
 
 def _verbose_orientation_logs() -> bool:
@@ -201,9 +201,7 @@ def _persist_executor():
         if _PERSIST_POOL is None:
             from concurrent.futures import ThreadPoolExecutor
 
-            _PERSIST_POOL = ThreadPoolExecutor(
-                max_workers=1, thread_name_prefix="rv-persist"
-            )
+            _PERSIST_POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rv-persist")
         return _PERSIST_POOL
 
 
@@ -252,9 +250,7 @@ def _unpack_stash_max_slots() -> int:
     return 3
 
 
-def prune_libraw_unsupported_paths(
-    *, clear_all: bool = False, max_keep: int = 512
-) -> None:
+def prune_libraw_unsupported_paths(*, clear_all: bool = False, max_keep: int = 512) -> None:
     """Bound or clear the session-global LibRaw skip set (folder change)."""
     global _LIBRAW_UNSUPPORTED_PATHS
     if clear_all:
@@ -336,6 +332,7 @@ def decode_raw_file(file_path: str, params: dict[str, Any]) -> np.ndarray:
     Must be at top level for pickling.
     """
     from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
+
     with _rawpy_global_lock:
         raw_ctx = rawpy_imread_warm(file_path)
     with raw_ctx as raw, _heavy_fallback_semaphore:

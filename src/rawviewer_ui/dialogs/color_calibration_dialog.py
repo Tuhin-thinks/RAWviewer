@@ -146,6 +146,7 @@ class ColorCheckerPreviewCanvas(QWidget):
             return False
         try:
             import cv2.mcc as mcc
+
             detector = mcc.CCheckerDetector.create()
             # Detect on the display-encoded copy: MCC's patch models assume a
             # normally-rendered image, not a scene-linear one.
@@ -213,7 +214,9 @@ class ColorCheckerPreviewCanvas(QWidget):
                 break
 
         if old_hover != self._hover_idx:
-            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor if self._hover_idx != -1 else Qt.CursorShape.ArrowCursor))
+            self.setCursor(
+                QCursor(Qt.CursorShape.PointingHandCursor if self._hover_idx != -1 else Qt.CursorShape.ArrowCursor)
+            )
             self.update()
 
         super().mouseMoveEvent(event)
@@ -255,8 +258,7 @@ class ColorCheckerPreviewCanvas(QWidget):
         painter.drawPixmap(rect.toRect(), self._pixmap)
 
         poly_pts = [
-            QPointF(rect.left() + p.x() * rect.width(), rect.top() + p.y() * rect.height())
-            for p in self.corners
+            QPointF(rect.left() + p.x() * rect.width(), rect.top() + p.y() * rect.height()) for p in self.corners
         ]
         polygon = QPolygonF(poly_pts)
 
@@ -267,7 +269,7 @@ class ColorCheckerPreviewCanvas(QWidget):
 
         # Draw 4 corner handle circles
         for idx, pt in enumerate(poly_pts):
-            is_active = (idx == self._drag_idx or idx == self._hover_idx)
+            is_active = idx == self._drag_idx or idx == self._hover_idx
             r = self._handle_radius * (1.3 if is_active else 1.0)
             painter.setPen(QPen(QColor("#FFFFFF"), 2))
             painter.setBrush(QBrush(QColor(theme.EMBER if is_active else theme.EMBER_DIM)))
@@ -566,9 +568,7 @@ class ColorCalibrationDialog(QDialog):
         try:
             from processing.unified import UnifiedImageProcessor
 
-            img = UnifiedImageProcessor().decode_raw_edit_base(
-                path, use_full_resolution=False
-            )
+            img = UnifiedImageProcessor().decode_raw_edit_base(path, use_full_resolution=False)
         except Exception as exc:
             self._alert(
                 "Could not open file",
@@ -592,15 +592,12 @@ class ColorCalibrationDialog(QDialog):
             self.model = self._exif_model or "Model"
             self.iso = iso_val
             iso_str = f" (ISO {self.iso})" if self.iso else ""
-            self.setWindowTitle(
-                f"Camera Color Calibration — {self.make} {self.model}{iso_str}"
-            )
+            self.setWindowTitle(f"Camera Color Calibration — {self.make} {self.model}{iso_str}")
         self._camera_lbl.setText(self._camera_caption())
         self.canvas.set_image(self.image)
         self.canvas.auto_detect()
         self._source_status.setText(
-            f"Using {os.path.basename(path)} as the calibration reference "
-            "(the photo you were editing is unchanged)."
+            f"Using {os.path.basename(path)} as the calibration reference (the photo you were editing is unchanged)."
         )
 
     def _on_auto_detect(self) -> None:
@@ -619,8 +616,7 @@ class ColorCalibrationDialog(QDialog):
         if img is None or getattr(img, "size", 0) == 0:
             self._alert(
                 "No calibration image",
-                "Choose a ColorChecker / studio-scene file, or find a DPReview sample "
-                "and upload it here.",
+                "Choose a ColorChecker / studio-scene file, or find a DPReview sample and upload it here.",
             )
             return
         corners = self.canvas.get_pixel_corners()
@@ -642,7 +638,10 @@ class ColorCalibrationDialog(QDialog):
         wb_mode = self.wb_combo.currentData() or "auto"
         profile = calibrate_camera_curves_and_hsl(sampled, wb_mode=wb_mode)
         save_camera_profile(
-            self.make, self.model, profile, iso=self.iso,
+            self.make,
+            self.model,
+            profile,
+            iso=self.iso,
             source_file=self.source_file,
         )
         self.calibrated_profile = profile

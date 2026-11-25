@@ -1,4 +1,5 @@
 """shortcuts mixin, part 1 of 1 (19 methods, 574 lines)."""
+
 from __future__ import annotations
 
 import os
@@ -82,11 +83,7 @@ class ShortcutsPart1:
 
     def _keyboard_shortcuts_tooltip(self) -> str:
         """Rich tooltip for the status-bar hint button (padded, no drag-and-drop note)."""
-        lines = [
-            ln.strip()
-            for ln in self._keyboard_shortcuts_help_text().split("\n")
-            if ln.strip()
-        ]
+        lines = [ln.strip() for ln in self._keyboard_shortcuts_help_text().split("\n") if ln.strip()]
         body = "<br/>".join(self._format_shortcut_line_html(ln) for ln in lines)
         return (
             "<html><head/><body style='margin:0;'>"
@@ -147,20 +144,14 @@ class ShortcutsPart1:
 
     def show_keyboard_shortcuts(self):
         """Show keyboard shortcuts dialog"""
-        lines = [
-            ln.strip()
-            for ln in self._keyboard_shortcuts_help_text().split("\n")
-            if ln.strip()
-        ]
+        lines = [ln.strip() for ln in self._keyboard_shortcuts_help_text().split("\n") if ln.strip()]
         body = "<br/>".join(self._format_shortcut_line_html(ln) for ln in lines)
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Icon.Information)
         msg_box.setWindowTitle("Keyboard Shortcuts")
         msg_box.setText("Available Keyboard Shortcuts:")
         msg_box.setTextFormat(Qt.TextFormat.RichText)
-        msg_box.setInformativeText(
-            f"<div style='line-height:1.5;padding:4px 2px 0 2px;'>{body}</div>"
-        )
+        msg_box.setInformativeText(f"<div style='line-height:1.5;padding:4px 2px 0 2px;'>{body}</div>")
         msg_box.exec()
 
     def _shortcut_blocked_by_text_input(self) -> bool:
@@ -396,6 +387,7 @@ class ShortcutsPart1:
         """Handle application-wide shortcuts for better consistency and focus-resilience."""
         focused = self.focusWidget()
         from PyQt6.QtWidgets import QLineEdit, QPlainTextEdit, QTextEdit
+
         if focused and isinstance(focused, (QLineEdit, QTextEdit, QPlainTextEdit)):
             return False
         # Toggle-style keys here (P, H, M, F, G, J, ...) must fire once per physical
@@ -427,6 +419,7 @@ class ShortcutsPart1:
                     panel = getattr(self, "single_image_adjust_panel", None)
                     if panel is not None:
                         from rawviewer_ui.widgets.adjust import _edit_settings_clipboard
+
                         if _edit_settings_clipboard() is not None:
                             panel._on_paste_settings_clicked()
                             if hasattr(self, "status_bar") and self.status_bar:
@@ -487,6 +480,7 @@ class ShortcutsPart1:
                 ):
                     return True
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.info(
                     f"[TRACK] User pressed spacebar to toggle zoom - file: "
@@ -509,9 +503,7 @@ class ShortcutsPart1:
                 if bar:
                     bar.commit_selection()
                     return True
-        elif key == Qt.Key.Key_Delete or (
-            sys.platform == "darwin" and key == Qt.Key.Key_Backspace
-        ):
+        elif key == Qt.Key.Key_Delete or (sys.platform == "darwin" and key == Qt.Key.Key_Backspace):
             # Mac: Backspace key is labeled "delete"; fn+Delete is Key_Delete (forward delete).
             if vm == "compare":
                 shift_pressed = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
@@ -541,9 +533,7 @@ class ShortcutsPart1:
                 self._toggle_composition_grid()
                 return True
         elif key == Qt.Key.Key_A:
-            ctrl_a = bool(
-                modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
-            )
+            ctrl_a = bool(modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier))
             if ctrl_a and vm == "gallery" and self._gallery_files_for_display():
                 self._gallery_select_all_displayed()
                 return True
@@ -591,7 +581,7 @@ class ShortcutsPart1:
         return False
 
     def keyPressEvent(self, event):
-        if getattr(self, '_is_delete_dialog_open', False):
+        if getattr(self, "_is_delete_dialog_open", False):
             event.ignore()
             return
         event.key()

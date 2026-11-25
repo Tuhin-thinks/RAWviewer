@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for Core ML MultiArray / CVPixelBuffer bulk-copy helpers."""
+
 from __future__ import annotations
 
 import ctypes
@@ -87,10 +88,7 @@ def main() -> int:
     # Fallback path: bad pointer returns False
     check(
         "copy_numpy rejects None pointer",
-        copy_numpy_into_mlmultiarray(
-            type("X", (), {"dataPointer": lambda self: None})(), src
-        )
-        is False,
+        copy_numpy_into_mlmultiarray(type("X", (), {"dataPointer": lambda self: None})(), src) is False,
     )
 
     if FAILURES:

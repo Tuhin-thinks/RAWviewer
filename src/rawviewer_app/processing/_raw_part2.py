@@ -1,4 +1,5 @@
-'''RAWProcessor.run() and remaining methods (part 2).'''
+"""RAWProcessor.run() and remaining methods (part 2)."""
+
 from __future__ import annotations
 
 import logging
@@ -32,6 +33,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
                 # OPTIMIZATION: Check thumbnail cache FIRST before opening RAW file
                 # This avoids opening RAW file if thumbnail is already cached
                 from image_cache import get_image_cache
+
                 cache = get_image_cache()
                 thumbnail_data = cache.get_thumbnail(self.file_path)
 
@@ -45,23 +47,31 @@ class RAWProcessorPart2(RAWProcessorPart1):
                 if cached_exif:
                     # Use cached EXIF data
                     exif_data = cached_exif
-                    original_width = cached_exif.get('original_width')
-                    original_height = cached_exif.get('original_height')
-                    logger.debug(f"[RAW_PROC] EXIF data found in cache, original dimensions: {original_width}x{original_height}")
+                    original_width = cached_exif.get("original_width")
+                    original_height = cached_exif.get("original_height")
+                    logger.debug(
+                        f"[RAW_PROC] EXIF data found in cache, original dimensions: {original_width}x{original_height}"
+                    )
 
                     # Only emit EXIF data if original dimensions are also in cache
                     # Otherwise, wait until we extract dimensions from RAW file
                     if original_width and original_height:
                         # Emit EXIF data immediately if available with dimensions
                         if not self._should_stop:
-                            logger.info(f"[RAW_PROC] Emitting cached exif_data_ready signal with dimensions: {original_width}x{original_height}")
+                            logger.info(
+                                f"[RAW_PROC] Emitting cached exif_data_ready signal with dimensions: {original_width}x{original_height}"
+                            )
                             self.exif_data_ready.emit(exif_data)
                             logger.info("[RAW_PROC] Cached exif_data_ready signal emitted")
                     else:
-                        logger.debug("[RAW_PROC] Cached EXIF data found but missing original dimensions, will emit after RAW file is opened")
+                        logger.debug(
+                            "[RAW_PROC] Cached EXIF data found but missing original dimensions, will emit after RAW file is opened"
+                        )
 
                 if thumbnail_data is not None:
-                    logger.info(f"[RAW_PROC] Thumbnail found in cache: {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})")
+                    logger.info(
+                        f"[RAW_PROC] Thumbnail found in cache: {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})"
+                    )
                     # Emit cached thumbnail immediately for fast display
                     if not self.use_full_resolution:
                         logger.info("[RAW_PROC] Emitting cached thumbnail immediately")
@@ -75,13 +85,16 @@ class RAWProcessorPart2(RAWProcessorPart1):
                             f"{os.path.basename(self.file_path)}"
                         )
                     else:
-                        logger.debug(f"Thumbnail not in cache, will try embedded JPEG first: {os.path.basename(self.file_path)}")
+                        logger.debug(
+                            f"Thumbnail not in cache, will try embedded JPEG first: {os.path.basename(self.file_path)}"
+                        )
                         # OPTIMIZATION: Try to extract embedded JPEG thumbnail BEFORE opening RAW file
                         # This is much faster than opening the entire RAW file
                         try:
                             import time
 
                             import rawpy
+
                             embedded_start = time.time()
                             # Quick check: try to extract embedded thumbnail without full RAW processing
                             with rawpy.imread(self.file_path) as raw_quick:
@@ -89,11 +102,16 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                 if thumb is not None and thumb.format == rawpy.ThumbFormat.JPEG:
                                     # Successfully extracted embedded JPEG thumbnail
                                     embedded_time = time.time() - embedded_start
-                                    logger.info(f"[RAW_PROC] ⚡ FAST: Extracted embedded JPEG thumbnail in {embedded_time*1000:.1f}ms")
-                                    safe_print(f"[PERF] ⚡ FAST THUMBNAIL: Embedded JPEG extracted in {embedded_time*1000:.1f}ms")
+                                    logger.info(
+                                        f"[RAW_PROC] ⚡ FAST: Extracted embedded JPEG thumbnail in {embedded_time * 1000:.1f}ms"
+                                    )
+                                    safe_print(
+                                        f"[PERF] ⚡ FAST THUMBNAIL: Embedded JPEG extracted in {embedded_time * 1000:.1f}ms"
+                                    )
 
                                     # Convert JPEG bytes to numpy array
                                     from PIL import Image
+
                                     jpeg_data = thumb.data
 
                                     # Save to disk cache for future use (much faster than extracting again)
@@ -109,13 +127,9 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                         decode_embedded_jpeg_bytes,
                                     )
 
-                                    thumbnail_data = decode_embedded_jpeg_bytes(
-                                        jpeg_data, 0
-                                    )
+                                    thumbnail_data = decode_embedded_jpeg_bytes(jpeg_data, 0)
                                     if thumbnail_data is not None:
-                                        orientation = self.get_orientation_from_exif(
-                                            self.file_path
-                                        )
+                                        orientation = self.get_orientation_from_exif(self.file_path)
                                         if orientation != 1:
                                             exif_for_o = cached_exif or {}
                                             if not exif_for_o.get("orientation"):
@@ -136,22 +150,18 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                         )
 
                                         if not self.use_full_resolution:
-                                            logger.info(
-                                                "[RAW_PROC] Emitting embedded JPEG thumbnail immediately"
-                                            )
-                                            self.thumbnail_fallback_used.emit(
-                                                "Loading thumbnail..."
-                                            )
+                                            logger.info("[RAW_PROC] Emitting embedded JPEG thumbnail immediately")
+                                            self.thumbnail_fallback_used.emit("Loading thumbnail...")
                                             self._orientation_already_applied = True
                                             self.image_processed.emit(thumbnail_data)
-                                            logger.info(
-                                                "[RAW_PROC] Embedded JPEG thumbnail emitted successfully"
-                                            )
+                                            logger.info("[RAW_PROC] Embedded JPEG thumbnail emitted successfully")
                                 else:
                                     logger.debug("[RAW_PROC] No embedded JPEG thumbnail found, will process RAW")
                         except Exception as embedded_error:
                             # If embedded extraction fails, continue with normal RAW processing
-                            logger.debug(f"[RAW_PROC] Embedded JPEG extraction failed (will process RAW): {embedded_error}")
+                            logger.debug(
+                                f"[RAW_PROC] Embedded JPEG extraction failed (will process RAW): {embedded_error}"
+                            )
 
                 # Get orientation from cached EXIF if available, otherwise extract
                 # CRITICAL: Always extract orientation from file to ensure accuracy
@@ -161,7 +171,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
 
                 # Update cache with correct orientation
                 if cached_exif:
-                    cached_exif['orientation'] = orientation
+                    cached_exif["orientation"] = orientation
                     cache.put_exif(self.file_path, cached_exif)
                     logger.debug(f"Updated cached orientation: {orientation}")
 
@@ -176,7 +186,9 @@ class RAWProcessorPart2(RAWProcessorPart1):
                 # If both thumbnail and full image are cached, we can skip RAW file processing entirely
                 cached_full_image = cache.get_full_image(self.file_path)
                 if cached_full_image is not None:
-                    logger.info(f"[RAW_PROC] Full image found in cache: {os.path.basename(self.file_path)} ({cached_full_image.shape[1]}x{cached_full_image.shape[0]})")
+                    logger.info(
+                        f"[RAW_PROC] Full image found in cache: {os.path.basename(self.file_path)} ({cached_full_image.shape[1]}x{cached_full_image.shape[0]})"
+                    )
                     # If we're only loading full resolution (on-demand zoom), emit cached full image immediately
                     if self.use_full_resolution:
                         logger.info("[RAW_PROC] Emitting cached full image immediately (on-demand zoom)")
@@ -198,13 +210,15 @@ class RAWProcessorPart2(RAWProcessorPart1):
                 # 2. Full image is not cached (need to process it)
                 # 3. User explicitly requested full resolution
                 needs_raw_file = (
-                    thumbnail_data is None or  # Need to extract/generate thumbnail
-                    cached_full_image is None or  # Need to process full image
-                    self.use_full_resolution  # User requested full resolution
+                    thumbnail_data is None  # Need to extract/generate thumbnail
+                    or cached_full_image is None  # Need to process full image
+                    or self.use_full_resolution  # User requested full resolution
                 )
 
                 if not needs_raw_file:
-                    logger.info(f"[RAW_PROC] Skipping RAW file processing - all data cached: {os.path.basename(self.file_path)}")
+                    logger.info(
+                        f"[RAW_PROC] Skipping RAW file processing - all data cached: {os.path.basename(self.file_path)}"
+                    )
                     return
 
                 # Open RAW file (needed for thumbnail extraction or full image processing)
@@ -226,12 +240,13 @@ class RAWProcessorPart2(RAWProcessorPart1):
                         original_height = raw.sizes.height
                         # Store in cache for later retrieval
                         from image_cache import get_image_cache
+
                         cache = get_image_cache()
                         # Get existing EXIF cache or create new dict
                         cached_exif = cache.get_exif(self.file_path) or {}
                         # Store original dimensions in EXIF cache
-                        cached_exif['original_width'] = original_width
-                        cached_exif['original_height'] = original_height
+                        cached_exif["original_width"] = original_width
+                        cached_exif["original_height"] = original_height
                         cache.put_exif(self.file_path, cached_exif)
                         logger.debug(f"Original image dimensions stored: {original_width}x{original_height}")
                     except Exception as dim_error:
@@ -243,6 +258,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
                         # Extract and cache full EXIF data for metadata display
                         self.processing_progress.emit("Reading metadata...")
                         from enhanced_raw_processor import EXIFExtractor
+
                         exif_extractor = EXIFExtractor()
                         exif_data = exif_extractor.extract_exif_data(self.file_path)
                         logger.debug("[RAW_PROC] EXIF data extracted from file")
@@ -254,8 +270,8 @@ class RAWProcessorPart2(RAWProcessorPart1):
                     cached_exif = cache.get_exif(self.file_path) or {}
                     # Force update original dimensions - they come from RAW metadata which is authoritative
                     if original_width and original_height:
-                        cached_exif['original_width'] = original_width
-                        cached_exif['original_height'] = original_height
+                        cached_exif["original_width"] = original_width
+                        cached_exif["original_height"] = original_height
                         cache.put_exif(self.file_path, cached_exif)
                         logger.info(f"[RAW_PROC] Final stored original dimensions: {original_width}x{original_height}")
 
@@ -266,7 +282,7 @@ class RAWProcessorPart2(RAWProcessorPart1):
                         # 1. We extracted new EXIF data (not from cache), OR
                         # 2. We have cached EXIF but didn't emit it earlier (because dimensions were missing)
                         should_emit = False
-                        if not cached_exif or cached_exif.get('original_width') is None:
+                        if not cached_exif or cached_exif.get("original_width") is None:
                             # New EXIF data extracted
                             should_emit = True
                         elif original_width and original_height:
@@ -278,9 +294,11 @@ class RAWProcessorPart2(RAWProcessorPart1):
                         if should_emit:
                             # Ensure exif_data includes original dimensions
                             if original_width and original_height:
-                                exif_data['original_width'] = original_width
-                                exif_data['original_height'] = original_height
-                            logger.info(f"[RAW_PROC] Emitting exif_data_ready signal with dimensions: {original_width}x{original_height}")
+                                exif_data["original_width"] = original_width
+                                exif_data["original_height"] = original_height
+                            logger.info(
+                                f"[RAW_PROC] Emitting exif_data_ready signal with dimensions: {original_width}x{original_height}"
+                            )
                             self.exif_data_ready.emit(exif_data)
                             logger.info("[RAW_PROC] exif_data_ready signal emitted")
 
@@ -292,7 +310,9 @@ class RAWProcessorPart2(RAWProcessorPart1):
 
                         # Skip thumbnail generation if we're only loading full resolution (on-demand zoom)
                         if self.use_full_resolution:
-                            logger.info(f"[RAW_PROC] Skipping thumbnail generation - loading full resolution only: {os.path.basename(self.file_path)}")
+                            logger.info(
+                                f"[RAW_PROC] Skipping thumbnail generation - loading full resolution only: {os.path.basename(self.file_path)}"
+                            )
                             thumbnail_data = None  # Skip thumbnail, go straight to full resolution
                         # Check thumbnail cache again (in case it was added by another thread)
                         # But if we already emitted cached thumbnail above, skip extraction
@@ -319,33 +339,50 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                                         import io
 
                                                         from PIL import Image
+
                                                         jpeg_image = Image.open(io.BytesIO(thumb.data))
-                                                        if jpeg_image.mode != 'RGB':
-                                                            jpeg_image = jpeg_image.convert('RGB')
+                                                        if jpeg_image.mode != "RGB":
+                                                            jpeg_image = jpeg_image.convert("RGB")
                                                         extracted_thumbnail = np.array(jpeg_image)
                                                     elif thumb.format == rawpy.ThumbFormat.BITMAP:
                                                         extracted_thumbnail = thumb.data
-                                                    thumb_size = f"{extracted_thumbnail.shape[1]}x{extracted_thumbnail.shape[0]}" if extracted_thumbnail is not None else 'N/A'
-                                                    logger.debug(f"Thumbnail extracted using existing raw handle: {thumb_size}")
-                                                    safe_print(f"[PERF] ⚡ FAST THUMBNAIL: Extracted using existing raw handle ({thumb_size})")
+                                                    thumb_size = (
+                                                        f"{extracted_thumbnail.shape[1]}x{extracted_thumbnail.shape[0]}"
+                                                        if extracted_thumbnail is not None
+                                                        else "N/A"
+                                                    )
+                                                    logger.debug(
+                                                        f"Thumbnail extracted using existing raw handle: {thumb_size}"
+                                                    )
+                                                    safe_print(
+                                                        f"[PERF] ⚡ FAST THUMBNAIL: Extracted using existing raw handle ({thumb_size})"
+                                                    )
                                             except Exception as thumb_extract_error:
-                                                logger.debug(f"Failed to extract thumbnail from raw handle: {thumb_extract_error}")
+                                                logger.debug(
+                                                    f"Failed to extract thumbnail from raw handle: {thumb_extract_error}"
+                                                )
                                                 safe_print("[PERF] ⚠️  Raw handle extraction failed, falling back")
 
                                     # Fallback: Use ThumbnailExtractor if raw handle extraction failed
                                     if extracted_thumbnail is None:
                                         logger.debug("Falling back to ThumbnailExtractor for thumbnail extraction")
                                         fallback_start = time.time()
-                                        extracted_thumbnail = self.thumbnail_extractor.extract_thumbnail_from_raw(self.file_path)
+                                        extracted_thumbnail = self.thumbnail_extractor.extract_thumbnail_from_raw(
+                                            self.file_path
+                                        )
                                         fallback_time = time.time() - fallback_start
                                         if extracted_thumbnail is not None:
-                                            safe_print(f"[PERF] 🔄 FALLBACK THUMBNAIL: Extracted via ThumbnailExtractor in {fallback_time*1000:.1f}ms")
+                                            safe_print(
+                                                f"[PERF] 🔄 FALLBACK THUMBNAIL: Extracted via ThumbnailExtractor in {fallback_time * 1000:.1f}ms"
+                                            )
 
                                 if self._should_stop:
                                     return
 
                                 if extracted_thumbnail is not None:
-                                    logger.debug(f"Thumbnail extracted successfully: {extracted_thumbnail.shape[1]}x{extracted_thumbnail.shape[0]}")
+                                    logger.debug(
+                                        f"Thumbnail extracted successfully: {extracted_thumbnail.shape[1]}x{extracted_thumbnail.shape[0]}"
+                                    )
                                     thumbnail_data = extracted_thumbnail
 
                                     # Resize thumbnail if too large (optimize for display and memory)
@@ -355,26 +392,37 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                         h, w = thumbnail_data.shape[0], thumbnail_data.shape[1]
                                         if h > max_thumb_size or w > max_thumb_size:
                                             from PIL import Image
-                                            logger.debug(f"Resizing thumbnail from {w}x{h} to max {max_thumb_size}x{max_thumb_size}")
+
+                                            logger.debug(
+                                                f"Resizing thumbnail from {w}x{h} to max {max_thumb_size}x{max_thumb_size}"
+                                            )
                                             # Convert to PIL Image for resizing
                                             if len(thumbnail_data.shape) == 3:
                                                 pil_image = Image.fromarray(thumbnail_data)
-                                                pil_image.thumbnail((max_thumb_size, max_thumb_size), Image.Resampling.HAMMING)
+                                                pil_image.thumbnail(
+                                                    (max_thumb_size, max_thumb_size), Image.Resampling.HAMMING
+                                                )
                                                 thumbnail_data = np.array(pil_image, dtype=np.uint8)
-                                                logger.debug(f"Thumbnail resized to: {thumbnail_data.shape[1]}x{thumbnail_data.shape[0]}")
+                                                logger.debug(
+                                                    f"Thumbnail resized to: {thumbnail_data.shape[1]}x{thumbnail_data.shape[0]}"
+                                                )
 
                                     # Apply orientation correction
                                     thumbnail_data = self.apply_orientation_correction(thumbnail_data, orientation)
 
                                     # Cache the thumbnail
                                     cache.put_thumbnail(self.file_path, thumbnail_data)
-                                    logger.info(f"Thumbnail extracted and cached: {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})")
+                                    logger.info(
+                                        f"Thumbnail extracted and cached: {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})"
+                                    )
 
                                     # Emit thumbnail immediately for fast display (only if not loading full resolution only)
                                     if not self.use_full_resolution:
                                         logger.info("[RAW_PROC] Emitting thumbnail_fallback_used signal")
                                         self.thumbnail_fallback_used.emit("Loading thumbnail...")
-                                        logger.info(f"[RAW_PROC] Emitting image_processed signal with thumbnail data: {thumbnail_data.shape}")
+                                        logger.info(
+                                            f"[RAW_PROC] Emitting image_processed signal with thumbnail data: {thumbnail_data.shape}"
+                                        )
                                         self.image_processed.emit(thumbnail_data)
                                         logger.info("[RAW_PROC] Thumbnail signals emitted successfully")
 
@@ -389,14 +437,16 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                 error_str = str(thumb_error)
                                 error_type = type(thumb_error).__name__
                                 is_cancellation = (
-                                    self._should_stop or
-                                    'OutOfOrderCall' in error_type or
-                                    'LibRaw' in error_type or
-                                    'Out of order' in error_str or
-                                    'out of order' in error_str.lower()
+                                    self._should_stop
+                                    or "OutOfOrderCall" in error_type
+                                    or "LibRaw" in error_type
+                                    or "Out of order" in error_str
+                                    or "out of order" in error_str.lower()
                                 )
                                 if is_cancellation:
-                                    logger.debug(f"Thumbnail extraction cancelled for {os.path.basename(self.file_path)}")
+                                    logger.debug(
+                                        f"Thumbnail extraction cancelled for {os.path.basename(self.file_path)}"
+                                    )
                                     return
                                 # For other errors, log but continue (we can still try RAW processing)
                                 logger.debug(f"Thumbnail extraction failed, will process RAW: {thumb_error}")
@@ -410,7 +460,9 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                     self.processing_progress.emit("Extracting preview...")
                                 # Generate thumbnail from RAW processing (no_auto_bright)
                                 # This ensures thumbnails match processed images exactly
-                                logger.debug(f"Generating thumbnail from RAW processing (no embedded thumbnail): {os.path.basename(self.file_path)}")
+                                logger.debug(
+                                    f"Generating thumbnail from RAW processing (no embedded thumbnail): {os.path.basename(self.file_path)}"
+                                )
 
                                 try:
                                     if self._should_stop:
@@ -427,12 +479,12 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                     # This is much faster than half_size for large files
                                     thumbnail_rgb = raw.postprocess(
                                         half_size=True,  # Use half_size (faster than full), will resize to 1024px below
-                                        output_bps=8,    # 8-bit for speed
+                                        output_bps=8,  # 8-bit for speed
                                         no_auto_bright=True,  # Disable auto-brightness to preserve original RAW colors
                                         gamma=(2.222, 4.5),  # Standard sRGB gamma
                                         # Performance optimizations for speed
                                         use_camera_wb=True,  # Faster than auto WB
-                                        demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR  # Fastest demosaicing
+                                        demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR,  # Fastest demosaicing
                                     )
 
                                     if self._should_stop:
@@ -446,26 +498,35 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                         pil_image = Image.fromarray(thumbnail_rgb)
                                         max_thumb_size = 1024
                                         if pil_image.width > max_thumb_size or pil_image.height > max_thumb_size:
-                                            logger.debug(f"Resizing processed thumbnail from {pil_image.size} to max {max_thumb_size}x{max_thumb_size}")
-                                            pil_image.thumbnail((max_thumb_size, max_thumb_size), Image.Resampling.HAMMING)
+                                            logger.debug(
+                                                f"Resizing processed thumbnail from {pil_image.size} to max {max_thumb_size}x{max_thumb_size}"
+                                            )
+                                            pil_image.thumbnail(
+                                                (max_thumb_size, max_thumb_size), Image.Resampling.HAMMING
+                                            )
 
                                         # Convert back to numpy array
                                         thumbnail_data = np.array(pil_image, dtype=np.uint8)
-                                        logger.debug(f"Generated thumbnail from RAW processing: {thumbnail_data.shape[1]}x{thumbnail_data.shape[0]}")
+                                        logger.debug(
+                                            f"Generated thumbnail from RAW processing: {thumbnail_data.shape[1]}x{thumbnail_data.shape[0]}"
+                                        )
 
                                         # Apply orientation correction
-                                        thumbnail_data = self.apply_orientation_correction(
-                                            thumbnail_data, orientation)
+                                        thumbnail_data = self.apply_orientation_correction(thumbnail_data, orientation)
 
                                         # Cache the thumbnail
                                         cache.put_thumbnail(self.file_path, thumbnail_data)
-                                        logger.info(f"Thumbnail generated from RAW (no auto-brightness): {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})")
+                                        logger.info(
+                                            f"Thumbnail generated from RAW (no auto-brightness): {os.path.basename(self.file_path)} ({thumbnail_data.shape[1]}x{thumbnail_data.shape[0]})"
+                                        )
 
                                         # Emit thumbnail immediately for fast display (only if not loading full resolution only)
                                         if not self.use_full_resolution:
                                             logger.info("[RAW_PROC] Emitting thumbnail_fallback_used signal")
                                             self.thumbnail_fallback_used.emit("Loading thumbnail...")
-                                            logger.info(f"[RAW_PROC] Emitting image_processed signal with thumbnail data: {thumbnail_data.shape}")
+                                            logger.info(
+                                                f"[RAW_PROC] Emitting image_processed signal with thumbnail data: {thumbnail_data.shape}"
+                                            )
                                             self.image_processed.emit(thumbnail_data)
                                             logger.info("[RAW_PROC] Thumbnail signals emitted successfully")
 
@@ -477,17 +538,21 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                     error_str = str(thumb_error)
                                     error_type = type(thumb_error).__name__
                                     is_cancellation = (
-                                        self._should_stop or
-                                        'OutOfOrderCall' in error_type or
-                                        'LibRaw' in error_type or
-                                        'Out of order' in error_str or
-                                        'out of order' in error_str.lower()
+                                        self._should_stop
+                                        or "OutOfOrderCall" in error_type
+                                        or "LibRaw" in error_type
+                                        or "Out of order" in error_str
+                                        or "out of order" in error_str.lower()
                                     )
                                     if is_cancellation:
-                                        logger.debug(f"Thumbnail generation cancelled for {os.path.basename(self.file_path)}")
+                                        logger.debug(
+                                            f"Thumbnail generation cancelled for {os.path.basename(self.file_path)}"
+                                        )
                                         return
                                     # For other errors, log but continue (embedded thumbnail may still be processed below)
-                                    logger.debug(f"RAW thumbnail generation failed, will try embedded thumbnail: {thumb_error}")
+                                    logger.debug(
+                                        f"RAW thumbnail generation failed, will try embedded thumbnail: {thumb_error}"
+                                    )
                                     thumbnail_data = None
                                     thumb = None  # Ensure thumb is None so embedded thumbnail section can try
 
@@ -499,14 +564,18 @@ class RAWProcessorPart2(RAWProcessorPart1):
                             # OPTIMIZATION: Check if full image is already cached before processing
                             cached_full = cache.get_full_image(self.file_path)
                             if cached_full is not None:
-                                logger.info(f"[RAW_PROC] Full image already cached, skipping processing: {os.path.basename(self.file_path)}")
+                                logger.info(
+                                    f"[RAW_PROC] Full image already cached, skipping processing: {os.path.basename(self.file_path)}"
+                                )
                                 # Don't emit full image yet - wait for user to zoom in or request it
                                 return
 
                             # Skip full processing if we're only loading full resolution (on-demand zoom)
                             # and it's not cached (we already checked above)
                             if not self.use_full_resolution:
-                                logger.debug("Using cached thumbnail, will process full image in background (lazy loading)")
+                                logger.debug(
+                                    "Using cached thumbnail, will process full image in background (lazy loading)"
+                                )
 
                         # Check if we should stop before full processing
                         if self._should_stop:
@@ -518,12 +587,15 @@ class RAWProcessorPart2(RAWProcessorPart1):
                         # 2. Full image is not cached (need to generate it)
                         cached_full = cache.get_full_image(self.file_path)
                         if cached_full is not None and not self.use_full_resolution:
-                            logger.info(f"[RAW_PROC] Full image already cached, skipping processing (lazy loading): {os.path.basename(self.file_path)}")
+                            logger.info(
+                                f"[RAW_PROC] Full image already cached, skipping processing (lazy loading): {os.path.basename(self.file_path)}"
+                            )
                             return
 
                         # Now try full RAW processing in background
                         try:
                             import time
+
                             processing_start = time.time()
                             # Emit progress signal for full image processing
                             if self.use_full_resolution:
@@ -531,22 +603,24 @@ class RAWProcessorPart2(RAWProcessorPart1):
                             else:
                                 self.processing_progress.emit("Processing RAW image...")
                             logger.debug(f"Starting full RAW image processing: {os.path.basename(self.file_path)}")
-                            rgb_image = self.process_raw_with_camera_specific_settings(
-                                raw)
+                            rgb_image = self.process_raw_with_camera_specific_settings(raw)
                             # Apply orientation correction to processed RAW image
 
                             # Check if processing was stopped or failed
                             if self._should_stop or rgb_image is None:
-                                logger.debug(f"Processing stopped or cancelled during RAW processing for: {self.file_path}")
+                                logger.debug(
+                                    f"Processing stopped or cancelled during RAW processing for: {self.file_path}"
+                                )
                                 return
 
                             processing_time = time.time() - processing_start
-                            logger.info(f"RAW processing completed in {processing_time:.3f}s, shape: {rgb_image.shape}, dtype: {rgb_image.dtype}")
+                            logger.info(
+                                f"RAW processing completed in {processing_time:.3f}s, shape: {rgb_image.shape}, dtype: {rgb_image.dtype}"
+                            )
 
                             if True:  # Always apply correction (user_flip=0 forced)
                                 logger.info(f"[RAW_PROC] Applying orientation correction: {orientation}")
-                                rgb_image = self.apply_orientation_correction(
-                                    rgb_image, orientation)
+                                rgb_image = self.apply_orientation_correction(rgb_image, orientation)
 
                             # Cache the full image
                             # Check if we should stop after orientation correction
@@ -558,20 +632,29 @@ class RAWProcessorPart2(RAWProcessorPart1):
                             cache.put_full_image(self.file_path, rgb_image)
 
                             # Mark if this is half_size or full resolution
-                            is_half_size = self._use_fast_processing if hasattr(self, '_use_fast_processing') else False
-                            logger.info(f"Full image processed and cached: {os.path.basename(self.file_path)} ({rgb_image.shape[1]}x{rgb_image.shape[0]}) {'[half_size]' if is_half_size else '[full_resolution]'}")
+                            is_half_size = self._use_fast_processing if hasattr(self, "_use_fast_processing") else False
+                            logger.info(
+                                f"Full image processed and cached: {os.path.basename(self.file_path)} ({rgb_image.shape[1]}x{rgb_image.shape[0]}) {'[half_size]' if is_half_size else '[full_resolution]'}"
+                            )
                             # Emit the full quality image (only once)
                             if not self._should_stop:
                                 logger.info("[RAW_PROC] Emitting processing_progress signal: Processing complete")
                                 self.processing_progress.emit("Processing complete")
-                                logger.info(f"[RAW_PROC] Emitting image_processed signal with full image: {rgb_image.shape}")
+                                logger.info(
+                                    f"[RAW_PROC] Emitting image_processed signal with full image: {rgb_image.shape}"
+                                )
                                 self.image_processed.emit(rgb_image)
-                                logger.info(f"[RAW_PROC] Full image signals emitted successfully for: {os.path.basename(self.file_path)}")
+                                logger.info(
+                                    f"[RAW_PROC] Full image signals emitted successfully for: {os.path.basename(self.file_path)}"
+                                )
 
                         except MemoryError as mem_error:
                             # Memory error - provide helpful message
                             error_msg = str(mem_error)
-                            logger.error(f"Memory error processing RAW file {os.path.basename(self.file_path)}: {error_msg}", exc_info=True)
+                            logger.error(
+                                f"Memory error processing RAW file {os.path.basename(self.file_path)}: {error_msg}",
+                                exc_info=True,
+                            )
                             if not self._should_stop:
                                 self.error_occurred.emit(
                                     f"Memory error processing RAW file:\n{error_msg}\n\n"
@@ -590,30 +673,34 @@ class RAWProcessorPart2(RAWProcessorPart1):
 
                             # Check if this is a cancellation-related error
                             is_cancellation = (
-                                self._should_stop or
-                                'OutOfOrderCall' in error_type or
-                                'LibRaw' in error_type or
-                                'Out of order' in error_str or
-                                'out of order' in error_str.lower()
+                                self._should_stop
+                                or "OutOfOrderCall" in error_type
+                                or "LibRaw" in error_type
+                                or "Out of order" in error_str
+                                or "out of order" in error_str.lower()
                             )
 
                             if is_cancellation:
                                 # This is expected when processing is cancelled - just log as debug
-                                logger.debug(f"RAW processing cancelled for {os.path.basename(self.file_path)}: {processing_error}")
+                                logger.debug(
+                                    f"RAW processing cancelled for {os.path.basename(self.file_path)}: {processing_error}"
+                                )
                                 return  # Normal cancellation, exit gracefully
 
                             # If RAW processing fails for other reasons, we already have thumbnail displayed
-                            logger.error(f"Full RAW processing failed for {os.path.basename(self.file_path)}: {processing_error}", exc_info=True)
+                            logger.error(
+                                f"Full RAW processing failed for {os.path.basename(self.file_path)}: {processing_error}",
+                                exc_info=True,
+                            )
                             if not self._should_stop:
                                 # Only emit error if we don't have a thumbnail
                                 if thumbnail_data is None:
-                                    self.error_occurred.emit(
-                                        f"Failed to process RAW file: {str(processing_error)}"
-                                    )
+                                    self.error_occurred.emit(f"Failed to process RAW file: {str(processing_error)}")
                                 else:
                                     # We have thumbnail, so just log the error
-                                    logger.warning("Full RAW processing failed but thumbnail is available, continuing with thumbnail display")
-
+                                    logger.warning(
+                                        "Full RAW processing failed but thumbnail is available, continuing with thumbnail display"
+                                    )
 
                     finally:
                         # Ensure raw handle is closed (thread-safe)
@@ -629,18 +716,20 @@ class RAWProcessorPart2(RAWProcessorPart1):
                                     error_str = str(close_error)
                                     error_type = type(close_error).__name__
                                     is_cancellation = (
-                                        self._should_stop or
-                                        'OutOfOrderCall' in error_type or
-                                        'LibRaw' in error_type or
-                                        'Out of order' in error_str or
-                                        'out of order' in error_str.lower()
+                                        self._should_stop
+                                        or "OutOfOrderCall" in error_type
+                                        or "LibRaw" in error_type
+                                        or "Out of order" in error_str
+                                        or "out of order" in error_str.lower()
                                     )
                                     if not is_cancellation:
                                         logger.warning(f"Error closing RAW file handle: {close_error}")
                                 self._raw_handle = None
                             elif self._raw_handle is None:
                                 # Handle was already closed by cleanup - just log
-                                logger.debug(f"RAW file handle already closed by cleanup: {os.path.basename(self.file_path)}")
+                                logger.debug(
+                                    f"RAW file handle already closed by cleanup: {os.path.basename(self.file_path)}"
+                                )
                             # If handle doesn't match, it was replaced - don't close
                 except Exception as e:
                     # Handle file opening errors
@@ -652,13 +741,16 @@ class RAWProcessorPart2(RAWProcessorPart1):
             else:
                 # For non-RAW files (JPEG, PNG, WebP, etc.), emit None to let main thread handle with QPixmap
                 filename = os.path.basename(self.file_path)
-                logger.info(f"[RAW_PROC] ========== RAWProcessor.run() STARTED for {filename} (non-RAW file) ==========")
+                logger.info(
+                    f"[RAW_PROC] ========== RAWProcessor.run() STARTED for {filename} (non-RAW file) =========="
+                )
                 logger.info("[RAW_PROC] Non-RAW file detected, emitting None signal for QPixmap handling")
 
                 # Extract EXIF data for non-RAW files
                 try:
                     self.processing_progress.emit("Reading metadata...")
                     from enhanced_raw_processor import EXIFExtractor
+
                     exif_extractor = EXIFExtractor()
                     exif_data = exif_extractor.extract_exif_data(self.file_path)
 
@@ -679,16 +771,20 @@ class RAWProcessorPart2(RAWProcessorPart1):
             # Provide more specific error messages
             error_msg = str(e)
             logger = logging.getLogger(__name__)
-            logger.error(f"Unhandled exception in RAWProcessor for {os.path.basename(self.file_path) if hasattr(self, 'file_path') else 'unknown'}: {e}", exc_info=True)
+            logger.error(
+                f"Unhandled exception in RAWProcessor for {os.path.basename(self.file_path) if hasattr(self, 'file_path') else 'unknown'}: {e}",
+                exc_info=True,
+            )
 
             if "data corrupted" in error_msg.lower():
                 error_msg = f"RAW processing failed due to LibRaw compatibility issue.\n\nThis is a known issue with LibRaw 0.21.3 and certain NEF files.\nTry using a different RAW processor or contact the developer for updates.\n\nOriginal error: {error_msg}"
             elif "unsupported file format" in error_msg.lower():
-                error_msg = f"This RAW file format may not be supported by your LibRaw version.\n\nOriginal error: {error_msg}"
+                error_msg = (
+                    f"This RAW file format may not be supported by your LibRaw version.\n\nOriginal error: {error_msg}"
+                )
             elif "input/output error" in error_msg.lower():
                 error_msg = f"Cannot read the file. It may be corrupted or in use by another program.\n\nOriginal error: {error_msg}"
             elif "cannot allocate memory" in error_msg.lower():
                 error_msg = f"Not enough memory to process this large RAW file.\n\nOriginal error: {error_msg}"
 
             self.error_occurred.emit(error_msg)
-

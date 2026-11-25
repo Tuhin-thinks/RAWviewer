@@ -1,4 +1,5 @@
 """adjust mixin, part 5 of 5 (13 methods, 537 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -90,9 +91,7 @@ class AdjustPart5:
                 write_xmp_adjustments_for_file(path, adj)
         except Exception as exc:
             if hasattr(self, "status_bar"):
-                self.status_bar.showMessage(
-                    f"Could not save adjustments: {exc}", 5000
-                )
+                self.status_bar.showMessage(f"Could not save adjustments: {exc}", 5000)
             return
         # Disabled (2026-07): reported color artifacts in the re-encoded
         # preview. See _reencode_persisted_preview_for_sidecar's docstring;
@@ -141,14 +140,10 @@ class AdjustPart5:
             self._pending_browse_bake_path = None
             # Drop the stale edited frame so a later accidental bake cannot
             # resurrect it; gallery reload will fetch original thumbs.
-            if _norm_path(getattr(self, "_adjust_last_render_norm", "") or "") == _norm_path(
-                path
-            ):
+            if _norm_path(getattr(self, "_adjust_last_render_norm", "") or "") == _norm_path(path):
                 self._adjust_last_render = None
                 self._adjust_last_render_norm = None
-            if _norm_path(getattr(self, "_adjust_hires_render_norm", "") or "") == _norm_path(
-                path
-            ):
+            if _norm_path(getattr(self, "_adjust_hires_render_norm", "") or "") == _norm_path(path):
                 self._adjust_hires_render = None
                 self._adjust_hires_render_norm = None
         gj = getattr(self, "gallery_justified", None)
@@ -204,9 +199,7 @@ class AdjustPart5:
         except Exception:
             import logging
 
-            logging.getLogger(__name__).debug(
-                "[BAKE] visited-edit bake skipped for %s", path, exc_info=True
-            )
+            logging.getLogger(__name__).debug("[BAKE] visited-edit bake skipped for %s", path, exc_info=True)
 
     def _on_adjust_recovery_baseline_requested(self) -> None:
         path = getattr(self, "current_file_path", None)
@@ -217,9 +210,7 @@ class AdjustPart5:
 
         if not is_raw_file(path):
             if hasattr(self, "status_bar"):
-                self.status_bar.showMessage(
-                    "Recovery baseline is only available for RAW/DNG files", 3500
-                )
+                self.status_bar.showMessage("Recovery baseline is only available for RAW/DNG files", 3500)
             return
         if getattr(self, "_raw_recovery_active", False):
             self._raw_recovery_active = False
@@ -228,8 +219,7 @@ class AdjustPart5:
         self._apply_adjust_panel_preview(full_quality=True)
         if hasattr(self, "status_bar"):
             self.status_bar.showMessage(
-                "Recovery look on -- Shadows/Highlights readouts updated; "
-                "tweak Exposure / Sat / HSL from here",
+                "Recovery look on -- Shadows/Highlights readouts updated; tweak Exposure / Sat / HSL from here",
                 6000,
             )
         QTimer.singleShot(0, self._restore_keyboard_focus)
@@ -282,9 +272,7 @@ class AdjustPart5:
             geo = panel.get_adjustments() if panel is not None else None
         except Exception:
             geo = None
-        worker = _AdjustCompareOriginalWorker(
-            path, base, self._adjust_compare_original_signals, geometry_adj=geo
-        )
+        worker = _AdjustCompareOriginalWorker(path, base, self._adjust_compare_original_signals, geometry_adj=geo)
         _get_bg_thread_pool().start(worker)
 
     def _on_adjust_compare_original_ready(self, file_path: str, array) -> None:
@@ -307,7 +295,9 @@ class AdjustPart5:
         self._adjust_compare_original_path = _norm_path(file_path)
         gv.set_compare_original_pixmap(pixmap)
 
-        is_compare_active = panel is not None and getattr(panel, "_compare_btn", None) is not None and panel._compare_btn.isChecked()
+        is_compare_active = (
+            panel is not None and getattr(panel, "_compare_btn", None) is not None and panel._compare_btn.isChecked()
+        )
         if is_compare_active:
             gv.set_compare_mode(True)
             if hasattr(self, "status_bar"):
@@ -498,11 +488,7 @@ class AdjustPart5:
 
         gj = getattr(self, "gallery_justified", None)
         if gj is not None:
-            gallery_path = (
-                gj._resolve_gallery_path(path)
-                if hasattr(gj, "_resolve_gallery_path")
-                else path
-            )
+            gallery_path = gj._resolve_gallery_path(path) if hasattr(gj, "_resolve_gallery_path") else path
             if hasattr(gj, "on_visual_rotation_changed"):
                 with contextlib.suppress(Exception):
                     gj.on_visual_rotation_changed(gallery_path or path)
@@ -528,9 +514,7 @@ class AdjustPart5:
         if base_pixmap is not None and not base_pixmap.isNull():
             self.display_pixmap(base_pixmap)
             pm_max = max(base_pixmap.width(), base_pixmap.height())
-            self._manager_displayed_max_dim = max(
-                getattr(self, "_manager_displayed_max_dim", 0), pm_max
-            )
+            self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
         else:
             self.load_raw_image(path)
         new_pm = getattr(self, "current_pixmap", None)
@@ -539,10 +523,7 @@ class AdjustPart5:
             and prev_h > 0
             and new_pm is not None
             and not new_pm.isNull()
-            and (
-                new_pm.width() != prev_w
-                or new_pm.height() != prev_h
-            )
+            and (new_pm.width() != prev_w or new_pm.height() != prev_h)
         )
         if aspect_swapped:
             gv = getattr(self, "gpu_view", None)

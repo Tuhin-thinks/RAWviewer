@@ -23,7 +23,6 @@ from metadata import backend as metadata_backend
 logger = logging.getLogger(__name__)
 
 
-
 def _tag_text(tags: dict, *keys: str) -> str:
     for key in keys:
         tag = tags.get(key)
@@ -57,6 +56,7 @@ def gps_to_decimal(gps_vals: any, ref: str) -> float | None:
         vals = getattr(gps_vals, "values", gps_vals)
         if isinstance(vals, str):
             import re
+
             parts = re.split(r"[\s,]+", vals.strip())
             if len(parts) >= 3:
                 parsed = []
@@ -518,10 +518,7 @@ class ImageLocationMapWidget(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if (
-            self._drag_press_global is not None
-            and event.buttons() & Qt.MouseButton.LeftButton
-        ):
+        if self._drag_press_global is not None and event.buttons() & Qt.MouseButton.LeftButton:
             parent = self.parentWidget()
             if parent:
                 d = event.globalPosition().toPoint() - self._drag_press_global

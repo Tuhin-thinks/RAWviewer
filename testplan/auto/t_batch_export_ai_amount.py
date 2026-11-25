@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Batch export dialog: AI denoise amount slider overrides per-photo values."""
+
 import os
 import sys
 
@@ -89,6 +90,7 @@ def main() -> int:
         return {"AIDenoiseAmount": 100.0, "Exposure2012": 0.1}
 
     import rawviewer_app.services.batch as bo
+
     orig_load = bo.load_adjustments_for_file if hasattr(bo, "load_adjustments_for_file") else None
 
     err, _ = export_one_file(

@@ -1,4 +1,5 @@
 """adjust mixin, part 3 of 5 (31 methods, 892 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -156,18 +157,19 @@ class AdjustPart3:
             # clears this and issues the single render that counts.
             self._adjust_mask_load_pending = bool(db_serial or heal_serial)
             self._set_edit_loading_overlay(norm if has_edit else None)
-            if (
-                getattr(self, "_adjust_preview_base_rgb", None) is not None
-                and norm == getattr(self, "_adjust_edit_base_path", None)
+            if getattr(self, "_adjust_preview_base_rgb", None) is not None and norm == getattr(
+                self, "_adjust_edit_base_path", None
             ):
                 # Cached base: immediately fetch and display lens status
                 try:
                     from processing.unified import UnifiedImageProcessor
+
                     processor = UnifiedImageProcessor()
                     has_profile = processor.lens_profile_available(path)
                     profile_name = ""
                     if has_profile:
                         from raw_adjustments.lens_correction import get_lens_profile_name
+
                         exif_data = processor.exif_extractor.extract_exif_data(path)
                         profile_name = get_lens_profile_name(exif_data)
                     panel.set_lens_correction_available(has_profile, profile_name)
@@ -177,13 +179,9 @@ class AdjustPart3:
                     self._apply_adjust_panel_preview(full_quality=True)
 
         if db_serial or heal_serial:
-            self._adjust_mask_load_gen = (
-                int(getattr(self, "_adjust_mask_load_gen", 0)) + 1
-            )
+            self._adjust_mask_load_gen = int(getattr(self, "_adjust_mask_load_gen", 0)) + 1
             gen = self._adjust_mask_load_gen
-            worker = _AdjustMaskLoadWorker(
-                gen, path, db_serial, heal_serial, self._adjust_mask_load_signals
-            )
+            worker = _AdjustMaskLoadWorker(gen, path, db_serial, heal_serial, self._adjust_mask_load_signals)
             _get_bg_thread_pool().start(worker)
 
     def _render_reflects_loaded_edit(self, adj_used) -> bool:
@@ -205,9 +203,7 @@ class AdjustPart3:
             return False
         return not (getattr(self, "_adjust_loading_edit_wants_heal", False) and adj_used.get(HEAL_MASK_OBJ_KEY) is None)
 
-    def _on_adjust_mask_load_ready(
-        self, generation: int, file_path: str, db_mask, heal_mask
-    ) -> None:
+    def _on_adjust_mask_load_ready(self, generation: int, file_path: str, db_mask, heal_mask) -> None:
         """Background decode of the dodge/burn + heal mask blobs landed.
 
         Fills in the actual mask objects (superseded by a later open/nav if
@@ -234,21 +230,13 @@ class AdjustPart3:
         # never appear in a render, so leaving the flag set would strand the
         # loading overlay forever.
         if getattr(self, "_adjust_loading_edit_norm", None) is not None:
-            self._adjust_loading_edit_wants_db = (
-                db_mask is not None and not db_mask.is_empty
-            )
-            self._adjust_loading_edit_wants_heal = (
-                heal_mask is not None and not heal_mask.is_empty
-            )
+            self._adjust_loading_edit_wants_db = db_mask is not None and not db_mask.is_empty
+            self._adjust_loading_edit_wants_heal = heal_mask is not None and not heal_mask.is_empty
         panel = getattr(self, "single_image_adjust_panel", None)
         if panel is not None:
-            panel.set_dodge_burn_mask_present(
-                db_mask is not None and not db_mask.is_empty
-            )
+            panel.set_dodge_burn_mask_present(db_mask is not None and not db_mask.is_empty)
             if hasattr(panel, "set_spot_heal_mask_present"):
-                panel.set_spot_heal_mask_present(
-                    heal_mask is not None and not heal_mask.is_empty
-                )
+                panel.set_spot_heal_mask_present(heal_mask is not None and not heal_mask.is_empty)
         self._sync_dodge_burn_mask_overlay()
         if panel is not None and panel.isVisible():
             self._apply_adjust_panel_preview(full_quality=True)
@@ -357,7 +345,7 @@ class AdjustPart3:
             return False
         cur = getattr(self, "current_pixmap", None)
         if cur is not None and not cur.isNull() and max(h, w) <= max(int(cur.width()), int(cur.height())) * 1.05:
-                return False
+            return False
         try:
             pixmap = self._numpy_to_qpixmap(arr)
         except Exception:
@@ -443,16 +431,12 @@ class AdjustPart3:
         self._adjust_preview_base_rgb_fast = None
         self._adjust_edit_base_path = None
         if hasattr(self, "status_bar"):
-            self.status_bar.showMessage(
-                f"Loading RAW for editing: {os.path.basename(file_path)}…", 0
-            )
+            self.status_bar.showMessage(f"Loading RAW for editing: {os.path.basename(file_path)}…", 0)
         pool = getattr(getattr(self, "image_manager", None), "_process_pool", None)
         panel = getattr(self, "single_image_adjust_panel", None)
         lens_correction_on = False
         if panel is not None:
-            lens_correction_on = (
-                float(panel.get_adjustments().get("LensCorrectionEnabled", 0.0) or 0.0) > 0.5
-            )
+            lens_correction_on = float(panel.get_adjustments().get("LensCorrectionEnabled", 0.0) or 0.0) > 0.5
         worker = _AdjustEditBaseWorker(
             file_path,
             pool,
@@ -493,9 +477,7 @@ class AdjustPart3:
             except Exception:
                 pass
             if hasattr(self, "status_bar"):
-                self.status_bar.showMessage(
-                    f"Skipped {os.path.basename(file_path)} (not editable)", 3000
-                )
+                self.status_bar.showMessage(f"Skipped {os.path.basename(file_path)} (not editable)", 3000)
             # No render will follow for this file, so nothing else would ever
             # dismiss an "applying saved edit" overlay raised for it.
             if norm == getattr(self, "_adjust_loading_edit_norm", None):
@@ -533,13 +515,9 @@ class AdjustPart3:
                 # RAW demosaic returns float32/uint16; uint8 here means the
                 # embedded-JPEG fallback was used instead (e.g. HE/HE*-
                 # compressed NEF, or a linear/composite DNG panorama).
-                self.status_bar.showMessage(
-                    f"Editing embedded preview (RAW demosaic unavailable) ({w}×{h})", 4000
-                )
+                self.status_bar.showMessage(f"Editing embedded preview (RAW demosaic unavailable) ({w}×{h})", 4000)
             else:
-                self.status_bar.showMessage(
-                    f"Linear RAW edit base ready ({w}×{h})", 2500
-                )
+                self.status_bar.showMessage(f"Linear RAW edit base ready ({w}×{h})", 2500)
         self._push_lut_chooser_previews()
 
     def _push_lut_chooser_previews(self) -> None:
@@ -625,9 +603,9 @@ class AdjustPart3:
         if last is None:
             return False
         last_arr, last_adj = last
-        if last_arr is None or _norm_path(
-            getattr(self, "current_file_path", "") or ""
-        ) != getattr(self, "_adjust_last_render_norm", None):
+        if last_arr is None or _norm_path(getattr(self, "current_file_path", "") or "") != getattr(
+            self, "_adjust_last_render_norm", None
+        ):
             return False
         try:
             # Fold in the same local-mask keys the render path injects via
@@ -665,10 +643,7 @@ class AdjustPart3:
             from raw_adjustments import _kelvin_to_rgb
 
             inv_g = 1.0 / 2.222
-            f = 2.0 ** (
-                (float(adj.get("Exposure2012", 0.0)) - float(last_adj.get("Exposure2012", 0.0)))
-                / 2.222
-            )
+            f = 2.0 ** ((float(adj.get("Exposure2012", 0.0)) - float(last_adj.get("Exposure2012", 0.0))) / 2.222)
             gains = [f, f, f]
             t_new = float(adj.get("Temperature", 0.0))
             t_old = float(last_adj.get("Temperature", 0.0))
@@ -788,9 +763,7 @@ class AdjustPart3:
             if slider is None:
                 return
             amount = 8 if wheel_delta > 0 else -8
-            slider.setValue(
-                max(slider.minimum(), min(slider.maximum(), slider.value() + amount))
-            )
+            slider.setValue(max(slider.minimum(), min(slider.maximum(), slider.value() + amount)))
 
     def _on_adjust_ai_preview_requested(self) -> None:
         self._apply_adjust_panel_preview(full_quality=True, ai_preview=True)
@@ -916,19 +889,11 @@ class AdjustPart3:
         gv.set_crop_aspect_ratio(aspect if isinstance(aspect, (int, float)) else None)
         self._crop_working_insets = gv.crop_insets()
 
-    def _on_crop_insets_live(
-        self, left: float, right: float, top: float, bottom: float
-    ) -> None:
+    def _on_crop_insets_live(self, left: float, right: float, top: float, bottom: float) -> None:
         self._crop_working_insets = (float(left), float(right), float(top), float(bottom))
         panel = getattr(self, "single_image_adjust_panel", None)
         # Geometry-overlay preview (straighten/perspective) is not explicit Crop
         # mode -- write insets through so the dimmed rect matches saved crop.
-        if (
-            panel is not None
-            and getattr(self, "_geometry_overlay_preview", False)
-            and not panel.is_crop_mode()
-        ):
+        if panel is not None and getattr(self, "_geometry_overlay_preview", False) and not panel.is_crop_mode():
             with contextlib.suppress(Exception):
-                panel.set_crop_insets(
-                    float(left), float(right), float(top), float(bottom), emit=False
-                )
+                panel.set_crop_insets(float(left), float(right), float(top), float(bottom), emit=False)

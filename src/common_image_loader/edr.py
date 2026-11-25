@@ -13,15 +13,21 @@ from .exif_display import apply_container_orientation_to_array
 from .helpers import use_libraw_consistent_preview_first
 
 _last_load_used_edr = False
+
+
 def take_last_load_edr_flag() -> bool:
     """True when the most recent load_pixmap_safe() used macOS HDR/EDR output."""
     global _last_load_used_edr
     used = bool(_last_load_used_edr)
     _last_load_used_edr = False
     return used
+
+
 def is_macos_edr_enabled() -> bool:
     # EDR support is removed at this stage because the updated image loading pipeline is not compatible with EDR, causing slow loads.
     return False
+
+
 def format_edr_status_label(
     *,
     display_mode: str | None = None,
@@ -29,6 +35,8 @@ def format_edr_status_label(
 ) -> str | None:
     """Short label for metadata / status bar."""
     return None
+
+
 def summarize_macos_edr_startup(*, gpu_view=None) -> str:
     """One-line startup hint for logs / status bar."""
     import platform
@@ -47,6 +55,8 @@ def summarize_macos_edr_startup(*, gpu_view=None) -> str:
     if gpu_view is not None and not getattr(gpu_view, "_edr_initialized", False):
         parts.append("viewport initializingΓÇª")
     return " ┬╖ ".join(parts)
+
+
 def use_raw_edr_display() -> bool:
     """macOS RAW EDR single-view path (on by default; RAWVIEWER_RAW_EDR=0 to disable).
 
@@ -69,12 +79,16 @@ def use_raw_edr_display() -> bool:
 
     settings = QSettings("RAWviewer", "RAWviewer")
     return settings.value("raw_edr_display_enabled", True, type=bool)
+
+
 def use_raw_edr_for_display() -> bool:
     """True when macOS RAW EDR should replace the normal display path (RAW workflow only)."""
     if not use_raw_edr_display():
         return False
     # Embedded-JPEG workflow must keep camera preview pixels (SDR); do not re-decode via LibRaw.
     return use_libraw_consistent_preview_first()
+
+
 def is_windows_hdr_display_available() -> bool:
     """Best-effort HDR display probe for future Windows 10-bit work (not wired yet)."""
     import sys
@@ -82,6 +96,8 @@ def is_windows_hdr_display_available() -> bool:
     if sys.platform != "win32":
         return False
     return False
+
+
 def linear_edr_float_to_qpixmap(
     rgb_edr: np.ndarray,
     *,
@@ -114,6 +130,8 @@ def linear_edr_float_to_qpixmap(
             Qt.TransformationMode.SmoothTransformation,
         )
     return QPixmap.fromImage(qimage) if not qimage.isNull() else QPixmap()
+
+
 def decode_raw_edr_pixmap(
     file_path: str,
     *,
@@ -136,6 +154,8 @@ def decode_raw_edr_pixmap(
         return None
     pixmap = linear_edr_float_to_qpixmap(rgb_edr, max_edge=max_edge)
     return pixmap if not pixmap.isNull() else None
+
+
 def pq_to_linear(v: np.ndarray) -> np.ndarray:
     m1 = 2610.0 / 16384.0
     m2 = (2523.0 / 32.0) * 128.0
@@ -150,6 +170,8 @@ def pq_to_linear(v: np.ndarray) -> np.ndarray:
     denominator = np.where(denominator == 0.0, 1e-8, denominator)
     linear = np.power(numerator / denominator, 1.0 / m1)
     return linear
+
+
 def hlg_to_linear(v: np.ndarray) -> np.ndarray:
     a = 0.17883277
     b = 0.28466892
@@ -164,6 +186,8 @@ def hlg_to_linear(v: np.ndarray) -> np.ndarray:
     exponent = np.clip((v[mask_high] - c) / a, -80.0, 80.0)
     linear[mask_high] = (np.exp(exponent) + b) / 12.0
     return linear
+
+
 def linear_to_srgb(arr: np.ndarray) -> np.ndarray:
     srgb = np.zeros_like(arr, dtype=np.float32)
     mask_low = arr <= 0.0031308
@@ -171,8 +195,9 @@ def linear_to_srgb(arr: np.ndarray) -> np.ndarray:
     mask_high = ~mask_low
     srgb[mask_high] = 1.055 * np.power(np.maximum(arr[mask_high], 0.0), 1.0 / 2.4) - 0.055
     return np.clip(srgb, 0.0, 1.0)
+
+
 def tone_map_reinhard(img_float: np.ndarray, exposure: float = 1.0) -> np.ndarray:
     img_exposed = img_float * exposure
     mapped = img_exposed / (1.0 + img_exposed)
     return np.clip(mapped, 0.0, 1.0)
-

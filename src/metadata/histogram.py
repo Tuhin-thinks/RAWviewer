@@ -51,11 +51,9 @@ def _histograms_from_rgb(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.nd
     hr = np.bincount(r, minlength=256).astype(np.float64)
     hg = np.bincount(g, minlength=256).astype(np.float64)
     hb = np.bincount(b, minlength=256).astype(np.float64)
-    lum = (
-        0.2126 * r.astype(np.float64)
-        + 0.7152 * g.astype(np.float64)
-        + 0.0722 * b.astype(np.float64)
-    ).astype(np.int32)
+    lum = (0.2126 * r.astype(np.float64) + 0.7152 * g.astype(np.float64) + 0.0722 * b.astype(np.float64)).astype(
+        np.int32
+    )
     lum = np.clip(lum, 0, 255).astype(np.uint8)
     hl = np.bincount(lum, minlength=256).astype(np.float64)
     return hr, hg, hb, hl
@@ -106,10 +104,7 @@ class ImageHistogramWidget(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        if (
-            self._drag_press_global is not None
-            and event.buttons() & Qt.MouseButton.LeftButton
-        ):
+        if self._drag_press_global is not None and event.buttons() & Qt.MouseButton.LeftButton:
             parent = self.parentWidget()
             if parent:
                 d = event.globalPosition().toPoint() - self._drag_press_global

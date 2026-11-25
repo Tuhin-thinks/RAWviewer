@@ -41,6 +41,7 @@ def get_semantic_capture_times_for_paths(
     if not paths:
         return {}
     from search.engine import SemanticImageIndex
+
     if db_path is None:
         cache_dir = os.path.expanduser("~/.rawviewer_cache")
         db_path = os.path.join(cache_dir, "semantic_index.db")
@@ -90,6 +91,7 @@ def get_semantic_capture_times_for_folder(
 ) -> dict[str, str]:
     """Bulk read capture_time for all indexed files under folder_path (any thread)."""
     from search.engine import SemanticImageIndex
+
     if not folder_path:
         return {}
     if db_path is None:
@@ -98,20 +100,14 @@ def get_semantic_capture_times_for_folder(
     if not os.path.isfile(db_path):
         return {}
     try:
-        root = SemanticImageIndex._canonical_path(
-            os.path.abspath(folder_path)
-        )
+        root = SemanticImageIndex._canonical_path(os.path.abspath(folder_path))
     except OSError:
         return {}
     if not root:
         return {}
     root_lower = root.rstrip("\\/").lower()
     prefix = root_lower + "\\%" if os.sep == "\\" else root_lower.replace("\\", "/") + "/%"
-    path_expr = (
-        "lower(replace(file_path, '/', '\\\\'))"
-        if os.sep == "\\"
-        else "lower(replace(file_path, '\\\\', '/'))"
-    )
+    path_expr = "lower(replace(file_path, '/', '\\\\'))" if os.sep == "\\" else "lower(replace(file_path, '\\\\', '/'))"
     conn = _semantic_sort_read_conn(db_path)
     result_map: dict[str, str] = {}
     rows = conn.execute(
@@ -175,38 +171,189 @@ def _semantic_text_variants(text: str) -> list[str]:
 
 
 # Quick O(1) checks before any geocoder CSV load (contradiction filter).
-KNOWN_LOCATION_NAMES: frozenset[str] = frozenset({
-    # Countries
-    "japan", "korea", "china", "taiwan", "usa", "uk", "canada", "france",
-    "germany", "italy", "spain", "russia", "australia", "india", "brazil",
-    "mexico", "thailand", "vietnam", "singapore", "malaysia", "indonesia",
-    "philippines", "switzerland", "austria", "netherlands", "greece", "turkey",
-    "egypt", "south africa", "new zealand", "united states", "united kingdom",
-    "south korea", "north korea",
-    # Major cities & capitals
-    "tokyo", "seoul", "london", "paris", "berlin", "new york", "los angeles",
-    "san francisco", "hong kong", "beijing", "shanghai", "bangkok", "sydney", "melbourne", "toronto", "vancouver", "rome", "milan", "madrid",
-    "barcelona", "amsterdam", "vienna", "zurich", "geneva", "mumbai", "delhi",
-    "bangalore", "jakarta", "manila", "ho chi minh", "hanoi", "taipei", "macao",
-    "moscow", "istanbul", "dubai", "abu dhabi", "riyadh", "cairo", "nairobi",
-    "chicago", "boston", "seattle", "miami", "munich", "frankfurt", "lyon",
-    "prague", "budapest", "warsaw", "stockholm", "oslo", "copenhagen", "helsinki",
-    "lisbon", "athens", "dublin", "tel aviv", "mexico city", "buenos aires",
-    "sao paulo", "rio de janeiro", "santiago", "lima", "bogota",
-    "manchester", "birmingham", "liverpool", "edinburgh", "glasgow", "leeds",
-    "bristol", "cardiff", "belfast", "nottingham", "sheffield", "newcastle",
-    # Popular travel destinations
-    "santorini", "mykonos", "bali", "phuket", "kyoto", "osaka", "nara", "hokkaido",
-    "jeju", "busan", "boracay", "cebu", "nha trang", "da nang", "koh samui",
-    "krabi", "chiang mai", "luang prabang", "angkor wat", "siem reap", "halong bay",
-    "maldives", "fiji", "bora bora", "tahiti", "maui", "honolulu", "oahu", "kauai",
-    "ibiza", "mallorca", "tenerife", "capri", "amalfi", "positano", "venice",
-    "florence", "tuscany", "provence", "cannes", "nice", "monaco", "st moritz",
-    "zermatt", "interlaken", "hallstatt", "salzburg", "innsbruck", "banff",
-    "whistler", "yellowstone", "yosemite", "grand canyon", "sedona", "reykjavik",
-    "blue lagoon", "cappadocia", "petra", "machu picchu", "cusco", "uyuni",
-    "patagonia", "queenstown", "rotorua", "milford sound",
-})
+KNOWN_LOCATION_NAMES: frozenset[str] = frozenset(
+    {
+        # Countries
+        "japan",
+        "korea",
+        "china",
+        "taiwan",
+        "usa",
+        "uk",
+        "canada",
+        "france",
+        "germany",
+        "italy",
+        "spain",
+        "russia",
+        "australia",
+        "india",
+        "brazil",
+        "mexico",
+        "thailand",
+        "vietnam",
+        "singapore",
+        "malaysia",
+        "indonesia",
+        "philippines",
+        "switzerland",
+        "austria",
+        "netherlands",
+        "greece",
+        "turkey",
+        "egypt",
+        "south africa",
+        "new zealand",
+        "united states",
+        "united kingdom",
+        "south korea",
+        "north korea",
+        # Major cities & capitals
+        "tokyo",
+        "seoul",
+        "london",
+        "paris",
+        "berlin",
+        "new york",
+        "los angeles",
+        "san francisco",
+        "hong kong",
+        "beijing",
+        "shanghai",
+        "bangkok",
+        "sydney",
+        "melbourne",
+        "toronto",
+        "vancouver",
+        "rome",
+        "milan",
+        "madrid",
+        "barcelona",
+        "amsterdam",
+        "vienna",
+        "zurich",
+        "geneva",
+        "mumbai",
+        "delhi",
+        "bangalore",
+        "jakarta",
+        "manila",
+        "ho chi minh",
+        "hanoi",
+        "taipei",
+        "macao",
+        "moscow",
+        "istanbul",
+        "dubai",
+        "abu dhabi",
+        "riyadh",
+        "cairo",
+        "nairobi",
+        "chicago",
+        "boston",
+        "seattle",
+        "miami",
+        "munich",
+        "frankfurt",
+        "lyon",
+        "prague",
+        "budapest",
+        "warsaw",
+        "stockholm",
+        "oslo",
+        "copenhagen",
+        "helsinki",
+        "lisbon",
+        "athens",
+        "dublin",
+        "tel aviv",
+        "mexico city",
+        "buenos aires",
+        "sao paulo",
+        "rio de janeiro",
+        "santiago",
+        "lima",
+        "bogota",
+        "manchester",
+        "birmingham",
+        "liverpool",
+        "edinburgh",
+        "glasgow",
+        "leeds",
+        "bristol",
+        "cardiff",
+        "belfast",
+        "nottingham",
+        "sheffield",
+        "newcastle",
+        # Popular travel destinations
+        "santorini",
+        "mykonos",
+        "bali",
+        "phuket",
+        "kyoto",
+        "osaka",
+        "nara",
+        "hokkaido",
+        "jeju",
+        "busan",
+        "boracay",
+        "cebu",
+        "nha trang",
+        "da nang",
+        "koh samui",
+        "krabi",
+        "chiang mai",
+        "luang prabang",
+        "angkor wat",
+        "siem reap",
+        "halong bay",
+        "maldives",
+        "fiji",
+        "bora bora",
+        "tahiti",
+        "maui",
+        "honolulu",
+        "oahu",
+        "kauai",
+        "ibiza",
+        "mallorca",
+        "tenerife",
+        "capri",
+        "amalfi",
+        "positano",
+        "venice",
+        "florence",
+        "tuscany",
+        "provence",
+        "cannes",
+        "nice",
+        "monaco",
+        "st moritz",
+        "zermatt",
+        "interlaken",
+        "hallstatt",
+        "salzburg",
+        "innsbruck",
+        "banff",
+        "whistler",
+        "yellowstone",
+        "yosemite",
+        "grand canyon",
+        "sedona",
+        "reykjavik",
+        "blue lagoon",
+        "cappadocia",
+        "petra",
+        "machu picchu",
+        "cusco",
+        "uyuni",
+        "patagonia",
+        "queenstown",
+        "rotorua",
+        "milford sound",
+    }
+)
 
 _PYCOUNTRY_NAME_INDEX: frozenset[str] | None = None
 
@@ -230,6 +377,7 @@ def _pycountry_name_index() -> frozenset[str]:
     _PYCOUNTRY_NAME_INDEX = frozenset(names)
     return _PYCOUNTRY_NAME_INDEX
 
+
 class CustomReverseGeocoder:
     """GeoNames + Wikidata reverse geocoder with O(log n) nearest-neighbor lookup."""
 
@@ -239,9 +387,7 @@ class CustomReverseGeocoder:
         self.cities = cities
         self.landmarks = landmarks or []
         self._city_coords = (
-            np.asarray([(float(c[0]), float(c[1])) for c in self.cities], dtype=np.float64)
-            if self.cities
-            else None
+            np.asarray([(float(c[0]), float(c[1])) for c in self.cities], dtype=np.float64) if self.cities else None
         )
         self._landmark_coords = (
             np.asarray([(float(lm[0]), float(lm[1])) for lm in self.landmarks], dtype=np.float64)
@@ -312,17 +458,16 @@ class CustomReverseGeocoder:
 
         landmark_name = ""
         if self.landmarks and self._landmark_coords is not None:
-            lm_idx, lm_dist_sq = self._nearest_index(
-                self._landmark_coords, target_lat, target_lon
-            )
+            lm_idx, lm_dist_sq = self._nearest_index(self._landmark_coords, target_lat, target_lon)
             if lm_dist_sq < self._LANDMARK_DIST_SQ:
                 landmark_name = str(self.landmarks[lm_idx][2])
 
-        return [{
-            "name": best_city["name"],
-            "admin1": best_city["admin1"],
-            "cc": best_city["cc"],
-            "alternates": best_city["alternates"],
-            "landmark": landmark_name,
-        }]
-
+        return [
+            {
+                "name": best_city["name"],
+                "admin1": best_city["admin1"],
+                "cc": best_city["cc"],
+                "alternates": best_city["alternates"],
+                "landmark": landmark_name,
+            }
+        ]

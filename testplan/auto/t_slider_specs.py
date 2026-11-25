@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Adjust-panel slider specs: value<->slider mappings are inverses; ranges sane."""
+
 import os
 import sys
 

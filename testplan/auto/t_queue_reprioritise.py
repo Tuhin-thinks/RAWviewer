@@ -71,8 +71,7 @@ def main() -> int:
     check("queue starts with six tasks", m._work_queue.qsize() == 6)
 
     # --- the jump case: the user is now at 4-5, everything else is behind ---
-    distances = {"/f/0.ARW": 40, "/f/1.ARW": 30, "/f/2.ARW": 20,
-                 "/f/3.ARW": 10, "/f/4.ARW": 0, "/f/5.ARW": 0}
+    distances = {"/f/0.ARW": 40, "/f/1.ARW": 30, "/f/2.ARW": 20, "/f/3.ARW": 10, "/f/4.ARW": 0, "/f/5.ARW": 0}
     n = ilm.ImageLoadManager.reprioritise(m, lambda p: distances[p])
     check("every queued task is re-scored", n == 6, str(n))
     order = drain(m)
@@ -97,9 +96,7 @@ def main() -> int:
         m._active_tasks[t.task_key] = t
         m._task_keys_by_path.setdefault(t.file_path, set()).add(t.task_key)
         m._work_queue.put(t)
-    ilm.ImageLoadManager.reprioritise(
-        m, lambda p: 0 if p == "/f/near.ARW" else 50
-    )
+    ilm.ImageLoadManager.reprioritise(m, lambda p: 0 if p == "/f/near.ARW" else 50)
     check(
         "priority band still wins over distance",
         drain(m)[0] == "/f/far.ARW",

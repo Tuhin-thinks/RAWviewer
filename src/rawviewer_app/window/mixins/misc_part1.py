@@ -1,5 +1,5 @@
-
 """misc mixin, part 1 of 4 (31 methods, 827 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -43,9 +43,7 @@ class MiscPart1:
                 self._pending_zoom_toggle = True
                 self._pending_zoom_target_path = self.current_file_path
                 self._pending_gpu_zoom_point = scene_pt
-                logger.info(
-                    "GPU double-click recorded while image is loading; will zoom once ready."
-                )
+                logger.info("GPU double-click recorded while image is loading; will zoom once ready.")
             return
         gv._sync_fit_mode_flag()
         self._stop_slideshow()
@@ -55,10 +53,7 @@ class MiscPart1:
             if getattr(self, "current_file_path", None)
             else "Unknown",
         )
-        if (
-            getattr(self, "_focus_subject_outline_active", False)
-            and not gv.is_fit_mode()
-        ):
+        if getattr(self, "_focus_subject_outline_active", False) and not gv.is_fit_mode():
             gv.fit_to_window()
             self.fit_to_window = True
             self.zoom_center_point = None
@@ -77,10 +72,7 @@ class MiscPart1:
             # Adjust owns the half-res edit buffer -- never queue browse-path
             # sensor decode here (it fought the editor and left zoom on a soft
             # stand-in). Space-key zoom already had this gate; double-click did not.
-            if (
-                not self._adjust_panel_active()
-                and self._needs_full_resolution_upgrade()
-            ):
+            if not self._adjust_panel_active() and self._needs_full_resolution_upgrade():
                 self._pending_zoom = True
                 self._pending_zoom_center = self.zoom_center_point
                 self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
@@ -155,9 +147,7 @@ class MiscPart1:
             exif_data = self.image_cache.get_exif(file_path) or {}
         from rawviewer_app.workers import RawRecoveryWorker
 
-        _get_bg_thread_pool().start(
-            RawRecoveryWorker(file_path, self._raw_recovery_signals, exif_data=exif_data)
-        )
+        _get_bg_thread_pool().start(RawRecoveryWorker(file_path, self._raw_recovery_signals, exif_data=exif_data))
 
     def _disable_raw_recovery(self) -> None:
         was_active = self._raw_recovery_preview_active()
@@ -275,11 +265,7 @@ class MiscPart1:
             return
         vm = getattr(self, "view_mode", "single")
         burst_view = bool(getattr(self, "_burst_group_view_active", False))
-        show = (
-            vm == "gallery"
-            and not burst_view
-            and bool(getattr(self, "image_files", None))
-        )
+        show = vm == "gallery" and not burst_view and bool(getattr(self, "image_files", None))
         btn.setVisible(show)
         if show:
             self._sync_burst_grouping_button_icon()
@@ -378,9 +364,7 @@ class MiscPart1:
     def _burst_members_for_path(self, file_path: str) -> list[str] | None:
         if not self._is_burst_grouping_enabled():
             return None
-        members = (getattr(self, "_burst_path_to_group", {}) or {}).get(
-            _norm_path(file_path)
-        )
+        members = (getattr(self, "_burst_path_to_group", {}) or {}).get(_norm_path(file_path))
         if not members:
             return None
         rejected = self._burst_visibility_exclusion_set()
@@ -452,10 +436,12 @@ class MiscPart1:
 
         self._cancel_load_and_preload_for_path(file_to_delete)
         from image_cache import get_image_cache
+
         cache = get_image_cache()
         cache.invalidate_file(file_to_delete)
 
         from send2trash import send2trash
+
         send2trash(normalized_path)
 
         self._drop_discarded_from_semantic_corpus(file_to_delete)
@@ -499,9 +485,10 @@ class MiscPart1:
             # are cheap; do them first.
             if getattr(self, "view_mode", "single") not in ("single", "compare"):
                 return
-            if _norm_path(file_path) != _norm_path(
-                getattr(self, "current_file_path", None)
-            ) and getattr(self, "view_mode", "single") != "compare":
+            if (
+                _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", None))
+                and getattr(self, "view_mode", "single") != "compare"
+            ):
                 return
             pixmap = _QPixmap.fromImage(image)
             if pixmap.isNull():
@@ -520,10 +507,11 @@ class MiscPart1:
 
     def on_manager_error(self, file_path: str, error_message: str):
         """處理 ImageLoadManager 的錯誤信號"""
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
 
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Remember the failure for the prefetch failure-memo (see
@@ -565,10 +553,7 @@ class MiscPart1:
             return
         if self._retry_raw_preview_with_full_decode(file_path, error_message):
             return
-        if (
-            getattr(self, "view_mode", "single") == "single"
-            and not self._single_view_pixels_on_screen(file_path)
-        ):
+        if getattr(self, "view_mode", "single") == "single" and not self._single_view_pixels_on_screen(file_path):
             self._clear_stale_single_view_image()
             self.status_bar.showMessage(
                 f"Could not load {os.path.basename(file_path)}: {error_message}",
@@ -577,6 +562,7 @@ class MiscPart1:
         # Avoid modal-dialog storms from repeated async retries of the same failure.
         # Repeated QMessageBox.exec() blocks user input and can look like folder switching is broken.
         import time
+
         now = time.time()
         last_error_path = getattr(self, "_last_manager_error_path", None)
         last_t = getattr(self, "_last_manager_error_ts", 0.0)
@@ -617,9 +603,7 @@ class MiscPart1:
         # path unsupported (per-file) and reload so the embed paints; do not
         # leave RAW mode for the whole app.
         if clearly_unsupported and is_raw_file(file_path):
-            if self._auto_revert_to_embedded_jpeg_workflow(
-                file_path, reason="manager clearly_unsupported"
-            ):
+            if self._auto_revert_to_embedded_jpeg_workflow(file_path, reason="manager clearly_unsupported"):
                 with contextlib.suppress(Exception):
                     self._invalidate_workflow_pixel_caches([file_path])
                 self.load_raw_image(file_path, force_reload=True)
@@ -630,12 +614,12 @@ class MiscPart1:
             if self._single_view_pixels_on_screen(file_path):
                 pm = getattr(self, "current_pixmap", None)
                 if pm is not None and not pm.isNull() and max(int(pm.width()), int(pm.height())) >= 1400:
-                        self.status_bar.showMessage(
-                            f"{os.path.basename(file_path)}: keeping embedded preview "
-                            f"(decoder cannot demosaic this RAW compression).",
-                            5000,
-                        )
-                        return
+                    self.status_bar.showMessage(
+                        f"{os.path.basename(file_path)}: keeping embedded preview "
+                        f"(decoder cannot demosaic this RAW compression).",
+                        5000,
+                    )
+                    return
 
         if clearly_unsupported:
             # This error is often just one failed decode *strategy* (e.g. LibRaw
@@ -647,17 +631,12 @@ class MiscPart1:
             # corrupt" dialog for files that then rendered correctly moments
             # later. Give the fallback a grace period and re-check before
             # actually popping the modal.
-            QTimer.singleShot(
-                900, lambda fp=file_path: self._show_unsupported_file_dialog_if_still_failed(fp)
-            )
-        elif (
-            is_raw_file(file_path)
-            and any(
-                marker in lower_err
-                for marker in (
-                    "thumbnail extraction returned none",
-                    "display-tier preview extraction failed",
-                )
+            QTimer.singleShot(900, lambda fp=file_path: self._show_unsupported_file_dialog_if_still_failed(fp))
+        elif is_raw_file(file_path) and any(
+            marker in lower_err
+            for marker in (
+                "thumbnail extraction returned none",
+                "display-tier preview extraction failed",
             )
         ):
             # Preview-only failure in gallery (or after retry): status bar only, no modal.
@@ -709,23 +688,20 @@ class MiscPart1:
             self.status_counter_label.setText("")
             return
         if getattr(self, "view_mode", "single") == "gallery":
-            if getattr(self, "_gallery_bookmark_filter_active", False) or int(
-                getattr(self, "_gallery_rating_filter_min", 0) or 0
-            ) > 0:
+            if (
+                getattr(self, "_gallery_bookmark_filter_active", False)
+                or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+            ):
                 total = len(self._gallery_files_for_display())
                 qualifier = self._gallery_scope_filter_qualifier()
                 img_word = "image" if total == 1 else "images"
                 self.status_counter_label.setText(f"{total} {img_word} ({qualifier})")
             elif self._is_semantic_search_filter_active():
                 total = len(self.image_files) if self.image_files else 0
-                self.status_counter_label.setText(
-                    f"{total} results" if total != 1 else "1 result"
-                )
+                self.status_counter_label.setText(f"{total} results" if total != 1 else "1 result")
             else:
                 total = len(self.image_files) if self.image_files else 0
-                self.status_counter_label.setText(
-                    f"{total} images" if total != 1 else "1 image"
-                )
+                self.status_counter_label.setText(f"{total} images" if total != 1 else "1 image")
             self.status_counter_label.show()
         elif self.image_files and self.current_file_index >= 0:
             total_files = len(self.image_files)
@@ -802,9 +778,7 @@ class MiscPart1:
                 del self._file_max_dim_map[norm_cur]
             self._preview_upgrade_attempted_paths.discard(norm_cur)
             self._raw_workflow_refused_tier_paths.discard(norm_cur)
-            self._single_view_display_generation = int(
-                getattr(self, "_single_view_display_generation", 0)
-            ) + 1
+            self._single_view_display_generation = int(getattr(self, "_single_view_display_generation", 0)) + 1
             self._workflow_toggle_reload = True
             try:
                 self.load_raw_image(self.current_file_path, force_reload=True)
@@ -848,6 +822,7 @@ class MiscPart1:
             cache.pixmap_cache.remove(fp)
 
         if raw_targets:
+
             def _purge_disk(paths_snapshot=tuple(raw_targets)):
                 for fp in paths_snapshot:
                     try:

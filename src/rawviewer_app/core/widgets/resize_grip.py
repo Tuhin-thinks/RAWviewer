@@ -1,4 +1,5 @@
 """ResizeGripIndicator: bottom-right resize hint for frameless windows."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
@@ -42,11 +43,7 @@ class ResizeGripIndicator(QWidget):
 
     def mouseMoveEvent(self, event):
         viewer = self._viewer()
-        if (
-            viewer is not None
-            and hasattr(viewer, "_continue_resize_drag")
-            and viewer._continue_resize_drag(event)
-        ):
+        if viewer is not None and hasattr(viewer, "_continue_resize_drag") and viewer._continue_resize_drag(event):
             event.accept()
             return
         super().mouseMoveEvent(event)

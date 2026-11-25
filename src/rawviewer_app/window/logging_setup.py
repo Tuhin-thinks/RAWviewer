@@ -1,4 +1,5 @@
 """Logging configuration and uncaught-exception reporting."""
+
 from __future__ import annotations
 
 import logging
@@ -99,8 +100,8 @@ def setup_logging():
             os.environ.setdefault("RAWVIEWER_FATAL_DUMP", "1")
 
         # Configure logging
-        log_format = '%(asctime)s - %(levelname)s - [%(name)s:%(lineno)d] - %(message)s'
-        date_format = '%Y-%m-%d %H:%M:%S'
+        log_format = "%(asctime)s - %(levelname)s - [%(name)s:%(lineno)d] - %(message)s"
+        date_format = "%Y-%m-%d %H:%M:%S"
 
         # Create formatters
         formatter = logging.Formatter(log_format, date_format)
@@ -143,11 +144,11 @@ def setup_logging():
             log_dir = _runtime_log_dir()
             os.makedirs(log_dir, exist_ok=True)
 
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            log_file = os.path.join(log_dir, f'rawviewer_{timestamp}.log')
-            latest_file = os.path.join(log_dir, 'rawviewer_latest.log')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file = os.path.join(log_dir, f"rawviewer_{timestamp}.log")
+            latest_file = os.path.join(log_dir, "rawviewer_latest.log")
 
-            file_handler = logging.FileHandler(log_file, encoding='utf-8', mode='w')
+            file_handler = logging.FileHandler(log_file, encoding="utf-8", mode="w")
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(formatter)
             file_handler.addFilter(NoisyInfoFilter(verbose_info))
@@ -157,9 +158,7 @@ def setup_logging():
 
             # Easy-to-find alias for support: always the current session.
             try:
-                latest_handler = logging.FileHandler(
-                    latest_file, encoding='utf-8', mode='w'
-                )
+                latest_handler = logging.FileHandler(latest_file, encoding="utf-8", mode="w")
                 latest_handler.setLevel(logging.DEBUG)
                 latest_handler.setFormatter(formatter)
                 latest_handler.addFilter(NoisyInfoFilter(verbose_info))
@@ -181,15 +180,16 @@ def setup_logging():
         error_msg = f"CRITICAL: Failed to setup logging: {e}"
         safe_print_err(error_msg)
         import traceback
+
         safe_print_err(f"Traceback: {traceback.format_exc()}")
 
         # Try to write to a fallback log file
         try:
             # Only attempt fallback file logging if explicitly enabled.
             if _file_logging_requested():
-                fallback_log = os.path.join(_runtime_log_dir(), 'error.log')
+                fallback_log = os.path.join(_runtime_log_dir(), "error.log")
                 os.makedirs(os.path.dirname(fallback_log), exist_ok=True)
-                with open(fallback_log, 'a', encoding='utf-8') as f:
+                with open(fallback_log, "a", encoding="utf-8") as f:
                     f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {error_msg}\n")
                     f.write(f"{traceback.format_exc()}\n")
         except Exception:
@@ -221,11 +221,11 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
     try:
         log_dir = _runtime_log_dir()
         os.makedirs(log_dir, exist_ok=True)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        crash_file = os.path.join(log_dir, f'crash_report_{timestamp}.txt')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        crash_file = os.path.join(log_dir, f"crash_report_{timestamp}.txt")
         with open(crash_file, "w", encoding="utf-8") as f:
             f.write(f"RAWviewer Crash Report - {timestamp}\n")
-            f.write("="*50 + "\n\n")
+            f.write("=" * 50 + "\n\n")
             f.write(tb_text)
     except Exception as e:
         safe_print_err(f"Could not write crash report file: {e}")

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Adjust panel left/right dock (QSplitter), without a full viewer window."""
+
 import os
 import sys
 

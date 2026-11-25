@@ -27,9 +27,7 @@ def _gaussian_blur_luma(y: np.ndarray, sigma: float) -> np.ndarray:
         # the blur is already cheap.
         if sigma >= 4.0:
             h, w = y.shape[:2]
-            small = cv2.resize(
-                y, (max(1, w // 4), max(1, h // 4)), interpolation=cv2.INTER_AREA
-            )
+            small = cv2.resize(y, (max(1, w // 4), max(1, h // 4)), interpolation=cv2.INTER_AREA)
             blurred_small = cv2.GaussianBlur(small, (0, 0), sigma / 4.0)
             return cv2.resize(blurred_small, (w, h), interpolation=cv2.INTER_LINEAR)
         return cv2.GaussianBlur(y, (0, 0), sigma)

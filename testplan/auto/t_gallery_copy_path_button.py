@@ -41,10 +41,7 @@ def main() -> int:
     rect = w.copy_path_rect()
     check(
         "copy button sits in the bottom-right corner",
-        rect.right() <= 200
-        and rect.bottom() <= 140
-        and rect.left() > 200 // 2
-        and rect.top() > 140 // 2,
+        rect.right() <= 200 and rect.bottom() <= 140 and rect.left() > 200 // 2 and rect.top() > 140 // 2,
         str(rect),
     )
     check(
@@ -106,10 +103,7 @@ def main() -> int:
     icon = w._copy_icon(16)
     check(
         "cached copy glyph is a real pixmap",
-        icon is not None
-        and not icon.isNull()
-        and icon.width() == 16
-        and icon.height() == 16,
+        icon is not None and not icon.isNull() and icon.width() == 16 and icon.height() == 16,
         f"{icon.width()}x{icon.height()}" if icon is not None else "None",
     )
     check(

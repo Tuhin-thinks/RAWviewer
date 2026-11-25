@@ -68,4 +68,3 @@ def dpreview_open_url(make: str = "", model: str = "") -> str:
     if not query:
         return DPREVIEW_STUDIO_HUB_URL
     return f"{DPREVIEW_SEARCH_URL}{urllib.parse.quote_plus(query)}"
-

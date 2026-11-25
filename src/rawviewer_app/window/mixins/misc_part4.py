@@ -1,4 +1,5 @@
 """misc mixin, part 4 of 4 (28 methods, 536 lines)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -21,25 +22,28 @@ lazy.register(sys.modules[__name__])
 class MiscPart4:
     def on_processing_error(self, error_message):
         """Handle RAW processing errors"""
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
 
         import logging
         import traceback
+
         logger = logging.getLogger(__name__)
 
-        current_file = getattr(self, 'current_file_path', 'unknown')
+        current_file = getattr(self, "current_file_path", "unknown")
         logger.error(f"on_processing_error called for: {os.path.basename(current_file)}, error: {error_message}")
 
         # Check if this error is for the current file (important for rapid navigation)
-        if hasattr(self, 'current_processor') and self.current_processor is not None:
-            processor_file = getattr(self.current_processor, 'file_path', None)
+        if hasattr(self, "current_processor") and self.current_processor is not None:
+            processor_file = getattr(self.current_processor, "file_path", None)
             if processor_file and processor_file != current_file:
-                logger.warning(f"Error signal mismatch: processor file ({os.path.basename(processor_file)}) != current file ({os.path.basename(current_file)}). This may indicate rapid navigation.")
+                logger.warning(
+                    f"Error signal mismatch: processor file ({os.path.basename(processor_file)}) != current file ({os.path.basename(current_file)}). This may indicate rapid navigation."
+                )
 
         try:
             # If we have a pending thumbnail and full processing failed, show it as fallback
-            if hasattr(self, '_pending_thumbnail') and self._pending_thumbnail is not None:
+            if hasattr(self, "_pending_thumbnail") and self._pending_thumbnail is not None:
                 logger.debug("Using pending thumbnail as fallback")
                 try:
                     self.display_numpy_image(self._pending_thumbnail)
@@ -57,16 +61,14 @@ class MiscPart4:
                 logger.error(f"Error showing error dialog: {show_error_ex}")
 
             try:
-                self.image_label.setText(
-                    "Error loading image\n\nPlease try a different RAW file"
-                )
+                self.image_label.setText("Error loading image\n\nPlease try a different RAW file")
                 self._clear_single_image_histogram()
                 self.status_bar.showMessage("Error loading image")
                 # Reset window title on error
-                self.setWindowTitle('RAWviewer')
+                self.setWindowTitle("RAWviewer")
                 # Update custom title bar
-                if hasattr(self, 'title_bar') and self.title_bar is not None:
-                    self.title_bar.set_title('RAWviewer')
+                if hasattr(self, "title_bar") and self.title_bar is not None:
+                    self.title_bar.set_title("RAWviewer")
             except Exception as ui_error:
                 logger.error(f"Error updating UI on processing error: {ui_error}")
         except Exception as e:
@@ -81,7 +83,7 @@ class MiscPart4:
             parent=self,
             title="Confirm Delete",
             message="Are you sure you want to delete this file?",
-            informative_text=f"File: {filename}\n\nThis will move the file to the Recycle Bin."
+            informative_text=f"File: {filename}\n\nThis will move the file to the Recycle Bin.",
         )
 
         self._is_delete_dialog_open = True
@@ -114,6 +116,7 @@ class MiscPart4:
     def scale_image_to_fit(self):
         """Scale image to fit the current window size while maintaining aspect ratio"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         if getattr(self, "gpu_view", None) is not None:
@@ -139,18 +142,20 @@ class MiscPart4:
         safe_height = max(1, max_height)
 
         scaled_pixmap = self.current_pixmap.scaled(
-            safe_width, safe_height,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
+            safe_width, safe_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
         )
 
         scaled_size = scaled_pixmap.size()
 
         # Log scaling information
-        logger.info(f"[IMAGE_SCALE] Scaling image: original={original_size.width()}x{original_size.height()}, "
-                   f"available={max_width}x{max_height}, scaled={scaled_size.width()}x{scaled_size.height()}")
-        safe_print(f"[IMAGE_SCALE] Original: {original_size.width()}x{original_size.height()} -> "
-              f"Scaled: {scaled_size.width()}x{scaled_size.height()} (available: {max_width}x{max_height})")
+        logger.info(
+            f"[IMAGE_SCALE] Scaling image: original={original_size.width()}x{original_size.height()}, "
+            f"available={max_width}x{max_height}, scaled={scaled_size.width()}x{scaled_size.height()}"
+        )
+        safe_print(
+            f"[IMAGE_SCALE] Original: {original_size.width()}x{original_size.height()} -> "
+            f"Scaled: {scaled_size.width()}x{scaled_size.height()} (available: {max_width}x{max_height})"
+        )
 
         self._set_single_view_pixmap(scaled_pixmap)
         self.image_label.adjustSize()  # Ensure label is resized to pixmap
@@ -161,6 +166,7 @@ class MiscPart4:
     def scale_image_to_100_percent(self):
         """Display image at 100% zoom (actual pixel size)"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         if getattr(self, "gpu_view", None) is not None:
@@ -381,22 +387,22 @@ class MiscPart4:
         x, y = pos.x(), pos.y()
 
         if x <= border and y <= border:
-            return 'top_left'
+            return "top_left"
         if x >= w - border and y <= border:
-            return 'top_right'
+            return "top_right"
         if x <= border and y >= h - border:
-            return 'bottom_left'
+            return "bottom_left"
         if x >= w - border and y >= h - border:
-            return 'bottom_right'
+            return "bottom_right"
 
         if x <= border:
-            return 'left'
+            return "left"
         if x >= w - border:
-            return 'right'
+            return "right"
         if y <= border:
-            return 'top'
+            return "top"
         if y >= h - border:
-            return 'bottom'
+            return "bottom"
 
         return None
 
@@ -413,7 +419,7 @@ class MiscPart4:
 
     def is_video_file(self, file_path):
         """Check if file is a known video format (for exclusion)"""
-        video_exts = {'.mp4', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg'}
+        video_exts = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg"}
         ext = os.path.splitext(file_path)[1].lower()
         return ext in video_exts
 
@@ -424,38 +430,47 @@ class MiscPart4:
         self.current_file_path = None
         self.image_files = []
         self.current_file_index = -1
-        if hasattr(self, 'folder_path'):
+        if hasattr(self, "folder_path"):
             self.folder_path = None
         self._sync_single_image_histogram()
 
         message = self._no_image_loaded_help_text()
 
-        if hasattr(self, 'view_mode') and self.view_mode == 'gallery' and hasattr(self, 'gallery_justified') and self.gallery_justified:
-            self.gallery_justified.show_empty_message("No image loaded\nClick 📁 or drag and drop a folder or image to load it")
+        if (
+            hasattr(self, "view_mode")
+            and self.view_mode == "gallery"
+            and hasattr(self, "gallery_justified")
+            and self.gallery_justified
+        ):
+            self.gallery_justified.show_empty_message(
+                "No image loaded\nClick 📁 or drag and drop a folder or image to load it"
+            )
         else:
-            if hasattr(self, 'image_label'):
+            if hasattr(self, "image_label"):
                 self.image_label.setText(message)
-                self.image_label.setStyleSheet("QLabel { color: #666; font-size: 14px; background-color: transparent; }")
+                self.image_label.setStyleSheet(
+                    "QLabel { color: #666; font-size: 14px; background-color: transparent; }"
+                )
 
-        if hasattr(self, 'status_metadata_label'):
+        if hasattr(self, "status_metadata_label"):
             self._apply_top_metadata_text("")
-        if hasattr(self, 'status_counter_label'):
+        if hasattr(self, "status_counter_label"):
             self.status_counter_label.setVisible(False)
-        if hasattr(self, 'sort_toggle_button'):
+        if hasattr(self, "sort_toggle_button"):
             self.sort_toggle_button.setVisible(False)
-        if hasattr(self, 'size_slider'):
+        if hasattr(self, "size_slider"):
             self.size_slider.setVisible(False)
 
-        if hasattr(self, 'status_bar'):
+        if hasattr(self, "status_bar"):
             self.status_bar.showMessage("Ready")
-        self.setWindowTitle('RAWviewer')
-        if hasattr(self, 'title_bar') and self.title_bar is not None:
-            self.title_bar.set_title('RAWviewer')
+        self.setWindowTitle("RAWviewer")
+        if hasattr(self, "title_bar") and self.title_bar is not None:
+            self.title_bar.set_title("RAWviewer")
 
     def show_no_images_message(self, supported_extensions):
         """Display 'No images found' message in the main viewing area"""
         # Format supported extensions for display
-        formats_text = ', '.join(supported_extensions)
+        formats_text = ", ".join(supported_extensions)
         message = f"No images found.\n\nSupported formats: {formats_text}"
 
         # Clear any existing pixmap
@@ -465,31 +480,30 @@ class MiscPart4:
 
         # Display message in main viewing area
         # Check current view mode to determine where to show the message
-        if hasattr(self, 'view_mode') and self.view_mode == 'gallery' and self.gallery_justified:
+        if hasattr(self, "view_mode") and self.view_mode == "gallery" and self.gallery_justified:
             self.gallery_justified.show_empty_message(message)
         else:
             # Single view mode - use image_label
             self.image_label.setText(message)
-            self.image_label.setStyleSheet(
-                f"QLabel {{ color: {theme.INK_MUTED}; font-size: 14px; }}")
+            self.image_label.setStyleSheet(f"QLabel {{ color: {theme.INK_MUTED}; font-size: 14px; }}")
 
         # Clear top metadata when no files
         self._apply_top_metadata_text("")
-        if hasattr(self, 'status_counter_label'):
+        if hasattr(self, "status_counter_label"):
             self.status_counter_label.setVisible(False)
-        if hasattr(self, 'sort_toggle_button'):
+        if hasattr(self, "sort_toggle_button"):
             self.sort_toggle_button.setVisible(False)
-        if hasattr(self, 'size_slider'):
+        if hasattr(self, "size_slider"):
             self.size_slider.setVisible(False)
 
         # Update status bar
         self.status_bar.showMessage("No images found")
 
         # Reset window title
-        self.setWindowTitle('RAWviewer')
+        self.setWindowTitle("RAWviewer")
         # Update custom title bar
-        if hasattr(self, 'title_bar') and self.title_bar is not None:
-            self.title_bar.set_title('RAWviewer')
+        if hasattr(self, "title_bar") and self.title_bar is not None:
+            self.title_bar.set_title("RAWviewer")
 
     def show_error(self, title, message):
         """Show error message dialog"""
@@ -519,8 +533,7 @@ class MiscPart4:
             base, ext = os.path.splitext(filename)
             counter = 1
             while os.path.exists(target_path):
-                target_path = os.path.join(
-                    discard_folder, f"{base}_discarded_{counter}{ext}")
+                target_path = os.path.join(discard_folder, f"{base}_discarded_{counter}{ext}")
                 counter += 1
 
             # Before moving, cancel any preload / manager tasks for this file and clear cache
@@ -528,6 +541,7 @@ class MiscPart4:
 
             # Clear cache for this file
             from image_cache import get_image_cache
+
             cache = get_image_cache()
             cache.invalidate_file(file_to_move)
 

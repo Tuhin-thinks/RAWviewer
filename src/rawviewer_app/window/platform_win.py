@@ -1,4 +1,5 @@
 """Windows platform integration (taskbar identity and native icons)."""
+
 from __future__ import annotations
 
 import contextlib
@@ -23,9 +24,7 @@ def _set_windows_app_user_model_id() -> None:
     if sys.platform != "win32":
         return
     with contextlib.suppress(Exception):
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-            _WINDOWS_APP_USER_MODEL_ID
-        )
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(_WINDOWS_APP_USER_MODEL_ID)
 
 
 def _apply_windows_native_window_icon(widget, ico_path: str | None = None) -> None:
@@ -66,9 +65,7 @@ def _apply_windows_native_window_icon(widget, ico_path: str | None = None) -> No
         hicon_small = LoadImageW(None, path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE)
         hicon_big = LoadImageW(None, path, IMAGE_ICON, 256, 256, LR_LOADFROMFILE)
         if not hicon_big:
-            hicon_big = LoadImageW(
-                None, path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
-            )
+            hicon_big = LoadImageW(None, path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
         if hicon_small:
             user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small)
         if hicon_big:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Crop insets + overlay kernel smoke tests."""
+
 import os
 import sys
 

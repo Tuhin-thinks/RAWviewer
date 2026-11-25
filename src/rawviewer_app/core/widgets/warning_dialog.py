@@ -1,4 +1,5 @@
 """CustomWarningDialog: warning dialog."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
@@ -21,9 +22,7 @@ class CustomWarningDialog(QDialog):
     def __init__(self, parent=None, title="Warning", message="", informative_text=""):
         super().__init__(parent)
         self.setWindowFlags(
-            Qt.WindowType.Dialog
-            | Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
+            Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setModal(True)
@@ -56,12 +55,8 @@ class CustomWarningDialog(QDialog):
 
         self._message_label = QLabel(message)
         self._message_label.setWordWrap(True)
-        self._message_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
-        self._message_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self._message_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self._message_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._message_label.setStyleSheet(f"""
             QLabel {{
                 color: {theme.INK};
@@ -78,12 +73,8 @@ class CustomWarningDialog(QDialog):
         if informative_text:
             self._info_label = QLabel(informative_text)
             self._info_label.setWordWrap(True)
-            self._info_label.setAlignment(
-                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-            )
-            self._info_label.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-            )
+            self._info_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self._info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             self._info_label.setStyleSheet(f"""
                 QLabel {{
                     color: {theme.INK_MUTED};
@@ -212,14 +203,14 @@ class CustomWarningDialog(QDialog):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        if hasattr(self, '_dragging') and self._dragging:
+        if hasattr(self, "_dragging") and self._dragging:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if hasattr(self, '_dragging'):
+        if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()
             return

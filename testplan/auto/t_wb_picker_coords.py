@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """WB dropper: display→buffer mapping + crop-framed linear sample."""
+
 from __future__ import annotations
 
 import os
@@ -22,9 +23,7 @@ def main() -> int:
     from raw_transform import apply_geometry, map_display_point_to_buffer
 
     # Lite display (640) → half-res buffer (3514): center must land near center.
-    bx, by = map_display_point_to_buffer(
-        320.0, 213.5, display_w=640, display_h=427, buffer_w=3514, buffer_h=2344
-    )
+    bx, by = map_display_point_to_buffer(320.0, 213.5, display_w=640, display_h=427, buffer_w=3514, buffer_h=2344)
     check(
         "lite center maps near half-res center",
         abs(bx - 1757.0) < 2.0 and abs(by - 1172.0) < 2.0,

@@ -4,6 +4,7 @@
 Touches the real QSettings the app uses, because that persistence IS the
 feature under test. The original value is saved and put back at the end.
 """
+
 from __future__ import annotations
 
 import os
@@ -65,8 +66,7 @@ def main() -> int:
         check("None falls back to canonical", _sanitize_section_order(None) == canon)
         check(
             "an unknown key is dropped",
-            _sanitize_section_order(["detail", "no_such_section", "light"])[:2]
-            == ["detail", "light"],
+            _sanitize_section_order(["detail", "no_such_section", "light"])[:2] == ["detail", "light"],
         )
         check("anamorphic is not a 3.1 section", "anamorphic" not in canon)
         partial = _sanitize_section_order(["detail", "light"])

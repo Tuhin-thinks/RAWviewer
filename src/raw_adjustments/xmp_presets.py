@@ -17,9 +17,7 @@ def presets_dir() -> str:
     try:
         from PyQt6.QtCore import QStandardPaths
 
-        root = QStandardPaths.writableLocation(
-            QStandardPaths.StandardLocation.AppDataLocation
-        )
+        root = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
     except Exception:
         root = ""
     if not root or os.path.basename(root.rstrip(os.sep)) in {"", "-", "-c"}:

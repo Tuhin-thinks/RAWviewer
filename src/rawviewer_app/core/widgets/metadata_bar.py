@@ -1,4 +1,5 @@
 """TopMetadataBar: metadata strip under the custom title bar."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
@@ -24,9 +25,7 @@ class TopMetadataBar(QFrame):
         layout.setSpacing(0)
         layout.addStretch(1)
         self.metadata_label = QLabel("")
-        self.metadata_label.setAlignment(
-            Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.metadata_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
         self.metadata_label.setStyleSheet(f"""
             color: {theme.INK_MUTED};
             font-size: 12px;
@@ -53,6 +52,7 @@ class TopMetadataBar(QFrame):
 
         avail_w = max(200, self.width() - 50)
         from PyQt6.QtGui import QFontMetrics
+
         fm = QFontMetrics(self.metadata_label.font())
         elided = fm.elidedText(display, Qt.TextElideMode.ElideMiddle, avail_w)
         self.metadata_label.setText(elided)

@@ -9,6 +9,7 @@ test Qt's shutdown ordering rather than this feature. The methods under test
 touch only the handful of attributes the stub provides; nothing about them
 needs the host to be a QWidget.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -76,14 +77,8 @@ def main() -> int:
     gallery._scroll_area = scroll
 
     paths = [f"/nonexistent/IMG_{i:04}.CR3" for i in range(300)]
-    gallery._gallery_layout_items = [
-        {"rect": QRect(0, i * 200, 300, 180), "file_path": p}
-        for i, p in enumerate(paths)
-    ]
-    dates = {
-        p: datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i * 3)
-        for i, p in enumerate(paths)
-    }
+    gallery._gallery_layout_items = [{"rect": QRect(0, i * 200, 300, 180), "file_path": p} for i, p in enumerate(paths)]
+    dates = {p: datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i * 3) for i, p in enumerate(paths)}
 
     bar = scroll.verticalScrollBar()
     bar.setRange(0, 60000)
@@ -240,9 +235,7 @@ def main() -> int:
     gallery._update_scroll_date_bubble(force=True)
     check(
         "a new path that misses stays date-only",
-        bubble.isVisible()
-        and gallery._scroll_preview_path() == paths[100]
-        and not bubble.preview_is_visible(),
+        bubble.isVisible() and gallery._scroll_preview_path() == paths[100] and not bubble.preview_is_visible(),
         f"path={gallery._scroll_preview_path()!r} preview={bubble.preview_is_visible()}",
     )
     gallery._thumbnail_cache = {(paths[100], "__base__"): hit}

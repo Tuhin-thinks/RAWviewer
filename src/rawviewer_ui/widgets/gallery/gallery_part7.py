@@ -1,4 +1,5 @@
 """Gallery mixin part 7 of 7 for JustifiedGallery."""
+
 from __future__ import annotations
 
 import logging
@@ -14,18 +15,11 @@ from .helpers import _focus_gallery_switch_logs, _orient_debug_enabled
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart7:
 
-    def _rebuild_layout_from_image_index(
-        self, start_image_idx: int, anchor_state: dict | None = None
-    ) -> bool:
+class GalleryPart7:
+    def _rebuild_layout_from_image_index(self, start_image_idx: int, anchor_state: dict | None = None) -> bool:
         """Recompute justified rows from *start_image_idx* onward (partial layout update)."""
-        if (
-            start_image_idx <= 0
-            or not self.images
-            or not self._gallery_layout_items
-            or self._building
-        ):
+        if start_image_idx <= 0 or not self.images or not self._gallery_layout_items or self._building:
             return False
 
         viewport_width = self._get_viewport_width()
@@ -96,9 +90,7 @@ class GalleryPart7:
                         "aspect": aspect,
                     }
                 )
-                self._path_to_indices.setdefault(p, []).append(
-                    len(self._gallery_layout_items) - 1
-                )
+                self._path_to_indices.setdefault(p, []).append(len(self._gallery_layout_items) - 1)
                 curr_x += w + self.MIN_SPACING
             current_y += row_h + self.MIN_SPACING
 
@@ -149,12 +141,7 @@ class GalleryPart7:
                 self._metadata_rebuild_timer.start(1000)
             return
         time_since_last_change = time.time() - getattr(self, "_last_metadata_change_time", 0.0)
-        if (
-            large
-            and not flip_pending
-            and len(self._metadata_changed_paths) < 8
-            and time_since_last_change < 1.5
-        ):
+        if large and not flip_pending and len(self._metadata_changed_paths) < 8 and time_since_last_change < 1.5:
             self._metadata_rebuild_timer.start(1200)
             return
         if not flip_pending and (time.time() - self._last_force_build_ts) < 0.8:
@@ -179,9 +166,7 @@ class GalleryPart7:
         partial_paths = flip_paths or changed_paths
         partial_start = self._partial_rebuild_start_image_index(partial_paths)
         use_partial = (
-            partial_start is not None
-            and partial_start > 0
-            and len(partial_paths) <= max(64, len(self.images) // 50)
+            partial_start is not None and partial_start > 0 and len(partial_paths) <= max(64, len(self.images) // 50)
         )
         if use_partial:
             if not self._rebuild_layout_from_image_index(partial_start, anchor_state=anchor):
@@ -237,22 +222,22 @@ class GalleryPart7:
             h = self._loading_label.height()
 
             # Position at bottom center of the viewport
-            parent_scroll = self.parent_viewer.scroll_area if hasattr(self.parent_viewer, 'scroll_area') else None
+            parent_scroll = self.parent_viewer.scroll_area if hasattr(self.parent_viewer, "scroll_area") else None
             if parent_scroll:
-                 # Calculate relative position in the viewport
-                 viewport_h = parent_scroll.viewport().height()
-                 scroll_y = parent_scroll.verticalScrollBar().value()
+                # Calculate relative position in the viewport
+                viewport_h = parent_scroll.viewport().height()
+                scroll_y = parent_scroll.verticalScrollBar().value()
 
-                 # Stick to bottom of viewport
-                 y = scroll_y + viewport_h - h - 20
-                 x = (self.width() - w) // 2
+                # Stick to bottom of viewport
+                y = scroll_y + viewport_h - h - 20
+                x = (self.width() - w) // 2
 
-                 self._loading_label.move(x, int(y))
+                self._loading_label.move(x, int(y))
             else:
-                 # Fallback
-                 x = (self.width() - w) // 2
-                 y = self.height() - h - 20
-                 self._loading_label.move(x, y)
+                # Fallback
+                x = (self.width() - w) // 2
+                y = self.height() - h - 20
+                self._loading_label.move(x, y)
 
     def hide_loading_message(self):
         """Hide loading message overlay"""
@@ -276,9 +261,7 @@ class GalleryPart7:
 
         if hasattr(self, "_empty_label") and self._empty_label:
             self._empty_label.setText(message)
-            self._empty_label.setAlignment(
-                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
-            )
+            self._empty_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
             self._empty_label.setWordWrap(True)
             self._empty_label.setStyleSheet(style)
             self._update_empty_label_geometry()
@@ -288,9 +271,7 @@ class GalleryPart7:
             return
 
         self._empty_label = QLabel(message, self)
-        self._empty_label.setAlignment(
-            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._empty_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         self._empty_label.setWordWrap(True)
         self._empty_label.setStyleSheet(style)
         font = QFont()
@@ -303,7 +284,7 @@ class GalleryPart7:
 
     def hide_empty_message(self):
         """Hide empty gallery message"""
-        if hasattr(self, '_empty_label') and self._empty_label:
+        if hasattr(self, "_empty_label") and self._empty_label:
             self._empty_label.hide()
             self._empty_label.deleteLater()
             self._empty_label = None
@@ -421,19 +402,9 @@ class GalleryPart7:
         try:
             pv = self.parent_viewer
             if target_path and pv is not None:
-                mods = (
-                    pv._gallery_event_modifiers(e)
-                    if hasattr(pv, "_gallery_event_modifiers")
-                    else e.modifiers()
-                )
-                shift = (
-                    hasattr(pv, "_gallery_has_shift_modifier")
-                    and pv._gallery_has_shift_modifier(mods)
-                )
-                extend = (
-                    hasattr(pv, "_gallery_has_extend_modifier")
-                    and pv._gallery_has_extend_modifier(mods)
-                )
+                mods = pv._gallery_event_modifiers(e) if hasattr(pv, "_gallery_event_modifiers") else e.modifiers()
+                shift = hasattr(pv, "_gallery_has_shift_modifier") and pv._gallery_has_shift_modifier(mods)
+                extend = hasattr(pv, "_gallery_has_extend_modifier") and pv._gallery_has_extend_modifier(mods)
                 if shift and not extend:
                     if hasattr(pv, "_gallery_shift_click_selection"):
                         pv._gallery_shift_click_selection(target_path)

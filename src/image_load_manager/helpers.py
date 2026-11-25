@@ -1,4 +1,5 @@
 """Module-level helpers and state for the ImageLoadManager package."""
+
 from __future__ import annotations
 
 import contextlib
@@ -39,6 +40,7 @@ def _has_running_current_task(manager, *, exclude_task=None) -> bool:
                 return True
     return False
 
+
 def yield_if_current_task_active() -> None:
     """Yield briefly if another thread is *running* a high-priority CURRENT task.
 
@@ -48,7 +50,7 @@ def yield_if_current_task_active() -> None:
     """
     if threading.current_thread() is threading.main_thread():
         return
-    current_priority = getattr(worker_thread_local, 'priority', None)
+    current_priority = getattr(worker_thread_local, "priority", None)
     if current_priority == Priority.CURRENT:
         return
 
@@ -56,7 +58,7 @@ def yield_if_current_task_active() -> None:
     if not manager:
         return
 
-    own_task = getattr(worker_thread_local, 'task', None)
+    own_task = getattr(worker_thread_local, "task", None)
     max_wait_s = _env_int("RAWVIEWER_YIELD_MAX_MS", 1500, minimum=100) / 1000.0
     deadline = time.time() + max_wait_s
     while time.time() < deadline:
@@ -66,11 +68,13 @@ def yield_if_current_task_active() -> None:
             break
         time.sleep(0.05)
 
+
 def _env_true(name: str, default: bool = False) -> bool:
     raw = os.environ.get(name)
     if raw is None:
         return default
     return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
 
 def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
     raw = os.environ.get(name)
@@ -80,6 +84,7 @@ def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
         return max(minimum, int(str(raw).strip()))
     except (TypeError, ValueError):
         return max(minimum, default)
+
 
 def _buffer_max_dim(buf) -> int:
     try:
@@ -91,10 +96,12 @@ def _buffer_max_dim(buf) -> int:
         pass
     return 0
 
+
 def _display_preview_min_dim() -> int:
     from image_cache import memory_preview_max_edge
 
     return int(memory_preview_max_edge() * 0.85)
+
 
 def _min_acceptable_preview_dim(file_path: str) -> int:
     from common_image_loader import dng_prefers_embedded_preview_first
@@ -103,9 +110,11 @@ def _min_acceptable_preview_dim(file_path: str) -> int:
         return 1024
     return _display_preview_min_dim()
 
+
 # Memo for _preview_is_best_possible: HE detection reads the file's EXIF, and
 # a folder scan asks about the same paths repeatedly.
 _HE_PREVIEW_ONLY_CACHE: dict = {}
+
 
 def _preview_is_best_possible(processor, file_path: str) -> bool:
     """Whether no larger preview could exist for this file, however we try.
@@ -144,10 +153,12 @@ def _preview_is_best_possible(processor, file_path: str) -> bool:
     _HE_PREVIEW_ONLY_CACHE[key] = result
     return result
 
+
 def _gallery_grid_min_dim() -> int:
     from image_cache import disk_preview_max_edge
 
     return int(disk_preview_max_edge() * 0.85)
+
 
 def _gallery_memory_thumb_acceptable(thumb, *, gallery_thumbnail: bool) -> bool:
     """Gallery tiles need grid-tier (~512px), not 256px thumbnail tier."""
@@ -157,6 +168,7 @@ def _gallery_memory_thumb_acceptable(thumb, *, gallery_thumbnail: bool) -> bool:
     if dim <= 0:
         return False
     return dim >= _gallery_grid_min_dim()
+
 
 def _skip_low_res_memory_thumb_for_display_tier(
     thumb,
@@ -178,12 +190,15 @@ def _skip_low_res_memory_thumb_for_display_tier(
     px = _buffer_max_dim(thumb)
     return 0 < px < min_dim
 
+
 class Priority(Enum):
     """任務優先級"""
+
     CURRENT = 0  # 當前圖像（最高優先級）
     PRELOAD_NEXT = 1  # 下一個圖像預載入
     PRELOAD_PREV = 2  # 上一個圖像預載入
     BACKGROUND = 3  # 背景任務（最低優先級）
+
 
 def _task_queue_weight(task: ImageLoadTask) -> int:
     """Lower weight = scheduled sooner within the same Priority band."""
@@ -196,8 +211,10 @@ def _task_queue_weight(task: ImageLoadTask) -> int:
         return 3
     return 2
 
+
 _global_manager: ImageLoadManager | None = None
 _manager_lock = threading.Lock()
+
 
 def peek_image_load_manager() -> ImageLoadManager | None:
     """Return the manager if already constructed; never create one.
@@ -208,6 +225,7 @@ def peek_image_load_manager() -> ImageLoadManager | None:
     after clear-cache / cold start).
     """
     return _global_manager
+
 
 def get_image_load_manager(max_workers: int = 4) -> ImageLoadManager:
     """獲取全局圖像加載管理器實例（函數級單例模式）
@@ -228,6 +246,7 @@ def get_image_load_manager(max_workers: int = 4) -> ImageLoadManager:
 
                 _global_manager = ImageLoadManager(max_workers)
     return _global_manager
+
 
 def apply_gpu_decode_profile_to_manager() -> None:
     """Called after main-thread GPU backend import (see torch_bootstrap)."""

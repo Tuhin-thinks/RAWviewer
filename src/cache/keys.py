@@ -20,9 +20,7 @@ _darwin_total_ram_cached: int | None = None
 
 def _is_libraw_native_name(name: str) -> bool:
     lower = name.lower()
-    return lower == "raw_r.dll" or (
-        lower.startswith("libraw_r") and lower.endswith((".dylib", ".so", ".dll"))
-    )
+    return lower == "raw_r.dll" or (lower.startswith("libraw_r") and lower.endswith((".dylib", ".so", ".dll")))
 
 
 def _libraw_native_search_dirs() -> list[str]:
@@ -203,9 +201,7 @@ def _sysctl_hw_memsize_bytes() -> int | None:
             ctypes.c_size_t,
         ]
         lib.sysctlbyname.restype = ctypes.c_int
-        rc = lib.sysctlbyname(
-            b"hw.memsize", ctypes.byref(val), ctypes.byref(size), None, 0
-        )
+        rc = lib.sysctlbyname(b"hw.memsize", ctypes.byref(val), ctypes.byref(size), None, 0)
         if rc == 0 and int(val.value) > 0:
             _darwin_total_ram_cached = int(val.value)
             return _darwin_total_ram_cached
@@ -451,9 +447,7 @@ def _capture_time_from_exif_row(row: Any, exif_data: dict[str, Any] | None = Non
     return None
 
 
-def _file_stats_row(
-    file_stats: dict[str, tuple[int, float]] | None, *paths: str
-) -> tuple[int, float] | None:
+def _file_stats_row(file_stats: dict[str, tuple[int, float]] | None, *paths: str) -> tuple[int, float] | None:
     if not file_stats:
         return None
     for path in paths:

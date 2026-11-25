@@ -1,4 +1,5 @@
 """Engine mixin part 5 of 7 for SemanticImageIndex."""
+
 from __future__ import annotations
 
 import concurrent
@@ -26,10 +27,6 @@ from search.types import ProgressCallback
 
 
 class EnginePart5:
-
-
-
-
     def build_index(
         self,
         file_paths: Sequence[str],
@@ -43,6 +40,7 @@ class EnginePart5:
         import logging
         import sqlite3
         import sys
+
         logger = logging.getLogger(__name__)
         t_start = time.time()
         if run_semantic_embeddings is None:
@@ -94,19 +92,21 @@ class EnginePart5:
         run_face_inline = False
         try:
             # 1.1 Pre-fetch existing metadata in bulk to avoid thousands of small SQL queries
-            existing_meta = {} # {canonical_path: (mtime, size, semantic_ready)}
+            existing_meta = {}  # {canonical_path: (mtime, size, semantic_ready)}
             canonical_map = {self._canonical_path(fp): fp for fp in filtered_paths if fp}
             unique_canonical = list(canonical_map.keys())
 
-            logger.info(f"[INDEX] Pre-fetching existing metadata database entries for {len(unique_canonical)} canonical paths...")
+            logger.info(
+                f"[INDEX] Pre-fetching existing metadata database entries for {len(unique_canonical)} canonical paths..."
+            )
             t0 = time.time()
             chunk_size = 900
             for i in range(0, len(unique_canonical), chunk_size):
-                chunk = unique_canonical[i:i+chunk_size]
+                chunk = unique_canonical[i : i + chunk_size]
                 qs = ",".join(["?"] * len(chunk))
                 cursor = conn.execute(
                     f"SELECT file_path, file_mtime, file_size, semantic_ready, dim, gps_lat, city FROM semantic_index WHERE file_path IN ({qs})",
-                    chunk
+                    chunk,
                 )
                 for row in cursor.fetchall():
                     existing_meta[row[0]] = {
@@ -115,9 +115,11 @@ class EnginePart5:
                         "semantic_ready": row[3],
                         "dim": row[4],
                         "gps_lat": row[5],
-                        "city": row[6]
+                        "city": row[6],
                     }
-            logger.info(f"[INDEX] Pre-fetch completed in {time.time() - t0:.4f}s. Found {len(existing_meta)} matches in database.")
+            logger.info(
+                f"[INDEX] Pre-fetch completed in {time.time() - t0:.4f}s. Found {len(existing_meta)} matches in database."
+            )
 
             @staticmethod
             def needs_reindex_local(cp, st):
@@ -142,9 +144,7 @@ class EnginePart5:
                         row = existing_meta[canonical_fp]
                         sr = int(row["semantic_ready"] or 0)
                         dim = _coerce_int(self._row_value(row, "dim"))
-                        needs_semantic = (sr == 0) or (
-                            bool(run_semantic_embeddings) and sr == 1 and dim == 0
-                        )
+                        needs_semantic = (sr == 0) or (bool(run_semantic_embeddings) and sr == 1 and dim == 0)
                         if needs_semantic:
                             pending_for_semantic.append((canonical_fp, st))
                         else:
@@ -153,7 +153,9 @@ class EnginePart5:
                     failed += 1
                     continue
 
-            logger.info(f"[INDEX] Needs metadata extraction: {len(to_extract)} files. Already indexed & skipped: {skipped} files.")
+            logger.info(
+                f"[INDEX] Needs metadata extraction: {len(to_extract)} files. Already indexed & skipped: {skipped} files."
+            )
 
             # 1.3 Parallel extraction of metadata
             total_extract = len(to_extract)
@@ -161,7 +163,9 @@ class EnginePart5:
             commit_every = 40
 
             if total_extract > 0:
-                logger.info(f"[INDEX] Starting parallel metadata extraction for {total_extract} files using ThreadPoolExecutor...")
+                logger.info(
+                    f"[INDEX] Starting parallel metadata extraction for {total_extract} files using ThreadPoolExecutor..."
+                )
                 self._acquire_load_throttle()
                 if progress_callback:
                     progress_callback(
@@ -181,15 +185,14 @@ class EnginePart5:
                 )
                 executor = _get_shared_index_executor()
                 try:
+
                     @staticmethod
                     def extract_task(item):
                         self._wait_if_paused()
                         cp, st = item
                         try:
                             t_single_start = time.time()
-                            meta = self._extract_exif_brief(
-                                cp, include_face=False, file_stat=st
-                            )
+                            meta = self._extract_exif_brief(cp, include_face=False, file_stat=st)
                             t_single_dur = time.time() - t_single_start
                             if t_single_dur > 2.0:
                                 logger.warning(
@@ -227,15 +230,14 @@ class EnginePart5:
 
                             if i % 100 == 0:
                                 import gc
+
                                 gc.collect()
 
                             if progress_callback and (i <= 2 or i >= total_extract or i % 10 == 0):
                                 progress_callback(
                                     progress_indexed_base,
                                     progress_album_total,
-                                    format_index_progress(
-                                        "Metadata", progress_indexed_base + i, progress_album_total
-                                    ),
+                                    format_index_progress("Metadata", progress_indexed_base + i, progress_album_total),
                                 )
                     except IndexAborted:
                         for pending_future in futures:
@@ -247,9 +249,12 @@ class EnginePart5:
                 if batch_writes > 0:
                     conn.commit()
                     batch_writes = 0
-                logger.info(f"[INDEX] Completed metadata extraction for {total_extract} files in {time.time() - t_meta_start:.4f}s.")
+                logger.info(
+                    f"[INDEX] Completed metadata extraction for {total_extract} files in {time.time() - t_meta_start:.4f}s."
+                )
                 try:
                     from image_cache import get_image_cache
+
                     get_image_cache().flush_exif_disk_cache()
                 except Exception:
                     pass
@@ -289,14 +294,10 @@ class EnginePart5:
                             self._mobileclip_backend = backend
                             if isinstance(backend, MobileCLIPONNXBackend):
                                 try:
-                                    selected = resolve_onnx_execution_providers(
-                                        _ort_get_available_providers()
-                                    )
+                                    selected = resolve_onnx_execution_providers(_ort_get_available_providers())
                                 except Exception:
                                     selected = ["CPUExecutionProvider"]
-                                sem_gpu_accel = any(
-                                    str(p) != "CPUExecutionProvider" for p in selected
-                                )
+                                sem_gpu_accel = any(str(p) != "CPUExecutionProvider" for p in selected)
                                 sem_accel_detail = f"ONNX providers=[{', '.join(selected)}]"
                             elif isinstance(backend, MobileCLIPCoreMLBackend):
                                 index_cu = _coreml_compute_units_setting_for_indexing()
@@ -305,9 +306,7 @@ class EnginePart5:
                                 if index_cu == search_cu:
                                     sem_accel_detail = f"CoreML compute_units={index_cu}"
                                 else:
-                                    sem_accel_detail = (
-                                        f"CoreML index={index_cu} search={search_cu}"
-                                    )
+                                    sem_accel_detail = f"CoreML index={index_cu} search={search_cu}"
                             else:
                                 sem_accel_detail = backend.__class__.__name__
                         else:
@@ -414,7 +413,11 @@ class EnginePart5:
                                 progress_callback(
                                     int(progress_indexed_base + total_sem * 0.1 + i * 0.9),
                                     progress_album_total,
-                                    format_index_progress("Semantic", int(progress_indexed_base + total_sem * 0.1 + i * 0.9), progress_album_total),
+                                    format_index_progress(
+                                        "Semantic",
+                                        int(progress_indexed_base + total_sem * 0.1 + i * 0.9),
+                                        progress_album_total,
+                                    ),
                                 )
                         except Exception as batch_exc:
                             logger.warning(
@@ -465,9 +468,7 @@ class EnginePart5:
                                     sem_fail += 1
                                     try:
                                         self._mark_semantic_skipped(canonical_fp, st, conn)
-                                        self._store_face_count(
-                                            canonical_fp, 0, conn=conn, commit=False
-                                        )
+                                        self._store_face_count(canonical_fp, 0, conn=conn, commit=False)
                                         batch_writes += 1
                                         if batch_writes >= commit_every:
                                             conn.commit()
@@ -478,13 +479,15 @@ class EnginePart5:
                                             os.path.basename(canonical_fp),
                                             mark_exc,
                                         )
-                                if progress_callback and (
-                                    i <= 2 or i >= total_sem or (i % 5 == 0)
-                                ):
+                                if progress_callback and (i <= 2 or i >= total_sem or (i % 5 == 0)):
                                     progress_callback(
                                         int(progress_indexed_base + total_sem * 0.1 + i * 0.9),
                                         progress_album_total,
-                                        format_index_progress("Semantic", int(progress_indexed_base + total_sem * 0.1 + i * 0.9), progress_album_total),
+                                        format_index_progress(
+                                            "Semantic",
+                                            int(progress_indexed_base + total_sem * 0.1 + i * 0.9),
+                                            progress_album_total,
+                                        ),
                                     )
                                 if throttle_sec > 0:
                                     time.sleep(throttle_sec)
@@ -500,6 +503,7 @@ class EnginePart5:
                                 throughput_so_far,
                             )
                         import gc
+
                         gc.collect()
                     if batch_writes:
                         conn.commit()
@@ -508,11 +512,7 @@ class EnginePart5:
                     sem_avg = sem_elapsed / max(1, total_sem)
                     sem_throughput = float(total_sem) / sem_elapsed
                     encode_elapsed = max(1e-9, t_encode_cpu)
-                    warm_throughput = (
-                        float(len(warm_paths)) / max(1e-9, t_warm_elapsed)
-                        if warm_paths
-                        else 0.0
-                    )
+                    warm_throughput = float(len(warm_paths)) / max(1e-9, t_warm_elapsed) if warm_paths else 0.0
                     encode_throughput = float(total_sem) / encode_elapsed
                     wall_phases = max(1e-9, t_warm_elapsed + sem_elapsed)
                     logger.info(f"[INDEX] Completed AI neural pass in {sem_elapsed:.4f}s.")
@@ -537,7 +537,9 @@ class EnginePart5:
                         100.0 * t_warm_elapsed / wall_phases,
                     )
                 else:
-                    logger.info(f"[INDEX] Skipping AI features neural pass (MobileCLIP) for {total_sem} files (metadata-only index).")
+                    logger.info(
+                        f"[INDEX] Skipping AI features neural pass (MobileCLIP) for {total_sem} files (metadata-only index)."
+                    )
 
                     # Thumbnail warm-up runs once in the user semantic pass (before MobileCLIP).
                     # Skip here when semantic search is enabled to avoid duplicate work and a
@@ -588,7 +590,9 @@ class EnginePart5:
             conn.close()
 
         duration = time.time() - t_start
-        logger.info(f"[INDEX] Finished indexing process in {duration:.4f}s. Results -> indexed: {indexed}, skipped: {skipped}, failed: {failed}, total: {total}")
+        logger.info(
+            f"[INDEX] Finished indexing process in {duration:.4f}s. Results -> indexed: {indexed}, skipped: {skipped}, failed: {failed}, total: {total}"
+        )
         faces_deferred = total_face > 0 and not run_face_inline
         return {
             "indexed": indexed,

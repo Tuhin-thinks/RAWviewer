@@ -26,6 +26,8 @@ SIDE_MARGIN = 4
 MIN_CELL_W = 14
 MAX_CELL_W = 140
 DEFAULT_ASPECT = 1.5
+
+
 def _filmstrip_env_int(name: str, default: int, *, minimum: int = 1) -> int:
     try:
         return max(minimum, int(os.environ.get(name, str(default)).strip()))
@@ -35,9 +37,7 @@ def _filmstrip_env_int(name: str, default: int, *, minimum: int = 1) -> int:
 
 BUFFER_PX = _filmstrip_env_int("RAWVIEWER_FILMSTRIP_BUFFER_PX", 180, minimum=80)
 BUFFER_CELLS = _filmstrip_env_int("RAWVIEWER_FILMSTRIP_BUFFER_CELLS", 4, minimum=1)
-_LAZY_WARM_THRESHOLD = _filmstrip_env_int(
-    "RAWVIEWER_FILMSTRIP_LAZY_WARM_THRESHOLD", 400, minimum=50
-)
+_LAZY_WARM_THRESHOLD = _filmstrip_env_int("RAWVIEWER_FILMSTRIP_LAZY_WARM_THRESHOLD", 400, minimum=50)
 _WARM_BAND = _filmstrip_env_int("RAWVIEWER_FILMSTRIP_WARM_BAND", 56, minimum=8)
 # Uniform inset inside each cell so portrait/landscape share the same padding.
 CELL_BORDER = 2
@@ -141,7 +141,9 @@ class FilmstripCell(QLabel):
 
         px = self.pixmap()
         if px and not px.isNull():
-            drag_px = px.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            drag_px = px.scaled(
+                100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
             drag.setPixmap(drag_px)
             drag.setHotSpot(QPoint(drag_px.width() // 2, drag_px.height() // 2))
 
@@ -326,9 +328,7 @@ class FilmStripBar(QFrame):
         """Scrolls the filmstrip to center the currently selected image."""
         self._scroll_to_index_centered()
 
-    def refresh_visible_thumbnails(
-        self, force: bool = False, refresh_cache: bool = True
-    ) -> None:
+    def refresh_visible_thumbnails(self, force: bool = False, refresh_cache: bool = True) -> None:
         """Rebind visible cells and optionally reload pixmaps from cache."""
         if force:
             for cell in list(self._cells.values()):
@@ -492,9 +492,7 @@ class FilmStripBar(QFrame):
             return pixmap
         content_h = self._content_height()
         max_cw = self._max_content_width()
-        scaled = pixmap.scaledToHeight(
-            content_h, Qt.TransformationMode.SmoothTransformation
-        )
+        scaled = pixmap.scaledToHeight(content_h, Qt.TransformationMode.SmoothTransformation)
         if scaled.width() > max_cw:
             scaled = pixmap.scaled(
                 max_cw,
@@ -941,11 +939,7 @@ class FilmStripBar(QFrame):
         sel = self._pending_index
         for idx, cell in self._cells.items():
             path = self._files[idx] if 0 <= idx < len(self._files) else ""
-            bookmarked = bool(
-                path
-                and self._bookmarked_norm
-                and self._norm_path(path) in self._bookmarked_norm
-            )
+            bookmarked = bool(path and self._bookmarked_norm and self._norm_path(path) in self._bookmarked_norm)
             if idx == sel:
                 cell.setObjectName("filmstrip_cell_selected")
             else:

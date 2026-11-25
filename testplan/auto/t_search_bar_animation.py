@@ -16,6 +16,7 @@ produced the reported "flash to the right" of everything after the
 search bar in the row (an instant width jump in one frame instead of a
 smooth slide).
 """
+
 import inspect
 import os
 import re
@@ -91,9 +92,7 @@ def main() -> int:
         "input width pin skips while expand animation is running",
         "_search_panel_animation_running" in pin_src,
     )
-    apply_src = inspect.getsource(
-        mainmod.RAWImageViewer._apply_search_expand_container_width
-    )
+    apply_src = inspect.getsource(mainmod.RAWImageViewer._apply_search_expand_container_width)
     check(
         "in-flight expand extends endValue instead of restarting",
         "setEndValue" in apply_src,
@@ -106,12 +105,9 @@ def main() -> int:
     click_src = inspect.getsource(mainmod.RAWImageViewer._on_search_bottom_clicked)
     check(
         "expand defers indexing until animation finish",
-        "_pending_search_index_corpus" in click_src
-        and "_start_user_semantic_indexing" not in click_src,
+        "_pending_search_index_corpus" in click_src and "_start_user_semantic_indexing" not in click_src,
     )
-    finish_helper = inspect.getsource(
-        mainmod.RAWImageViewer._run_pending_search_index_after_expand
-    )
+    finish_helper = inspect.getsource(mainmod.RAWImageViewer._run_pending_search_index_after_expand)
     check(
         "pending index runner starts semantic indexing",
         "_start_user_semantic_indexing" in finish_helper,

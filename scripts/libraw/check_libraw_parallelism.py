@@ -43,8 +43,8 @@ def probe(path: str) -> None:
         w3, c3 = time.perf_counter(), time.process_time()
     print(
         f"{os.path.basename(path)}: "
-        f"unpack {1000*(w1-w0):.0f}ms ({(c1-c0)/max(1e-9, w1-w0):.2f}x cores)  "
-        f"postprocess {1000*(w3-w2):.0f}ms ({(c3-c2)/max(1e-9, w3-w2):.2f}x cores)"
+        f"unpack {1000 * (w1 - w0):.0f}ms ({(c1 - c0) / max(1e-9, w1 - w0):.2f}x cores)  "
+        f"postprocess {1000 * (w3 - w2):.0f}ms ({(c3 - c2) / max(1e-9, w3 - w2):.2f}x cores)"
     )
 
 

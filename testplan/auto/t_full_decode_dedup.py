@@ -24,6 +24,7 @@ spins up real thread pools/watchdogs -- _full_stage_already_in_flight only
 reads self._queue_lock/_active_tasks/_task_keys_by_path, so a fake with just
 those three attributes exercises the real bound method faithfully.
 """
+
 import inspect
 import os
 import sys

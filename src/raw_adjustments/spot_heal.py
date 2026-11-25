@@ -55,9 +55,7 @@ def _heal_brush_falloff(
 
     global _FALLOFF_HAS_FEATHER
     if _FALLOFF_HAS_FEATHER is None:
-        _FALLOFF_HAS_FEATHER = "feather" in inspect.signature(
-            circular_brush_falloff
-        ).parameters
+        _FALLOFF_HAS_FEATHER = "feather" in inspect.signature(circular_brush_falloff).parameters
     if _FALLOFF_HAS_FEATHER:
         return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r, feather)
     return circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
@@ -175,9 +173,7 @@ def resize_mask_to(mask: HealMask, h: int, w: int) -> np.ndarray:
 
     if mask.data.shape == (h, w):
         return mask.data
-    return cv2.resize(mask.data, (int(w), int(h)), interpolation=cv2.INTER_LINEAR).astype(
-        np.float32
-    )
+    return cv2.resize(mask.data, (int(w), int(h)), interpolation=cv2.INTER_LINEAR).astype(np.float32)
 
 
 def apply_spot_heal(
@@ -240,7 +236,7 @@ def apply_spot_heal(
         _, area, adaptive_radius, method_key, bounds = geom
     else:
         coverage_full = resize_mask_to(mask, fh, w)
-        coverage = coverage_full[ro:ro + h] if ro != 0 or fh != h else coverage_full
+        coverage = coverage_full[ro : ro + h] if ro != 0 or fh != h else coverage_full
         bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
         if not np.any(bin_mask):
             mask._geom_cache = (geom_key, 0, radius, "telea", None)
@@ -271,9 +267,7 @@ def apply_spot_heal(
     # Missed the inpaint cache, so the coverage buffers are needed after all.
     if coverage is None:
         coverage_full = resize_mask_to(mask, fh, w)
-        coverage = (
-            coverage_full[ro : ro + h] if (ro != 0 or fh != h) else coverage_full
-        )
+        coverage = coverage_full[ro : ro + h] if (ro != 0 or fh != h) else coverage_full
         bin_mask = ((coverage > 0.08).astype(np.uint8)) * 255
 
     ys_min, ys_max, xs_min, xs_max = bounds
@@ -309,9 +303,7 @@ def apply_spot_heal(
     # LaMa ONNX remains the longer-term swap for this seam (FEATURE_FEASIBILITY).
     if method_key == "ns+telea":
         healed_u8 = cv2.inpaint(u8, bin_roi, float(adaptive_radius), cv2.INPAINT_NS)
-        healed_u8 = cv2.inpaint(
-            healed_u8, bin_roi, float(max(2, radius)), cv2.INPAINT_TELEA
-        )
+        healed_u8 = cv2.inpaint(healed_u8, bin_roi, float(max(2, radius)), cv2.INPAINT_TELEA)
     else:
         healed_u8 = cv2.inpaint(u8, bin_roi, float(adaptive_radius), cv2.INPAINT_TELEA)
     healed = np.power(healed_u8.astype(np.float32) / 255.0, 2.2) * peak

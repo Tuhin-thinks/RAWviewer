@@ -100,9 +100,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             restore_settings["use_embedded_jpeg_workflow"] = settings.value(
                 "use_embedded_jpeg_workflow", True, type=bool
             )
-            restore_settings["raw_edr_display_enabled"] = settings.value(
-                "raw_edr_display_enabled", False, type=bool
-            )
+            restore_settings["raw_edr_display_enabled"] = settings.value("raw_edr_display_enabled", False, type=bool)
         except Exception as e:
             safe_print(f"[AUTOTEST] RAW mode setup failed: {e}", flush=True, force=True)
             raw_mode = False
@@ -149,14 +147,13 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
                 settings.setValue(k, v)
         except Exception:
             pass
+
     # Background folder load (full scan + EXIF sort) can take several
     # seconds after the window shows a fast single-file open -- image_files
     # has length 1 until it lands. Wait for it to stabilize (unchanged
     # across two 300ms polls) instead of a fixed delay, or this undercounts
     # "the whole folder" down to whatever was open at settle time.
-    folder_wait_deadline = time.time() + float(
-        os.environ.get("RAWVIEWER_AUTOTEST_FOLDER_WAIT", "30.0")
-    )
+    folder_wait_deadline = time.time() + float(os.environ.get("RAWVIEWER_AUTOTEST_FOLDER_WAIT", "30.0"))
 
     state = {
         "nav_start": 0.0,
@@ -263,10 +260,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
                 )
             else:
                 deltas = sorted(
-                    (
-                        (name, counts.get(name, 0) - baseline.get(name, 0))
-                        for name in set(counts) | set(baseline)
-                    ),
+                    ((name, counts.get(name, 0) - baseline.get(name, 0)) for name in set(counts) | set(baseline)),
                     key=lambda kv: -kv[1],
                 )
                 top = [f"{n}:+{d}" for n, d in deltas[:12] if d > 0]
@@ -282,7 +276,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             if prev is not None:
                 diffs = snap.compare_to(prev, "lineno")
                 lines = [
-                    f"{str(d.traceback[-1]).split(os.sep)[-1]} +{d.size_diff/1e6:.2f}MB (+{d.count_diff})"
+                    f"{str(d.traceback[-1]).split(os.sep)[-1]} +{d.size_diff / 1e6:.2f}MB (+{d.count_diff})"
                     for d in diffs[:8]
                     if d.size_diff > 0
                 ]
@@ -346,9 +340,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         timeout_timer.stop()
         n_paints = len(state["paints_this_nav"])
         state["settled_below_sensor"] += 1
-        state["results"].append(
-            (os.path.basename(cur_path), w, h, paint_elapsed, n_paints)
-        )
+        state["results"].append((os.path.basename(cur_path), w, h, paint_elapsed, n_paints))
         safe_print(
             f"[AUTOTEST] SETTLED below sensor-res: {os.path.basename(cur_path)} "
             f"final paint {w}x{h} at {paint_elapsed:.3f}s ({n_paints} paint(s)); "
@@ -373,8 +365,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         state["nav_start"] = time.time()
         settle_timer.stop()
         safe_print(
-            f"[AUTOTEST] full-res ready — navigating to next "
-            f"({len(state['results'])}/{state['count']})",
+            f"[AUTOTEST] full-res ready — navigating to next ({len(state['results'])}/{state['count']})",
             flush=True,
             force=True,
         )
@@ -390,8 +381,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         timeout_timer.start(int(timeout_s * 1000))
         cur = getattr(viewer, "current_file_path", None)
         safe_print(
-            "[AUTOTEST] waiting for full-res render before navigate: "
-            f"{os.path.basename(cur) if cur else '?'}",
+            f"[AUTOTEST] waiting for full-res render before navigate: {os.path.basename(cur) if cur else '?'}",
             flush=True,
             force=True,
         )

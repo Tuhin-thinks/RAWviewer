@@ -1,4 +1,5 @@
 """ThumbnailLabel: keeps the original pixmap and rescales cleanly."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -10,7 +11,8 @@ class ThumbnailLabel(QLabel):
     Thumbnail widget - keeps original pixmap and rescales cleanly.
     Based on reference implementation: simple and reliable.
     """
-    clicked = pyqtSignal(str) # file_path
+
+    clicked = pyqtSignal(str)  # file_path
 
     def __init__(self, parent=None, pixmap=None, file_path=None):
         super().__init__(parent)

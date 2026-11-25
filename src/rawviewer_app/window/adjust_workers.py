@@ -1,4 +1,5 @@
 """Background workers for the adjust panel preview, masks and export."""
+
 from __future__ import annotations
 
 import contextlib
@@ -332,6 +333,7 @@ class _AdjustEditBaseWorker(QRunnable):
             has_lens_profile = processor.lens_profile_available(self.file_path)
             if has_lens_profile:
                 from raw_adjustments.lens_correction import get_lens_profile_name
+
                 exif_data = processor.exif_extractor.extract_exif_data(self.file_path)
                 lens_profile_name = get_lens_profile_name(exif_data)
         except Exception:
@@ -400,6 +402,4 @@ class _AdjustExportWorker(QRunnable):
             err = exc
         finally:
             self.done_event.set()
-        self.signals.finished.emit(
-            self.file_path, self.output_path, self.export_format, err, xmp_warning
-        )
+        self.signals.finished.emit(self.file_path, self.output_path, self.export_format, err, xmp_warning)

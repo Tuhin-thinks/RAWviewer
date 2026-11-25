@@ -1,4 +1,5 @@
 """JustifiedGallery: adaptive justified gallery layout, assembled from mixin parts."""
+
 from __future__ import annotations
 
 from PyQt6.QtWidgets import QWidget
@@ -12,7 +13,9 @@ from .gallery_part6 import GalleryPart6
 from .gallery_part7 import GalleryPart7
 
 
-class JustifiedGallery(GalleryPart1, GalleryPart2, GalleryPart3, GalleryPart4, GalleryPart5, GalleryPart6, GalleryPart7, QWidget):
+class JustifiedGallery(
+    GalleryPart1, GalleryPart2, GalleryPart3, GalleryPart4, GalleryPart5, GalleryPart6, GalleryPart7, QWidget
+):
     """Adaptive justified gallery layout with high-performance virtualization.
 
     Optimized for large directories using binary search and widget pooling.

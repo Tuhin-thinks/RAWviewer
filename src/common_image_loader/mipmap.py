@@ -1,4 +1,5 @@
 """Mipmap tier publish/backfill helpers for the image cache."""
+
 from __future__ import annotations
 
 import contextlib
@@ -16,6 +17,8 @@ _TIER_CACHE_ATTRS = {
     "grid": ("grid_cache", "disk_grid_cache"),
     "thumbnail": ("thumbnail_cache", "disk_thumbnail_cache"),
 }
+
+
 def _mipmap_publish_debug_enabled() -> bool:
     return os.environ.get("RAWVIEWER_MIPMAP_PUBLISH_DEBUG", "0").strip().lower() in {
         "1",
@@ -23,6 +26,8 @@ def _mipmap_publish_debug_enabled() -> bool:
         "yes",
         "on",
     }
+
+
 def _tile_cache_encode_format() -> str:
     """Output format for grid/thumbnail/preview disk-cache tiles.
 
@@ -44,6 +49,8 @@ def _tile_cache_encode_format() -> str:
     """
     raw = os.environ.get("RAWVIEWER_TILE_CACHE_FORMAT", "jpeg").strip().lower()
     return "WEBP" if raw == "webp" else "JPEG"
+
+
 def encode_tile_bytes(pil_image, *, quality: int = 85) -> bytes:
     """Encode a PIL image for a grid/thumbnail/preview disk-cache tile."""
     import io
@@ -58,10 +65,14 @@ def encode_tile_bytes(pil_image, *, quality: int = 85) -> bytes:
         buf = io.BytesIO()
         pil_image.save(buf, format="JPEG", quality=quality)
     return buf.getvalue()
+
+
 def _bump_mipmap_stat(cache, key: str) -> None:
     """Debug-only counters surfaced via ImageCache.get_cache_stats()['request_stats']."""
     with contextlib.suppress(Exception):
         cache.stats[key] = int(cache.stats.get(key, 0)) + 1
+
+
 def _tier_really_present(cache, file_path: str, tier: str) -> bool:
     """Direct presence check for ONE tier, bypassing get_preview()/get_grid()'s
     cross-tier "dynamic mipmap fallback" (which synthesizes a tier by up/down-sampling
@@ -84,6 +95,8 @@ def _tier_really_present(cache, file_path: str, tier: str) -> bool:
     except Exception:
         pass
     return False
+
+
 def publish_mipmap_tiers(
     file_path: str,
     native_array,
@@ -138,7 +151,6 @@ def publish_mipmap_tiers(
     else:
         highest = ""
 
-
     arr = native_array.astype(np.uint8) if native_array.dtype != np.uint8 else native_array
     _pil_cache = []
 
@@ -156,9 +168,7 @@ def publish_mipmap_tiers(
         if w <= target and h <= target:
             return img
         scale = min(target / w, target / h)
-        return img.resize(
-            (max(1, int(w * scale)), max(1, int(h * scale))), Image.Resampling.HAMMING
-        )
+        return img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.Resampling.HAMMING)
 
     # A tier is only written when the source is at least ~85% of its target long
     # edge -- the same tolerance used elsewhere (pixmap_matches_exif_display) for
@@ -221,8 +231,7 @@ def publish_mipmap_tiers(
             import logging
 
             logging.getLogger(__name__).info(
-                "[MIPMAP] publish file=%s source=%s in=%dx%d "
-                "had(preview=%s,grid=%s,thumb=%s) -> highest=%s",
+                "[MIPMAP] publish file=%s source=%s in=%dx%d had(preview=%s,grid=%s,thumb=%s) -> highest=%s",
                 os.path.basename(file_path),
                 source,
                 w,
@@ -236,4 +245,3 @@ def publish_mipmap_tiers(
             pass
 
     return highest
-

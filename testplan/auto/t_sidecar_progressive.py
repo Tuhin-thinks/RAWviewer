@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Progressive sidecar: interim preview-sized apply before full apply."""
+
 import os
 import shutil
 import sys
@@ -54,9 +55,7 @@ def main() -> int:
         def on_interim(buf):
             interim_shapes.append(getattr(buf, "shape", None))
 
-        out = proc.apply_sidecar_progressive(
-            img_path, base, on_interim=on_interim
-        )
+        out = proc.apply_sidecar_progressive(img_path, base, on_interim=on_interim)
         check("full apply returns buffer", out is not None)
         check("full apply keeps sensor shape", out is not None and out.shape == base.shape)
         check("interim callback fired", len(interim_shapes) == 1)
@@ -95,9 +94,7 @@ def main() -> int:
 
         _w(img_path, dict(DEFAULT_ADJUSTMENTS))
         interims2 = []
-        out_def = proc.apply_sidecar_progressive(
-            img_path, base, on_interim=lambda b: interims2.append(b.shape)
-        )
+        out_def = proc.apply_sidecar_progressive(img_path, base, on_interim=lambda b: interims2.append(b.shape))
         check("default adj returns base", out_def is base)
         check("default adj no interim", len(interims2) == 0)
 

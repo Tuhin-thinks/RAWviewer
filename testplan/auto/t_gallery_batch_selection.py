@@ -113,42 +113,20 @@ def main() -> int:
         return RAWImageViewer.__dict__[name]
 
     host = _Host([])
-    host._gallery_set_selection_keys = types.MethodType(
-        borrow("_gallery_set_selection_keys"), host
-    )
-    host._gallery_select_all_displayed = types.MethodType(
-        borrow("_gallery_select_all_displayed"), host
-    )
-    host._prune_gallery_selection_to_displayed = types.MethodType(
-        borrow("_prune_gallery_selection_to_displayed"), host
-    )
-    host._sync_gallery_selection_chrome = types.MethodType(
-        borrow("_sync_gallery_selection_chrome"), host
-    )
-    host._sync_gallery_selection_bar = types.MethodType(
-        borrow("_sync_gallery_selection_bar"), host
-    )
-    host._gallery_selected_expanded_norm_keys = types.MethodType(
-        borrow("_gallery_selected_expanded_norm_keys"), host
-    )
-    host._gallery_selected_canonical_paths = types.MethodType(
-        borrow("_gallery_selected_canonical_paths"), host
-    )
+    host._gallery_set_selection_keys = types.MethodType(borrow("_gallery_set_selection_keys"), host)
+    host._gallery_select_all_displayed = types.MethodType(borrow("_gallery_select_all_displayed"), host)
+    host._prune_gallery_selection_to_displayed = types.MethodType(borrow("_prune_gallery_selection_to_displayed"), host)
+    host._sync_gallery_selection_chrome = types.MethodType(borrow("_sync_gallery_selection_chrome"), host)
+    host._sync_gallery_selection_bar = types.MethodType(borrow("_sync_gallery_selection_bar"), host)
+    host._gallery_selected_expanded_norm_keys = types.MethodType(borrow("_gallery_selected_expanded_norm_keys"), host)
+    host._gallery_selected_canonical_paths = types.MethodType(borrow("_gallery_selected_canonical_paths"), host)
     host._gallery_selected_canonical_paths_from_keys = types.MethodType(
         borrow("_gallery_selected_canonical_paths_from_keys"), host
     )
-    host._sync_share_button_visibility = types.MethodType(
-        borrow("_sync_share_button_visibility"), host
-    )
-    host._sync_compare_button_visibility = types.MethodType(
-        borrow("_sync_compare_button_visibility"), host
-    )
-    host._gallery_has_selection = types.MethodType(
-        borrow("_gallery_has_selection"), host
-    )
-    host._gallery_refresh_selection_ui = types.MethodType(
-        borrow("_gallery_refresh_selection_ui"), host
-    )
+    host._sync_share_button_visibility = types.MethodType(borrow("_sync_share_button_visibility"), host)
+    host._sync_compare_button_visibility = types.MethodType(borrow("_sync_compare_button_visibility"), host)
+    host._gallery_has_selection = types.MethodType(borrow("_gallery_has_selection"), host)
+    host._gallery_refresh_selection_ui = types.MethodType(borrow("_gallery_refresh_selection_ui"), host)
 
     files = [f"C:\\x\\f{i:04d}.jpg" for i in range(120)]
     host.image_files = list(files)
@@ -173,8 +151,7 @@ def main() -> int:
     canonical = host._gallery_selected_canonical_paths()
     check(
         "canonical paths resolve all pruned selection",
-        sorted(os.path.basename(p) for p in canonical)
-        == sorted(os.path.basename(p) for p in subset),
+        sorted(os.path.basename(p) for p in canonical) == sorted(os.path.basename(p) for p in subset),
         f"{len(canonical)}",
     )
 
@@ -187,7 +164,7 @@ def main() -> int:
     keys = host._gallery_selected_expanded_norm_keys()
     canonical = host._gallery_selected_canonical_paths()
     elapsed = time.perf_counter() - t0
-    check("10k select-all+expand under 0.5s", elapsed < 0.5, f"{elapsed*1000:.0f} ms")
+    check("10k select-all+expand under 0.5s", elapsed < 0.5, f"{elapsed * 1000:.0f} ms")
     check("10k count = 10000", len(keys) == 10000 and len(canonical) == 10000)
 
     # clear empties and bar sync does not explode
@@ -196,13 +173,13 @@ def main() -> int:
     t0 = time.perf_counter()
     host._sync_gallery_selection_chrome()
     check(
-        "bar sync cheap", time.perf_counter() - t0 < 0.5,
+        "bar sync cheap",
+        time.perf_counter() - t0 < 0.5,
     )
 
     # --- source pins --------------------------------------------------------
     src = open(
-        os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_ui", "widgets", "__init__.py"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_ui", "widgets", "__init__.py"),
         encoding="utf-8",
     ).read()
     check(
@@ -210,8 +187,7 @@ def main() -> int:
         "_STYLE_SELECTED" not in src and "self.setStyleSheet(\n            self._STYLE_SELECTED" not in src,
     )
     bops_src = open(
-        os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_app", "services", "batch.py"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "services", "batch.py"),
         encoding="utf-8",
     ).read()
     check(
@@ -224,9 +200,13 @@ def main() -> int:
     check(
         "TaskProgressDialog rename complete (no ExportProgressDialog left)",
         "ExportProgressDialog" not in vp
-        and open(os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                              "rawviewer_app", "core", "widgets.py"),
-                 encoding="utf-8").read().count("ExportProgressDialog") == 0,
+        and open(
+            os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "core", "widgets.py"),
+            encoding="utf-8",
+        )
+        .read()
+        .count("ExportProgressDialog")
+        == 0,
     )
     check(
         "single export reuses export_one_file (no duplicated decode body)",
@@ -278,16 +258,13 @@ def main() -> int:
         copied_sidecar = copy_one_file(a, dst_dir, set())  # will copy a.xmp alongside
         check(
             "sidecar copied alongside",
-            os.path.isfile(os.path.join(dst_dir, os.path.splitext(
-                os.path.basename(copied_sidecar))[0] + ".xmp")),
+            os.path.isfile(os.path.join(dst_dir, os.path.splitext(os.path.basename(copied_sidecar))[0] + ".xmp")),
         )
 
         disc = discard_one_file(a)
         check(
             "discard keeps naming rule and removes source",
-            os.path.basename(disc) == "a.arw"
-            and "Discard" in disc
-            and not os.path.exists(a),
+            os.path.basename(disc) == "a.arw" and "Discard" in disc and not os.path.exists(a),
         )
         # second discard of a same-named file gets _discarded suffix
         with open(a, "wb") as fh:
@@ -360,6 +337,7 @@ def main() -> int:
 
         # batch export with stubbed per-file export: order + continue-on-error
         import rawviewer_app.services.batch as bops
+
         real_export = bops.export_one_file
         calls = []
         bops.export_one_file = lambda src, out, adj, fmt, pool, **kw: (
@@ -437,14 +415,8 @@ def main() -> int:
         _image_cache.get_image_cache = orig_get_cache
     check(
         "removal post-pass skips failed path, removes the rest",
-        _norm_path(files[2]) in {
-            _norm_path(p) for p in rhost.image_files
-        }
-        and all(
-            _norm_path(p) != _norm_path(f)
-            for p in rhost.image_files
-            for f in (files[0], files[1], files[3])
-        ),
+        _norm_path(files[2]) in {_norm_path(p) for p in rhost.image_files}
+        and all(_norm_path(p) != _norm_path(f) for p in rhost.image_files for f in (files[0], files[1], files[3])),
         str([os.path.basename(p) for p in rhost.image_files]),
     )
     check(
@@ -467,15 +439,12 @@ def main() -> int:
 
     phost._start_batch_op = _fake_start
     types.MethodType(borrow("_surviving_anchor_after_removal"), phost)
-    phost._surviving_anchor_after_removal = types.MethodType(
-        borrow("_surviving_anchor_after_removal"), phost
-    )
+    phost._surviving_anchor_after_removal = types.MethodType(borrow("_surviving_anchor_after_removal"), phost)
     types.MethodType(borrow("_start_batch_removal"), phost)("discard", files)
     kind, rpaths, rdest, rreveal = recorded["args"]
     check(
         "pre-cancel touches every path before the worker starts",
-        sorted(map(os.path.basename, phost._cancelled))
-        == sorted(map(os.path.basename, files)),
+        sorted(map(os.path.basename, phost._cancelled)) == sorted(map(os.path.basename, files)),
         str(len(phost._cancelled)),
     )
     check(

@@ -15,14 +15,16 @@ from rawviewer_ui.widgets.gpu.gpu_state import _env_true
 
 
 class GpuImageViewPart2:
-
     def set_zoom_locked(self, locked: bool) -> None:
         """When True, keep fit-to-window; block pinch/wheel/100% zoom."""
         self._zoom_locked = bool(locked)
+
     def zoom_locked(self) -> bool:
         return bool(getattr(self, "_zoom_locked", False))
+
     def _zoom_in_blocked(self) -> bool:
         return self.zoom_locked()
+
     def fit_to_window(self) -> None:
         self._fit_mode = True
         self._zoom_intent_100 = False
@@ -35,6 +37,7 @@ class GpuImageViewPart2:
         self._log_framing("fit")
         self.fitModeChanged.emit(True)
         self.zoomChanged.emit(self.current_scale())
+
     def _log_framing(self, where: str) -> None:
         """Diagnostic for the 'image sits off-center with a black gap' report.
 
@@ -60,22 +63,34 @@ class GpuImageViewPart2:
                 "gap_left=%d gap_right=%d gap_top=%d gap_bottom=%d scale=%.4f",
                 where,
                 "rgb_gl" if getattr(self, "_use_rgb_gl", False) else "pixmap",
-                self._img_w, self._img_h,
-                sr.x(), sr.y(), sr.width(), sr.height(),
-                vp.width(), vp.height(),
-                mapped.x(), mapped.y(), mapped.width(), mapped.height(),
-                mapped.left() - vp.left(), vp.right() - mapped.right(),
-                mapped.top() - vp.top(), vp.bottom() - mapped.bottom(),
+                self._img_w,
+                self._img_h,
+                sr.x(),
+                sr.y(),
+                sr.width(),
+                sr.height(),
+                vp.width(),
+                vp.height(),
+                mapped.x(),
+                mapped.y(),
+                mapped.width(),
+                mapped.height(),
+                mapped.left() - vp.left(),
+                vp.right() - mapped.right(),
+                mapped.top() - vp.top(),
+                vp.bottom() - mapped.bottom(),
                 self.current_scale(),
             )
         except Exception:
             pass
+
     def zoom_to_actual(self) -> None:
         """100% — one image pixel per view pixel, centered on the image middle."""
         w, h = self._img_w, self._img_h
         cx = w * 0.5 if w > 0 else 0.0
         cy = h * 0.5 if h > 0 else 0.0
         self.zoom_to_actual_at(cx, cy)
+
     def zoom_to_actual_at(self, scene_x: float, scene_y: float) -> None:
         """100% zoom with the given image pixel centered in the viewport."""
         if not self._has_pixmap or self._zoom_in_blocked():
@@ -105,6 +120,7 @@ class GpuImageViewPart2:
 
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(1.0)
+
     def set_pixmap_zoomed_at(
         self,
         pixmap: QPixmap,
@@ -160,6 +176,7 @@ class GpuImageViewPart2:
 
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(self.current_scale())
+
     def center_on_image_point(self, scene_x: float, scene_y: float) -> None:
         """Pan so an image pixel is centered without changing zoom scale."""
         if not self._has_pixmap:
@@ -167,6 +184,7 @@ class GpuImageViewPart2:
         x = max(0.0, min(float(scene_x), max(0, self._img_w - 1)))
         y = max(0.0, min(float(scene_y), max(0, self._img_h - 1)))
         self.centerOn(QPointF(x, y))
+
     def toggle_fit(self) -> None:
         if not self._has_pixmap:
             return
@@ -177,6 +195,7 @@ class GpuImageViewPart2:
             self.zoom_to_actual()
         else:
             self.fit_to_window()
+
     def set_scale(self, scale: float) -> None:
         fit = self.fit_scale()
         scale = float(scale)
@@ -191,6 +210,7 @@ class GpuImageViewPart2:
         self._fit_mode = False
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(self.current_scale())
+
     def zoom_by(self, factor: float, view_pos: QPoint | None = None) -> None:
         """Zoom by ``factor``, keeping the image point under ``view_pos`` fixed.
 
@@ -222,10 +242,12 @@ class GpuImageViewPart2:
         # mouse position the view may not have seen for this wheel event.
         dx = view_pos.x() - vc.x()
         dy = view_pos.y() - vc.y()
-        self.centerOn(QPointF(
-            under_pointer.x() - dx / new,
-            under_pointer.y() - dy / new,
-        ))
+        self.centerOn(
+            QPointF(
+                under_pointer.x() - dx / new,
+                under_pointer.y() - dy / new,
+            )
+        )
         iw, ih = max(1, self._img_w), max(1, self._img_h)
         self._zoom_anchor = (
             under_pointer.x() / iw,
@@ -235,6 +257,7 @@ class GpuImageViewPart2:
         )
         self.fitModeChanged.emit(False)
         self.zoomChanged.emit(self.current_scale())
+
     def set_color_pick_mode(self, enabled: bool) -> None:
         """Arm/disarm one-shot pixel picking (e.g. white-balance dropper).
 
@@ -247,8 +270,10 @@ class GpuImageViewPart2:
             self.viewport().setCursor(Qt.CursorShape.CrossCursor)
         else:
             self.viewport().unsetCursor()
+
     def is_color_pick_mode(self) -> bool:
         return bool(getattr(self, "_color_pick_mode", False))
+
     def set_dodge_burn_mode(self, enabled: bool) -> None:
         """Arm/disarm brush painting: mouse/tablet drags stamp dodgeBurnStroke
         instead of panning or driving the compare divider."""
@@ -266,27 +291,29 @@ class GpuImageViewPart2:
             self._brush_cursor_item.hide()
             self.viewport().unsetCursor()
             self.setMouseTracking(False)
+
     def set_dodge_burn_brush_radius(self, radius_px: float) -> None:
         """Brush radius in *display/scene* pixels (matches the Size slider)."""
         self._dodge_burn_brush_radius = max(2.0, float(radius_px))
         self._refresh_brush_cursor_placement()
+
     def set_dodge_burn_brush_flow(self, flow: float) -> None:
         """Per-stroke flow 0..1 — drives preview opacity (matches Brush Flow)."""
         self._dodge_burn_brush_flow = max(0.05, min(1.0, float(flow)))
         self._refresh_brush_cursor_placement()
+
     def _refresh_brush_cursor_placement(self) -> None:
         center = None
         if not self._brush_cursor_item.pixmap().isNull():
             off = self._brush_cursor_item.offset()
             pm = self._brush_cursor_item.pixmap()
-            center = QPointF(
-                off.x() + pm.width() * 0.5, off.y() + pm.height() * 0.5
-            )
+            center = QPointF(off.x() + pm.width() * 0.5, off.y() + pm.height() * 0.5)
         self._ensure_brush_cursor_pixmap()
         if center is not None and self._brush_cursor_item.isVisible():
             self._place_brush_cursor(center)
         elif self._brush_cursor_item.isVisible():
             self._sync_brush_cursor_at_view_center()
+
     def _ensure_brush_cursor_pixmap(self) -> None:
         """Soft radial preview: size from radius, opacity from flow. No hard ring."""
         r = float(getattr(self, "_dodge_burn_brush_radius", 40.0))
@@ -294,8 +321,7 @@ class GpuImageViewPart2:
         # Rebuild when radius moves by >=0.5px or flow by >=2%.
         if (
             abs(r - float(getattr(self, "_brush_cursor_pixmap_r", -1.0))) < 0.5
-            and abs(flow - float(getattr(self, "_brush_cursor_pixmap_flow", -1.0)))
-            < 0.02
+            and abs(flow - float(getattr(self, "_brush_cursor_pixmap_flow", -1.0))) < 0.02
         ) and not self._brush_cursor_item.pixmap().isNull():
             return
         try:
@@ -328,6 +354,7 @@ class GpuImageViewPart2:
             self._brush_cursor_item.setPixmap(QPixmap())
             self._brush_cursor_pixmap_r = -1.0
             self._brush_cursor_pixmap_flow = -1.0
+
     def _place_brush_cursor(self, scene_pt: QPointF) -> None:
         self._ensure_brush_cursor_pixmap()
         pm = self._brush_cursor_item.pixmap()
@@ -337,14 +364,15 @@ class GpuImageViewPart2:
             scene_pt.x() - pm.width() * 0.5,
             scene_pt.y() - pm.height() * 0.5,
         )
+
     def _sync_brush_cursor_at_view_center(self) -> None:
         if not self._has_pixmap:
             return
-        self._place_brush_cursor(
-            self._clamped_scene_point(self.viewport().rect().center())
-        )
+        self._place_brush_cursor(self._clamped_scene_point(self.viewport().rect().center()))
+
     def is_dodge_burn_mode(self) -> bool:
         return bool(getattr(self, "_dodge_burn_mode", False))
+
     def set_crop_mode(
         self,
         enabled: bool,
@@ -372,27 +400,34 @@ class GpuImageViewPart2:
             self._crop_item.hide()
             self._crop_item._apply_hover_cursor("")
             self.viewport().unsetCursor()
+
     def is_crop_mode(self) -> bool:
         return bool(getattr(self, "_crop_mode", False))
+
     def set_crop_aspect_ratio(self, aspect: float | None) -> None:
         if getattr(self, "_crop_item", None) is not None:
             self._crop_item.set_aspect_ratio(aspect)
+
     def set_crop_insets(self, left: float, right: float, top: float, bottom: float) -> None:
         if getattr(self, "_crop_item", None) is not None:
             self._crop_item.set_insets(left, right, top, bottom)
+
     def crop_insets(self) -> tuple[float, float, float, float]:
         item = getattr(self, "_crop_item", None)
         if item is None:
             return (0.0, 0.0, 0.0, 0.0)
         return item.insets()
+
     def set_export_drag_enabled(self, enabled: bool) -> None:
         """Enable/disable fit-mode file drag-out (disabled while Adjust is open)."""
         self._export_drag_enabled = bool(enabled)
         if not self._export_drag_enabled:
             self._drag_start_pos = None
             self._drag_started = False
+
     def is_export_drag_enabled(self) -> bool:
         return bool(getattr(self, "_export_drag_enabled", True))
+
     def _export_drag_allowed(self) -> bool:
         """File drag-out is blocked in Adjust, crop, dodge/burn, and color-pick."""
         if not getattr(self, "_export_drag_enabled", True):
@@ -402,12 +437,14 @@ class GpuImageViewPart2:
         if getattr(self, "_dodge_burn_mode", False):
             return False
         return not getattr(self, "_color_pick_mode", False)
+
     def _clamped_scene_point(self, view_pos) -> QPointF:
         scene_pt = self.mapToScene(view_pos)
         return QPointF(
             max(0.0, min(scene_pt.x(), max(0, self._img_w - 1))),
             max(0.0, min(scene_pt.y(), max(0, self._img_h - 1))),
         )
+
     def _view_pos_on_image(self, view_pos) -> bool:
         """True when ``view_pos`` maps onto the pixmap (not letterbox / off-view)."""
         if not getattr(self, "_has_pixmap", False):
@@ -415,10 +452,8 @@ class GpuImageViewPart2:
         if self._img_w <= 0 or self._img_h <= 0:
             return False
         scene_pt = self.mapToScene(view_pos)
-        return (
-            0.0 <= scene_pt.x() < float(self._img_w)
-            and 0.0 <= scene_pt.y() < float(self._img_h)
-        )
+        return 0.0 <= scene_pt.x() < float(self._img_w) and 0.0 <= scene_pt.y() < float(self._img_h)
+
     def _maybe_emit_brush_tool_left_image(self, view_pos=None) -> None:
         if not getattr(self, "_dodge_burn_mode", False):
             return
@@ -433,11 +468,13 @@ class GpuImageViewPart2:
             # move/press after toggling the tool on).
             return
         self.brushToolLeftImage.emit()
+
     def set_compare_original_pixmap(self, pixmap: QPixmap | None) -> None:
         """Provide the unedited render to show on the left of the divider."""
         self._compare_original_pixmap = pixmap if pixmap is not None else QPixmap()
         if self._compare_active:
             self._update_compare_overlay()
+
     def set_compare_mode(self, enabled: bool) -> None:
         """Show/hide the before/after split view over the current edited pixmap."""
         enabled = bool(enabled) and self._has_pixmap and not self._compare_original_pixmap.isNull()
@@ -450,10 +487,13 @@ class GpuImageViewPart2:
             self.viewport().unsetCursor()
             return
         self._update_compare_overlay()
+
     def is_compare_mode(self) -> bool:
         return bool(getattr(self, "_compare_active", False))
+
     def _compare_divider_scene_x(self) -> float:
         return max(0.0, min(1.0, self._compare_split_frac)) * self._img_w
+
     def _update_compare_overlay(self) -> None:
         if not self._compare_active or self._img_w <= 0 or self._img_h <= 0:
             return
@@ -491,6 +531,7 @@ class GpuImageViewPart2:
             split_x - handle_r, self._img_h / 2.0 - handle_r, handle_r * 2, handle_r * 2
         )
         self._compare_divider_handle.show()
+
     def _compare_divider_hit(self, view_pos: QPoint) -> bool:
         """Hit-test the divider with a generous on-screen tolerance (cosmetic pen width)."""
         if not self._compare_active:
@@ -498,11 +539,13 @@ class GpuImageViewPart2:
         scene_x = self._compare_divider_scene_x()
         divider_view_x = self.mapFromScene(QPointF(scene_x, 0)).x()
         return abs(view_pos.x() - divider_view_x) <= 16
+
     def _set_compare_split_from_view_x(self, view_x: int) -> None:
         scene_pt = self.mapToScene(QPoint(view_x, 0))
         frac = 0.0 if self._img_w <= 0 else scene_pt.x() / self._img_w
         self._compare_split_frac = max(0.0, min(1.0, frac))
         self._update_compare_overlay()
+
     def mousePressEvent(self, event) -> None:
         # A drag-pan moves the view, so a stored wheel-zoom anchor is stale.
         self._zoom_anchor = None
@@ -553,12 +596,11 @@ class GpuImageViewPart2:
             event.accept()
             return
         super().mousePressEvent(event)
+
     def mouseMoveEvent(self, event) -> None:
         if self._dodge_burn_mode and self._has_pixmap:
             view_pos = event.position().toPoint()
-            painting = (event.buttons() & Qt.MouseButton.LeftButton) and getattr(
-                self, "_dodge_burn_painting", False
-            )
+            painting = (event.buttons() & Qt.MouseButton.LeftButton) and getattr(self, "_dodge_burn_painting", False)
             on_image = self._view_pos_on_image(view_pos)
             if on_image:
                 self._dodge_burn_confirmed_on_image = True
@@ -607,7 +649,11 @@ class GpuImageViewPart2:
             event.accept()
             return
 
-        if (event.buttons() & Qt.MouseButton.LeftButton) and not self._fit_mode and getattr(self, "_manual_pan_start", None) is not None:
+        if (
+            (event.buttons() & Qt.MouseButton.LeftButton)
+            and not self._fit_mode
+            and getattr(self, "_manual_pan_start", None) is not None
+        ):
             delta = event.position().toPoint() - self._manual_pan_start
             self.horizontalScrollBar().setValue(self._manual_pan_scroll_h - delta.x())
             self.verticalScrollBar().setValue(self._manual_pan_scroll_v - delta.y())
@@ -615,10 +661,9 @@ class GpuImageViewPart2:
             return
 
         super().mouseMoveEvent(event)
+
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton and getattr(
-            self, "_dodge_burn_painting", False
-        ):
+        if event.button() == Qt.MouseButton.LeftButton and getattr(self, "_dodge_burn_painting", False):
             self._dodge_burn_painting = False
             view_pos = event.position().toPoint()
             pt = self._clamped_scene_point(view_pos)
@@ -640,10 +685,12 @@ class GpuImageViewPart2:
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
     def leaveEvent(self, event) -> None:
         # Leaving the view (e.g. into the Adjust panel) disarms brush tools.
         self._maybe_emit_brush_tool_left_image(None)
         super().leaveEvent(event)
+
     def _start_drag(self) -> None:
         if not self._export_drag_allowed():
             return
@@ -659,13 +706,16 @@ class GpuImageViewPart2:
         try:
             drag_px = self.capture_viewport_pixmap()
             if drag_px and not drag_px.isNull():
-                drag_px = drag_px.scaled(140, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                drag_px = drag_px.scaled(
+                    140, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                )
                 drag.setPixmap(drag_px)
                 drag.setHotSpot(QPoint(drag_px.width() // 2, drag_px.height() // 2))
         except Exception:
             pass
 
         drag.exec(Qt.DropAction.CopyAction)
+
     def _handle_native_gesture(self, event) -> bool:
         """Trackpad pinch (macOS) and smart-zoom gestures."""
         if not self._has_pixmap or event.type() != QEvent.Type.NativeGesture:
@@ -684,6 +734,7 @@ class GpuImageViewPart2:
             event.accept()
             return True
         return False
+
     def viewportEvent(self, event) -> bool:
         # macOS delivers pinch/double-click to the OpenGL viewport, not the view's event().
         if self._handle_native_gesture(event):
@@ -692,16 +743,19 @@ class GpuImageViewPart2:
             self.mouseDoubleClickEvent(event)
             return True
         return super().viewportEvent(event)
+
     def event(self, event) -> bool:
         if self._handle_native_gesture(event):
             return True
         return super().event(event)
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         handler = getattr(self, "_shortcut_handler", None)
         if callable(handler) and handler(event):
             event.accept()
             return
         super().keyPressEvent(event)
+
     def tabletEvent(self, event) -> None:
         """Real pressure from a graphics tablet/stylus (Wacom, iPad+Sidecar, ...).
 
@@ -721,10 +775,7 @@ class GpuImageViewPart2:
         painting = getattr(self, "_dodge_burn_painting", False)
         if self._view_pos_on_image(view_pos):
             self._dodge_burn_confirmed_on_image = True
-        elif (
-            etype == _QEvent.Type.TabletMove
-            and not painting
-        ):
+        elif etype == _QEvent.Type.TabletMove and not painting:
             self._maybe_emit_brush_tool_left_image(view_pos)
             event.accept()
             return
@@ -744,6 +795,7 @@ class GpuImageViewPart2:
             if not self._view_pos_on_image(view_pos):
                 self._maybe_emit_brush_tool_left_image(view_pos)
         event.accept()
+
     def wheelEvent(self, event) -> None:
         delta = event.angleDelta().y()
         if delta == 0:
@@ -752,9 +804,7 @@ class GpuImageViewPart2:
             super().wheelEvent(event)
             return
         # Dodge/Burn armed: two-finger scroll changes Brush Size, not image.
-        if getattr(self, "_dodge_burn_mode", False) and not (
-            event.modifiers() & Qt.KeyboardModifier.ControlModifier
-        ):
+        if getattr(self, "_dodge_burn_mode", False) and not (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
             self.dodgeBurnBrushSizeWheel.emit(int(delta))
             event.accept()
             return
@@ -782,6 +832,7 @@ class GpuImageViewPart2:
 
         # Zoomed in: pan vertically by delegating to QGraphicsView scroll behavior
         super().wheelEvent(event)
+
     def mouseDoubleClickEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             if self._has_pixmap:
@@ -794,20 +845,21 @@ class GpuImageViewPart2:
                 pt = QPointF(0.0, 0.0)
             self.doubleClickedAt.emit(pt)
         event.accept()
+
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         if self._fit_mode and self._has_pixmap:
             self.fit_to_window()
         self._update_placeholder()
+
     def viewport_scroll_state(self) -> tuple[float, int, int]:
         return (
             self.current_scale(),
             self.horizontalScrollBar().value(),
             self.verticalScrollBar().value(),
         )
-    def apply_viewport_scroll_state(
-        self, scale: float, h_scroll: int, v_scroll: int
-    ) -> None:
+
+    def apply_viewport_scroll_state(self, scale: float, h_scroll: int, v_scroll: int) -> None:
         if not self._has_pixmap:
             return
         fit = self.fit_scale()

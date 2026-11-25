@@ -6,6 +6,7 @@ _close_adjust_panel_from_ui must flip it back even when view_mode is already
 "gallery" (every real gallery transition sets that before the close runs) —
 toggle_raw_jpeg_workflow no-ops outside single view, which left RAW stuck.
 """
+
 import inspect
 import os
 import sys

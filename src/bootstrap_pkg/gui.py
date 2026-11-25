@@ -1,4 +1,5 @@
 """InstallerGUI — the setup wizard window."""
+
 from __future__ import annotations
 
 import contextlib
@@ -44,6 +45,7 @@ _EMBER = "#d9691e"
 _EMBER_HOVER = "#e87f39"
 _HIST_R = "#e5484d"
 _HIST_G = "#3dd68c"
+
 
 class InstallerGUI(QMainWindow):
     _SUCCESS_DESC_BASE = (
@@ -272,15 +274,9 @@ class InstallerGUI(QMainWindow):
         options_label.setStyleSheet(f"color: {_INK_MUTED}; font-weight: bold; margin-top: 15px;")
         layout.addWidget(options_label)
 
-        self.radio_lite = QRadioButton(
-            "Standard — Browse & Adjust (~0.8–1 GB; no AI search)"
-        )
-        self.radio_directml = QRadioButton(
-            "Plus — DirectML (AI search; ~1.5–2 GB + ~600 MB models; CPU demosaic)"
-        )
-        self.radio_cuda = QRadioButton(
-            "Plus — NVIDIA CUDA (AI search + CuPy GPU demosaic; ~1.5–2 GB + ~600 MB models)"
-        )
+        self.radio_lite = QRadioButton("Standard — Browse & Adjust (~0.8–1 GB; no AI search)")
+        self.radio_directml = QRadioButton("Plus — DirectML (AI search; ~1.5–2 GB + ~600 MB models; CPU demosaic)")
+        self.radio_cuda = QRadioButton("Plus — NVIDIA CUDA (AI search + CuPy GPU demosaic; ~1.5–2 GB + ~600 MB models)")
 
         # Default Standard: lean install for most users.
         self.radio_lite.setChecked(True)
@@ -292,9 +288,7 @@ class InstallerGUI(QMainWindow):
         options_layout.addWidget(self.radio_cuda)
         layout.addLayout(options_layout)
 
-        self.clear_cache_cb = QCheckBox(
-            "Clear existing cache (recommended when upgrading from an older version)"
-        )
+        self.clear_cache_cb = QCheckBox("Clear existing cache (recommended when upgrading from an older version)")
         self.clear_cache_cb.setToolTip(
             "Removes the local photo cache (~/.rawviewer_cache) and session settings "
             "so v3 can use faster search/index defaults.\n"
@@ -310,7 +304,7 @@ class InstallerGUI(QMainWindow):
 
         row = QHBoxLayout()
         self.path_edit = QLineEdit()
-        app_data = os.environ.get('LOCALAPPDATA') or os.path.expanduser('~')
+        app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
         default_path = os.path.join(app_data, "RAWviewer")
         self.path_edit.setText(default_path)
 
@@ -387,9 +381,7 @@ class InstallerGUI(QMainWindow):
         self.install_step_label.setText("")
 
         self.thread = QThread()
-        self.worker = InstallWorker(
-            target_dir, mode, clear_cache=self.clear_cache_cb.isChecked()
-        )
+        self.worker = InstallWorker(target_dir, mode, clear_cache=self.clear_cache_cb.isChecked())
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_finished)
@@ -499,6 +491,7 @@ class InstallerGUI(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, 'drag_pos'):
+        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, "drag_pos"):
             self.move(event.globalPosition().toPoint() - self.drag_pos)
