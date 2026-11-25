@@ -6,6 +6,7 @@ enough guide to the perceptual result.
 
 Usage: pixi run python3 scripts/tools/shadow_tuning_render.py [out_dir]
 """
+
 import os
 import sys
 
@@ -43,10 +44,11 @@ def darkest_crop_box(lum: np.ndarray, size: int) -> tuple[int, int]:
 
 
 def main() -> None:
+    import raw_pv2012 as pv
+    from raw_edit_pipeline import linear_to_display_uint8, process_linear_edit_buffer
+
     from processing.unified import UnifiedImageProcessor
     from raw_adjustments import DEFAULT_ADJUSTMENTS
-    from raw_edit_pipeline import process_linear_edit_buffer, linear_to_display_uint8
-    import raw_pv2012 as pv
 
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "/tmp/shadow_tuning"
     os.makedirs(out_dir, exist_ok=True)

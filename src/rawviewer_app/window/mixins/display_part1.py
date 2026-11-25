@@ -1,5 +1,4 @@
 """display mixin, part 1 of 6 (23 methods, 893 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -114,6 +113,7 @@ class DisplayPart1:
         else:
             self.image_label.setPixmap(blended)
             if old_pm is not None:
+
                 def _finish_label_resize(_size=pending_size):
                     with contextlib.suppress(Exception):
                         self.image_label.resize(_size)
@@ -230,23 +230,20 @@ class DisplayPart1:
             return bool(file_path) and self._single_view_pixels_on_screen(file_path)
         try:
             preview = self.image_cache.get_preview_memory_only(file_path)
-            if preview is not None and self._suppress_jpeg_interim(
-                file_path
-            ) and not self.image_cache.is_libraw_preview(file_path):
+            if (
+                preview is not None
+                and self._suppress_jpeg_interim(file_path)
+                and not self.image_cache.is_libraw_preview(file_path)
+            ):
                 # RAW workflow: embedded-JPEG preview; wait for LibRaw pixels.
                 preview = None
             if preview is not None:
-                if self._preview_acceptable_for_single_view(
-                    preview, file_path=file_path, context="navigation"
-                ):
-                    return self._display_cached_numpy_for_path(
-                        file_path, preview, from_cache="quality_preview"
-                    )
+                if self._preview_acceptable_for_single_view(preview, file_path=file_path, context="navigation"):
+                    return self._display_cached_numpy_for_path(file_path, preview, from_cache="quality_preview")
                 px = self._cache_buffer_max_dim(preview)
                 nav_min = self._single_view_cache_min_dim(for_navigation=True)
                 logger.info(
-                    "[LOAD] Skipping low-res preview cache (%dpx < %d) for %s; "
-                    "waiting for embedded thumbnail/full",
+                    "[LOAD] Skipping low-res preview cache (%dpx < %d) for %s; waiting for embedded thumbnail/full",
                     px,
                     nav_min,
                     os.path.basename(file_path),
@@ -305,9 +302,7 @@ class DisplayPart1:
         except Exception:
             pass
         try:
-            cached_item, cache_type = check_memory_cache_for_image(
-                file_path, use_full_resolution=False
-            )
+            cached_item, cache_type = check_memory_cache_for_image(file_path, use_full_resolution=False)
         except Exception:
             return False
         if cached_item is None:
@@ -316,11 +311,7 @@ class DisplayPart1:
         # non-RAW mode still stores them under preview_cache, and treating them
         # as warm used to skip resetting _manager_displayed_max_dim on nav.
         if cache_type in ("preview", "full_image"):
-            return bool(
-                self._cache_buffer_suitable_for_single_view(
-                    cached_item, min_dim=min_dim, file_path=file_path
-                )
-            )
+            return bool(self._cache_buffer_suitable_for_single_view(cached_item, min_dim=min_dim, file_path=file_path))
         if cache_type == "pixmap":
             try:
                 if isinstance(cached_item, QPixmap) and not cached_item.isNull():
@@ -345,14 +336,10 @@ class DisplayPart1:
         logger = logging.getLogger(__name__)
         if image is None:
             return False
-        if (
-            not getattr(self, "_skip_resolution_downgrade_check", False)
-            and self._already_displaying_buffer_for_path(file_path, image)
+        if not getattr(self, "_skip_resolution_downgrade_check", False) and self._already_displaying_buffer_for_path(
+            file_path, image
         ):
-            logger.info(
-                f"[LOAD] Skipping redundant cache redraw for {os.path.basename(file_path)} "
-                f"(already on screen)"
-            )
+            logger.info(f"[LOAD] Skipping redundant cache redraw for {os.path.basename(file_path)} (already on screen)")
             self._gallery_preview_pending_full = False
             self._loading_from_gallery = False
             self._on_single_view_content_displayed()
@@ -569,9 +556,7 @@ class DisplayPart1:
             return self._resolution_crossfade_duration_ms()
         return int(getattr(self, "_crossfade_duration_ms", 160))
 
-    def _fit_crossfade_overlay_pixmap(
-        self, pixmap: QPixmap, geom: QRect, *, is_viewport_snapshot: bool
-    ) -> QPixmap:
+    def _fit_crossfade_overlay_pixmap(self, pixmap: QPixmap, geom: QRect, *, is_viewport_snapshot: bool) -> QPixmap:
         if is_viewport_snapshot:
             return pixmap
         cw, ch = max(1, geom.width()), max(1, geom.height())
@@ -701,9 +686,7 @@ class DisplayPart1:
             overlay.setGeometry(geom)
             overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
             overlay.setPixmap(
-                self._fit_crossfade_overlay_pixmap(
-                    old_pixmap, geom, is_viewport_snapshot=pixmap_is_viewport_snapshot
-                )
+                self._fit_crossfade_overlay_pixmap(old_pixmap, geom, is_viewport_snapshot=pixmap_is_viewport_snapshot)
             )
             overlay.show()
             overlay.raise_()
@@ -754,19 +737,14 @@ class DisplayPart1:
             self._try_sync_full_before_zoom()
             should_upgrade = self._needs_full_resolution_upgrade(fp)
             focus_jump = bool(
-                getattr(self, "_pending_zoom_focus_subject", False)
-                or getattr(self, "_focus_zoom_anchor_active", False)
+                getattr(self, "_pending_zoom_focus_subject", False) or getattr(self, "_focus_zoom_anchor_active", False)
             )
             if should_upgrade and not self._adjust_panel_active():
                 self._pending_zoom = True
                 self._pending_zoom_center = (
-                    self.zoom_center_point
-                    if getattr(self, "zoom_center_point", None) is not None
-                    else None
+                    self.zoom_center_point if getattr(self, "zoom_center_point", None) is not None else None
                 )
-                self._pending_zoom_thumbnail_size = (
-                    pm.size() if pm is not None and not pm.isNull() else None
-                )
+                self._pending_zoom_thumbnail_size = pm.size() if pm is not None and not pm.isNull() else None
                 gv._zoom_intent_100 = True
                 self._request_full_res_decode(fp, priority_current=True, urgent=True)
                 if not focus_jump:
@@ -813,9 +791,7 @@ class DisplayPart1:
                         self._maintain_zoom_on_navigation = True
                         self._orientation_already_applied = True
 
-                        old_current_size = (
-                            self.current_pixmap.size() if self.current_pixmap else None
-                        )
+                        old_current_size = self.current_pixmap.size() if self.current_pixmap else None
 
                         self.display_numpy_image(cached_full)
                         self._is_half_size_displayed = False
@@ -847,14 +823,8 @@ class DisplayPart1:
 
                 self._load_full_resolution_on_demand()
                 self._pending_zoom = True
-                self._pending_zoom_center = (
-                    self.zoom_center_point
-                    if getattr(self, "zoom_center_point", None)
-                    else None
-                )
-                self._pending_zoom_thumbnail_size = (
-                    self.current_pixmap.size() if self.current_pixmap else None
-                )
+                self._pending_zoom_center = self.zoom_center_point if getattr(self, "zoom_center_point", None) else None
+                self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
                 self.status_bar.showMessage("Loading full resolution for 100% zoom...")
                 return
 
@@ -899,6 +869,5 @@ class DisplayPart1:
     def _preserve_zoom_navigation_active(self) -> bool:
         """True while arrow/filmstrip nav should keep zoom and avoid soft preview tiers."""
         return bool(
-            getattr(self, "_preserve_nav_zoom_active", False)
-            or getattr(self, "_maintain_zoom_on_navigation", False)
+            getattr(self, "_preserve_nav_zoom_active", False) or getattr(self, "_maintain_zoom_on_navigation", False)
         )

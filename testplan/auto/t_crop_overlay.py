@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Crop insets + overlay kernel smoke tests."""
+
 import os
 import sys
 
@@ -11,15 +12,16 @@ import numpy as np
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
-    from raw_adjustments import DEFAULT_ADJUSTMENTS
     from raw_transform import apply_geometry, has_geometry
+
+    from raw_adjustments import DEFAULT_ADJUSTMENTS
 
     for k in ("CropLeft", "CropRight", "CropTop", "CropBottom"):
         check(f"DEFAULT has {k}", k in DEFAULT_ADJUSTMENTS)

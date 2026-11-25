@@ -31,13 +31,15 @@ Design:
       custom element, additive to the existing crs: attributes.
 """
 
-from __future__ import annotations
-
 import base64
 import threading
 from dataclasses import dataclass, field
 
 import numpy as np
+
+from raw_adjustments.shared import (  # moved (P2b); re-exported
+    circular_brush_falloff,
+)
 
 MASK_KEY = "_dodge_burn_mask_v1"
 MASK_OBJ_KEY = "_dodge_burn_mask_obj"  # live DodgeBurnMask; never write to XMP
@@ -46,13 +48,13 @@ DEFAULT_STRENGTH = 1.75  # stops at mask value +/-1.0
 MASK_CLIP = 1.5
 
 
-def mask_stage_fingerprint(mask: DodgeBurnMask) -> str:
+def mask_stage_fingerprint(mask: "DodgeBurnMask") -> str:
     """Cheap stage-cache key: shape + mutation version (no PNG encode)."""
     h, w = mask.data.shape[:2]
     return f"mem:{int(h)}x{int(w)}:v{int(mask.version)}"
 
 
-def resolve_mask_from_adj(adj: dict | None) -> DodgeBurnMask | None:
+def resolve_mask_from_adj(adj: dict | None) -> "DodgeBurnMask | None":
     """Prefer live mask object; fall back to XMP/base64 serial (not mem: fingerprints)."""
     if not adj:
         return None
@@ -86,7 +88,7 @@ class DodgeBurnMask:
     _gain_cache: tuple | None = field(default=None, compare=False, repr=False)
 
     @classmethod
-    def empty(cls, height: int, width: int) -> DodgeBurnMask:
+    def empty(cls, height: int, width: int) -> "DodgeBurnMask":
         return cls(np.zeros((height, width), dtype=np.float32))
 
     def touch(self) -> None:
@@ -239,12 +241,7 @@ def _edge_assist_gate(
                 connected[y, x] = 1.0
                 for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     ny, nx = y + dy, x + dx
-                    if (
-                        0 <= ny < h
-                        and 0 <= nx < w
-                        and not seen[ny, nx]
-                        and similar[ny, nx]
-                    ):
+                    if 0 <= ny < h and 0 <= nx < w and not seen[ny, nx] and similar[ny, nx]:
                         seen[ny, nx] = True
                         q.append((ny, nx))
     else:
@@ -271,29 +268,6 @@ def _edge_assist_gate(
     return np.clip(gate, 0.0, 1.0).astype(np.float32)
 
 
-def circular_brush_falloff(
-    y0: int,
-    y1: int,
-    x0: int,
-    x1: int,
-    cx: float,
-    cy: float,
-    radius: float,
-) -> np.ndarray:
-    """Soft circular brush kernel on ``[y0:y1, x0:x1]`` (peak 1 at center).
-
-    Raised-cosine (Hann) radial profile: full strength at the center, smooth
-    gradient to zero at ``radius``. Hard-clips outside ``radius`` so the
-    axis-aligned stamp bbox corners stay empty (avoids rectangular live blits).
-    """
-    r = max(1.0, float(radius))
-    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
-    dist = np.sqrt((xx - float(cx)) ** 2 + (yy - float(cy)) ** 2)
-    t = np.clip(dist / r, 0.0, 1.0)
-    # Hann window: 1 at center, 0 at edge, continuous first derivative.
-    falloff = (0.5 * (1.0 + np.cos(np.pi * t))).astype(np.float32)
-    falloff[dist > r] = 0.0
-    return falloff
 
 
 def stamp_brush(
@@ -338,14 +312,8 @@ def stamp_brush(
 
     falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
-    if (
-        edge_assist
-        and luminance is not None
-        and luminance.shape[:2] == (h, w)
-    ):
-        falloff = falloff * _edge_assist_gate(
-            luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma
-        )
+    if edge_assist and luminance is not None and luminance.shape[:2] == (h, w):
+        falloff = falloff * _edge_assist_gate(luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma)
 
     delta = falloff * float(strength) * (1.0 if dodge else -1.0)
     region = mask.data[y0:y1, x0:x1]
@@ -400,14 +368,8 @@ def erase_brush(
 
     falloff = circular_brush_falloff(y0, y1, x0, x1, cx, cy, r)
 
-    if (
-        edge_assist
-        and luminance is not None
-        and luminance.shape[:2] == (h, w)
-    ):
-        falloff = falloff * _edge_assist_gate(
-            luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma
-        )
+    if edge_assist and luminance is not None and luminance.shape[:2] == (h, w):
+        falloff = falloff * _edge_assist_gate(luminance, y0, x0, y1, x1, cx, cy, luma_tol=luma_tol, chroma=chroma)
 
     # Multiplicative erase toward zero: factor 1 at edge, (1-strength) at center.
     amount = np.clip(falloff * float(strength), 0.0, 1.0)
@@ -475,9 +437,7 @@ def resize_mask_to(mask: DodgeBurnMask, height: int, width: int) -> np.ndarray:
     return cv2.resize(mask.data, (width, height), interpolation=cv2.INTER_LINEAR)
 
 
-def apply_dodge_burn(
-    img: np.ndarray, mask: DodgeBurnMask | None, stops: float
-) -> np.ndarray:
+def apply_dodge_burn(img: np.ndarray, mask: DodgeBurnMask | None, stops: float) -> np.ndarray:
     """Scene-linear per-pixel exposure multiplier: img * 2**(mask * stops).
 
     ``img`` is (H, W, 3) scene-linear float. No-op (returns img unchanged)
@@ -524,7 +484,7 @@ def apply_dodge_burn(
     # here at 24MP: 220ms broadcast vs 109ms per-channel-out, bit-identical.
     # raw_detail_enhance._multiply_by_2d_factor documents the same finding --
     # dodge/burn simply was not using it.
-    from raw_adjustments.detail_enhance import _multiply_by_2d_factor
+    from raw_adjustments.shared import _multiply_by_2d_factor
 
     return _multiply_by_2d_factor(img, gain)
 
@@ -535,9 +495,7 @@ def serialize_mask(mask: DodgeBurnMask | None) -> str:
         return ""
     import cv2
 
-    u8 = np.clip(
-        (mask.data + MASK_CLIP) / (2.0 * MASK_CLIP) * 255.0 + 0.5, 0, 255
-    ).astype(np.uint8)
+    u8 = np.clip((mask.data + MASK_CLIP) / (2.0 * MASK_CLIP) * 255.0 + 0.5, 0, 255).astype(np.uint8)
     ok, buf = cv2.imencode(".png", u8)
     if not ok:
         return ""

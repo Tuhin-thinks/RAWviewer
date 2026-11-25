@@ -47,8 +47,6 @@ back to the existing rawpy path. Disable entirely with
 ``RAWVIEWER_FAST_RAW_DECODE=0``.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 import time
@@ -59,6 +57,13 @@ from typing import Any
 import numpy as np
 
 from core.errors import DecodeCancelled, RAWViewerError  # noqa: F401
+from processing.raw_decode.camera_wb import (  # moved (P2b); re-exported  # moved (P2b); re-exported
+    _WB_CORRECTION_CACHE,
+    wb_sanity_enabled,
+)
+from processing.raw_decode.gamma import (  # moved (P2b); re-exported
+    _gamma_lut8,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +85,6 @@ _XYZ_RGB = np.array(
 # 0.63 vs 4-7 for the other three codes); the rest follow the same shift.
 _BAYER_TO_CV2 = {"RGGB": "BG", "BGGR": "RG", "GRBG": "GB", "GBRG": "GR"}
 
-_GAMMA_LUT8: np.ndarray | None = None
 
 # Keys the sensor-decode params may contain without changing color semantics.
 # Any unexpected key disables the fast path (conservative: new rawpy params
@@ -185,7 +189,7 @@ def prefer_gpu_decode_enabled() -> bool:
     # Unset: decide from the backend. Never raise -- a missing/broken torch must
     # degrade to the CPU path, not break decoding.
     try:
-        from gpu_raw_processor import detect_gpu_backend
+        from processing.raw_decode.gpu_processor import detect_gpu_backend
 
         return detect_gpu_backend() in {"pytorch_cuda", "cupy"}
     except Exception:
@@ -207,14 +211,6 @@ def gpu_decode_max_megapixels() -> float:
         return 70.0
 
 
-def wb_sanity_enabled() -> bool:
-    """As-shot WB sanity check vs embedded JPEG (RAWVIEWER_WB_SANITY=0 disables)."""
-    return str(os.environ.get("RAWVIEWER_WB_SANITY", "1")).strip().lower() not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
 
 
 # Midtone-masked median of per-pixel log(R/G), log(B/G) differences between a
@@ -226,7 +222,6 @@ def wb_sanity_enabled() -> bool:
 # threshold 0.5 sits in the middle of a >5x gap.
 _WB_SANITY_THRESHOLD = 0.5
 # key: normcase(abspath). Value: corrected cam_mul list, or None = checked, OK.
-_WB_CORRECTION_CACHE: dict[str, list[float] | None] = {}
 # Per-MODEL verdict: the WB misparse is a parser-vs-model property, so once
 # one file of a model measures clean, later files of that model skip the
 # embedded-JPEG check entirely -- it costs ~38ms of thumb extract + decode +
@@ -265,17 +260,6 @@ def _wb_model_key(
     )
 
 
-def get_corrected_camera_wb(file_path: str) -> list[float] | None:
-    """Session-cached corrected camera WB multipliers for ``file_path``.
-
-    Non-None only when this file's as-shot WB failed the embedded-JPEG sanity
-    check during :func:`unpack_raw` (e.g. bodies newer than the bundled
-    LibRaw's makernote parser, like the EOS R6 Mark III). Callers that decode
-    via rawpy directly (edit base, EDR) should pass it as ``user_wb`` with
-    ``use_camera_wb=False`` so every pipeline shows the same corrected color.
-    """
-    key = os.path.normcase(os.path.abspath(file_path))
-    return _WB_CORRECTION_CACHE.get(key)
 
 
 def _srgb_to_linear01(arr8: np.ndarray) -> np.ndarray:
@@ -304,9 +288,7 @@ def _wb_correction_from_jpeg(
         cv2 = _import_cv2()
         if cv2 is None:
             return None
-        arr = cv2.imdecode(
-            np.frombuffer(thumb_bytes, np.uint8), cv2.IMREAD_REDUCED_COLOR_8
-        )
+        arr = cv2.imdecode(np.frombuffer(thumb_bytes, np.uint8), cv2.IMREAD_REDUCED_COLOR_8)
         if arr is None or arr.ndim != 3:
             return None
 
@@ -351,20 +333,19 @@ def _wb_correction_from_jpeg(
             cam3 = np.stack([acc["R"], acc["G"] / max(n_g, 1), acc["B"]], -1)
             render = np.clip(cam3 @ m3.T, 0, 65535) / 65535.0
             lr = 0.2126 * render[..., 0] + 0.7152 * render[..., 1] + 0.0722 * render[..., 2]
-            mask = (
-                (lr > 0.01) & (lr < 0.6) & (lj > 0.01) & (lj < 0.6)
-                & (render > 1e-4).all(-1) & (jpg > 1e-4).all(-1)
-            )
+            mask = (lr > 0.01) & (lr < 0.6) & (lj > 0.01) & (lj < 0.6) & (render > 1e-4).all(-1) & (jpg > 1e-4).all(-1)
             if int(mask.sum()) < 200:
                 return None
-            dr = float(np.median(
-                np.log(render[..., 0][mask] / render[..., 1][mask])
-                - np.log(jpg[..., 0][mask] / jpg[..., 1][mask])
-            ))
-            db = float(np.median(
-                np.log(render[..., 2][mask] / render[..., 1][mask])
-                - np.log(jpg[..., 2][mask] / jpg[..., 1][mask])
-            ))
+            dr = float(
+                np.median(
+                    np.log(render[..., 0][mask] / render[..., 1][mask]) - np.log(jpg[..., 0][mask] / jpg[..., 1][mask])
+                )
+            )
+            db = float(
+                np.median(
+                    np.log(render[..., 2][mask] / render[..., 1][mask]) - np.log(jpg[..., 2][mask] / jpg[..., 1][mask])
+                )
+            )
             cbar = cam3.reshape(-1, 3)[mask.reshape(-1)].mean(axis=0)
             return dr, db, max(abs(dr), abs(db)), cbar
 
@@ -383,11 +364,7 @@ def _wb_correction_from_jpeg(
         best = None  # (first_dist, jpg, lj)
         for src in cand_imgs:
             jpg_t = _build_jpg(src)
-            lj_t = (
-                0.2126 * jpg_t[..., 0]
-                + 0.7152 * jpg_t[..., 1]
-                + 0.0722 * jpg_t[..., 2]
-            )
+            lj_t = 0.2126 * jpg_t[..., 0] + 0.7152 * jpg_t[..., 1] + 0.0722 * jpg_t[..., 2]
             m0 = _render_and_metric(cam_mul, jpg_t, lj_t)
             if m0 is None:
                 continue
@@ -535,47 +512,6 @@ def params_supported_half(params: dict[str, Any], return_linear: bool = False) -
         return False
     relaxed = {k: v for k, v in params.items() if k != "half_size"}
     return params_supported(relaxed, return_linear=return_linear)
-
-
-_GAMMA_CURVE16: np.ndarray | None = None
-
-
-def gamma_curve16() -> np.ndarray:
-    """dcraw BT.709 curve, 16-bit in -> 16-bit out (see _gamma_lut8).
-
-    Public: the edit pipeline's display/export encode uses this same curve
-    so an edited image at default settings renders identically to browse.
-    """
-    _gamma_lut8()  # builds both LUTs
-    return _GAMMA_CURVE16
-
-
-def _gamma_lut8() -> np.ndarray:
-    """dcraw gamma_curve for gamma=(2.222, 4.5): BT.709 OETF, 16-bit -> 8-bit.
-
-    The toe breakpoint is solved by bisection exactly like dcraw does, and the
-    8-bit value is ``curve >> 8`` (truncation) matching dcraw's write_ppm.
-    """
-    global _GAMMA_LUT8, _GAMMA_CURVE16
-    if _GAMMA_LUT8 is not None:
-        return _GAMMA_LUT8
-    pwr, ts = 1.0 / 2.222, 4.5
-    bnd = [0.0, 1.0]
-    g2 = 0.0
-    for _ in range(48):
-        g2 = (bnd[0] + bnd[1]) / 2
-        if ((g2 / ts) ** -pwr - 1) / pwr - 1 / g2 > -1:
-            bnd[1] = g2
-        else:
-            bnd[0] = g2
-    g3 = g2 / ts
-    g4 = g2 * (1 / pwr - 1)
-    x = np.arange(65536, dtype=np.float64) / 65535.0
-    y = np.where(x < g3, x * ts, (1 + g4) * np.power(np.maximum(x, 1e-12), pwr) - g4)
-    curve16 = np.clip(y * 65535.0 + 0.5, 0, 65535).astype(np.uint16)
-    _GAMMA_CURVE16 = curve16
-    _GAMMA_LUT8 = (curve16 >> 8).astype(np.uint8)
-    return _GAMMA_LUT8
 
 
 def _rgb_cam_from_cam_xyz(cam_xyz: np.ndarray) -> np.ndarray | None:
@@ -826,8 +762,14 @@ def _unpack_raw_impl(
                     _WB_CORRECTION_CACHE[wb_key] = None
                 else:
                     result = _wb_correction_from_jpeg(
-                        file_path, thumb_bytes, mosaic, pattern, black,
-                        scale_mul, rgb_cam, cam_mul,
+                        file_path,
+                        thumb_bytes,
+                        mosaic,
+                        pattern,
+                        black,
+                        scale_mul,
+                        rgb_cam,
+                        cam_mul,
                     )
                     _WB_CORRECTION_CACHE[wb_key] = result
                     # Record the model verdict only from a real measurement:
@@ -898,17 +840,16 @@ def finish_full_decode(
             )
             if mp_cap > 0 and mosaic_mp > mp_cap:
                 logger.info(
-                    "[FAST_RAW] Skipping GPU finish_full for %s "
-                    "(%.1f MP > %.1f MP cap); using CPU",
+                    "[FAST_RAW] Skipping GPU finish_full for %s (%.1f MP > %.1f MP cap); using CPU",
                     os.path.basename(unpacked.file_path or ""),
                     mosaic_mp,
                     mp_cap,
                 )
             else:
-                import torch_bootstrap
+                from bootstrap_pkg import torch as torch_bootstrap
 
                 if torch_bootstrap.wait_for_gpu_backend_ready(timeout=2.0):
-                    from gpu_raw_processor import try_gpu_decode_from_unpacked
+                    from processing.raw_decode.gpu_processor import try_gpu_decode_from_unpacked
 
                     gpu_out = try_gpu_decode_from_unpacked(
                         unpacked, cancel_check=cancel_check, return_linear=return_linear
@@ -984,12 +925,7 @@ def finish_full_decode(
 def _scale_luts(unpacked: UnpackedRaw) -> list:
     """Per-channel 16-bit LUTs implementing dcraw black-subtract + WB scale."""
     x = np.arange(65536, dtype=np.float64)
-    return [
-        np.clip((x - unpacked.black[c]) * unpacked.scale_mul[c], 0, 65535).astype(
-            np.uint16
-        )
-        for c in range(4)
-    ]
+    return [np.clip((x - unpacked.black[c]) * unpacked.scale_mul[c], 0, 65535).astype(np.uint16) for c in range(4)]
 
 
 def decode_half_from_unpacked(
@@ -1043,11 +979,7 @@ def _decode_half_from_unpacked_impl(
             greens.append(scaled)
     if acc["R"] is None or acc["B"] is None or not greens:
         return None
-    green = (
-        greens[0]
-        if len(greens) == 1
-        else cv2.addWeighted(greens[0], 0.5, greens[1], 0.5, 0.0)
-    )
+    green = greens[0] if len(greens) == 1 else cv2.addWeighted(greens[0], 0.5, greens[1], 0.5, 0.0)
     _abort_if_cancelled()
     cam3 = cv2.merge([acc["R"], green, acc["B"]])
     # uint16 in/out: saturates to [0, 65535], same as the full-res path.
@@ -1076,7 +1008,11 @@ def try_fast_raw_decode(
         return None
     try:
         is_half = params.get("half_size", False)
-        supported = params_supported_half(params, return_linear=return_linear) if is_half else params_supported(params, return_linear=return_linear)
+        supported = (
+            params_supported_half(params, return_linear=return_linear)
+            if is_half
+            else params_supported(params, return_linear=return_linear)
+        )
         if not supported:
             logger.info(
                 "[FAST_RAW] params not supported, using rawpy: %s",
@@ -1125,11 +1061,15 @@ def try_fast_raw_decode(
                     # it ourselves. A timeout falls back to CPU decode below via the
                     # existing `except Exception` path, same as any other GPU-decode
                     # failure.
-                    import torch_bootstrap
+                    from bootstrap_pkg import torch as torch_bootstrap
+
                     if not torch_bootstrap.wait_for_gpu_backend_ready(timeout=10.0):
                         raise RuntimeError("GPU backend not ready within timeout")
-                    from gpu_raw_processor import try_gpu_decode_from_unpacked
-                    gpu_out = try_gpu_decode_from_unpacked(unpacked, cancel_check=cancel_check, return_linear=return_linear)
+                    from processing.raw_decode.gpu_processor import try_gpu_decode_from_unpacked
+
+                    gpu_out = try_gpu_decode_from_unpacked(
+                        unpacked, cancel_check=cancel_check, return_linear=return_linear
+                    )
                     if gpu_out is not None:
                         logger.info(
                             "[FAST_RAW] %s decoded (GPU) %dx%d in %.0fms (pattern=%s)",
@@ -1145,9 +1085,7 @@ def try_fast_raw_decode(
             except Exception as e:
                 logger.warning("[FAST_RAW] GPU decode attempt failed, falling back to CPU: %s", e)
 
-        out = finish_full_decode(
-            unpacked, cancel_check=cancel_check, return_linear=return_linear, prefer_gpu=False
-        )
+        out = finish_full_decode(unpacked, cancel_check=cancel_check, return_linear=return_linear, prefer_gpu=False)
         if out is None:
             return None
         logger.info(

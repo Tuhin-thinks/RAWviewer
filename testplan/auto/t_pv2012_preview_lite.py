@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """PV2012 preview_lite skips expensive guided-filter stages (live-drag)."""
+
 import os
 import sys
 
@@ -10,7 +11,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -56,9 +57,7 @@ def main() -> int:
     # Staged render accepts preview_lite and returns uint8
     base = (img * 65535.0).astype(np.float32)
     cache = PreviewStageCache()
-    out = render_adjust_preview_uint8(
-        base, adj, cache, preview_lite=True
-    )
+    out = render_adjust_preview_uint8(base, adj, cache, preview_lite=True)
     check(
         "render_adjust_preview_uint8 lite is uint8",
         out is not None and out.dtype == np.uint8,

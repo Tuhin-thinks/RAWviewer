@@ -4,6 +4,7 @@
 First run (or --rebaseline) writes testplan/baselines/perf_baseline.json.
 Later runs fail when any metric's min-of-3 regresses more than TOLERANCE.
 """
+
 import json
 import os
 import sys
@@ -16,7 +17,7 @@ BASELINE = os.path.join(os.path.dirname(__file__), "..", "baselines", "perf_base
 TOLERANCE = 1.25  # fail if slower than baseline * 1.25
 
 
-def bench(fn, n=3) -> float:
+def bench(fn, n: int = 3) -> float:
     best = float("inf")
     for _ in range(n):
         t0 = time.perf_counter()
@@ -32,8 +33,8 @@ def main() -> int:
 
     os.environ.setdefault("RAWVIEWER_WB_SANITY", "0")
     os.environ.setdefault("RAWVIEWER_PERF", "0")
-    import numpy as np
     import fast_raw_decode as frd
+    import numpy as np
 
     results = {}
     results["unpack_ms"] = bench(lambda: frd.unpack_raw(GOLDEN))
@@ -66,8 +67,10 @@ def main() -> int:
             print(f"NEW   {k}: {v:.0f}ms (no baseline; rerun with --rebaseline to record)")
             continue
         ok = v <= b * TOLERANCE
-        print(f"{'PASS' if ok else 'FAIL'}  {k}: {v:.0f}ms vs baseline {b:.0f}ms "
-              f"({(v - b) / b * 100.0:+.0f}%, limit +{(TOLERANCE - 1) * 100:.0f}%)")
+        print(
+            f"{'PASS' if ok else 'FAIL'}  {k}: {v:.0f}ms vs baseline {b:.0f}ms "
+            f"({(v - b) / b * 100.0:+.0f}%, limit +{(TOLERANCE - 1) * 100:.0f}%)"
+        )
         if not ok:
             failures += 1
     print(f"\n{failures} failure(s)")

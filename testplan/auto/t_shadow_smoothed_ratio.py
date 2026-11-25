@@ -18,6 +18,7 @@ lift) than they would from the raw, unsmoothed computation -- the direct
 mechanism behind the measured chroma improvement (Canon: 58% -> 71% of
 Exposure's chroma at matched brightness; Sony: 90% -> 97%).
 """
+
 import os
 import sys
 
@@ -28,7 +29,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -57,8 +58,7 @@ def main() -> int:
     lum_std = float(lum_out.std())
     lum_mean = float(lum_out.mean())
     check(
-        "lifted luminance is spatially coherent on a flat noisy patch "
-        "(smoothed ratio, not raw per-pixel jitter)",
+        "lifted luminance is spatially coherent on a flat noisy patch (smoothed ratio, not raw per-pixel jitter)",
         lum_std < lum_mean * 0.35,
         f"std={lum_std:.4f} mean={lum_mean:.4f} ratio={lum_std / max(lum_mean, 1e-6):.3f}",
     )

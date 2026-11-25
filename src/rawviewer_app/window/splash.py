@@ -1,5 +1,4 @@
 """Startup splash lifecycle helpers."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -74,6 +73,7 @@ def _should_show_startup_splash() -> bool:
 def close_native_splash():
     try:
         import pyi_splash
+
         pyi_splash.close()
     except ImportError:
         pass

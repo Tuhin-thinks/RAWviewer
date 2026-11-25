@@ -1,4 +1,5 @@
 """PyInstaller runtime hook: disable LibRaw process pool by default on macOS."""
+
 import os
 import sys
 

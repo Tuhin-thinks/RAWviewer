@@ -6,8 +6,6 @@ slower). All three now read from the same env-tunable base so future drift is
 harder.
 """
 
-from __future__ import annotations
-
 import os
 import time
 

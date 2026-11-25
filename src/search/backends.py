@@ -1,7 +1,5 @@
 """MobileCLIP backends (CoreML + ONNX) and tokenizer."""
 
-from __future__ import annotations
-
 import contextlib
 import gzip
 import hashlib
@@ -50,6 +48,7 @@ def _objc_pointer_addr(ptr: Any) -> int | None:
     except Exception:
         return None
 
+
 def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
     """Bulk-fill an MLMultiArray from a contiguous 1-D numpy buffer.
 
@@ -71,6 +70,7 @@ def copy_numpy_into_mlmultiarray(multi_array: Any, flat: np.ndarray) -> bool:
         return True
     except Exception:
         return False
+
 
 def mlmultiarray_to_numpy_f32(multi_array: Any) -> np.ndarray | None:
     """Bulk-read MLMultiArray contents via ``dataPointer`` into float32.
@@ -102,12 +102,11 @@ def mlmultiarray_to_numpy_f32(multi_array: Any) -> np.ndarray | None:
             return None
         buf_type = ctypes.c_char * (count * itemsize)
         raw = buf_type.from_address(addr)
-        arr = np.frombuffer(raw, dtype=np_dtype, count=count).astype(
-            np.float32, copy=True
-        )
+        arr = np.frombuffer(raw, dtype=np_dtype, count=count).astype(np.float32, copy=True)
         return np.ascontiguousarray(arr)
     except Exception:
         return None
+
 
 def copy_bgra_into_cvpixelbuffer(
     base_addr: Any,
@@ -141,6 +140,7 @@ def copy_bgra_into_cvpixelbuffer(
         return True
     except Exception:
         return False
+
 
 class MobileCLIPCoreMLBackend:
     """Optional macOS Core ML backend for MobileCLIP.
@@ -178,7 +178,7 @@ class MobileCLIPCoreMLBackend:
         ("mobileclip2_s0_image.mlpackage", "mobileclip2_s0_text.mlpackage"),
     )
 
-    def __init__(self, model_dir: str | None = None):
+    def __init__(self, model_dir: str | None = None) -> None:
         if model_dir is None:
             model_dir = self._default_model_dir()
         self.model_dir = model_dir
@@ -301,9 +301,7 @@ class MobileCLIPCoreMLBackend:
             f"{bundle_name}/Data/com.apple.CoreML/weights/weight.bin",
         ]
 
-    def download_assets(
-        self, progress_callback: Callable[..., None] | None = None
-    ) -> str:
+    def download_assets(self, progress_callback: Callable[..., None] | None = None) -> str:
         """Download MobileCLIP S2 Core ML assets into the backend model directory."""
         if sys.platform != "darwin":
             raise RuntimeError("MobileCLIP Core ML download is only supported on macOS")
@@ -359,9 +357,7 @@ class MobileCLIPCoreMLBackend:
                 revision=self.HUB_REVISION,
                 tqdm_class=tqdm_class,
             )
-            _materialize_cached_file(
-                str(cached_path), os.path.join(self.model_dir, remote_path)
-            )
+            _materialize_cached_file(str(cached_path), os.path.join(self.model_dir, remote_path))
             _report(stage_end)
 
         for idx, remote_path in enumerate(small_files):
@@ -370,9 +366,7 @@ class MobileCLIPCoreMLBackend:
                 filename=remote_path,
                 revision=self.HUB_REVISION,
             )
-            _materialize_cached_file(
-                str(cached_path), os.path.join(self.model_dir, remote_path)
-            )
+            _materialize_cached_file(str(cached_path), os.path.join(self.model_dir, remote_path))
             pct = 85 + int((idx + 1) * 8 / max(1, len(small_files)))
             _report(min(93, pct))
 
@@ -387,7 +381,7 @@ class MobileCLIPCoreMLBackend:
             raise RuntimeError(err)
         return self.model_dir
 
-    def _load_models(self):
+    def _load_models(self) -> None:
         if self._image_model is not None and self._text_model is not None:
             return
         import CoreML
@@ -420,9 +414,7 @@ class MobileCLIPCoreMLBackend:
 
                 h = hashlib.md5(f"{path}_{mtime}".encode()).hexdigest()
                 cu = _coreml_compute_units_setting(role)
-                compiled_path = os.path.join(
-                    cache_dir, f"{os.path.basename(path)}_{h}_{cu}.mlmodelc"
-                )
+                compiled_path = os.path.join(cache_dir, f"{os.path.basename(path)}_{h}_{cu}.mlmodelc")
                 compiled_url = Foundation.NSURL.fileURLWithPath_(compiled_path)
 
                 if not os.path.exists(compiled_path):
@@ -458,11 +450,7 @@ class MobileCLIPCoreMLBackend:
     @staticmethod
     def _native_feature_name(model, direction: str) -> str:
         desc = model.modelDescription()
-        features = (
-            desc.inputDescriptionsByName()
-            if direction == "input"
-            else desc.outputDescriptionsByName()
-        )
+        features = desc.inputDescriptionsByName() if direction == "input" else desc.outputDescriptionsByName()
         names = list(features.keys())
         if not names:
             raise RuntimeError(f"Core ML model has no {direction} features")
@@ -571,9 +559,7 @@ class MobileCLIPCoreMLBackend:
                     feature = CoreML.MLFeatureValue.featureValueWithMultiArray_(multi)
                 elif in_type == CoreML.MLFeatureTypeImage:
                     pixel_buffer = self._image_to_pixel_buffer(im, Quartz)
-                    feature = CoreML.MLFeatureValue.alloc().initWithValue_type_(
-                        pixel_buffer, CoreML.MLFeatureTypeImage
-                    )
+                    feature = CoreML.MLFeatureValue.alloc().initWithValue_type_(pixel_buffer, CoreML.MLFeatureTypeImage)
                 else:
                     raise RuntimeError(f"Unsupported Core ML image encoder input type: {in_type}")
 
@@ -584,9 +570,7 @@ class MobileCLIPCoreMLBackend:
                     raise RuntimeError(f"Failed to create Core ML feature provider: {err}")
                 providers.append(provider)
 
-            return self._coreml_predict_batch(
-                providers, output_name, paths, CoreML, image_model
-            )
+            return self._coreml_predict_batch(providers, output_name, paths, CoreML, image_model)
 
     def _coreml_predict_batch(
         self,
@@ -602,35 +586,25 @@ class MobileCLIPCoreMLBackend:
         if len(providers) == 1:
             return [self.encode_image(paths[0])]
 
-        batch_provider = CoreML.MLArrayBatchProvider.alloc().initWithFeatureProviderArray_(
-            providers
-        )
+        batch_provider = CoreML.MLArrayBatchProvider.alloc().initWithFeatureProviderArray_(providers)
         try:
             with _COREML_PREDICTION_LOCK:
-                predictions, err = image_model.predictionsFromBatch_error_(
-                    batch_provider, None
-                )
+                predictions, err = image_model.predictionsFromBatch_error_(batch_provider, None)
             if err is not None or predictions is None:
                 raise RuntimeError(f"MobileCLIP Core ML batch prediction failed: {err}")
         except Exception:
             mid = len(providers) // 2
             if mid <= 0:
                 return [self.encode_image(p) for p in paths]
-            left = self._coreml_predict_batch(
-                providers[:mid], output_name, paths[:mid], CoreML, image_model
-            )
-            right = self._coreml_predict_batch(
-                providers[mid:], output_name, paths[mid:], CoreML, image_model
-            )
+            left = self._coreml_predict_batch(providers[:mid], output_name, paths[:mid], CoreML, image_model)
+            right = self._coreml_predict_batch(providers[mid:], output_name, paths[mid:], CoreML, image_model)
             return left + right
 
         embeddings: list[np.ndarray] = []
         count = int(predictions.count())
         for i in range(count):
             out_provider = predictions.featuresAtIndex_(i)
-            numpy_arr = self._multi_array_to_numpy(
-                out_provider.featureValueForName_(output_name).multiArrayValue()
-            )
+            numpy_arr = self._multi_array_to_numpy(out_provider.featureValueForName_(output_name).multiArrayValue())
             embeddings.append(self._normalize(numpy_arr))
         return embeddings
 
@@ -659,9 +633,7 @@ class MobileCLIPCoreMLBackend:
             elif in_type == CoreML.MLFeatureTypeImage:
                 _, _, Quartz, _, _, _ = self._require_coreml_runtime()
                 pixel_buffer = self._image_to_pixel_buffer(im, Quartz)
-                feature = CoreML.MLFeatureValue.alloc().initWithValue_type_(
-                    pixel_buffer, CoreML.MLFeatureTypeImage
-                )
+                feature = CoreML.MLFeatureValue.alloc().initWithValue_type_(pixel_buffer, CoreML.MLFeatureTypeImage)
             else:
                 raise RuntimeError(f"Unsupported Core ML image encoder input type: {in_type}")
 
@@ -727,7 +699,7 @@ class MobileCLIPCoreMLBackend:
                 row_bytes = 256 * 4
                 for y in range(256):
                     start = y * bytes_per_row
-                    buf[start:start + row_bytes] = bgra[y].tobytes()
+                    buf[start : start + row_bytes] = bgra[y].tobytes()
         finally:
             Quartz.CVPixelBufferUnlockBaseAddress(pixel_buffer, 0)
         return pixel_buffer
@@ -761,7 +733,9 @@ class MobileCLIPCoreMLBackend:
         self._Quartz = None
         self._objc = None
         import gc
+
         gc.collect()
+
 
 class MobileCLIPONNXBackend:
     """Windows ONNX backend for MobileCLIP2 (supports S0, S2, B, L14 variants).
@@ -795,7 +769,7 @@ class MobileCLIPONNXBackend:
     TOKENIZER_URL = "https://openaipublic.azureedge.net/clip/bpe_simple_vocab_16e6.txt.gz"
     SUPPORTS_HUB_DOWNLOAD = True
 
-    def __init__(self, model_dir: str | None = None):
+    def __init__(self, model_dir: str | None = None) -> None:
         self.variant = os.environ.get("RAWVIEWER_MOBILECLIP_VARIANT", "b").strip().lower()
         if self.variant not in ("s0", "s2", "b", "l14"):
             self.variant = "b"
@@ -839,9 +813,8 @@ class MobileCLIPONNXBackend:
     @classmethod
     def _default_model_dir(cls, variant: str = "b") -> str:
         for d in cls._candidate_model_dirs(variant):
-            if (
-                os.path.exists(os.path.join(d, cls.IMAGE_MODEL_FILE))
-                and os.path.exists(os.path.join(d, cls.TEXT_MODEL_FILE))
+            if os.path.exists(os.path.join(d, cls.IMAGE_MODEL_FILE)) and os.path.exists(
+                os.path.join(d, cls.TEXT_MODEL_FILE)
             ):
                 return d
         return cls._candidate_model_dirs(variant)[0]
@@ -859,9 +832,7 @@ class MobileCLIPONNXBackend:
     def available(self) -> bool:
         return self.availability_error() == ""
 
-    def download_assets(
-        self, progress_callback: Callable[..., None] | None = None
-    ) -> str:
+    def download_assets(self, progress_callback: Callable[..., None] | None = None) -> str:
         from core.download_progress import make_byte_progress_tqdm, report_progress
 
         def _report(pct: int) -> None:
@@ -905,9 +876,7 @@ class MobileCLIPONNXBackend:
                 if digest.hexdigest().lower() != expected.lower():
                     with contextlib.suppress(OSError):
                         os.remove(target_path)
-                    raise RuntimeError(
-                        f"MobileCLIP ONNX {local_name} failed SHA-256 verification"
-                    )
+                    raise RuntimeError(f"MobileCLIP ONNX {local_name} failed SHA-256 verification")
             _report(stage_end)
 
         # Remove the layout left by older versions that downloaded with
@@ -943,12 +912,8 @@ class MobileCLIPONNXBackend:
             selected_providers,
         )
 
-        self._image_session = ort.InferenceSession(
-            self.image_model_path, providers=selected_providers
-        )
-        self._text_session = ort.InferenceSession(
-            self.text_model_path, providers=selected_providers
-        )
+        self._image_session = ort.InferenceSession(self.image_model_path, providers=selected_providers)
+        self._text_session = ort.InferenceSession(self.text_model_path, providers=selected_providers)
 
     def _require_sessions(self):
         self._ensure_sessions()
@@ -1003,7 +968,9 @@ class MobileCLIPONNXBackend:
         if len(paths) == 1 or workers <= 1:
             tensors = [_prep_mobileclip_image_chw_resized(p, size) for p in paths]
         else:
-            tensors = list(_get_shared_index_executor().map(lambda p: _prep_mobileclip_image_chw_resized(p, size), paths))
+            tensors = list(
+                _get_shared_index_executor().map(lambda p: _prep_mobileclip_image_chw_resized(p, size), paths)
+            )
         nchw = np.stack(tensors, axis=0)
         inputs = {image_session.get_inputs()[0].name: nchw}
         outputs = image_session.run(None, inputs)
@@ -1026,6 +993,7 @@ class MobileCLIPONNXBackend:
 
         gc.collect()
 
+
 def resolve_mobileclip_backend() -> Any:
     """Prefer platform-native; then ONNX; then Core ML fallback."""
     if sys.platform == "darwin":
@@ -1044,7 +1012,8 @@ def resolve_mobileclip_backend() -> Any:
         inst = MobileCLIPONNXBackend()
         if inst.available():
             return inst
-        return inst # Return anyway for download_assets availability
+        return inst  # Return anyway for download_assets availability
+
 
 def _bytes_to_unicode() -> dict[int, str]:
     bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
@@ -1057,7 +1026,8 @@ def _bytes_to_unicode() -> dict[int, str]:
             n += 1
     return dict(zip(bs, [chr(n) for n in cs], strict=False))
 
-def _get_pairs(word):
+
+def _get_pairs(word: str):
     pairs = set()
     prev_char = word[0]
     for char in word[1:]:
@@ -1065,15 +1035,16 @@ def _get_pairs(word):
         prev_char = char
     return pairs
 
+
 class _ClipBPETokenizer:
     """Minimal OpenAI CLIP BPE tokenizer for MobileCLIP Core ML text encoder."""
 
-    def __init__(self, bpe_path: str):
+    def __init__(self, bpe_path: str) -> None:
         self.byte_encoder = _bytes_to_unicode()
         self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
         with gzip.open(bpe_path, "rt", encoding="utf-8") as f:
             merges = f.read().split("\n")
-        merges = merges[1:49152 - 256 - 2 + 1]
+        merges = merges[1 : 49152 - 256 - 2 + 1]
         merges = [tuple(merge.split()) for merge in merges if merge]
         vocab = list(_bytes_to_unicode().values())
         vocab = vocab + [v + "</w>" for v in vocab]
@@ -1083,6 +1054,7 @@ class _ClipBPETokenizer:
         self.encoder = dict(zip(vocab, range(len(vocab)), strict=False))
         self.bpe_ranks = dict(zip(merges, range(len(merges)), strict=False))
         import collections
+
         self.bpe_cache = collections.OrderedDict()
         self.bpe_cache["<|startoftext|>"] = "<|startoftext|>"
         self.bpe_cache["<|endoftext|>"] = "<|endoftext|>"
@@ -1094,6 +1066,7 @@ class _ClipBPETokenizer:
         # Now using instance-level cache `self.bpe_cache`.
         if not hasattr(self, "bpe_cache"):
             import collections
+
             self.bpe_cache = collections.OrderedDict()
 
         if token in self.bpe_cache:
@@ -1140,6 +1113,7 @@ class _ClipBPETokenizer:
         if len(self.bpe_cache) > 8192:
             self.bpe_cache.popitem(last=False)
         return out
+
     def encode(self, text: str) -> list[int]:
         bpe_tokens: list[int] = []
         for token in re.findall(r"<\|startoftext\|>|<\|endoftext\|>|[\w']+|[^\s\w]", text.lower()):
@@ -1150,5 +1124,6 @@ class _ClipBPETokenizer:
     def encode_for_clip(self, text: str, context_length: int = 77) -> list[int]:
         tokens = [self.sot] + self.encode(text)[: context_length - 2] + [self.eot]
         return tokens + [0] * (context_length - len(tokens))
+
 
 _semantic_sort_read_local = threading.local()

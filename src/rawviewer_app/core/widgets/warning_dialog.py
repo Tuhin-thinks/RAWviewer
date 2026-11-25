@@ -1,5 +1,4 @@
 """CustomWarningDialog: warning dialog."""
-from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
@@ -18,12 +17,10 @@ class CustomWarningDialog(QDialog):
     _CONTENT_MARGIN_H = 24
     _CONTENT_MARGIN_V = 20
 
-    def __init__(self, parent=None, title="Warning", message="", informative_text=""):
+    def __init__(self, parent=None, title: str = "Warning", message: str = "", informative_text: str = "") -> None:
         super().__init__(parent)
         self.setWindowFlags(
-            Qt.WindowType.Dialog
-            | Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
+            Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setModal(True)
@@ -56,12 +53,8 @@ class CustomWarningDialog(QDialog):
 
         self._message_label = QLabel(message)
         self._message_label.setWordWrap(True)
-        self._message_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
-        self._message_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self._message_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self._message_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self._message_label.setStyleSheet(f"""
             QLabel {{
                 color: {theme.INK};
@@ -78,12 +71,8 @@ class CustomWarningDialog(QDialog):
         if informative_text:
             self._info_label = QLabel(informative_text)
             self._info_label.setWordWrap(True)
-            self._info_label.setAlignment(
-                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-            )
-            self._info_label.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-            )
+            self._info_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self._info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             self._info_label.setStyleSheet(f"""
                 QLabel {{
                     color: {theme.INK_MUTED};
@@ -191,11 +180,11 @@ class CustomWarningDialog(QDialog):
         self.container.setFixedSize(dialog_w, dialog_h)
         self.setFixedSize(dialog_w, dialog_h)
 
-    def showEvent(self, event):
+    def showEvent(self, event) -> None:
         super().showEvent(event)
         self.ok_btn.setFocus(Qt.FocusReason.OtherFocusReason)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
         if key == Qt.Key.Key_Escape:
             self.reject()
@@ -203,7 +192,7 @@ class CustomWarningDialog(QDialog):
             return
         super().keyPressEvent(event)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = True
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
@@ -211,15 +200,15 @@ class CustomWarningDialog(QDialog):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
-        if hasattr(self, '_dragging') and self._dragging:
+    def mouseMoveEvent(self, event) -> None:
+        if hasattr(self, "_dragging") and self._dragging:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
-        if hasattr(self, '_dragging'):
+    def mouseReleaseEvent(self, event) -> None:
+        if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()
             return

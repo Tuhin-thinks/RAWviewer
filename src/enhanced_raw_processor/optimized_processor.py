@@ -1,7 +1,6 @@
 """
 Optimized RAW processor with format-specific optimizations.
 """
-from __future__ import annotations
 
 import os
 from typing import Any
@@ -10,7 +9,7 @@ import numpy as np
 import rawpy
 from PyQt6.QtCore import QObject
 
-from image_load_manager import yield_if_current_task_active
+from image_load_manager.helpers import yield_if_current_task_active
 from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
@@ -29,12 +28,12 @@ class OptimizedRAWProcessor(QObject):
         """Check if this is a Canon camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
-        if file_ext in ['.cr2', '.cr3']:
+        if file_ext in [".cr2", ".cr3"]:
             return True
 
         # Check EXIF if available
-        if exif_data and exif_data.get('camera_make'):
-            return 'CANON' in exif_data['camera_make'].upper()
+        if exif_data and exif_data.get("camera_make"):
+            return "CANON" in exif_data["camera_make"].upper()
 
         return False
 
@@ -42,13 +41,13 @@ class OptimizedRAWProcessor(QObject):
         """Check if this is a Fujifilm camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
-        if file_ext in ['.raf']:
+        if file_ext in [".raf"]:
             return True
 
         # Check EXIF if available
-        if exif_data and exif_data.get('camera_make'):
-            make = exif_data['camera_make'].upper()
-            return 'FUJIFILM' in make or 'FUJI' in make
+        if exif_data and exif_data.get("camera_make"):
+            make = exif_data["camera_make"].upper()
+            return "FUJIFILM" in make or "FUJI" in make
 
         return False
 
@@ -56,12 +55,12 @@ class OptimizedRAWProcessor(QObject):
         """Check if this is a Sony camera."""
         # Check file extension first (faster)
         file_ext = os.path.splitext(file_path)[1].lower()
-        if file_ext in ['.arw']:
+        if file_ext in [".arw"]:
             return True
 
         # Check EXIF if available
-        if exif_data and exif_data.get('camera_make'):
-            return 'SONY' in exif_data['camera_make'].upper()
+        if exif_data and exif_data.get("camera_make"):
+            return "SONY" in exif_data["camera_make"].upper()
 
         return False
 
@@ -69,16 +68,16 @@ class OptimizedRAWProcessor(QObject):
         """Get optimized processing parameters based on camera and file."""
         # Default fast processing parameters
         params = {
-            'use_camera_wb': True,
-            'use_auto_wb': False,
-            'output_bps': 8,  # 8-bit for speed
-            'no_auto_bright': True,
-            'gamma': (2.222, 4.5),  # Standard sRGB gamma
-            'bright': 1.0,
+            "use_camera_wb": True,
+            "use_auto_wb": False,
+            "output_bps": 8,  # 8-bit for speed
+            "no_auto_bright": True,
+            "gamma": (2.222, 4.5),  # Standard sRGB gamma
+            "bright": 1.0,
             # 'highlight': 0,  # Removed for rawpy 0.25.0 compatibility
             # 'shadow': 0,  # Removed for rawpy 0.25.0 compatibility
-            'user_flip': 0,  # Force rawpy to ignore EXIF orientation
-            'demosaic_algorithm': rawpy.DemosaicAlgorithm.LINEAR, # MUCH faster than default for fast previews
+            "user_flip": 0,  # Force rawpy to ignore EXIF orientation
+            "demosaic_algorithm": rawpy.DemosaicAlgorithm.LINEAR,  # MUCH faster than default for fast previews
         }
 
         # Get file size for processing decisions
@@ -89,32 +88,25 @@ class OptimizedRAWProcessor(QObject):
 
         # Adjust for large files (use faster processing)
         if file_size_mb > 80:
-            params.update({
-                'half_size': True,  # Process at half resolution for speed
-                'use_camera_wb': True,
-                'no_auto_bright': True
-            })
+            params.update(
+                {
+                    "half_size": True,  # Process at half resolution for speed
+                    "use_camera_wb": True,
+                    "no_auto_bright": True,
+                }
+            )
 
         # Camera-specific optimizations
         if self.is_canon_camera(file_path, exif_data):
             # Canon cameras benefit from camera white balance
-            params.update({
-                'use_camera_wb': True,
-                'use_auto_wb': False
-            })
+            params.update({"use_camera_wb": True, "use_auto_wb": False})
         elif self.is_fujifilm_camera(file_path, exif_data):
             # Fujifilm X-Trans sensors
             # DCB is high quality but slower - disable for fast processing
-            params.update({
-                'use_camera_wb': True,
-                'dcb_enhance': not file_size_mb > 20
-            })
+            params.update({"use_camera_wb": True, "dcb_enhance": not file_size_mb > 20})
         elif self.is_sony_camera(file_path, exif_data):
             # Sony cameras
-            params.update({
-                'use_camera_wb': True,
-                'use_auto_wb': False
-            })
+            params.update({"use_camera_wb": True, "use_auto_wb": False})
 
         return params
 
@@ -146,30 +138,29 @@ class OptimizedRAWProcessor(QObject):
             with raw_ctx as raw:
                 # Quality processing parameters
                 params = {
-                    'use_camera_wb': True,
-                    'output_bps': 16,  # 16-bit for quality
-                    'gamma': (1, 1),   # Linear gamma for better quality
-                    'no_auto_bright': True,
-                    'bright': 1.0
+                    "use_camera_wb": True,
+                    "output_bps": 16,  # 16-bit for quality
+                    "gamma": (1, 1),  # Linear gamma for better quality
+                    "no_auto_bright": True,
+                    "bright": 1.0,
                 }
 
                 # Camera-specific quality adjustments
                 if self.is_canon_camera(file_path, exif_data):
-                    params.update({
-                        'use_camera_wb': True,
-                        # 'highlight': 1,  # Removed for rawpy 0.25.0 compatibility
-                    })
+                    params.update(
+                        {
+                            "use_camera_wb": True,
+                            # 'highlight': 1,  # Removed for rawpy 0.25.0 compatibility
+                        }
+                    )
                 elif self.is_fujifilm_camera(file_path, exif_data):
-                    params.update({
-                        'dcb_enhance': True,
-                        'fbdd_noise_reduction': rawpy.FBDDNoiseReductionMode.Full
-                    })
+                    params.update({"dcb_enhance": True, "fbdd_noise_reduction": rawpy.FBDDNoiseReductionMode.Full})
 
                 with _heavy_fallback_semaphore:
                     rgb_image = raw.postprocess(**params)
 
                 # Convert 16-bit to 8-bit for display
-                if rgb_image is not None and hasattr(rgb_image, 'dtype') and rgb_image.dtype == np.uint16:
+                if rgb_image is not None and hasattr(rgb_image, "dtype") and rgb_image.dtype == np.uint16:
                     rgb_image = (rgb_image / 256).astype(np.uint8)
 
                 return rgb_image

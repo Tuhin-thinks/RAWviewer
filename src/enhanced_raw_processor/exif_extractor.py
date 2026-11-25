@@ -1,7 +1,6 @@
 """
 Fast EXIF data extractor with caching.
 """
-from __future__ import annotations
 
 import contextlib
 import os
@@ -16,7 +15,7 @@ from common_image_loader import (
     normalize_capture_time_string,
 )
 from image_cache import get_image_cache
-from image_load_manager import yield_if_current_task_active
+from image_load_manager.helpers import yield_if_current_task_active
 from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
@@ -42,9 +41,7 @@ class EXIFExtractor(QObject):
         with contextlib.suppress(Exception):
             self.cache.put_exif(file_path, result)
 
-    def build_minimal_raw_exif(
-        self, file_path: str, raw_object: rawpy.RawPy
-    ) -> dict[str, Any]:
+    def build_minimal_raw_exif(self, file_path: str, raw_object: rawpy.RawPy) -> dict[str, Any]:
         """Fast sensor/orientation metadata from an open rawpy handle (no exiftool)."""
         orientation = 1
         original_width = 0
@@ -84,7 +81,7 @@ class EXIFExtractor(QObject):
         # orientation source for callers that rotate pixels).
         cached = self.cache.get_exif(file_path, verify=True)
         if cached and not cached.get("minimal_preview_exif"):
-            cached_ver = cached.get('raw_exif_sensor_meta_ver', 0)
+            cached_ver = cached.get("raw_exif_sensor_meta_ver", 0)
             if cached_ver < RAW_EXIF_SENSOR_META_VER:
                 if os.environ.get("RAWVIEWER_VERBOSE_ORIENTATION_LOGS") == "1":
                     # print(f"[ORIENTATION] EXIFExtractor: Stale cache version ({cached_ver} < {RAW_EXIF_SENSOR_META_VER}) for {os.path.basename(file_path)}, forcing re-extraction...")
@@ -122,17 +119,25 @@ class EXIFExtractor(QObject):
 
             # DEBUG: Log all potential orientation tags to help troubleshoot
             if os.environ.get("RAWVIEWER_VERBOSE_ORIENTATION_LOGS") == "1":
-                orient_tags = {k: v for k, v in tags.items() if 'orient' in k.lower()}
+                orient_tags = {k: v for k, v in tags.items() if "orient" in k.lower()}
                 if orient_tags:
                     # print(f"[ORIENTATION] EXIFExtractor debug for {os.path.basename(file_path)}: Found orientation-like tags: {orient_tags}")
                     pass
 
-            for tag_name in ('Image Orientation', 'EXIF Orientation', 'Orientation', 'MakerNote Orientation', 'EXIF SceneType', 'Sony Orientation', 'Sony Orientation 2'):
+            for tag_name in (
+                "Image Orientation",
+                "EXIF Orientation",
+                "Orientation",
+                "MakerNote Orientation",
+                "EXIF SceneType",
+                "Sony Orientation",
+                "Sony Orientation 2",
+            ):
                 tag = tags.get(tag_name)
                 if tag:
                     # Try to get the numeric value directly
                     try:
-                        if hasattr(tag, 'values') and tag.values:
+                        if hasattr(tag, "values") and tag.values:
                             val = tag.values[0]
                             if isinstance(val, int):
                                 orientation = val
@@ -144,14 +149,14 @@ class EXIFExtractor(QObject):
                     # Fallback to string mapping (same as main.py)
                     orientation_str = str(tag).strip()
                     orientation_map = {
-                        'Horizontal (normal)': 1,
-                        'Mirrored horizontal': 2,
-                        'Rotated 180': 3,
-                        'Mirrored vertical': 4,
-                        'Mirrored horizontal then rotated 90 CCW': 5,
-                        'Rotated 90 CW': 6,
-                        'Mirrored horizontal then rotated 90 CW': 7,
-                        'Rotated 90 CCW': 8
+                        "Horizontal (normal)": 1,
+                        "Mirrored horizontal": 2,
+                        "Rotated 180": 3,
+                        "Mirrored vertical": 4,
+                        "Mirrored horizontal then rotated 90 CCW": 5,
+                        "Rotated 90 CW": 6,
+                        "Mirrored horizontal then rotated 90 CW": 7,
+                        "Rotated 90 CCW": 8,
                     }
                     if orientation_str in orientation_map:
                         orientation = orientation_map[orientation_str]
@@ -162,8 +167,8 @@ class EXIFExtractor(QObject):
                 # print(f"[ORIENTATION] EXIFExtractor: Found orientation={orientation} via tag '{orientation_tag_found}' for {os.path.basename(file_path)}")
                 pass
 
-            camera_make = str(tags.get('Image Make', '')).strip()
-            camera_model = str(tags.get('Image Model', '')).strip()
+            camera_make = str(tags.get("Image Make", "")).strip()
+            camera_model = str(tags.get("Image Model", "")).strip()
 
             exif_dict = {k: str(v) for k, v in tags.items()}
 
@@ -172,8 +177,8 @@ class EXIFExtractor(QObject):
             original_height = 0
 
             # 1. Try DNG DefaultCropSize (often found in Apple ProRAW and Android DNGs)
-            crop_size = tags.get('Image DefaultCropSize')
-            if crop_size and hasattr(crop_size, 'values') and len(crop_size.values) >= 2:
+            crop_size = tags.get("Image DefaultCropSize")
+            if crop_size and hasattr(crop_size, "values") and len(crop_size.values) >= 2:
                 try:
                     original_width = int(crop_size.values[0])
                     original_height = int(crop_size.values[1])
@@ -182,8 +187,8 @@ class EXIFExtractor(QObject):
 
             # 2. Try DNG ActiveArea (Top, Left, Bottom, Right)
             if original_width <= 0 or original_height <= 0:
-                active_area = tags.get('Image ActiveArea')
-                if active_area and hasattr(active_area, 'values') and len(active_area.values) >= 4:
+                active_area = tags.get("Image ActiveArea")
+                if active_area and hasattr(active_area, "values") and len(active_area.values) >= 4:
                     try:
                         # Values: Top, Left, Bottom, Right
                         top = int(active_area.values[0])
@@ -197,7 +202,7 @@ class EXIFExtractor(QObject):
 
             # 3. Fallback to standard EXIF width/height
             if original_width <= 0:
-                for tag in ('EXIF ExifImageWidth', 'Image ImageWidth'):
+                for tag in ("EXIF ExifImageWidth", "Image ImageWidth"):
                     if tag in tags:
                         try:
                             original_width = int(tags[tag].values[0])
@@ -206,7 +211,7 @@ class EXIFExtractor(QObject):
                             pass
 
             if original_height <= 0:
-                for tag in ('EXIF ExifImageLength', 'Image ImageLength'):
+                for tag in ("EXIF ExifImageLength", "Image ImageLength"):
                     if tag in tags:
                         try:
                             original_height = int(tags[tag].values[0])
@@ -221,8 +226,9 @@ class EXIFExtractor(QObject):
             # one in the block below), and each rawpy.imread() on a RAW file is a
             # full LibRaw parse (tens of ms even for embedded-preview-only use) --
             # doubling that cost on every cold gallery thumbnail for no reason.
-            import common_image_loader
-            if common_image_loader.is_raw_file(file_path):
+            from common_image_loader.helpers import is_raw_file
+
+            if is_raw_file(file_path):
                 try:
                     if raw_object is not None:
                         sizes = raw_object.sizes
@@ -270,25 +276,36 @@ class EXIFExtractor(QObject):
                     pass
 
             # Fourth pass: If on macOS and missing dimensions, fallback to native sips
-            if (original_width <= 0 or original_height <= 0) and sys.platform == 'darwin':
+            if (original_width <= 0 or original_height <= 0) and sys.platform == "darwin":
                 try:
                     import subprocess
-                    result = subprocess.run(['sips', '-g', 'pixelWidth', '-g', 'pixelHeight', '-g', 'orientation', file_path],
-                                          capture_output=True, text=True)
+
+                    result = subprocess.run(
+                        ["sips", "-g", "pixelWidth", "-g", "pixelHeight", "-g", "orientation", file_path],
+                        capture_output=True,
+                        text=True,
+                    )
                     for line in result.stdout.splitlines():
-                        if 'pixelWidth:' in line and original_width <= 0:
-                            original_width = int(line.split(':')[1].strip())
-                        elif 'pixelHeight:' in line and original_height <= 0:
-                            original_height = int(line.split(':')[1].strip())
-                        elif 'orientation:' in line and orientation == 1:
-                            val = line.split(':')[1].strip()
+                        if "pixelWidth:" in line and original_width <= 0:
+                            original_width = int(line.split(":")[1].strip())
+                        elif "pixelHeight:" in line and original_height <= 0:
+                            original_height = int(line.split(":")[1].strip())
+                        elif "orientation:" in line and orientation == 1:
+                            val = line.split(":")[1].strip()
                             # sips returns e.g. "1 (Normal)", "6 (Rotated 90 CW)", "8 (Rotated 90 CCW)"
                             import re
-                            m = re.match(r'^(\d+)', val)
+
+                            m = re.match(r"^(\d+)", val)
                             if m:
                                 orientation = int(m.group(1))
                     if os.environ.get("RAWVIEWER_VERBOSE_ORIENTATION_LOGS") == "1":
-                        print(f"[EXIF] Extracted via sips: {original_width}x{original_height}, orientation={orientation} for {os.path.basename(file_path)}")
+                        logging.getLogger(__name__).info(
+                            "[EXIF] Extracted via sips: %sx%s, orientation=%s for %s",
+                            original_width,
+                            original_height,
+                            orientation,
+                            os.path.basename(file_path),
+                        )
                 except Exception:
                     pass
 
@@ -298,12 +315,12 @@ class EXIFExtractor(QObject):
             iso = None
 
             # Focal Length
-            for tag in ('EXIF FocalLength', 'EXIF FocalLengthIn35mmFilm'):
+            for tag in ("EXIF FocalLength", "EXIF FocalLengthIn35mmFilm"):
                 if tag in exif_dict:
                     try:
                         val = exif_dict[tag]
-                        if '/' in val:
-                            num, den = val.split('/')
+                        if "/" in val:
+                            num, den = val.split("/")
                             focal_length = f"{round(float(num) / float(den))}mm"
                         else:
                             focal_length = f"{round(float(val))}mm"
@@ -312,12 +329,12 @@ class EXIFExtractor(QObject):
                         pass
 
             # Aperture
-            for tag in ('EXIF FNumber', 'EXIF ApertureValue'):
+            for tag in ("EXIF FNumber", "EXIF ApertureValue"):
                 if tag in exif_dict:
                     try:
                         val = exif_dict[tag]
-                        if '/' in val:
-                            num, den = val.split('/')
+                        if "/" in val:
+                            num, den = val.split("/")
                             aperture = f"f/{float(num) / float(den):.1f}"
                         else:
                             aperture = f"f/{float(val):.1f}"
@@ -326,12 +343,12 @@ class EXIFExtractor(QObject):
                         pass
 
             # ISO
-            for tag in ('EXIF ISOSpeedRatings', 'EXIF ISO', 'EXIF PhotographicSensitivity'):
+            for tag in ("EXIF ISOSpeedRatings", "EXIF ISO", "EXIF PhotographicSensitivity"):
                 if tag in exif_dict:
                     try:
                         val = exif_dict[tag]
-                        if '/' in val:
-                            num, den = val.split('/')
+                        if "/" in val:
+                            num, den = val.split("/")
                             iso = f"ISO {int(float(num) / float(den))}"
                         else:
                             iso = f"ISO {val}"
@@ -340,10 +357,10 @@ class EXIFExtractor(QObject):
                         pass
 
             rating = 0
-            for tag in ('XMP-xmp:Rating', 'XMP Rating', 'Rating', 'EXIF Rating'):
+            for tag in ("XMP-xmp:Rating", "XMP Rating", "Rating", "EXIF Rating"):
                 if tag in tags:
                     try:
-                        from raw_adjustments import _parse_rating_value
+                        from raw_adjustments.xmp_write import _parse_rating_value
 
                         rating = _parse_rating_value(tags[tag])
                         if rating:
@@ -352,7 +369,7 @@ class EXIFExtractor(QObject):
                         pass
                 if tag in exif_dict:
                     try:
-                        from raw_adjustments import _parse_rating_value
+                        from raw_adjustments.xmp_write import _parse_rating_value
 
                         rating = _parse_rating_value(exif_dict[tag])
                         if rating:
@@ -361,7 +378,7 @@ class EXIFExtractor(QObject):
                         pass
             if not rating:
                 try:
-                    from raw_adjustments import load_rating_for_file
+                    from raw_adjustments.xmp_write import load_rating_for_file
 
                     rating = load_rating_for_file(file_path)
                 except Exception:
@@ -369,32 +386,32 @@ class EXIFExtractor(QObject):
 
             # Build return dict
             result = {
-                'orientation': orientation,
-                'camera_make': camera_make,
-                'camera_model': camera_model,
-                'exif_data': exif_dict,
-                'original_width': original_width,
-                'original_height': original_height,
-                'capture_time': (
+                "orientation": orientation,
+                "camera_make": camera_make,
+                "camera_model": camera_model,
+                "exif_data": exif_dict,
+                "original_width": original_width,
+                "original_height": original_height,
+                "capture_time": (
                     normalize_capture_time_string(
-                        exif_dict.get('EXIF DateTimeOriginal') or exif_dict.get('Image DateTime')
+                        exif_dict.get("EXIF DateTimeOriginal") or exif_dict.get("Image DateTime")
                     )
-                    or exif_dict.get('EXIF DateTimeOriginal')
-                    or exif_dict.get('Image DateTime')
+                    or exif_dict.get("EXIF DateTimeOriginal")
+                    or exif_dict.get("Image DateTime")
                 ),
-                'focal_length': focal_length,
-                'aperture': aperture,
-                'iso': iso,
-                'rating': rating,
-                'verified_orientation': True,
-                'raw_exif_sensor_meta_ver': RAW_EXIF_SENSOR_META_VER,
+                "focal_length": focal_length,
+                "aperture": aperture,
+                "iso": iso,
+                "rating": rating,
+                "verified_orientation": True,
+                "raw_exif_sensor_meta_ver": RAW_EXIF_SENSOR_META_VER,
             }
 
             if file_path.lower().endswith(".nef"):
                 # Proactive Nikon HE/HE* detection (see _detect_nef_he_compression):
                 # lets callers route straight to the embedded-JPEG fallback instead
                 # of paying for one failed LibRaw decode attempt per file.
-                result['nef_he_compressed'] = _detect_nef_he_compression(file_path)
+                result["nef_he_compressed"] = _detect_nef_he_compression(file_path)
 
             if os.environ.get("RAWVIEWER_VERBOSE_ORIENTATION_LOGS") == "1":
                 # print(f"[ORIENTATION] EXIFExtractor: Successfully returning metadata with orientation={orientation} for {os.path.basename(file_path)}")
@@ -410,10 +427,9 @@ class EXIFExtractor(QObject):
             pass
 
         return {
-            'orientation': orientation if 'orientation' in locals() else 1,
-            'camera_make': camera_make if 'camera_make' in locals() else '',
-            'camera_model': camera_model if 'camera_model' in locals() else '',
-            'exif_data': {},
-            'verified_orientation': True
+            "orientation": orientation if "orientation" in locals() else 1,
+            "camera_make": camera_make if "camera_make" in locals() else "",
+            "camera_model": camera_model if "camera_model" in locals() else "",
+            "exif_data": {},
+            "verified_orientation": True,
         }
-

@@ -1,6 +1,4 @@
-
 """ImageLoadWorker: reusable QRunnable that executes one ImageLoadTask."""
-from __future__ import annotations
 
 import os
 import threading
@@ -10,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from image_load_manager import ImageLoadManager
+    from image_load_manager.manager import ImageLoadManager
 from PyQt6.QtCore import QRunnable, QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
 
@@ -28,19 +26,23 @@ from .helpers import (
 class ImageLoadTask:
     """圖像加載任務"""
 
-    def __init__(self, file_path: str, priority: Priority = Priority.CURRENT,
-                 use_full_resolution: bool = False,
-                 stages: set | None = None,
-                 thumbnail_target_size: QSize | None = None,
-                 thumbnail_fit: str = "crop",
-                 gallery_thumbnail: bool = False):
+    def __init__(
+        self,
+        file_path: str,
+        priority: Priority = Priority.CURRENT,
+        use_full_resolution: bool = False,
+        stages: set | None = None,
+        thumbnail_target_size: QSize | None = None,
+        thumbnail_fit: str = "crop",
+        gallery_thumbnail: bool = False,
+    ) -> None:
         self.file_path = file_path
         self.priority = priority
         self.use_full_resolution = use_full_resolution
         self.gallery_thumbnail = gallery_thumbnail
         # Stages: {'thumbnail', 'exif', 'full'}.
         # Gallery should typically request only {'thumbnail'} (and optionally 'exif').
-        self.stages = stages if stages is not None else {'thumbnail', 'exif', 'full'}
+        self.stages = stages if stages is not None else {"thumbnail", "exif", "full"}
         # Rows between this file and the visible viewport, as of the last
         # reprioritise() call. Priority used to be fixed at enqueue: a tile
         # kept the urgency it had when requested, so after a scroll or a jump
@@ -55,7 +57,7 @@ class ImageLoadTask:
         self._cancelled = False
         self._lock = threading.Lock()
 
-    def cancel(self):
+    def cancel(self) -> None:
         """標記任務為已取消（非阻塞）"""
         with self._lock:
             self._cancelled = True
@@ -77,10 +79,11 @@ class ImageLoadTask:
             return self.viewport_distance < other.viewport_distance
         return _task_queue_weight(self) < _task_queue_weight(other)
 
+
 class ImageLoadWorker(QRunnable):
     """可重用的工作線程"""
 
-    def __init__(self, task: ImageLoadTask, manager: ImageLoadManager):
+    def __init__(self, task: ImageLoadTask, manager: "ImageLoadManager") -> None:
         super().__init__()
         self.task = task
         self.manager = manager
@@ -100,7 +103,6 @@ class ImageLoadWorker(QRunnable):
             if not _has_running_current_task(self.manager, exclude_task=self.task):
                 return
             time.sleep(0.05)
-
 
     @staticmethod
     def _uses_display_preview_tier(task: ImageLoadTask) -> bool:
@@ -124,7 +126,8 @@ class ImageLoadWorker(QRunnable):
         """獲取處理器實例（延遲初始化）"""
         if self._processor is None:
             # Lazy import to avoid circular import issues
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
+
             self._processor = UnifiedImageProcessor()
         return self._processor
 
@@ -135,9 +138,9 @@ class ImageLoadWorker(QRunnable):
         if self._safe_emit():
             self.manager.error_occurred.emit(file_path, message)
 
-    def run(self):
+    def run(self) -> None:
         """執行任務"""
-        worker_thread_local.priority = getattr(self.task, 'priority', None)
+        worker_thread_local.priority = getattr(self.task, "priority", None)
         worker_thread_local.task = self.task
         self.manager._mark_task_running(self.task)
         file_path = self.task.file_path
@@ -171,39 +174,32 @@ class ImageLoadWorker(QRunnable):
             processor = self._get_processor()
 
             # COMBINED OPTIMIZATION: If both exif and thumbnail are needed, do them in one pass.
-            if 'exif' in stages and 'thumbnail' in stages and not self.task.is_cancelled():
+            if "exif" in stages and "thumbnail" in stages and not self.task.is_cancelled():
                 self._yield_if_needed()
                 if self._safe_emit():
                     self.manager.progress_updated.emit(file_path, "Reading metadata & preview...")
 
                 allow_heavy_fallback = self._uses_display_preview_tier(self.task)
                 exif_data, thumbnail = processor.process_metadata_and_thumbnail(
-                    file_path,
-                    allow_heavy_fallback=allow_heavy_fallback,
-                    target_size=self.task.thumbnail_target_size
+                    file_path, allow_heavy_fallback=allow_heavy_fallback, target_size=self.task.thumbnail_target_size
                 )
-
 
                 preview_tier = allow_heavy_fallback
                 min_preview_dim = _min_acceptable_preview_dim(file_path)
-                if preview_tier and thumbnail is not None and not self.task.is_cancelled() and processor._is_raw_file(file_path):
-                    if (
-                        processor._preview_buffer_max_dim(thumbnail)
-                        < min_preview_dim
-                    ):
-                        thumbnail = processor.ensure_display_tier_preview(
-                            file_path, thumbnail
-                        )
-                    if (
-                        processor._preview_buffer_max_dim(thumbnail)
-                        < min_preview_dim
-                        and not _preview_is_best_possible(processor, file_path)
+                if (
+                    preview_tier
+                    and thumbnail is not None
+                    and not self.task.is_cancelled()
+                    and processor._is_raw_file(file_path)
+                ):
+                    if processor._preview_buffer_max_dim(thumbnail) < min_preview_dim:
+                        thumbnail = processor.ensure_display_tier_preview(file_path, thumbnail)
+                    if processor._preview_buffer_max_dim(thumbnail) < min_preview_dim and not _preview_is_best_possible(
+                        processor, file_path
                     ):
                         thumbnail = None
                 if thumbnail is not None and not self.task.is_cancelled():
-                    self._cache_gallery_thumbnail_for_indexing(
-                        processor, file_path, thumbnail, exif_data
-                    )
+                    self._cache_gallery_thumbnail_for_indexing(processor, file_path, thumbnail, exif_data)
                 if preview_tier:
                     if thumbnail is not None and not self.task.is_cancelled():
                         self._handle_thumbnail_result(file_path, thumbnail)
@@ -216,9 +212,7 @@ class ImageLoadWorker(QRunnable):
                     if thumbnail is not None:
                         self._handle_thumbnail_result(file_path, thumbnail)
                     elif self._safe_emit():
-                        self._emit_preview_failure(
-                            file_path, "Thumbnail extraction returned None"
-                        )
+                        self._emit_preview_failure(file_path, "Thumbnail extraction returned None")
 
                 if exif_data is not None and not self.task.is_cancelled():
                     if self._safe_emit():
@@ -227,7 +221,7 @@ class ImageLoadWorker(QRunnable):
                     self.manager.exif_data_ready.emit(file_path, {})
             else:
                 # Sequential or partial stages
-                if 'exif' in stages and not self.task.is_cancelled():
+                if "exif" in stages and not self.task.is_cancelled():
                     self._yield_if_needed()
                     if self._safe_emit():
                         self.manager.progress_updated.emit(file_path, "Reading metadata...")
@@ -238,7 +232,7 @@ class ImageLoadWorker(QRunnable):
                     elif exif_data is None and not self.task.is_cancelled() and self._safe_emit():
                         self.manager.exif_data_ready.emit(file_path, {})
 
-                if 'thumbnail' in stages and not self.task.is_cancelled():
+                if "thumbnail" in stages and not self.task.is_cancelled():
                     self._yield_if_needed()
                     if self._safe_emit():
                         self.manager.progress_updated.emit(file_path, "Extracting preview...")
@@ -271,54 +265,41 @@ class ImageLoadWorker(QRunnable):
                         if deferred and deferred.get("minimal_preview_exif"):
                             exif_data = deferred
                     if (
-                        allow_heavy_fallback
-                        and exif_data is not None
-                        and not self.task.is_cancelled()
+                        allow_heavy_fallback and exif_data is not None and not self.task.is_cancelled()
                     ) and self._safe_emit():
                         self.manager.exif_data_ready.emit(file_path, exif_data)
                     if allow_heavy_fallback and processor._is_raw_file(file_path):
                         min_preview_dim = _min_acceptable_preview_dim(file_path)
                         _d0 = processor._preview_buffer_max_dim(thumbnail) if thumbnail is not None else -1
-                        if (
-                            thumbnail is not None
-                            and processor._preview_buffer_max_dim(thumbnail)
-                            < min_preview_dim
-                        ):
-                            thumbnail = processor.ensure_display_tier_preview(
-                                file_path, thumbnail
-                            )
+                        if thumbnail is not None and processor._preview_buffer_max_dim(thumbnail) < min_preview_dim:
+                            thumbnail = processor.ensure_display_tier_preview(file_path, thumbnail)
                         if os.environ.get("RAWVIEWER_DEBUG_THUMB"):
                             import logging
 
                             logging.getLogger(__name__).warning(
                                 "[DBGTHUMB] %s heavy=%s first=%s after_ensure=%s min=%s best_possible=%s",
-                                os.path.basename(file_path), allow_heavy_fallback, _d0,
+                                os.path.basename(file_path),
+                                allow_heavy_fallback,
+                                _d0,
                                 processor._preview_buffer_max_dim(thumbnail) if thumbnail is not None else None,
                                 min_preview_dim,
                                 _preview_is_best_possible(processor, file_path),
                             )
                         if (
                             thumbnail is not None
-                            and processor._preview_buffer_max_dim(thumbnail)
-                            < min_preview_dim
+                            and processor._preview_buffer_max_dim(thumbnail) < min_preview_dim
                             and not _preview_is_best_possible(processor, file_path)
                         ):
                             thumbnail = None
                     if thumbnail is not None and not self.task.is_cancelled():
-                        cache_exif = exif_data or processor.cache.get_exif(
-                            file_path, verify=True
-                        )
-                        self._cache_gallery_thumbnail_for_indexing(
-                            processor, file_path, thumbnail, cache_exif
-                        )
+                        cache_exif = exif_data or processor.cache.get_exif(file_path, verify=True)
+                        self._cache_gallery_thumbnail_for_indexing(processor, file_path, thumbnail, cache_exif)
                         self._handle_thumbnail_result(file_path, thumbnail)
                     elif not self.task.is_cancelled():
-                        self._emit_preview_failure(
-                            file_path, "Thumbnail extraction returned None"
-                        )
+                        self._emit_preview_failure(file_path, "Thumbnail extraction returned None")
 
             # 處理完整圖像（只在需要時）
-            if 'full' in stages and not self.task.is_cancelled():
+            if "full" in stages and not self.task.is_cancelled():
                 self._yield_if_needed()
                 if self.task.use_full_resolution:
                     if self._safe_emit():
@@ -327,11 +308,8 @@ class ImageLoadWorker(QRunnable):
                     if self._safe_emit():
                         self.manager.progress_updated.emit(file_path, "Processing image...")
 
-                from raw_adjustments import (
-                    is_default_adjustments,
-                    load_adjustments_for_file,
-                    sidecar_adjustments_enabled,
-                )
+                from raw_adjustments.checks import is_default_adjustments
+                from raw_adjustments.xmp_read import load_adjustments_for_file, sidecar_adjustments_enabled
 
                 # Sidecar edits on the full-res tier are only worth paying for
                 # the image actually on screen: the gamma-path apply costs
@@ -349,10 +327,7 @@ class ImageLoadWorker(QRunnable):
                 # preview-sized edited interim so demosaic-accurate edits
                 # paint before the multi-second full apply finishes, then
                 # emit the full adjusted buffer. Prefetch stays sidecar-free.
-                apply_sidecar = (
-                    sidecar_adjustments_enabled()
-                    and self.task.priority == Priority.CURRENT
-                )
+                apply_sidecar = sidecar_adjustments_enabled() and self.task.priority == Priority.CURRENT
                 result = processor.process_full_image(
                     file_path,
                     use_full_resolution=self.task.use_full_resolution,
@@ -375,11 +350,7 @@ class ImageLoadWorker(QRunnable):
                     elif isinstance(buf, QPixmap):
                         self.manager.pixmap_ready.emit(file_path, buf)
 
-                if (
-                    result is not None
-                    and apply_sidecar
-                    and not self.task.is_cancelled()
-                ):
+                if result is not None and apply_sidecar and not self.task.is_cancelled():
                     needs_apply = False
                     try:
                         adj = load_adjustments_for_file(file_path)
@@ -396,11 +367,7 @@ class ImageLoadWorker(QRunnable):
 
                 if result is not None and not self.task.is_cancelled():
                     _emit_image_buffer(result)
-                elif (
-                    "full" in stages
-                    and not self.task.is_cancelled()
-                    and self.task.priority == Priority.CURRENT
-                ):
+                elif "full" in stages and not self.task.is_cancelled() and self.task.priority == Priority.CURRENT:
                     # Suppress the failure dialog when a usable buffer for this
                     # file is already cached: a concurrent task produced one.
                     # Most visible for HE/HE* NEF -- LibRaw can't demosaic it, so
@@ -428,8 +395,7 @@ class ImageLoadWorker(QRunnable):
 
                         if is_raw_file(file_path):
                             msg = (
-                                "Could not decode image data (unsupported or corrupt RAW, "
-                                "or no usable embedded JPEG)."
+                                "Could not decode image data (unsupported or corrupt RAW, or no usable embedded JPEG)."
                             )
                         else:
                             msg = (
@@ -453,7 +419,7 @@ class ImageLoadWorker(QRunnable):
             worker_thread_local.priority = None
             worker_thread_local.task = None
 
-    def _handle_thumbnail_result(self, file_path, thumbnail):
+    def _handle_thumbnail_result(self, file_path, thumbnail) -> None:
         """Internal helper to process and emit thumbnail results."""
         # Saved XMP edits on the fit/preview tier (see apply_saved_edits_for_
         # display: no-op unless the file actually has non-default edits).
@@ -461,7 +427,7 @@ class ImageLoadWorker(QRunnable):
         # file must never land on the UI thread. Applied at delivery only --
         # the caches upstream keep the unadjusted base.
         try:
-            from raw_adjustments import apply_saved_edits_for_display
+            from raw_adjustments.saved_edits import apply_saved_edits_for_display
 
             thumbnail = apply_saved_edits_for_display(file_path, thumbnail)
         except Exception:
@@ -482,12 +448,16 @@ class ImageLoadWorker(QRunnable):
                     return
 
                 if self.task.thumbnail_fit == "crop":
-                    scaled = qimg.scaled(tgt, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+                    scaled = qimg.scaled(
+                        tgt, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation
+                    )
                     x = max(0, (scaled.width() - tgt.width()) // 2)
                     y = max(0, (scaled.height() - tgt.height()) // 2)
                     qimg_out = scaled.copy(x, y, tgt.width(), tgt.height())
                 else:
-                    qimg_out = qimg.scaled(tgt, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    qimg_out = qimg.scaled(
+                        tgt, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                    )
 
                 if self._safe_emit():
                     self.manager.thumbnail_ready.emit(file_path, qimg_out)
@@ -498,33 +468,25 @@ class ImageLoadWorker(QRunnable):
         if self._safe_emit():
             self.manager.thumbnail_ready.emit(file_path, thumbnail)
 
-    def _cache_gallery_thumbnail_for_indexing(
-        self, processor, file_path: str, thumbnail, exif_data
-    ) -> None:
+    def _cache_gallery_thumbnail_for_indexing(self, processor, file_path: str, thumbnail, exif_data) -> None:
         """Publish gallery extractions to ImageCache for semantic/face indexing reuse."""
         if thumbnail is None:
             return
         stages = self.task.stages if self.task.stages is not None else set()
         if "thumbnail" not in stages:
             return
-        processor.cache_index_source_mipmap_tiers(
-            file_path, thumbnail, exif_data=exif_data
-        )
+        processor.cache_index_source_mipmap_tiers(file_path, thumbnail, exif_data=exif_data)
 
-    def _maybe_cache_preview_first_warm(
-        self, processor, file_path: str, thumbnail, exif_data
-    ) -> None:
+    def _maybe_cache_preview_first_warm(self, processor, file_path: str, thumbnail, exif_data) -> None:
         """Backward-compatible alias for gallery → global cache publish."""
-        self._cache_gallery_thumbnail_for_indexing(
-            processor, file_path, thumbnail, exif_data
-        )
+        self._cache_gallery_thumbnail_for_indexing(processor, file_path, thumbnail, exif_data)
 
     def _safe_emit(self) -> bool:
         """Verify the manager still exists before emitting signals from background thread."""
         try:
             from PyQt6 import sip
+
             return not (self.manager is None or sip.isdeleted(self.manager))
         except (ImportError, AttributeError):
             # Fallback if sip is not available or manager is None
             return self.manager is not None
-

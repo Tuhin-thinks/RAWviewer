@@ -33,9 +33,7 @@ def stamp_rawviewer_export_drag(mime_data: QMimeData) -> None:
 
 def is_rawviewer_export_drag(mime_data) -> bool:
     try:
-        return mime_data is not None and mime_data.hasFormat(
-            RAWVIEWER_INTERNAL_FILE_DRAG_MIME
-        )
+        return mime_data is not None and mime_data.hasFormat(RAWVIEWER_INTERNAL_FILE_DRAG_MIME)
     except Exception:
         return False
 
@@ -45,6 +43,7 @@ class ThumbnailLabel(QLabel):
     Thumbnail widget - keeps original pixmap and rescales cleanly.
     Based on reference implementation: simple and reliable.
     """
+
     clicked = pyqtSignal(str, object)  # file_path, QMouseEvent
 
     _STYLE_DEFAULT = "ThumbnailLabel { background: transparent; }"
@@ -72,7 +71,7 @@ class ThumbnailLabel(QLabel):
         self._drag_started = False
 
         # Optimize property settings for performance
-        self.setScaledContents(True)   # Enable scaling for smooth thumbnail transitions during zoom
+        self.setScaledContents(True)  # Enable scaling for smooth thumbnail transitions during zoom
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet(self._STYLE_DEFAULT)
 
@@ -114,10 +113,15 @@ class ThumbnailLabel(QLabel):
                     break
                 p = p.parent()
 
-            if pv is not None and hasattr(pv, "_is_gallery_path_selected") and hasattr(pv, "_gallery_selected_canonical_paths") and pv._is_gallery_path_selected(self.file_path):
-                    selected = pv._gallery_selected_canonical_paths()
-                    if selected:
-                        drag_paths = selected
+            if (
+                pv is not None
+                and hasattr(pv, "_is_gallery_path_selected")
+                and hasattr(pv, "_gallery_selected_canonical_paths")
+                and pv._is_gallery_path_selected(self.file_path)
+            ):
+                selected = pv._gallery_selected_canonical_paths()
+                if selected:
+                    drag_paths = selected
         except Exception:
             pass
 
@@ -129,7 +133,9 @@ class ThumbnailLabel(QLabel):
 
         px = self.pixmap()
         if px and not px.isNull():
-            drag_px = px.scaled(120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            drag_px = px.scaled(
+                120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
             drag.setPixmap(drag_px)
             drag.setHotSpot(QPoint(drag_px.width() // 2, drag_px.height() // 2))
 
@@ -147,9 +153,7 @@ class ThumbnailLabel(QLabel):
 
     def selection_check_rect(self) -> QRect:
         """Top-left circle where the selection check is drawn / clicked."""
-        return QRect(
-            self._CHECK_MARGIN, self._CHECK_MARGIN, self._CHECK_SIZE, self._CHECK_SIZE
-        )
+        return QRect(self._CHECK_MARGIN, self._CHECK_MARGIN, self._CHECK_SIZE, self._CHECK_SIZE)
 
     def hits_selection_check(self, pos) -> bool:
         """True when *pos* (local QPoint) is over the selection check circle."""
@@ -228,9 +232,7 @@ class ThumbnailLabel(QLabel):
             inset = size * 0.18
             radius = size * 0.14
             side = size - 2 * inset - size * 0.16
-            painter.drawRoundedRect(
-                QRectF(inset, inset, side, side), radius, radius
-            )
+            painter.drawRoundedRect(QRectF(inset, inset, side, side), radius, radius)
             painter.drawRoundedRect(
                 QRectF(inset + size * 0.16, inset + size * 0.16, side, side),
                 radius,
@@ -461,6 +463,7 @@ class GalleryZoomSlider(QSlider):
     Custom-styled slider with a slanted wedge-shaped track and circular thumb handle.
     Represents thumbnail sizes scaling from smaller to larger.
     """
+
     ZOOM_STEP = 20
     THUMB_RADIUS = 9.0
 
@@ -563,12 +566,14 @@ class GalleryZoomSlider(QSlider):
         current_thick = min_thick + (max_thick - min_thick) * fraction
 
         # Draw inactive part (from current_x to x_end)
-        inactive_poly = QPolygonF([
-            QPointF(current_x, y_center - current_thick / 2.0),
-            QPointF(x_end, y_center - max_thick / 2.0),
-            QPointF(x_end, y_center + max_thick / 2.0),
-            QPointF(current_x, y_center + current_thick / 2.0)
-        ])
+        inactive_poly = QPolygonF(
+            [
+                QPointF(current_x, y_center - current_thick / 2.0),
+                QPointF(x_end, y_center - max_thick / 2.0),
+                QPointF(x_end, y_center + max_thick / 2.0),
+                QPointF(current_x, y_center + current_thick / 2.0),
+            ]
+        )
 
         # Inactive color: subtle dark-mode transparent gray
         inactive_color = QColor(*theme.INK_RGB, 30)
@@ -577,12 +582,14 @@ class GalleryZoomSlider(QSlider):
         painter.drawPolygon(inactive_poly)
 
         # Draw active part (from x_start to current_x)
-        active_poly = QPolygonF([
-            QPointF(x_start, y_center - min_thick / 2.0),
-            QPointF(current_x, y_center - current_thick / 2.0),
-            QPointF(current_x, y_center + current_thick / 2.0),
-            QPointF(x_start, y_center + min_thick / 2.0)
-        ])
+        active_poly = QPolygonF(
+            [
+                QPointF(x_start, y_center - min_thick / 2.0),
+                QPointF(current_x, y_center - current_thick / 2.0),
+                QPointF(current_x, y_center + current_thick / 2.0),
+                QPointF(x_start, y_center + min_thick / 2.0),
+            ]
+        )
 
         # Active color: neutral ink-muted, not ember -- resizing thumbnails
         # isn't a selection or an armed tool (rule 2 stays reserved for those).
@@ -598,4 +605,3 @@ class GalleryZoomSlider(QSlider):
         painter.setBrush(QColor(theme.INK))
         thumb_radius = self.THUMB_RADIUS
         painter.drawEllipse(QPointF(current_x, y_center), thumb_radius, thumb_radius)
-

@@ -1,5 +1,4 @@
 """macOS-specific integration: sharing, App Nap and AppKit tweaks."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -41,6 +40,7 @@ def _macos_share_items_array(urls) -> object:
         return None
     try:
         from Foundation import NSArray
+
         items_list = list(urls) if isinstance(urls, (list, tuple)) else [urls]
 
         arr = NSArray.arrayWithArray_(items_list)
@@ -115,9 +115,7 @@ def _get_macos_sharing_service_delegate_class():
             self._viewer = viewer
             return self
 
-        def sharingService_sourceWindowForShareItems_sharingContentScope_(
-            self, service, items, scope
-        ):
+        def sharingService_sourceWindowForShareItems_sharingContentScope_(self, service, items, scope):
             """Return NSWindow; set sharingContentScope or AirDrop gets ObjCPointerWarning (^q)."""
             _macos_write_sharing_content_scope(scope, 0)
             viewer = getattr(self, "_viewer", None)
@@ -191,9 +189,7 @@ def _get_macos_share_picker_delegate_class():
             self._viewer = viewer
             return self
 
-        def sharingServicePicker_sharingServicesForItems_proposedSharingServices_(
-            self, picker, items, proposed
-        ):
+        def sharingServicePicker_sharingServicesForItems_proposedSharingServices_(self, picker, items, proposed):
             viewer = getattr(self, "_viewer", None)
             cached = getattr(viewer, "_macos_share_cached_services", None) if viewer else None
             if cached:
@@ -448,7 +444,6 @@ def _macos_disable_line_edit_system_completion(line_edit) -> None:
     with contextlib.suppress(Exception):
         line_edit.setInputMethodHints(Qt.InputMethodHint.ImhNoPredictiveText)
     try:
-
         import objc
     except ImportError:
         return

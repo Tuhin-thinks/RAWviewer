@@ -1,5 +1,4 @@
 """Unified mixin part 6 of 7 for UnifiedImageProcessor."""
-from __future__ import annotations
 
 import os
 from typing import Any
@@ -18,13 +17,16 @@ _preview_executor = None
 
 
 class UnifiedPart6:
-    def process_full_image(self, file_path: str,
-                          use_full_resolution: bool = False,
-                          executor: Any | None = None,
-                          apply_sidecar_adjustments: bool | None = None) -> np.ndarray | QPixmap | None:
+    def process_full_image(
+        self,
+        file_path: str,
+        use_full_resolution: bool = False,
+        executor: Any | None = None,
+        apply_sidecar_adjustments: bool | None = None,
+    ) -> np.ndarray | QPixmap | None:
         """處理完整圖像（統一接口）"""
         if apply_sidecar_adjustments is None:
-            from raw_adjustments import sidecar_adjustments_enabled
+            from raw_adjustments.xmp_read import sidecar_adjustments_enabled
 
             apply_sidecar_adjustments = sidecar_adjustments_enabled()
         # 檢查快取
@@ -40,9 +42,9 @@ class UnifiedPart6:
                 exif_data = self.cache.get_exif(file_path, verify=False)
                 if exif_data is None:
                     exif_data = self.exif_extractor.extract_exif_data(file_path)
-                orientation = exif_data.get('orientation', 1) if exif_data else 1
+                orientation = exif_data.get("orientation", 1) if exif_data else 1
 
-                if hasattr(cached_image, 'shape'):
+                if hasattr(cached_image, "shape"):
                     h, w = cached_image.shape[:2]
 
                     # Check for orientation mismatch (Portrait metadata but Landscape cached image)
@@ -76,7 +78,7 @@ class UnifiedPart6:
                     # repeat ask and skips its own JPEG shortcut to produce
                     # the true decode instead.
                     if cached_image is not None and is_raw and self.cache.full_image_is_embedded_jpeg(file_path):
-                            cached_image = None
+                        cached_image = None
 
                     if cached_image is not None:
                         if _verbose_orientation_logs():
@@ -88,13 +90,12 @@ class UnifiedPart6:
                 else:
                     return cached_image
 
-
         # Only check pixmap cache for non-RAW files
         if not is_raw:
             cached_pixmap = self.cache.get_pixmap(file_path)
-            if cached_pixmap is not None and (not use_full_resolution or self._pixmap_covers_file_resolution(
-                file_path, cached_pixmap
-            )):
+            if cached_pixmap is not None and (
+                not use_full_resolution or self._pixmap_covers_file_resolution(file_path, cached_pixmap)
+            ):
                 return cached_pixmap
         else:
             # For RAW files, don't use cached pixmap - always process fresh
@@ -109,9 +110,7 @@ class UnifiedPart6:
                 return self._apply_sidecar_if_needed(file_path, base)
             return base
         else:
-            return self._process_regular_image(
-                file_path, use_full_resolution=use_full_resolution
-            )
+            return self._process_regular_image(file_path, use_full_resolution=use_full_resolution)
 
     def _pixmap_covers_file_resolution(self, file_path: str, pixmap) -> bool:
         """True when ``pixmap`` is at (or near) the file's native resolution.
@@ -132,9 +131,7 @@ class UnifiedPart6:
         except Exception:
             return True
 
-    def _try_full_embedded_raw_preview(
-        self, file_path: str, exif_data: dict[str, Any] | None
-    ) -> np.ndarray | None:
+    def _try_full_embedded_raw_preview(self, file_path: str, exif_data: dict[str, Any] | None) -> np.ndarray | None:
         """
         Return oriented embedded JPEG when it covers sensor resolution; cache as preview + full.
         """

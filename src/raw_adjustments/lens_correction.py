@@ -14,8 +14,6 @@ wired up here -- a reasonable future extension, not implied by "aspect
 correction".
 """
 
-from __future__ import annotations
-
 import re
 
 import numpy as np
@@ -48,7 +46,7 @@ def _parse_leading_number(text: str, *, strip_prefix: str = "") -> float | None:
         return None
     t = text.strip()
     if strip_prefix and t.lower().startswith(strip_prefix.lower()):
-        t = t[len(strip_prefix):]
+        t = t[len(strip_prefix) :]
     m = re.match(r"([0-9]+(?:\.[0-9]+)?)", t.strip())
     if not m:
         return None
@@ -127,9 +125,7 @@ def has_lens_profile(exif_data: dict | None) -> bool:
         key = lens_profile_key_from_exif(exif_data)
         if key is None:
             return False
-        cam, lens = _find_camera_and_lens(
-            key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"]
-        )
+        cam, lens = _find_camera_and_lens(key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"])
         return cam is not None and lens is not None
     except Exception:
         return False
@@ -141,9 +137,7 @@ def get_lens_profile_name(exif_data: dict | None) -> str:
         key = lens_profile_key_from_exif(exif_data)
         if key is None:
             return ""
-        cam, lens = _find_camera_and_lens(
-            key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"]
-        )
+        cam, lens = _find_camera_and_lens(key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"])
         if cam is not None and lens is not None:
             return str(lens.model)
     except Exception:
@@ -159,9 +153,7 @@ def _pixel_format_for(dtype) -> type:
     return np.uint8
 
 
-def apply_lens_correction(
-    rgb_image: np.ndarray | None, exif_data: dict | None
-) -> np.ndarray | None:
+def apply_lens_correction(rgb_image: np.ndarray | None, exif_data: dict | None) -> np.ndarray | None:
     """
     Undistort a decoded RAW buffer (any dtype cv2.remap accepts -- uint16,
     float32, uint8) using the matched lensfun profile's geometry distortion
@@ -175,9 +167,7 @@ def apply_lens_correction(
         key = lens_profile_key_from_exif(exif_data)
         if key is None:
             return rgb_image
-        cam, lens = _find_camera_and_lens(
-            key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"]
-        )
+        cam, lens = _find_camera_and_lens(key["camera_make"], key["camera_model"], key["lens_make"], key["lens_model"])
         if cam is None or lens is None:
             return rgb_image
 

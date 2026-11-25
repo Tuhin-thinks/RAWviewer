@@ -1,7 +1,5 @@
 """Build profile (full vs lite) and shared scroll / RAM-tier defaults."""
 
-from __future__ import annotations
-
 import json
 import os
 import sys
@@ -246,9 +244,7 @@ def snapshot_user_rawviewer_env() -> frozenset[str]:
     global _USER_RAWVIEWER_ENV
     if _USER_RAWVIEWER_ENV is None:
         _USER_RAWVIEWER_ENV = frozenset(
-            k
-            for k, v in os.environ.items()
-            if k.startswith("RAWVIEWER_") and str(v).strip()
+            k for k, v in os.environ.items() if k.startswith("RAWVIEWER_") and str(v).strip()
         )
     return _USER_RAWVIEWER_ENV
 
@@ -492,7 +488,7 @@ def indexing_loads_compete() -> bool:
     leaves the splash stuck after a cold start / clear-cache.
     """
     try:
-        from image_load_manager import peek_image_load_manager
+        from image_load_manager.helpers import peek_image_load_manager
 
         mgr = peek_image_load_manager()
         if mgr is None:
@@ -507,7 +503,7 @@ def indexing_loads_compete() -> bool:
 
 def gallery_idle_load_priority():
     """Queue priority for off-screen gallery thumbnail idle preload."""
-    from image_load_manager import Priority
+    from image_load_manager.helpers import Priority
 
     raw = os.environ.get("RAWVIEWER_GALLERY_IDLE_PRELOAD_PRIORITY", "").strip().lower()
     if raw in ("background", "low"):

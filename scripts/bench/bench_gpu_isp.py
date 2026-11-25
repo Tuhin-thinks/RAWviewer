@@ -13,7 +13,6 @@ Spike diagnosis modes:
 
 Exits non-zero only on hard failure, not when GPU is slower.
 """
-from __future__ import annotations
 
 import argparse
 import logging

@@ -1,5 +1,4 @@
 """display mixin, part 5 of 6 (4 methods, 891 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -21,11 +20,9 @@ lazy.register(sys.modules[__name__])
 class DisplayPart5:
     def display_pixmap(self, pixmap):
         """Display a QPixmap."""
-        if self._adjust_panel_blocks_display_refresh() and not getattr(
-            self, "_adjust_preview_painting", False
-        ):
+        if self._adjust_panel_blocks_display_refresh() and not getattr(self, "_adjust_preview_painting", False):
             return
-        if hasattr(self, 'current_file_path') and self.is_animated_image(_require_str_path(self.current_file_path)):
+        if hasattr(self, "current_file_path") and self.is_animated_image(_require_str_path(self.current_file_path)):
             return
         # RAW workflow JPEG-interim suppression (see display_numpy_image) --
         # same guard for the QPixmap paint path.
@@ -44,12 +41,17 @@ class DisplayPart5:
 
         import logging
         import time
+
         logger = logging.getLogger(__name__)
         display_start = time.time()
         pixmap = self._resolve_display_pixmap_base(pixmap)
 
         # Get current file name for logging context
-        current_file = os.path.basename(_require_str_path(self.current_file_path)) if hasattr(self, 'current_file_path') and self.current_file_path else "Unknown"
+        current_file = (
+            os.path.basename(_require_str_path(self.current_file_path))
+            if hasattr(self, "current_file_path") and self.current_file_path
+            else "Unknown"
+        )
         logger.info(f"[DISPLAY_PIXMAP] ========== display_pixmap() STARTED at {display_start:.3f} ==========")
         logger.info(f"[DISPLAY_PIXMAP] File: {current_file}, Pixmap size: {pixmap.width()}x{pixmap.height()}")
 
@@ -107,10 +109,7 @@ class DisplayPart5:
             needs_resolution_crossfade,
         )
         gv = getattr(self, "gpu_view", None)
-        new_file = (
-            gv is not None
-            and _norm_path(cur_path) != _norm_path(getattr(self, "_gpu_last_path", None))
-        )
+        new_file = gv is not None and _norm_path(cur_path) != _norm_path(getattr(self, "_gpu_last_path", None))
         # is_nav_fade tracking is deliberately independent of gv/new_file
         # above (which only fires when a GPU view exists) -- it must also
         # work on the legacy QLabel fallback path (_set_single_view_pixmap,
@@ -121,12 +120,8 @@ class DisplayPart5:
         # of the keypress, long before a multi-second RAW decode completes,
         # so it cannot be read here to identify "this upgrade paint belongs
         # to a navigation".
-        is_new_display_path = _norm_path(cur_path) != _norm_path(
-            getattr(self, "_last_display_path_for_fade", None)
-        )
-        is_nav_fade = (not is_new_display_path) and bool(
-            getattr(self, "_pending_nav_fade", False)
-        )
+        is_new_display_path = _norm_path(cur_path) != _norm_path(getattr(self, "_last_display_path_for_fade", None))
+        is_nav_fade = (not is_new_display_path) and bool(getattr(self, "_pending_nav_fade", False))
         self._pending_nav_fade = is_new_display_path
         self._last_display_path_for_fade = cur_path
         self._resolution_crossfade_is_navigation = is_nav_fade
@@ -158,8 +153,7 @@ class DisplayPart5:
             self._clear_pending_resolution_crossfade()
             self._clear_focus_zoom_anchor()
         pending_point_zoom = bool(
-            getattr(self, "_pending_zoom", False)
-            and not getattr(self, "_full_resolution_loading", False)
+            getattr(self, "_pending_zoom", False) and not getattr(self, "_full_resolution_loading", False)
         )
         use_viewport_crossfade = (
             needs_resolution_crossfade
@@ -179,9 +173,7 @@ class DisplayPart5:
                 self._focus_subject_rect_image = None
                 self._focus_rect_source = None
             self._sync_single_image_histogram()
-            if pixmap is not None and not pixmap.isNull() and getattr(
-                self, "current_file_path", None
-            ):
+            if pixmap is not None and not pixmap.isNull() and getattr(self, "current_file_path", None):
                 pm_max = max(pixmap.width(), pixmap.height())
                 # _manager_displayed_max_dim is a per-file high-water-mark of the
                 # on-screen resolution (a later lower-res delivery must not
@@ -195,9 +187,7 @@ class DisplayPart5:
                 if _norm_path(prev_displayed_path or "") != _norm_path(cur_path or ""):
                     self._manager_displayed_max_dim = pm_max
                 else:
-                    self._manager_displayed_max_dim = max(
-                        getattr(self, "_manager_displayed_max_dim", 0), pm_max
-                    )
+                    self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
 
         if not defer_display_commit:
             _commit_display_metadata()
@@ -208,10 +198,7 @@ class DisplayPart5:
         if gv is not None:
             gv.set_file_path(cur_path)
             self._crossfade_next_paint = False
-            (
-                getattr(self, "_preserve_nav_zoom_active", False)
-                or getattr(self, "_maintain_zoom_on_navigation", False)
-            )
+            (getattr(self, "_preserve_nav_zoom_active", False) or getattr(self, "_maintain_zoom_on_navigation", False))
 
             def _apply_gpu_view() -> bool:
                 if apply_gen != int(getattr(self, "_single_view_display_generation", 0)):
@@ -263,9 +250,28 @@ class DisplayPart5:
                 if new_file and (nav_preserve or zoomed_in):
                     pm_max_dim = max(pixmap.width(), pixmap.height())
                     is_raw = os.path.splitext(cur_path or "")[-1].lower() in {
-                        '.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                        '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+                        ".cr2",
+                        ".cr3",
+                        ".nef",
+                        ".arw",
+                        ".dng",
+                        ".orf",
+                        ".rw2",
+                        ".pef",
+                        ".srw",
+                        ".x3f",
+                        ".raf",
+                        ".3fr",
+                        ".fff",
+                        ".iiq",
+                        ".cap",
+                        ".erf",
+                        ".mef",
+                        ".mos",
+                        ".nrw",
+                        ".rwl",
+                        ".srf",
+                    }
                     is_pixmap_half_size = (pm_max_dim < 3000) and is_raw
                     if is_pixmap_half_size:
                         # RAW workflow delivers small tiers first. Show the
@@ -285,32 +291,32 @@ class DisplayPart5:
                             or getattr(self, "_pending_zoom_focus_subject", False)
                             or getattr(self, "_focus_zoom_anchor_active", False)
                         )
-                        if not user_zoom_intent and nav_preserve and self._apply_gpu_navigation_zoom_restore(
-                                pixmap, gv, scale_level_to_pixmap=True
-                            ):
-                                # Supersede any stale deferred zoom and hold
-                                # this frame against further sub-sensor tiers
-                                # (their preserve math would wobble the
-                                # framing); the sensor-res buffer clears it.
-                                self._clear_pending_point_zoom_state()
-                                self._nav_zoom_interim_active = True
-                                # The on-screen buffer just regressed to a
-                                # small tier; drop the per-file "already
-                                # displayed at N px" bookkeeping or the
-                                # re-decoded sensor buffer is discarded as a
-                                # stale duplicate and the view stays blurry.
-                                self._manager_displayed_max_dim = 0
-                                with contextlib.suppress(Exception):
-                                    self._file_max_dim_map.pop(
-                                        _norm_path(cur_path), None
-                                    )
-                                # The interim must not get stuck blurry: some
-                                # cache-hit loads (e.g. quality_preview) never
-                                # queue a follow-up decode. Display the cached
-                                # full buffer if it covers the sensor, else
-                                # queue the sensor decode explicitly.
-                                self._schedule_interim_quality_upgrade(cur_path)
-                                return True
+                        if (
+                            not user_zoom_intent
+                            and nav_preserve
+                            and self._apply_gpu_navigation_zoom_restore(pixmap, gv, scale_level_to_pixmap=True)
+                        ):
+                            # Supersede any stale deferred zoom and hold
+                            # this frame against further sub-sensor tiers
+                            # (their preserve math would wobble the
+                            # framing); the sensor-res buffer clears it.
+                            self._clear_pending_point_zoom_state()
+                            self._nav_zoom_interim_active = True
+                            # The on-screen buffer just regressed to a
+                            # small tier; drop the per-file "already
+                            # displayed at N px" bookkeeping or the
+                            # re-decoded sensor buffer is discarded as a
+                            # stale duplicate and the view stays blurry.
+                            self._manager_displayed_max_dim = 0
+                            with contextlib.suppress(Exception):
+                                self._file_max_dim_map.pop(_norm_path(cur_path), None)
+                            # The interim must not get stuck blurry: some
+                            # cache-hit loads (e.g. quality_preview) never
+                            # queue a follow-up decode. Display the cached
+                            # full buffer if it covers the sensor, else
+                            # queue the sensor decode explicitly.
+                            self._schedule_interim_quality_upgrade(cur_path)
+                            return True
                         # Fallback: defer zoom until full resolution arrives
                         self._pending_zoom = True
                         self._pending_zoom_center = self.zoom_center_point
@@ -374,9 +380,7 @@ class DisplayPart5:
                         new_level = float(gv.current_scale()) * cur_max / new_max
                         from common_image_loader import sensor_pixel_dimensions
 
-                        sdims = sensor_pixel_dimensions(
-                            self.image_cache.get_exif(cur_path)
-                        )
+                        sdims = sensor_pixel_dimensions(self.image_cache.get_exif(cur_path))
                         s_max = max(sdims) if sdims else 0
                         c = gv.mapToScene(gv.viewport().rect().center())
                         fx = c.x() / max(1, gv._img_w)
@@ -402,9 +406,7 @@ class DisplayPart5:
                 # Same-file buffer upgrade (preview → sensor, etc.)
                 if zoomed_in or nav_preserve or pending_user_zoom:
                     preserve = zoomed_in or nav_preserve or needs_resolution_crossfade
-                    self._apply_gpu_pixmap_with_focus_anchor(
-                        gv, pixmap, preserve=preserve
-                    )
+                    self._apply_gpu_pixmap_with_focus_anchor(gv, pixmap, preserve=preserve)
                     return False
 
                 if self._single_view_is_fit_mode() and not pending_user_zoom:
@@ -471,9 +473,7 @@ class DisplayPart5:
             if pending_gpu_pt is not None:
                 with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_gpu_zoom_point")
-                self.zoom_center_point = QPoint(
-                    int(pending_gpu_pt.x()), int(pending_gpu_pt.y())
-                )
+                self.zoom_center_point = QPoint(int(pending_gpu_pt.x()), int(pending_gpu_pt.y()))
                 self._zoom_in_to_image_point_finish()
             elif getattr(self, "_pending_zoom_toggle", False):
                 self._pending_zoom_toggle = False
@@ -499,16 +499,16 @@ class DisplayPart5:
             return
 
         # Handle pending zoom toggle from spacebar/double click (when pixmap wasn't ready)
-        if hasattr(self, '_pending_zoom_toggle') and self._pending_zoom_toggle:
+        if hasattr(self, "_pending_zoom_toggle") and self._pending_zoom_toggle:
             logger.info("[DISPLAY_PIXMAP] Handling pending zoom toggle")
             self._pending_zoom_toggle = False
             if hasattr(self, "_pending_zoom_target_path"):
                 with contextlib.suppress(AttributeError):
                     delattr(self, "_pending_zoom_target_path")
 
-            if hasattr(self, '_pending_zoom_pos'):
+            if hasattr(self, "_pending_zoom_pos"):
                 # Zoom to the recorded point instead of center
-                delattr(self, '_pending_zoom_pos')
+                delattr(self, "_pending_zoom_pos")
                 # Need to wait until label layout is done to compute ratios reliably,
                 # but we can try to guess or simply center for now if layout hasn't run.
                 # Just call toggle_zoom() for spacebar or center, it's safer.
@@ -555,7 +555,7 @@ class DisplayPart5:
                 self.current_zoom_level = 1.0
                 self.zoom_center_point = None
                 self.scale_image_to_fit()
-        elif not hasattr(self, '_maintain_zoom_on_navigation'):
+        elif not hasattr(self, "_maintain_zoom_on_navigation"):
             # CRITICAL: Check current fit_to_window state before resetting
             # If user has zoomed in (fit_to_window = False), preserve that state
             # This prevents zoom state from being lost when navigating from a zoomed image
@@ -569,19 +569,43 @@ class DisplayPart5:
                 # User has zoomed in (fit_to_window = False), preserve zoom state
                 # This happens when navigating from a zoomed image - the zoom state
                 # will be saved by navigate_to_next_image() after load_raw_image() completes
-                logger.info(f"[DISPLAY_PIXMAP] fit_to_window=False, preserving zoom state (zoom_level={self.current_zoom_level}, "
-                           f"zoom_center_point={self.zoom_center_point})")
+                logger.info(
+                    f"[DISPLAY_PIXMAP] fit_to_window=False, preserving zoom state (zoom_level={self.current_zoom_level}, "
+                    f"zoom_center_point={self.zoom_center_point})"
+                )
                 # Check if this is a half_size image - if so, temporarily show fit-to-window
                 # and wait for full resolution before applying zoom
                 pixmap_max_dim = max(pixmap.width(), pixmap.height())
-                raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                            '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                            '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+                raw_exts = {
+                    ".cr2",
+                    ".cr3",
+                    ".nef",
+                    ".arw",
+                    ".dng",
+                    ".orf",
+                    ".rw2",
+                    ".pef",
+                    ".srw",
+                    ".x3f",
+                    ".raf",
+                    ".3fr",
+                    ".fff",
+                    ".iiq",
+                    ".cap",
+                    ".erf",
+                    ".mef",
+                    ".mos",
+                    ".nrw",
+                    ".rwl",
+                    ".srf",
+                }
                 is_raw = os.path.splitext(getattr(self, "current_file_path", ""))[-1].lower() in raw_exts
                 is_pixmap_half_size = (pixmap_max_dim < 3000) and is_raw
                 if is_pixmap_half_size:
-                    logger.info(f"[DISPLAY_PIXMAP] Half-size image ({pixmap.width()}x{pixmap.height()}), "
-                               "showing Fit preview until a full-resolution buffer arrives (avoid fake zoom upscale).")
+                    logger.info(
+                        f"[DISPLAY_PIXMAP] Half-size image ({pixmap.width()}x{pixmap.height()}), "
+                        "showing Fit preview until a full-resolution buffer arrives (avoid fake zoom upscale)."
+                    )
                     if not getattr(self, "_pending_zoom", False):
                         self._pending_zoom = True
                         self._pending_zoom_center = self.zoom_center_point
@@ -599,36 +623,60 @@ class DisplayPart5:
                 self.scale_image_to_fit()
             else:
                 self.apply_zoom_and_pan()
-            delattr(self, '_maintain_zoom_on_navigation')
+            delattr(self, "_maintain_zoom_on_navigation")
 
         # Handle zoom restoration
         # Handle zoom restoration
         if has_restore_zoom:
             self.fit_to_window = False
-            logger.info(f"[DISPLAY_PIXMAP] Processing zoom restoration - half_size={getattr(self, '_is_half_size_displayed', False)}, "
-                       f"pixmap_size={pixmap.width()}x{pixmap.height()}, "
-                       f"_restore_zoom_center={self._restore_zoom_center}, "
-                       f"_restore_zoom_level={getattr(self, '_restore_zoom_level', None)}")
+            logger.info(
+                f"[DISPLAY_PIXMAP] Processing zoom restoration - half_size={getattr(self, '_is_half_size_displayed', False)}, "
+                f"pixmap_size={pixmap.width()}x{pixmap.height()}, "
+                f"_restore_zoom_center={self._restore_zoom_center}, "
+                f"_restore_zoom_level={getattr(self, '_restore_zoom_level', None)}"
+            )
 
             # If restoring zoom and currently displaying half_size, load full resolution FIRST
             pixmap_max_dim = max(pixmap.width(), pixmap.height())
-            raw_exts = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                        '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                        '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+            raw_exts = {
+                ".cr2",
+                ".cr3",
+                ".nef",
+                ".arw",
+                ".dng",
+                ".orf",
+                ".rw2",
+                ".pef",
+                ".srw",
+                ".x3f",
+                ".raf",
+                ".3fr",
+                ".fff",
+                ".iiq",
+                ".cap",
+                ".erf",
+                ".mef",
+                ".mos",
+                ".nrw",
+                ".rwl",
+                ".srf",
+            }
             is_raw = os.path.splitext(getattr(self, "current_file_path", ""))[-1].lower() in raw_exts
             is_pixmap_half_size = (pixmap_max_dim < 3000) and is_raw
 
-            if (hasattr(self, '_is_half_size_displayed') and self._is_half_size_displayed) or is_pixmap_half_size:
+            if (hasattr(self, "_is_half_size_displayed") and self._is_half_size_displayed) or is_pixmap_half_size:
                 if is_pixmap_half_size:
                     self._is_half_size_displayed = True
 
-                if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
+                if not hasattr(self, "_full_resolution_loading") or not self._full_resolution_loading:
                     # Check if full resolution is already cached
                     cached_full = self.image_cache.get_full_image(self.current_file_path)
                     if cached_full is not None:
                         cached_max_dim = max(cached_full.shape[1], cached_full.shape[0])
                         if cached_max_dim >= 3000:
-                            logger.info("[DISPLAY_PIXMAP] Full resolution image already cached, loading immediately for zoom restoration...")
+                            logger.info(
+                                "[DISPLAY_PIXMAP] Full resolution image already cached, loading immediately for zoom restoration..."
+                            )
                             self._full_resolution_loading = True
                             # Store zoom restoration intent BEFORE displaying
                             self._pending_zoom_restore = True
@@ -640,10 +688,12 @@ class DisplayPart5:
                             self._is_half_size_displayed = False
                             self._full_resolution_loading = False
                             self._maybe_refresh_focus_subject_outline_after_display()
-                            return # Zoom restoration handled by display_numpy_image
+                            return  # Zoom restoration handled by display_numpy_image
                         else:
                             # Start loading full resolution in background
-                            logger.info("[DISPLAY_PIXMAP] Cached image is half_size, starting full resolution load for zoom restoration")
+                            logger.info(
+                                "[DISPLAY_PIXMAP] Cached image is half_size, starting full resolution load for zoom restoration"
+                            )
                             self._load_full_resolution_on_demand()
                             self._pending_zoom_restore = True
                             self._pending_zoom_center = self._restore_zoom_center
@@ -651,8 +701,8 @@ class DisplayPart5:
                             self._restore_zoom_center = None
                             self._restore_zoom_level = None
                             # Like 40b9ade: avoid a two-step zoomed-soft-thumb UX -- show preview fit until sharp buffer arrives.
-                            if hasattr(self, '_maintain_zoom_on_navigation'):
-                                delattr(self, '_maintain_zoom_on_navigation')
+                            if hasattr(self, "_maintain_zoom_on_navigation"):
+                                delattr(self, "_maintain_zoom_on_navigation")
                             self.fit_to_window = True
                             self.current_zoom_level = 1.0
                             self.zoom_center_point = None
@@ -673,8 +723,8 @@ class DisplayPart5:
                         self._pending_zoom_level = self._restore_zoom_level
                         self._restore_zoom_center = None
                         self._restore_zoom_level = None
-                        if hasattr(self, '_maintain_zoom_on_navigation'):
-                            delattr(self, '_maintain_zoom_on_navigation')
+                        if hasattr(self, "_maintain_zoom_on_navigation"):
+                            delattr(self, "_maintain_zoom_on_navigation")
                         self.fit_to_window = True
                         self.current_zoom_level = 1.0
                         self.zoom_center_point = None
@@ -698,7 +748,11 @@ class DisplayPart5:
             self.current_zoom_level = eff_level or 1.0
 
             # Scale zoom center point if pixmap size changed (half-size -> full-res)
-            if hasattr(self, '_restore_pixmap_size') and self._restore_pixmap_size is not None and eff_center is not None:
+            if (
+                hasattr(self, "_restore_pixmap_size")
+                and self._restore_pixmap_size is not None
+                and eff_center is not None
+            ):
                 old_size = self._restore_pixmap_size
                 new_size = pixmap.size()
 
@@ -707,11 +761,10 @@ class DisplayPart5:
                     scale_x = new_size.width() / old_size.width() if old_size.width() > 0 else 1.0
                     scale_y = new_size.height() / old_size.height() if old_size.height() > 0 else 1.0
 
-                    scaled_center = QPoint(
-                        int(eff_center.x() * scale_x),
-                        int(eff_center.y() * scale_y)
+                    scaled_center = QPoint(int(eff_center.x() * scale_x), int(eff_center.y() * scale_y))
+                    logger.debug(
+                        f"Scaled zoom center from {eff_center} ({old_size.width()}x{old_size.height()}) to {scaled_center} ({new_size.width()}x{new_size.height()})"
                     )
-                    logger.debug(f"Scaled zoom center from {eff_center} ({old_size.width()}x{old_size.height()}) to {scaled_center} ({new_size.width()}x{new_size.height()})")
                     self.zoom_center_point = scaled_center
                 else:
                     self.zoom_center_point = eff_center
@@ -720,9 +773,7 @@ class DisplayPart5:
             else:
                 c = eff_center
                 self.zoom_center_point = (
-                    c
-                    if c is not None
-                    else QPoint(max(0, pixmap.width() // 2), max(0, pixmap.height() // 2))
+                    c if c is not None else QPoint(max(0, pixmap.width() // 2), max(0, pixmap.height() // 2))
                 )
             self._restore_zoom_center = None
             self._restore_zoom_level = None
@@ -734,9 +785,14 @@ class DisplayPart5:
                 delattr(self, "_pending_zoom_level")
 
             # Apply saved scroll position before applying zoom and pan
-            if hasattr(self, '_restore_start_scroll_x') and hasattr(self, '_restore_start_scroll_y') and self._restore_start_scroll_x is not None and self._restore_start_scroll_y is not None:
-                    self.start_scroll_x = self._restore_start_scroll_x
-                    self.start_scroll_y = self._restore_start_scroll_y
+            if (
+                hasattr(self, "_restore_start_scroll_x")
+                and hasattr(self, "_restore_start_scroll_y")
+                and self._restore_start_scroll_x is not None
+                and self._restore_start_scroll_y is not None
+            ):
+                self.start_scroll_x = self._restore_start_scroll_x
+                self.start_scroll_y = self._restore_start_scroll_y
 
             self.apply_zoom_and_pan()
             self._finish_nav_zoom_preserve()
@@ -749,12 +805,7 @@ class DisplayPart5:
         size_upgraded = (old_max <= 0) or (new_max > int(old_max * 1.02))
         pending_zoom_ready = not getattr(self, "_full_resolution_loading", False)
 
-        if (
-            hasattr(self, '_pending_zoom')
-            and self._pending_zoom
-            and pending_zoom_ready
-            and size_upgraded
-        ):
+        if hasattr(self, "_pending_zoom") and self._pending_zoom and pending_zoom_ready and size_upgraded:
             if getattr(self, "gpu_view", None) is not None:
                 # Handled inside _apply_gpu_view for the GPU path to avoid asynchronous race conditions
                 pass
@@ -767,7 +818,6 @@ class DisplayPart5:
                 self.current_zoom_level = 1.0
                 self.zoom_to_point()
                 self._clear_pending_point_zoom_state()
-
 
         # Update status bar immediately with EXIF data
         # Don't pass dimensions - let update_status_bar use original dimensions from cache
@@ -786,10 +836,10 @@ class DisplayPart5:
                 exif_track = self.image_cache.get_exif(cur_path)
         except Exception:
             pass
-        is_full_res = image_covers_sensor_resolution(
-            pixmap.width(), pixmap.height(), exif_track
+        is_full_res = image_covers_sensor_resolution(pixmap.width(), pixmap.height(), exif_track)
+        logger.info(
+            f"[TRACK] Image completely loaded and rendered - file: {current_file}, size: {pixmap.width()}x{pixmap.height()}, full_res: {is_full_res}, time: {display_time:.3f}s"
         )
-        logger.info(f"[TRACK] Image completely loaded and rendered - file: {current_file}, size: {pixmap.width()}x{pixmap.height()}, full_res: {is_full_res}, time: {display_time:.3f}s")
 
     def _on_single_view_content_displayed(self):
         """Called when a single-view image or preview is successfully painted on screen.
@@ -810,9 +860,7 @@ class DisplayPart5:
                         # timeout timer and records TTFR/NAVTIME. The guard
                         # above (plus the flag set in the slot) keeps this
                         # idempotent, so a repeated paint cannot re-fire it.
-                        self._single_view_first_render.emit(
-                            cur_path, elapsed, pm_w, pm_h
-                        )
+                        self._single_view_first_render.emit(cur_path, elapsed, pm_w, pm_h)
         except Exception:
             pass
 
@@ -833,17 +881,13 @@ class DisplayPart5:
 
                 fp_now = getattr(self, "current_file_path", None)
                 defer_full_for_neighbors = bool(
-                    fp_now
-                    and self._single_view_is_fit_mode()
-                    and not use_libraw_consistent_preview_first(fp_now)
+                    fp_now and self._single_view_is_fit_mode() and not use_libraw_consistent_preview_first(fp_now)
                 )
             except Exception:
                 defer_full_for_neighbors = False
             if defer_full_for_neighbors:
                 self._flush_deferred_full_exif_after_first_paint()
-                self._schedule_idle_full_decode_after_nav_preview(
-                    getattr(self, "current_file_path", None) or ""
-                )
+                self._schedule_idle_full_decode_after_nav_preview(getattr(self, "current_file_path", None) or "")
             else:
                 self._flush_deferred_sensor_full_decode()
                 self._flush_deferred_full_exif_after_first_paint()
@@ -866,13 +910,17 @@ class DisplayPart5:
         if not self._should_defer_nav_preload():
             self._schedule_idle_display_prefetch()
             with contextlib.suppress(Exception):
-                self._queue_display_tier_prefetch_for_paths(
-                    self._paths_within_nav_prefetch_radius()
-                )
+                self._queue_display_tier_prefetch_for_paths(self._paths_within_nav_prefetch_radius())
         from search import metadata_auto_index_enabled
-        if metadata_auto_index_enabled() and not self._semantic_indexing_in_progress and not getattr(self, "_semantic_index_prep_in_progress", False) and not getattr(self, "_metadata_index_run_done", False):
-                    delay_ms = metadata_index_idle_delay_ms()
-                    self._metadata_index_defer_timer.start(delay_ms)
+
+        if (
+            metadata_auto_index_enabled()
+            and not self._semantic_indexing_in_progress
+            and not getattr(self, "_semantic_index_prep_in_progress", False)
+            and not getattr(self, "_metadata_index_run_done", False)
+        ):
+            delay_ms = metadata_index_idle_delay_ms()
+            self._metadata_index_defer_timer.start(delay_ms)
 
     def _touch_single_view_interactivity(self) -> None:
         """Mark recent single-view interaction (nav/zoom/recovery) for index deferral."""

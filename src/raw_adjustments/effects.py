@@ -5,8 +5,6 @@ when amount is non-zero, true no-ops when at default. Applied after tone-map
 and before HSL/detail so they sit with other perceptual display adjustments.
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 VIGNETTE_KEY = "PostCropVignetteAmount"

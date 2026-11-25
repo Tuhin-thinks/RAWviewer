@@ -1,5 +1,4 @@
 """display mixin, part 2 of 6 (32 methods, 775 lines)."""
-from __future__ import annotations
 
 import logging
 import os
@@ -57,9 +56,7 @@ class DisplayPart2:
         gv.zoom_to_actual_at(float(pt.x()), float(pt.y()))
         self.fit_to_window = False
         self.current_zoom_level = float(gv.current_scale())
-        if getattr(self, "_pending_zoom_focus_subject", False) or getattr(
-            self, "_focus_zoom_anchor_active", False
-        ):
+        if getattr(self, "_pending_zoom_focus_subject", False) or getattr(self, "_focus_zoom_anchor_active", False):
             self._focus_zoom_anchor_active = True
         else:
             self._pending_zoom_focus_subject = False
@@ -91,11 +88,7 @@ class DisplayPart2:
 
     def _refresh_neutral_raw_display(self) -> None:
         path = getattr(self, "current_file_path", None)
-        if (
-            not path
-            or getattr(self, "view_mode", "single") != "single"
-            or not is_raw_file(path)
-        ):
+        if not path or getattr(self, "view_mode", "single") != "single" or not is_raw_file(path):
             return
         neutral = self._neutral_rgb_for_raw_display(path)
         if neutral is None:
@@ -182,9 +175,7 @@ class DisplayPart2:
         vm = getattr(self, "view_mode", "single")
         if vm not in ("single", "compare"):
             return False
-        self._clipping_overlay_active = not getattr(
-            self, "_clipping_overlay_active", False
-        )
+        self._clipping_overlay_active = not getattr(self, "_clipping_overlay_active", False)
         self._clipping_overlay_cache_key = None
         if self._clipping_overlay_active:
             self.status_bar.showMessage("Clipping ON -- red=highlights, blue=shadows. J=off", 4000)
@@ -197,27 +188,19 @@ class DisplayPart2:
         """Map a deferred zoom target into *pixmap* pixel coordinates."""
         if pixmap is None or pixmap.isNull():
             return None
-        if getattr(self, "_pending_zoom_focus_subject", False) and getattr(self, "_focus_subject_outline_active", False):
-                self._refresh_focus_subject_rect_from_exif()
-                rect = getattr(self, "_focus_subject_rect_image", None)
-                if (
-                    rect is not None
-                    and not rect.isNull()
-                    and rect.width() >= 1
-                    and rect.height() >= 1
-                ):
-                    return QPoint(
-                        rect.left() + rect.width() // 2,
-                        rect.top() + rect.height() // 2,
-                    )
+        if getattr(self, "_pending_zoom_focus_subject", False) and getattr(
+            self, "_focus_subject_outline_active", False
+        ):
+            self._refresh_focus_subject_rect_from_exif()
+            rect = getattr(self, "_focus_subject_rect_image", None)
+            if rect is not None and not rect.isNull() and rect.width() >= 1 and rect.height() >= 1:
+                return QPoint(
+                    rect.left() + rect.width() // 2,
+                    rect.top() + rect.height() // 2,
+                )
         pending = getattr(self, "_pending_zoom_center", None)
         thumb = getattr(self, "_pending_zoom_thumbnail_size", None)
-        if (
-            pending is not None
-            and thumb is not None
-            and thumb.width() > 0
-            and thumb.height() > 0
-        ):
+        if pending is not None and thumb is not None and thumb.width() > 0 and thumb.height() > 0:
             return QPoint(
                 int(pending.x() * pixmap.width() / thumb.width()),
                 int(pending.y() * pixmap.height() / thumb.height()),
@@ -246,17 +229,10 @@ class DisplayPart2:
         """Image-pixel zoom anchor for *pixmap* (focus box preferred when active)."""
         if pixmap is None or pixmap.isNull():
             return None
-        if getattr(self, "_focus_subject_outline_active", False) or getattr(
-            self, "_focus_zoom_anchor_active", False
-        ):
+        if getattr(self, "_focus_subject_outline_active", False) or getattr(self, "_focus_zoom_anchor_active", False):
             self._refresh_focus_subject_rect_from_exif()
             rect = getattr(self, "_focus_subject_rect_image", None)
-            if (
-                rect is not None
-                and not rect.isNull()
-                and rect.width() >= 1
-                and rect.height() >= 1
-            ):
+            if rect is not None and not rect.isNull() and rect.width() >= 1 and rect.height() >= 1:
                 return QPoint(
                     rect.left() + rect.width() // 2,
                     rect.top() + rect.height() // 2,
@@ -283,9 +259,7 @@ class DisplayPart2:
         if not self._needs_full_resolution_upgrade():
             self._clear_focus_zoom_anchor()
 
-    def _apply_gpu_pixmap_with_focus_anchor(
-        self, gv, pixmap: QPixmap, *, preserve: bool
-    ) -> None:
+    def _apply_gpu_pixmap_with_focus_anchor(self, gv, pixmap: QPixmap, *, preserve: bool) -> None:
         """Swap the GPU pixmap without losing a focus-box or pending zoom anchor."""
         reanchor = self._should_reanchor_focus_on_pixmap_upgrade(pixmap)
         if reanchor:
@@ -329,9 +303,7 @@ class DisplayPart2:
             return False
         # User already returned to fit (GPU zoom-out): ignore a stale pending
         # zoom left from the previous 100% so navigation does not auto-zoom.
-        if self._single_view_is_fit_mode() and not getattr(
-            self, "_preserve_nav_zoom_active", False
-        ):
+        if self._single_view_is_fit_mode() and not getattr(self, "_preserve_nav_zoom_active", False):
             self._clear_pending_point_zoom_state()
             return False
         if not getattr(self, "_full_resolution_loading", False):
@@ -340,26 +312,20 @@ class DisplayPart2:
             return False
         try:
             exif = self.image_cache.get_exif(file_path)
-            return image_covers_sensor_resolution(
-                pixmap.width(), pixmap.height(), exif
-            )
+            return image_covers_sensor_resolution(pixmap.width(), pixmap.height(), exif)
         except Exception:
             return max(pixmap.width(), pixmap.height()) >= 3000
 
     def _apply_pending_gpu_point_zoom_in_place(self, pixmap, gv) -> bool:
         """Swap to full pixmap and zoom to the pending target in one step (no corner flash)."""
-        if not self._pending_zoom_ready_for_pixmap(
-            pixmap, getattr(self, "current_file_path", None)
-        ):
+        if not self._pending_zoom_ready_for_pixmap(pixmap, getattr(self, "current_file_path", None)):
             return False
         target = self._resolve_pending_zoom_center_for_pixmap(pixmap)
         if target is None:
             return False
         gv.setUpdatesEnabled(False)
         try:
-            gv.set_pixmap_zoomed_at(
-                pixmap, float(target.x()), float(target.y()), scale=1.0
-            )
+            gv.set_pixmap_zoomed_at(pixmap, float(target.x()), float(target.y()), scale=1.0)
         finally:
             gv.setUpdatesEnabled(True)
         self.zoom_center_point = target
@@ -393,9 +359,7 @@ class DisplayPart2:
             return QPoint(pm.width() // 2, pm.height() // 2)
         return QPoint(0, 0)
 
-    def _apply_gpu_navigation_zoom_restore(
-        self, pixmap, gv, *, scale_level_to_pixmap: bool = False
-    ) -> bool:
+    def _apply_gpu_navigation_zoom_restore(self, pixmap, gv, *, scale_level_to_pixmap: bool = False) -> bool:
         """Restore zoom level/center on a new file in the GPU view.
 
         ``scale_level_to_pixmap``: the pixmap is a low-resolution interim tier
@@ -408,12 +372,10 @@ class DisplayPart2:
         preserved zoom.
         """
         preserve = bool(
-            getattr(self, "_preserve_nav_zoom_active", False)
-            or getattr(self, "_maintain_zoom_on_navigation", False)
+            getattr(self, "_preserve_nav_zoom_active", False) or getattr(self, "_maintain_zoom_on_navigation", False)
         )
         logging.getLogger(__name__).debug(
-            "[ZOOMNAV] restore attempt: preserve=%s scale_mode=%s pm=%sx%s "
-            "level=%s old_size=%s",
+            "[ZOOMNAV] restore attempt: preserve=%s scale_mode=%s pm=%sx%s level=%s old_size=%s",
             preserve,
             scale_level_to_pixmap,
             pixmap.width() if pixmap is not None and not pixmap.isNull() else 0,
@@ -440,10 +402,7 @@ class DisplayPart2:
             and not pixmap.isNull()
             and old_size.width() > 0
             and old_size.height() > 0
-            and (
-                old_size.width() != pixmap.width()
-                or old_size.height() != pixmap.height()
-            )
+            and (old_size.width() != pixmap.width() or old_size.height() != pixmap.height())
         )
         if sizes_differ:
             sx = pixmap.width() / old_size.width()
@@ -471,24 +430,18 @@ class DisplayPart2:
         # Prefer this file's own remembered framing over the neighbor's.
         mem = None
         try:
-            mem = self._nav_zoom_memory.get(
-                _norm_path(getattr(self, "current_file_path", "") or "")
-            )
+            mem = self._nav_zoom_memory.get(_norm_path(getattr(self, "current_file_path", "") or ""))
         except Exception:
             mem = None
         if mem is not None and pixmap is not None and not pixmap.isNull():
             fx, fy, mem_level = mem
-            eff_center = QPoint(
-                int(fx * pixmap.width()), int(fy * pixmap.height())
-            )
+            eff_center = QPoint(int(fx * pixmap.width()), int(fy * pixmap.height()))
             sensor_level = mem_level
         if sensor_level is not None and pixmap is not None and not pixmap.isNull():
             try:
                 from common_image_loader import sensor_pixel_dimensions
 
-                sdims = sensor_pixel_dimensions(
-                    self.image_cache.get_exif(getattr(self, "current_file_path", None))
-                )
+                sdims = sensor_pixel_dimensions(self.image_cache.get_exif(getattr(self, "current_file_path", None)))
                 pm_max = max(pixmap.width(), pixmap.height())
                 if sdims and pm_max > 0:
                     level = float(sensor_level) * max(sdims) / pm_max
@@ -500,9 +453,7 @@ class DisplayPart2:
             src = "legacy"
         else:
             src = "mem" if mem is not None else "sensor"
-        logging.getLogger(__name__).debug(
-            "[ZOOMNAV] placing level=%.3f source=%s overscale=%s", level, src, overscale
-        )
+        logging.getLogger(__name__).debug("[ZOOMNAV] placing level=%.3f source=%s overscale=%s", level, src, overscale)
 
         gv.setUpdatesEnabled(False)
         try:
@@ -627,6 +578,7 @@ class DisplayPart2:
     def on_manager_pixmap_ready(self, file_path: str, pixmap):
         """處理 ImageLoadManager 的 QPixmap 就緒信號（非 RAW 文件）"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         if getattr(self, "view_mode", "") == "compare":
@@ -648,16 +600,36 @@ class DisplayPart2:
             self.loading_overlay.hide_loading()
 
         # Check if this is actually a RAW file (shouldn't happen, but log it)
-        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                         '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+        raw_extensions = {
+            ".cr2",
+            ".cr3",
+            ".nef",
+            ".arw",
+            ".dng",
+            ".orf",
+            ".rw2",
+            ".pef",
+            ".srw",
+            ".x3f",
+            ".raf",
+            ".3fr",
+            ".fff",
+            ".iiq",
+            ".cap",
+            ".erf",
+            ".mef",
+            ".mos",
+            ".nrw",
+            ".rwl",
+            ".srf",
+        }
         file_ext = os.path.splitext(file_path)[1].lower()
         is_raw_file = file_ext in raw_extensions
 
-        if is_raw_file and not getattr(self, '_orientation_already_applied', False):
-                orientation = self.get_orientation_from_exif(file_path)
-                if orientation != 1:
-                    pixmap = self.apply_orientation_to_pixmap(pixmap, orientation)
+        if is_raw_file and not getattr(self, "_orientation_already_applied", False):
+            orientation = self.get_orientation_from_exif(file_path)
+            if orientation != 1:
+                pixmap = self.apply_orientation_to_pixmap(pixmap, orientation)
 
         logger.info(f"[MANAGER] Pixmap ready for {os.path.basename(file_path)}")
         # load_pixmap_safe in common_image_loader.py now uses QImageReader with setAutoTransform
@@ -673,27 +645,22 @@ class DisplayPart2:
         # Avoid duplicate repaint churn: thumbnail_ready path may have already displayed the same
         # full-size pixmap through display_numpy_image() cache fast-path just moments earlier.
         # Compare against the un-rotated base buffer -- visual rotation swaps on-screen dimensions.
-        if (
-            not getattr(self, "_skip_resolution_downgrade_check", False)
-            and self._manager_pixmap_is_duplicate_display(file_path, pixmap)
+        if not getattr(self, "_skip_resolution_downgrade_check", False) and self._manager_pixmap_is_duplicate_display(
+            file_path, pixmap
         ):
             logger.debug(
                 f"[MANAGER] Skipping duplicate pixmap redraw for "
                 f"{os.path.basename(file_path)} ({pixmap.width()}x{pixmap.height()})"
             )
             pm_max = max(pixmap.width(), pixmap.height())
-            self._manager_displayed_max_dim = max(
-                getattr(self, "_manager_displayed_max_dim", 0), pm_max
-            )
+            self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
             return
 
         self.display_pixmap(pixmap)
         self._skip_resolution_downgrade_check = False
         self._on_single_view_content_displayed()
         pm_max = max(pixmap.width(), pixmap.height())
-        self._manager_displayed_max_dim = max(
-            getattr(self, "_manager_displayed_max_dim", 0), pm_max
-        )
+        self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), pm_max)
         self.status_bar.showMessage(f"Loaded {os.path.basename(file_path)}")
 
         # CRITICAL: Ensure metadata is updated after pixmap is displayed
@@ -733,8 +700,10 @@ class DisplayPart2:
             if exif:
                 ow = int(exif.get("original_width") or 0)
                 oh = int(exif.get("original_height") or 0)
-                if ow > 0 and oh > 0 and pixmap_matches_exif_display(
-                    pixmap.width(), pixmap.height(), ow, oh, int(orientation or 1)
+                if (
+                    ow > 0
+                    and oh > 0
+                    and pixmap_matches_exif_display(pixmap.width(), pixmap.height(), ow, oh, int(orientation or 1))
                 ):
                     return pixmap
         except Exception:

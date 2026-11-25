@@ -1,5 +1,4 @@
 """navigation mixin, part 1 of 2 (22 methods, 866 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -65,9 +64,7 @@ class NavigationPart1:
             return [p for p in scope if p and os.path.isfile(p)]
         if getattr(self, "_gallery_bookmark_filter_active", False):
             files = self._filter_paths_to_bookmarked(files)
-        files = self._filter_paths_to_min_rating(
-            files, int(getattr(self, "_gallery_rating_filter_min", 0) or 0)
-        )
+        files = self._filter_paths_to_min_rating(files, int(getattr(self, "_gallery_rating_filter_min", 0) or 0))
         return files
 
     def _in_nav_quiet_window(self) -> bool:
@@ -77,6 +74,7 @@ class NavigationPart1:
         foreground image load keeps worker slots and the main thread stays responsive.
         """
         import time
+
         quiet_ms = _env_int("RAWVIEWER_NAV_PREFETCH_QUIET_MS", 450, minimum=0)
         if quiet_ms <= 0:
             return False
@@ -126,7 +124,9 @@ class NavigationPart1:
         display_pixmap = pixmap
         if self.fit_to_window:
             v_size = self.scroll_area.viewport().size()
-            display_pixmap = pixmap.scaled(v_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            display_pixmap = pixmap.scaled(
+                v_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
 
         self.image_label.setPixmap(display_pixmap)
         self.image_label.resize(display_pixmap.size())
@@ -146,11 +146,7 @@ class NavigationPart1:
         token = getattr(self, "_folder_resort_generation", 0) + 1
         self._folder_resort_generation = token
 
-        in_gallery = (
-            self.view_mode == "gallery"
-            and hasattr(self, "gallery_widget")
-            and self.gallery_widget.isVisible()
-        )
+        in_gallery = self.view_mode == "gallery" and hasattr(self, "gallery_widget") and self.gallery_widget.isVisible()
         anchor_file = None
         if in_gallery and hasattr(self, "gallery_justified") and self.gallery_justified:
             anchor_file = self.gallery_justified.get_scroll_anchor_path()
@@ -283,6 +279,7 @@ class NavigationPart1:
         # Pause semantic indexing during active loading
         try:
             from PyQt6.QtCore import QTimer
+
             self._pause_semantic_indexing_deferred()
             if hasattr(self, "_resume_indexing_timer") and self._resume_indexing_timer:
                 self._resume_indexing_timer.stop()
@@ -364,48 +361,46 @@ class NavigationPart1:
         exif_data = self.image_cache.get_exif(path)
         if exif_data is None:
             exif_data = {
-                'orientation': 1,
-                'camera_make': 'Unknown',
-                'camera_model': 'Unknown',
-                'exif_data': {},
-                'capture_time': None,
-                'original_width': None,
-                'original_height': None
+                "orientation": 1,
+                "camera_make": "Unknown",
+                "camera_model": "Unknown",
+                "exif_data": {},
+                "capture_time": None,
+                "original_width": None,
+                "original_height": None,
             }
         else:
             exif_data = exif_data.copy()
 
-        exif_data['rating'] = rating
-        if 'exif_data' in exif_data and isinstance(exif_data['exif_data'], dict):
-            exif_data['exif_data'] = exif_data['exif_data'].copy()
-            exif_data['exif_data']['rating'] = rating
+        exif_data["rating"] = rating
+        if "exif_data" in exif_data and isinstance(exif_data["exif_data"], dict):
+            exif_data["exif_data"] = exif_data["exif_data"].copy()
+            exif_data["exif_data"]["rating"] = rating
 
         self.image_cache.put_exif(path, exif_data)
 
         # 1b. Persist to the XMP sidecar so the rating survives a restart
         # (in-memory/EXIF-cache updates above are lost when the app closes).
         try:
-            from raw_adjustments import write_rating_for_file
+            from raw_adjustments.xmp_write import write_rating_for_file
 
             write_rating_for_file(path, rating)
         except Exception:
-            logging.getLogger(__name__).warning(
-                "Failed to write rating to XMP sidecar for %s", path, exc_info=True
-            )
+            logging.getLogger(__name__).warning("Failed to write rating to XMP sidecar for %s", path, exc_info=True)
             self.status_bar.showMessage("Rating set, but couldn't save to XMP sidecar", 3000)
 
         # 2. Update local caches (bulk metadata and justified gallery)
         if hasattr(self, "_gallery_bulk_metadata") and self._gallery_bulk_metadata is not None:
             if path not in self._gallery_bulk_metadata:
                 self._gallery_bulk_metadata[path] = {}
-            self._gallery_bulk_metadata[path]['rating'] = rating
+            self._gallery_bulk_metadata[path]["rating"] = rating
         self._bump_gallery_rating_presence_epoch()
 
         gj = getattr(self, "gallery_justified", None)
         if gj is not None and hasattr(gj, "_metadata_cache"):
             if path not in gj._metadata_cache:
                 gj._metadata_cache[path] = {}
-            gj._metadata_cache[path]['rating'] = rating
+            gj._metadata_cache[path]["rating"] = rating
             if hasattr(gj, "refresh_visible_tile_for_path"):
                 with contextlib.suppress(Exception):
                     gj.refresh_visible_tile_for_path(path)
@@ -423,7 +418,7 @@ class NavigationPart1:
         if bar is not None and hasattr(bar, "_metadata_cache"):
             if path not in bar._metadata_cache:
                 bar._metadata_cache[path] = {}
-            bar._metadata_cache[path]['rating'] = rating
+            bar._metadata_cache[path]["rating"] = rating
             if hasattr(bar, "refresh_cell_for_path"):
                 with contextlib.suppress(Exception):
                     bar.refresh_cell_for_path(path)
@@ -439,16 +434,19 @@ class NavigationPart1:
         """Check if navigation is allowed (prevents overlapping navigations and rate limiting)"""
         import logging
         import time
+
         logger = logging.getLogger(__name__)
 
-        nav_in_progress = getattr(self, '_navigation_in_progress', False)
-        last_nav_time = getattr(self, '_last_navigation_time', 0)
+        nav_in_progress = getattr(self, "_navigation_in_progress", False)
+        last_nav_time = getattr(self, "_last_navigation_time", 0)
         current_time = time.time()
-        time_since_last = current_time - last_nav_time if last_nav_time > 0 else float('inf')
+        time_since_last = current_time - last_nav_time if last_nav_time > 0 else float("inf")
 
-        logger.debug(f"[NAV_CHECK] can_navigate() called - nav_in_progress={nav_in_progress}, "
-                    f"last_nav_time={last_nav_time:.3f}, current_time={current_time:.3f}, "
-                    f"time_since_last={time_since_last:.3f}s")
+        logger.debug(
+            f"[NAV_CHECK] can_navigate() called - nav_in_progress={nav_in_progress}, "
+            f"last_nav_time={last_nav_time:.3f}, current_time={current_time:.3f}, "
+            f"time_since_last={time_since_last:.3f}s"
+        )
 
         # Check if navigation is in progress
         # Note: We removed the 100ms rate limiting cooldown because:
@@ -479,9 +477,7 @@ class NavigationPart1:
     def _schedule_coalesced_navigation(self, delta: int) -> None:
         from PyQt6.QtCore import QTimer
 
-        self._nav_coalesce_delta = int(getattr(self, "_nav_coalesce_delta", 0)) + int(
-            delta
-        )
+        self._nav_coalesce_delta = int(getattr(self, "_nav_coalesce_delta", 0)) + int(delta)
         ms = _env_int("RAWVIEWER_NAV_COALESCE_MS", 100, minimum=0)
         if ms <= 0:
             self._flush_coalesced_navigation()
@@ -527,11 +523,13 @@ class NavigationPart1:
         """Mark navigation as started"""
         import logging
         import time
+
         logger = logging.getLogger(__name__)
         current_time = time.time()
-        old_state = getattr(self, '_navigation_in_progress', False)
-        logger.info(f"[NAV_START] start_navigation() called - old_state={old_state}, setting to True, "
-                   f"time={current_time:.3f}")
+        old_state = getattr(self, "_navigation_in_progress", False)
+        logger.info(
+            f"[NAV_START] start_navigation() called - old_state={old_state}, setting to True, time={current_time:.3f}"
+        )
         self._navigation_in_progress = True
         self._last_navigation_time = current_time
         # Anchor for the [NAVTIME] navigation->display latency metric.
@@ -540,22 +538,27 @@ class NavigationPart1:
         self._cancel_content_crossfade()
         self._skip_resolution_crossfade_once = True
         self._clear_pending_resolution_crossfade()
-        logger.debug(f"[NAV_START] Navigation flag set - _navigation_in_progress={self._navigation_in_progress}, "
-                    f"_last_navigation_time={self._last_navigation_time:.3f}")
+        logger.debug(
+            f"[NAV_START] Navigation flag set - _navigation_in_progress={self._navigation_in_progress}, "
+            f"_last_navigation_time={self._last_navigation_time:.3f}"
+        )
 
     def finish_navigation(self):
         """Mark navigation as finished"""
         import logging
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
-        old_state = getattr(self, '_navigation_in_progress', None)
+        old_state = getattr(self, "_navigation_in_progress", None)
         current_time = time.time()
-        last_nav_time = getattr(self, '_last_navigation_time', 0)
+        last_nav_time = getattr(self, "_last_navigation_time", 0)
         nav_duration = current_time - last_nav_time if last_nav_time > 0 else 0
 
-        logger.info(f"[NAV_FINISH] finish_navigation() called - old_state={old_state}, will set to False, "
-                   f"nav_duration={nav_duration:.3f}s, time={current_time:.3f}")
+        logger.info(
+            f"[NAV_FINISH] finish_navigation() called - old_state={old_state}, will set to False, "
+            f"nav_duration={nav_duration:.3f}s, time={current_time:.3f}"
+        )
         logger.debug(f"[NAV_FINISH] Call stack:\n{traceback.format_stack()[-5:-1]}")
 
         self._navigation_in_progress = False
@@ -570,33 +573,36 @@ class NavigationPart1:
             pass
 
     def navigate_to_previous_image(self):
-        if getattr(self, '_is_delete_dialog_open', False):
+        if getattr(self, "_is_delete_dialog_open", False):
             return
         import logging
         import os
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
 
         nav_start_time = time.time()
         logger.info(f"[NAV_PREV] ========== navigate_to_previous_image() STARTED at {nav_start_time:.3f} ==========")
-        logger.debug(f"[NAV_PREV] Current state - index: {self.current_file_index}, "
-                    f"total_files: {len(self.image_files) if self.image_files else 0}, "
-                    f"current_file: {os.path.basename(_require_str_path(self.current_file_path)) if self.current_file_path else 'None'}")
+        logger.debug(
+            f"[NAV_PREV] Current state - index: {self.current_file_index}, "
+            f"total_files: {len(self.image_files) if self.image_files else 0}, "
+            f"current_file: {os.path.basename(_require_str_path(self.current_file_path)) if self.current_file_path else 'None'}"
+        )
 
         # Check processor state
         processor_state = "None"
-        if hasattr(self, 'current_processor') and self.current_processor:
+        if hasattr(self, "current_processor") and self.current_processor:
             processor_state = f"Active (thread_id={self.current_processor.thread().currentThreadId() if hasattr(self.current_processor, 'thread') else 'N/A'})"
         logger.debug(f"[NAV_PREV] Current processor state: {processor_state}")
 
         # Clear any pending zoom requests for the current image
-        if hasattr(self, '_pending_zoom'):
+        if hasattr(self, "_pending_zoom"):
             self._pending_zoom = False
-            if hasattr(self, '_pending_zoom_center'):
-                delattr(self, '_pending_zoom_center')
-            if hasattr(self, '_pending_zoom_thumbnail_size'):
-                delattr(self, '_pending_zoom_thumbnail_size')
+            if hasattr(self, "_pending_zoom_center"):
+                delattr(self, "_pending_zoom_center")
+            if hasattr(self, "_pending_zoom_thumbnail_size"):
+                delattr(self, "_pending_zoom_thumbnail_size")
 
         # Check if navigation is allowed BEFORE starting navigation
         if not self.can_navigate():
@@ -621,12 +627,16 @@ class NavigationPart1:
                 # Editor mode: silently skip files the editor cannot open.
                 self._advance_index_past_unsupported_for_editing(-1)
 
-                logger.info(f"[NAV_PREV] Navigating to previous image - old_index: {old_index}, new_index: {self.current_file_index}")
+                logger.info(
+                    f"[NAV_PREV] Navigating to previous image - old_index: {old_index}, new_index: {self.current_file_index}"
+                )
                 logger.info(f"[TRACK] User navigated to previous image (arrow key) - index: {self.current_file_index}")
 
                 # Check if new index is valid
                 if self.current_file_index < 0 or self.current_file_index >= len(self.image_files):
-                    logger.error(f"[NAV_PREV] Invalid index after navigation: {self.current_file_index}, total_files: {len(self.image_files)}")
+                    logger.error(
+                        f"[NAV_PREV] Invalid index after navigation: {self.current_file_index}, total_files: {len(self.image_files)}"
+                    )
                     self.current_file_index = old_index  # Restore old index
                     return
 
@@ -655,14 +665,18 @@ class NavigationPart1:
             finally:
                 # Always mark navigation as finished (inner try)
                 inner_finally_time = time.time()
-                logger.debug(f"[NAV_PREV] Inner finally block reached at {inner_finally_time:.3f} "
-                           f"(nav duration: {inner_finally_time - nav_start_time:.3f}s)")
+                logger.debug(
+                    f"[NAV_PREV] Inner finally block reached at {inner_finally_time:.3f} "
+                    f"(nav duration: {inner_finally_time - nav_start_time:.3f}s)"
+                )
                 self.finish_navigation()
 
         except Exception as e:
             error_time = time.time()
-            logger.error(f"[NAV_PREV] ========== EXCEPTION in navigate_to_previous_image "
-                        f"(at {error_time:.3f}, duration: {error_time - nav_start_time:.3f}s) ==========")
+            logger.error(
+                f"[NAV_PREV] ========== EXCEPTION in navigate_to_previous_image "
+                f"(at {error_time:.3f}, duration: {error_time - nav_start_time:.3f}s) =========="
+            )
             logger.error(f"[NAV_PREV] Exception type: {type(e).__name__}, message: {e}", exc_info=True)
             logger.error(f"[NAV_PREV] Full traceback:\n{traceback.format_exc()}")
             # Ensure navigation is marked as finished even on error
@@ -674,21 +688,26 @@ class NavigationPart1:
         finally:
             # Additional safety: ensure navigation is always marked as finished (outer finally)
             outer_finally_time = time.time()
-            logger.debug(f"[NAV_PREV] Outer finally block reached at {outer_finally_time:.3f} "
-                       f"(total duration: {outer_finally_time - nav_start_time:.3f}s)")
-            if hasattr(self, '_navigation_in_progress') and self._navigation_in_progress:
+            logger.debug(
+                f"[NAV_PREV] Outer finally block reached at {outer_finally_time:.3f} "
+                f"(total duration: {outer_finally_time - nav_start_time:.3f}s)"
+            )
+            if hasattr(self, "_navigation_in_progress") and self._navigation_in_progress:
                 logger.warning("[NAV_PREV] Navigation flag still True in outer finally, clearing it")
                 self.finish_navigation()
-            logger.info(f"[NAV_PREV] ========== navigate_to_previous_image() COMPLETED "
-                       f"(total duration: {outer_finally_time - nav_start_time:.3f}s) ==========")
+            logger.info(
+                f"[NAV_PREV] ========== navigate_to_previous_image() COMPLETED "
+                f"(total duration: {outer_finally_time - nav_start_time:.3f}s) =========="
+            )
 
     def navigate_to_next_image(self):
-        if getattr(self, '_is_delete_dialog_open', False):
+        if getattr(self, "_is_delete_dialog_open", False):
             return
         import logging
         import os
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
 
         nav_start_time = time.time()
@@ -696,21 +715,23 @@ class NavigationPart1:
         self._last_navigation_start = nav_start_time
 
         logger.info(f"[NAV_NEXT] ========== navigate_to_next_image() STARTED at {nav_start_time:.3f} ==========")
-        logger.debug(f"[NAV_NEXT] Current state - index: {self.current_file_index}, "
-                    f"total_files: {len(self.image_files) if self.image_files else 0}, "
-                    f"current_file: {os.path.basename(_require_str_path(self.current_file_path)) if self.current_file_path else 'None'}")
+        logger.debug(
+            f"[NAV_NEXT] Current state - index: {self.current_file_index}, "
+            f"total_files: {len(self.image_files) if self.image_files else 0}, "
+            f"current_file: {os.path.basename(_require_str_path(self.current_file_path)) if self.current_file_path else 'None'}"
+        )
 
         # Clear any pending zoom requests for the current image
-        if hasattr(self, '_pending_zoom'):
+        if hasattr(self, "_pending_zoom"):
             self._pending_zoom = False
-            if hasattr(self, '_pending_zoom_center'):
-                delattr(self, '_pending_zoom_center')
-            if hasattr(self, '_pending_zoom_thumbnail_size'):
-                delattr(self, '_pending_zoom_thumbnail_size')
+            if hasattr(self, "_pending_zoom_center"):
+                delattr(self, "_pending_zoom_center")
+            if hasattr(self, "_pending_zoom_thumbnail_size"):
+                delattr(self, "_pending_zoom_thumbnail_size")
 
         # Check processor state
         processor_state = "None"
-        if hasattr(self, 'current_processor') and self.current_processor:
+        if hasattr(self, "current_processor") and self.current_processor:
             processor_state = f"Active (thread_id={self.current_processor.thread().currentThreadId() if hasattr(self.current_processor, 'thread') else 'N/A'})"
         logger.debug(f"[NAV_NEXT] Current processor state: {processor_state}")
 
@@ -737,37 +758,50 @@ class NavigationPart1:
                 # Editor mode: silently skip files the editor cannot open.
                 self._advance_index_past_unsupported_for_editing(+1)
 
-                logger.info(f"[NAV_NEXT] Navigating to next image - old_index: {old_index}, new_index: {self.current_file_index}")
+                logger.info(
+                    f"[NAV_NEXT] Navigating to next image - old_index: {old_index}, new_index: {self.current_file_index}"
+                )
                 logger.info(f"[TRACK] User navigated to next image (arrow key) - index: {self.current_file_index}")
 
                 # Check if new index is valid
                 if self.current_file_index < 0 or self.current_file_index >= len(self.image_files):
-                    logger.error(f"[NAV_NEXT] Invalid index after navigation: {self.current_file_index}, total_files: {len(self.image_files)}")
+                    logger.error(
+                        f"[NAV_NEXT] Invalid index after navigation: {self.current_file_index}, total_files: {len(self.image_files)}"
+                    )
                     self.current_file_index = old_index  # Restore old index
                     return
 
                 # Only maintain zoom state if not in fit-to-window mode
-                logger.info(f"[NAV_NEXT] Checking zoom state - fit_to_window: {self.fit_to_window}, "
-                           f"zoom_level: {self.current_zoom_level}, "
-                           f"zoom_center_point: {self.zoom_center_point}")
+                logger.info(
+                    f"[NAV_NEXT] Checking zoom state - fit_to_window: {self.fit_to_window}, "
+                    f"zoom_level: {self.current_zoom_level}, "
+                    f"zoom_center_point: {self.zoom_center_point}"
+                )
                 self._capture_nav_zoom_state_before_load()
 
                 # Load the current image (at new_index)
                 current_file = self.image_files[self.current_file_index]
                 load_start_time = time.time()
-                logger.info(f"[NAV_NEXT] Loading file at index {self.current_file_index}: {os.path.basename(current_file)}")
+                logger.info(
+                    f"[NAV_NEXT] Loading file at index {self.current_file_index}: {os.path.basename(current_file)}"
+                )
                 logger.debug(f"[NAV_NEXT] File path: {current_file}")
                 logger.debug(f"[NAV_NEXT] Time since nav start: {load_start_time - nav_start_time:.3f}s")
 
                 try:
                     self.load_raw_image(current_file)
                     load_end_time = time.time()
-                    logger.info(f"[NAV_NEXT] Successfully called load_raw_image for: {os.path.basename(current_file)} "
-                               f"(took {load_end_time - load_start_time:.3f}s)")
+                    logger.info(
+                        f"[NAV_NEXT] Successfully called load_raw_image for: {os.path.basename(current_file)} "
+                        f"(took {load_end_time - load_start_time:.3f}s)"
+                    )
                 except Exception as load_error:
                     load_end_time = time.time()
-                    logger.error(f"[NAV_NEXT] ERROR in load_raw_image during navigation (took {load_end_time - load_start_time:.3f}s): "
-                               f"{load_error}", exc_info=True)
+                    logger.error(
+                        f"[NAV_NEXT] ERROR in load_raw_image during navigation (took {load_end_time - load_start_time:.3f}s): "
+                        f"{load_error}",
+                        exc_info=True,
+                    )
                     logger.error(f"[NAV_NEXT] Load error traceback:\n{traceback.format_exc()}")
                     # Restore previous index on error
                     self.current_file_index = old_index
@@ -782,14 +816,18 @@ class NavigationPart1:
             finally:
                 # Always mark navigation as finished (inner try)
                 inner_finally_time = time.time()
-                logger.debug(f"[NAV_NEXT] Inner finally block reached at {inner_finally_time:.3f} "
-                           f"(nav duration: {inner_finally_time - nav_start_time:.3f}s)")
+                logger.debug(
+                    f"[NAV_NEXT] Inner finally block reached at {inner_finally_time:.3f} "
+                    f"(nav duration: {inner_finally_time - nav_start_time:.3f}s)"
+                )
                 self.finish_navigation()
 
         except Exception as e:
             error_time = time.time()
-            logger.error(f"[NAV_NEXT] ========== EXCEPTION in navigate_to_next_image "
-                        f"(at {error_time:.3f}, duration: {error_time - nav_start_time:.3f}s) ==========")
+            logger.error(
+                f"[NAV_NEXT] ========== EXCEPTION in navigate_to_next_image "
+                f"(at {error_time:.3f}, duration: {error_time - nav_start_time:.3f}s) =========="
+            )
             logger.error(f"[NAV_NEXT] Exception type: {type(e).__name__}, message: {e}", exc_info=True)
             logger.error(f"[NAV_NEXT] Full traceback:\n{traceback.format_exc()}")
             # Ensure navigation is marked as finished even on error
@@ -801,16 +839,20 @@ class NavigationPart1:
         finally:
             # Additional safety: ensure navigation is always marked as finished (outer finally)
             outer_finally_time = time.time()
-            logger.debug(f"[NAV_NEXT] Outer finally block reached at {outer_finally_time:.3f} "
-                       f"(total duration: {outer_finally_time - nav_start_time:.3f}s)")
-            if hasattr(self, '_navigation_in_progress') and self._navigation_in_progress:
+            logger.debug(
+                f"[NAV_NEXT] Outer finally block reached at {outer_finally_time:.3f} "
+                f"(total duration: {outer_finally_time - nav_start_time:.3f}s)"
+            )
+            if hasattr(self, "_navigation_in_progress") and self._navigation_in_progress:
                 logger.warning("[NAV_NEXT] Navigation flag still True in outer finally, clearing it")
                 self.finish_navigation()
-            logger.info(f"[NAV_NEXT] ========== navigate_to_next_image() COMPLETED "
-                       f"(total duration: {outer_finally_time - nav_start_time:.3f}s) ==========")
+            logger.info(
+                f"[NAV_NEXT] ========== navigate_to_next_image() COMPLETED "
+                f"(total duration: {outer_finally_time - nav_start_time:.3f}s) =========="
+            )
 
     def delete_current_image(self):
-        if (not self.current_file_path or not os.path.exists(self.current_file_path)):
+        if not self.current_file_path or not os.path.exists(self.current_file_path):
             self.show_error("Delete Error", "No image file to delete.")
             return
         self._stop_slideshow()
@@ -827,7 +869,7 @@ class NavigationPart1:
                 # Save current scroll position instead of start_scroll_x/y
                 try:
                     # Ensure scroll_area exists and is valid before accessing
-                    if hasattr(self, 'scroll_area') and self.scroll_area is not None:
+                    if hasattr(self, "scroll_area") and self.scroll_area is not None:
                         h_scroll = self.scroll_area.horizontalScrollBar()
                         v_scroll = self.scroll_area.verticalScrollBar()
                         if h_scroll is not None and v_scroll is not None:
@@ -841,14 +883,15 @@ class NavigationPart1:
                         self._restore_start_scroll_y = 0
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.warning(f"Error getting scroll position in delete_current_image: {e}", exc_info=True)
                     self._restore_start_scroll_x = 0
                     self._restore_start_scroll_y = 0
             else:
                 self._preserve_nav_zoom_active = False
-                if hasattr(self, '_maintain_zoom_on_navigation'):
-                    delattr(self, '_maintain_zoom_on_navigation')
+                if hasattr(self, "_maintain_zoom_on_navigation"):
+                    delattr(self, "_maintain_zoom_on_navigation")
                 self._restore_zoom_center = None
                 self._restore_zoom_level = None
                 self._restore_start_scroll_x = None
@@ -861,9 +904,7 @@ class NavigationPart1:
         if not self.image_files:
             # Semantic / gallery search narrows ``image_files``; discarding the last hit yields an
             # empty list while the folder may still contain other files -- restore corpus + gallery.
-            had_semantic_scope = bool(
-                self._semantic_search_backup_files or self._semantic_search_corpus_files
-            )
+            had_semantic_scope = bool(self._semantic_search_backup_files or self._semantic_search_corpus_files)
             if had_semantic_scope:
                 self._clear_semantic_search_results(silent=True, exit_to_gallery=True)
                 inp = getattr(self, "gallery_search_input", None)
@@ -883,15 +924,12 @@ class NavigationPart1:
             self.current_file_index = -1
             self.current_pixmap = None
             self._sync_single_image_histogram()
-            self.image_label.setText(
-                "No more images in this folder\n\n"
-                "Use File > Open to load another image"
-            )
+            self.image_label.setText("No more images in this folder\n\nUse File > Open to load another image")
             self.status_bar.showMessage("No images remaining in folder")
-            self.setWindowTitle('RAWviewer')
+            self.setWindowTitle("RAWviewer")
             # Update custom title bar
-            if hasattr(self, 'title_bar') and self.title_bar is not None:
-                self.title_bar.set_title('RAWviewer')
+            if hasattr(self, "title_bar") and self.title_bar is not None:
+                self.title_bar.set_title("RAWviewer")
             self.update_status_bar()
             return
 

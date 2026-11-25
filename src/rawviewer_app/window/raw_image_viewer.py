@@ -1,5 +1,4 @@
 """Main application window, assembled from semantic mixins."""
-from __future__ import annotations
 
 from typing import Any
 

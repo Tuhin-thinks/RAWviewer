@@ -1,7 +1,5 @@
 """Shared types for semantic search."""
 
-from __future__ import annotations
-
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -33,6 +31,7 @@ class SearchHit:
     country: str = ""
     country_code: str = ""
     face_count: int = 0
+
 
 # Re-export for convenience
 __all__ = [

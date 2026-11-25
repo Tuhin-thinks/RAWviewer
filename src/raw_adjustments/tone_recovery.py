@@ -1,7 +1,5 @@
 """RAW-only shadow / highlight recovery for single-view preview (P key)."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os
@@ -9,6 +7,10 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
+
+from raw_adjustments.shared import (  # moved (P2b); re-exported
+    _luminance,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +32,6 @@ _HARD_CLIP_SPREAD = 0.025
 _EDR_PEAK_DISPLAY = 4.0
 
 
-def _luminance(rgb_f: np.ndarray) -> np.ndarray:
-    return (
-        0.2126 * rgb_f[:, :, 0]
-        + 0.7152 * rgb_f[:, :, 1]
-        + 0.0722 * rgb_f[:, :, 2]
-    )
 
 
 def _to_float01(rgb: np.ndarray) -> np.ndarray:
@@ -55,9 +51,7 @@ def _highlight_reconstruct_mode():
         return rawpy.HighlightMode.ReconstructDefault
 
 
-def edit_base_decode_params(
-    *, half_size: bool = True, demosaic: str | None = None, for_file: str | None = None
-):
+def edit_base_decode_params(*, half_size: bool = True, demosaic: str | None = None, for_file: str | None = None):
     """Scene-linear 16-bit decode for the Adjust-panel edit base.
 
     Unlike :func:`recovery_decode_params` (P-key recovery / EDR), this keeps
@@ -71,35 +65,33 @@ def edit_base_decode_params(
     import rawpy
 
     params = {
-        'use_camera_wb': True,
-        'use_auto_wb': False,
-        'output_bps': 16,
-        'gamma': (1, 1),
-        'no_auto_bright': True,
-        'bright': 1.0,
-        'user_flip': 0,
-        'half_size': half_size,
-        'highlight_mode': rawpy.HighlightMode.Blend,
+        "use_camera_wb": True,
+        "use_auto_wb": False,
+        "output_bps": 16,
+        "gamma": (1, 1),
+        "no_auto_bright": True,
+        "bright": 1.0,
+        "user_flip": 0,
+        "half_size": half_size,
+        "highlight_mode": rawpy.HighlightMode.Blend,
     }
     if demosaic:
         with contextlib.suppress(AttributeError, TypeError):
-            params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
+            params["demosaic_algorithm"] = getattr(rawpy.DemosaicAlgorithm, demosaic)
     if for_file:
         try:
-            from processing.raw_decode.fast import get_corrected_camera_wb
+            from processing.raw_decode.camera_wb import get_corrected_camera_wb
 
             corrected = get_corrected_camera_wb(for_file)
             if corrected:
-                params['use_camera_wb'] = False
-                params['user_wb'] = list(corrected)
+                params["use_camera_wb"] = False
+                params["user_wb"] = list(corrected)
         except Exception:
             pass
     return params
 
 
-def recovery_decode_params(
-    *, half_size: bool = True, demosaic: str | None = None, for_file: str | None = None
-):
+def recovery_decode_params(*, half_size: bool = True, demosaic: str | None = None, for_file: str | None = None):
     """Linear 16-bit decode with LibRaw highlight reconstruction.
 
     ``for_file``: when given, applies that file's embedded-JPEG WB sanity
@@ -110,29 +102,29 @@ def recovery_decode_params(
     import rawpy
 
     params = {
-        'use_camera_wb': True,
-        'use_auto_wb': False,
-        'output_bps': 16,
-        'gamma': (1, 1),
-        'no_auto_bright': True,
-        'bright': 1.0,
-        'user_flip': 0,
-        'half_size': half_size,
-        'highlight_mode': _highlight_reconstruct_mode(),
-        'exp_shift': 1.0,
-        'exp_preserve_highlights': 0.45,
+        "use_camera_wb": True,
+        "use_auto_wb": False,
+        "output_bps": 16,
+        "gamma": (1, 1),
+        "no_auto_bright": True,
+        "bright": 1.0,
+        "user_flip": 0,
+        "half_size": half_size,
+        "highlight_mode": _highlight_reconstruct_mode(),
+        "exp_shift": 1.0,
+        "exp_preserve_highlights": 0.45,
     }
     if demosaic:
         with contextlib.suppress(AttributeError, TypeError):
-            params['demosaic_algorithm'] = getattr(rawpy.DemosaicAlgorithm, demosaic)
+            params["demosaic_algorithm"] = getattr(rawpy.DemosaicAlgorithm, demosaic)
     if for_file:
         try:
-            from processing.raw_decode.fast import get_corrected_camera_wb
+            from processing.raw_decode.camera_wb import get_corrected_camera_wb
 
             corrected = get_corrected_camera_wb(for_file)
             if corrected:
-                params['use_camera_wb'] = False
-                params['user_wb'] = list(corrected)
+                params["use_camera_wb"] = False
+                params["user_wb"] = list(corrected)
         except Exception:
             pass
     return params
@@ -173,9 +165,7 @@ def linear_tone_map_to_display(rgb_lin: np.ndarray) -> np.ndarray:
     """
     rgb = np.clip(rgb_lin.astype(np.float32), 0.0, None)
     lum = _luminance(rgb)
-    rgb = rgb * _exposure_anchor_scale(
-        lum, percentile=_EXPOSURE_ANCHOR_PCT, target=_EXPOSURE_ANCHOR_TARGET
-    )
+    rgb = rgb * _exposure_anchor_scale(lum, percentile=_EXPOSURE_ANCHOR_PCT, target=_EXPOSURE_ANCHOR_TARGET)
 
     lum = _luminance(rgb)
     lum_mapped = lum / (1.0 + lum)
@@ -208,9 +198,7 @@ def linear_tone_map_to_edr(
     peak_display = max(float(peak_display), 1.01)
     rgb = np.clip(rgb_lin.astype(np.float32), 0.0, None)
     lum = _luminance(rgb)
-    rgb = rgb * _exposure_anchor_scale(
-        lum, percentile=_EXPOSURE_ANCHOR_PCT, target=_EXPOSURE_ANCHOR_TARGET
-    )
+    rgb = rgb * _exposure_anchor_scale(lum, percentile=_EXPOSURE_ANCHOR_PCT, target=_EXPOSURE_ANCHOR_TARGET)
 
     lum = _luminance(rgb)
     sdr_part = lum / (1.0 + lum)
@@ -401,7 +389,7 @@ def decode_and_recover_raw(
     if not file_path or not os.path.isfile(file_path):
         return None
     try:
-        from enhanced_raw_processor import _rawpy_global_lock
+        from processing.raw_decode.gil import _rawpy_global_lock
 
         with _rawpy_global_lock, rawpy.imread(file_path) as raw:
             rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
@@ -439,7 +427,7 @@ def decode_raw_for_edr_rgb(
     if not file_path or not os.path.isfile(file_path):
         return None
     try:
-        from enhanced_raw_processor import _rawpy_global_lock
+        from processing.raw_decode.gil import _rawpy_global_lock
 
         with _rawpy_global_lock, rawpy.imread(file_path) as raw:
             rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))

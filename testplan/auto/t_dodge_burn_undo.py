@@ -6,6 +6,7 @@ which re-serialized the still-current painted mask. The previous mask
 lives in old_adj[MASK_KEY] and must be deserialized into
 RAWImageViewer._dodge_burn_mask before the XMP write.
 """
+
 import os
 import sys
 
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -24,17 +25,18 @@ def main() -> int:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
-    import main as mainmod
     from raw_dodge_burn import MASK_KEY, DodgeBurnMask, serialize_mask, stamp_brush
 
+    import main as mainmod
+
     class FakePanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.mask_present_calls = []
 
-        def set_dodge_burn_mask_present(self, present):
+        def set_dodge_burn_mask_present(self, present) -> None:
             self.mask_present_calls.append(present)
 
-        def dodge_burn_show_mask(self):
+        def dodge_burn_show_mask(self) -> bool:
             return False
 
     def make_mock(*, mask):
@@ -45,12 +47,8 @@ def main() -> int:
         m._dodge_burn_mask_shape_cached = (1, 1)
         m.single_image_adjust_panel = FakePanel()
         m.gpu_view = None
-        m._apply_dodge_burn_mask_from_adj = (
-            mainmod.RAWImageViewer._apply_dodge_burn_mask_from_adj.__get__(m)
-        )
-        m._sync_dodge_burn_mask_overlay = (
-            mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
-        )
+        m._apply_dodge_burn_mask_from_adj = mainmod.RAWImageViewer._apply_dodge_burn_mask_from_adj.__get__(m)
+        m._sync_dodge_burn_mask_overlay = mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
         return m
 
     # 1. Undo to a previous painted mask restores that buffer.
@@ -68,8 +66,7 @@ def main() -> int:
     check("undo restores a non-None mask", restored is not None)
     check(
         "restored mask matches previous paint",
-        restored is not None
-        and serialize_mask(restored) == prev_serial,
+        restored is not None and serialize_mask(restored) == prev_serial,
     )
     check("luma guide cache cleared", m._dodge_burn_luma_guide is None)
     check(
@@ -93,8 +90,7 @@ def main() -> int:
     check(
         "undo calls _apply_dodge_burn_mask_from_adj before editing_finished",
         "_apply_dodge_burn_mask_from_adj" in undo_src
-        and undo_src.find("_apply_dodge_burn_mask_from_adj")
-        < undo_src.find("_on_adjust_panel_editing_finished"),
+        and undo_src.find("_apply_dodge_burn_mask_from_adj") < undo_src.find("_on_adjust_panel_editing_finished"),
     )
 
     print(f"\n{len(FAILURES)} failure(s)")

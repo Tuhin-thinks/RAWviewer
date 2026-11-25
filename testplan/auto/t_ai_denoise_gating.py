@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Plus AI denoise: edition gate, platform model preference, export flag plumbing."""
-from __future__ import annotations
 
 import os
 import sys
@@ -10,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -18,7 +17,6 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     import numpy as np
-
     from onnx_scunet import _preferred_model_name, scunet_model_path
     from raw_edit_pipeline import process_linear_edit_buffer
     from rawviewer_profile import ai_export_enabled, is_lite_build
@@ -57,9 +55,7 @@ def main() -> int:
     prev_env = os.environ.get("RAWVIEWER_EXPORT_SCUNET_ONNX")
     try:
         os.environ["RAWVIEWER_EXPORT_SCUNET_ONNX"] = "0"
-        out = process_linear_edit_buffer(
-            img, {"Exposure2012": 0.25}, preview=False, use_ai_denoise=True
-        )
+        out = process_linear_edit_buffer(img, {"Exposure2012": 0.25}, preview=False, use_ai_denoise=True)
         check(
             "use_ai_denoise with ONNX disabled still returns an image",
             out is not None and out.shape == img.shape,

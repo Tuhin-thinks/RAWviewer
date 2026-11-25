@@ -1,7 +1,5 @@
 """Runtime helpers: process pools, GPU limits, volume speed probes, EDR toggles."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import threading
@@ -12,6 +10,8 @@ from .helpers import io_pressure_active
 _volume_speed_cache: dict[str, float] = {}
 _volume_speed_lock = threading.Lock()
 _VOLUME_SPEED_CACHE_CEILING_MBPS = 3000.0
+
+
 def use_progressive_raw_loading() -> bool:
     """
     When True, show embedded preview/thumbnail first and upgrade to LibRaw half-res in
@@ -23,11 +23,15 @@ def use_progressive_raw_loading() -> bool:
     if v in ("0", "false", "no", "off"):
         return False
     return v in ("1", "true", "yes", "on")
+
+
 def pil_downscale_resample():
     """CPU downscale filter for thumbnails ΓÇö HAMMING is faster than LANCZOS for shrink."""
     from PIL import Image
 
     return Image.Resampling.HAMMING
+
+
 def metadata_index_idle_delay_ms() -> int:
     """Idle delay after first single-view paint before background metadata indexing starts."""
     raw = os.environ.get("RAWVIEWER_AUTO_METADATA_INDEX_IDLE_MS", "5000").strip()
@@ -35,6 +39,8 @@ def metadata_index_idle_delay_ms() -> int:
         return max(0, int(raw))
     except ValueError:
         return 5000
+
+
 def use_raw_process_pool() -> bool:
     """
     Offload LibRaw postprocess to a process pool (multi-core). Opt-out with
@@ -61,9 +67,7 @@ def use_raw_process_pool() -> bool:
             return not (getattr(_sys, "frozen", False) and not process_pool_python_executable())
         return False
 
-    raw = os.environ.get("RAWVIEWER_USE_PROCESS_POOL") or os.environ.get(
-        "SKYSPOTTER_USE_PROCESS_POOL", ""
-    )
+    raw = os.environ.get("RAWVIEWER_USE_PROCESS_POOL") or os.environ.get("SKYSPOTTER_USE_PROCESS_POOL", "")
     raw = raw.strip().lower()
     if raw in ("0", "false", "no", "off"):
         return False
@@ -81,9 +85,13 @@ def use_raw_process_pool() -> bool:
     if _gpu_demosaic_backend_in_use():
         return False
     return (_os.cpu_count() or 0) >= 4
+
+
 def process_pool_python_executable() -> str:
     """Optional plain-Python interpreter for ProcessPool workers (macOS .app safe)."""
     return (os.environ.get("RAWVIEWER_PROCESS_POOL_PYTHON") or "").strip()
+
+
 def process_pool_mp_context():
     """Spawn context; retarget executable when RAWVIEWER_PROCESS_POOL_PYTHON is set."""
     import multiprocessing as mp
@@ -94,6 +102,8 @@ def process_pool_mp_context():
         with contextlib.suppress(Exception):
             ctx.set_executable(helper)
     return ctx
+
+
 def _gpu_demosaic_backend_available() -> bool:
     """True when gpu_raw_processor is loaded and reports a non-CPU backend."""
     try:
@@ -106,6 +116,8 @@ def _gpu_demosaic_backend_available() -> bool:
         return backend in ("pytorch_cuda", "pytorch_mps", "cupy")
     except Exception:
         return False
+
+
 def _gpu_demosaic_backend_in_use() -> bool:
     """True when a GPU backend is available AND GPU decode is actually enabled.
 
@@ -131,6 +143,8 @@ def _gpu_demosaic_backend_in_use() -> bool:
         return prefer_gpu_decode_enabled()
     except Exception:
         return False
+
+
 def raw_load_limit_aligned_to_gpu(base_limit: int) -> int:
     """Cap concurrent heavy RAW work to GPU demosaic concurrency when active."""
     limit = max(1, int(base_limit or 1))
@@ -146,6 +160,8 @@ def raw_load_limit_aligned_to_gpu(base_limit: int) -> int:
         return max(1, min(limit, gpu_n))
     except Exception:
         return limit
+
+
 def _env_int_bounded(name: str, default: int, *, minimum: int = 1, maximum: int = 64) -> int:
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -154,6 +170,8 @@ def _env_int_bounded(name: str, default: int, *, minimum: int = 1, maximum: int 
         return max(minimum, min(maximum, int(raw)))
     except ValueError:
         return default
+
+
 def _windows_drive_type(path: str) -> int | None:
     """Windows GetDriveTypeW for the volume containing *path* (None if unavailable)."""
     if os.name != "nt":
@@ -167,6 +185,8 @@ def _windows_drive_type(path: str) -> int | None:
         return int(ctypes.windll.kernel32.GetDriveTypeW(norm[:2] + "\\"))
     except Exception:
         return None
+
+
 def is_slow_storage_path(path: str) -> bool:
     """
     Heuristic for paths where aggressive parallel reads hurt more than help
@@ -189,12 +209,16 @@ def is_slow_storage_path(path: str) -> bool:
         if drive_type in (4, 5):
             return True
     return False
+
+
 def _windows_system_drive() -> str:
     """Boot/system volume letter (e.g. ``C:``) for probe heuristics."""
     drive = os.environ.get("SYSTEMDRIVE", "C:").strip()
     if len(drive) >= 2 and drive[1] == ":":
         return drive[:2].upper()
     return "C:"
+
+
 def invalidate_volume_speed_cache(path: str | None) -> None:
     """Drop cached probe result for the volume containing *path* (e.g. before retry)."""
     root = _volume_root_for(path)
@@ -202,6 +226,8 @@ def invalidate_volume_speed_cache(path: str | None) -> None:
         return
     with _volume_speed_lock:
         _volume_speed_cache.pop(root, None)
+
+
 def record_volume_speed(path: str | None, mbps: float) -> None:
     """Store a probed throughput for the volume containing *path*."""
     root = _volume_root_for(path)
@@ -209,6 +235,8 @@ def record_volume_speed(path: str | None, mbps: float) -> None:
         return
     with _volume_speed_lock:
         _volume_speed_cache[root] = float(mbps)
+
+
 def _windows_drive_is_fixed_local(path: str | None) -> bool:
     """True for non-system fixed volumes (secondary SSD/NVMe) on Windows."""
     if not path or os.name != "nt":
@@ -220,6 +248,8 @@ def _windows_drive_is_fixed_local(path: str | None) -> bool:
     if letter == _windows_system_drive():
         return False
     return _windows_drive_type(norm) == 3
+
+
 def is_external_or_network_volume(path: str | None = None) -> bool:
     """True when *path* is on an external or network volume (not the boot fixed disk).
 
@@ -253,6 +283,8 @@ def is_external_or_network_volume(path: str | None = None) -> bool:
         if drive_type == 3 and letter != _windows_system_drive():
             return True
     return False
+
+
 def sort_probe_worker_count(
     sample_path: str | None = None,
     *,
@@ -283,9 +315,7 @@ def sort_probe_worker_count(
     if conservative:
         cons = os.environ.get("RAWVIEWER_SORT_PROBE_WORKERS_CONSERVATIVE", "").strip()
         if cons:
-            return _env_int_bounded(
-                "RAWVIEWER_SORT_PROBE_WORKERS_CONSERVATIVE", 3, minimum=1, maximum=8
-            )
+            return _env_int_bounded("RAWVIEWER_SORT_PROBE_WORKERS_CONSERVATIVE", 3, minimum=1, maximum=8)
         return min(6, max(2, cpu // 2))
 
     if sample_path and is_slow_storage_path(sample_path):
@@ -294,6 +324,8 @@ def sort_probe_worker_count(
 
     # Local SSD/NVMe: I/O-bound header reads; scale past 3 workers (old hard cap under-used CPU).
     return min(12, max(4, cpu - 1))
+
+
 def index_metadata_worker_count(total_files: int, sample_path: str | None = None) -> int:
     """
     Parallel metadata extraction during semantic index build.
@@ -315,16 +347,14 @@ def index_metadata_worker_count(total_files: int, sample_path: str | None = None
     if sample_path is not None:
         try:
             if volume_speed_tier(sample_path) == "slow":
-                count = min(count, _env_int_bounded(
-                    "RAWVIEWER_SLOW_VOLUME_INDEX_WORKERS", 2, minimum=1, maximum=8
-                ))
+                count = min(count, _env_int_bounded("RAWVIEWER_SLOW_VOLUME_INDEX_WORKERS", 2, minimum=1, maximum=8))
             elif is_external_or_network_volume(sample_path):
-                count = min(count, _env_int_bounded(
-                    "RAWVIEWER_EXTERNAL_VOLUME_INDEX_WORKERS", 4, minimum=1, maximum=8
-                ))
+                count = min(count, _env_int_bounded("RAWVIEWER_EXTERNAL_VOLUME_INDEX_WORKERS", 4, minimum=1, maximum=8))
         except Exception:
             pass
     return count
+
+
 def _volume_root_for(path: str | None) -> str | None:
     """Stable cache key for the volume/mount that contains *path*."""
     if not path:
@@ -344,6 +374,8 @@ def _volume_root_for(path: str | None) -> str | None:
     if drive:
         return drive + os.sep
     return os.sep
+
+
 def _measure_read_mbps(
     path: str | None,
     sample_bytes: int,
@@ -389,6 +421,8 @@ def _measure_read_mbps(
     except Exception:
         return None
     return None
+
+
 def probe_volume_speed(
     sample_path: str | None,
     *,
@@ -425,6 +459,8 @@ def probe_volume_speed(
     with _volume_speed_lock:
         _volume_speed_cache[root] = mbps if mbps is not None else -1.0
     return mbps
+
+
 def volume_speed_tier(sample_path: str | None) -> str:
     """Classify a probed volume as ``"fast"``, ``"slow"`` or ``"unknown"``.
 
@@ -441,12 +477,12 @@ def volume_speed_tier(sample_path: str | None) -> str:
     if cached is None or cached < 0:
         return "unknown"
     try:
-        slow_threshold = float(
-            os.environ.get("RAWVIEWER_VOLUME_SLOW_MBPS", "").strip() or 120.0
-        )
+        slow_threshold = float(os.environ.get("RAWVIEWER_VOLUME_SLOW_MBPS", "").strip() or 120.0)
     except ValueError:
         slow_threshold = 120.0
     return "slow" if cached < slow_threshold else "fast"
+
+
 def moderate_external_cap_enabled() -> bool:
     """Whether fast (not just confirmed-slow) external volumes get a moderate cap.
 
@@ -464,6 +500,8 @@ def moderate_external_cap_enabled() -> bool:
     if raw in ("0", "false", "no", "off"):
         return False
     return sys.platform == "win32"
+
+
 def raw_concurrent_load_limit(sample_path: str | None = None) -> int:
     """Max concurrent LibRaw full/preview decodes in ImageLoadManager.
 
@@ -475,29 +513,24 @@ def raw_concurrent_load_limit(sample_path: str | None = None) -> int:
     """
     cpu = os.cpu_count() or 4
     default = max(4, cpu)
-    limit = _env_int_bounded(
-        "RAWVIEWER_RAW_LOAD_LIMIT", default, minimum=1, maximum=32
-    )
+    limit = _env_int_bounded("RAWVIEWER_RAW_LOAD_LIMIT", default, minimum=1, maximum=32)
 
     if not os.environ.get("RAWVIEWER_RAW_LOAD_LIMIT", "").strip() and is_external_or_network_volume(sample_path):
         if volume_speed_tier(sample_path) == "slow":
             limit = min(
                 limit,
-                _env_int_bounded(
-                    "RAWVIEWER_SLOW_VOLUME_RAW_LIMIT", 3, minimum=1, maximum=8
-                ),
+                _env_int_bounded("RAWVIEWER_SLOW_VOLUME_RAW_LIMIT", 3, minimum=1, maximum=8),
             )
         elif moderate_external_cap_enabled():
             limit = min(
                 limit,
-                _env_int_bounded(
-                    "RAWVIEWER_EXTERNAL_VOLUME_RAW_LIMIT", 8, minimum=1, maximum=32
-                ),
+                _env_int_bounded("RAWVIEWER_EXTERNAL_VOLUME_RAW_LIMIT", 8, minimum=1, maximum=32),
             )
     return raw_load_limit_aligned_to_gpu(limit)
+
+
 def process_pool_worker_count() -> int:
     """LibRaw postprocess process-pool size when RAWVIEWER_USE_PROCESS_POOL is on."""
     cpu = os.cpu_count() or 4
     default = max(2, cpu - 1)
     return _env_int_bounded("RAWVIEWER_PROCESS_POOL_WORKERS", default, minimum=1, maximum=32)
-

@@ -1,5 +1,4 @@
 """gallery mixin, part 5 of 5 (3 methods, 236 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -40,9 +39,7 @@ class GalleryPart5:
 
             def run(self_inner):
                 try:
-                    folder_hint = (
-                        os.path.dirname(os.path.abspath(paths[0])) if paths else None
-                    )
+                    folder_hint = os.path.dirname(os.path.abspath(paths[0])) if paths else None
                     # Refinement only reorders image_files; it does not need the
                     # full per-file EXIF blob (the gallery fetches that lazily on
                     # first open). Reading capture_time-only keeps this background
@@ -72,6 +69,7 @@ class GalleryPart5:
                     if fallback:
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
                                 self_inner.signals.ready.emit(token, fallback, {})
                         except Exception:
@@ -80,6 +78,7 @@ class GalleryPart5:
 
                 try:
                     from PyQt6 import sip
+
                     if not sip.isdeleted(self_inner.signals):
                         self_inner.signals.ready.emit(token, sorted_files, bulk_metadata)
                 except Exception:
@@ -95,9 +94,7 @@ class GalleryPart5:
                 len(paths),
             )
             if hasattr(viewer, "status_bar") and viewer.status_bar:
-                viewer.status_bar.showMessage(
-                    "Sorting folder by capture time…", 0
-                )
+                viewer.status_bar.showMessage("Sorting folder by capture time…", 0)
             _get_bg_thread_pool().start(_FolderSortRefineWorker())
 
         if getattr(self, "_folder_fast_open_token", None) == token:
@@ -179,10 +176,7 @@ class GalleryPart5:
         meta = bulk_metadata
         if meta is None:
             meta = getattr(self, "_gallery_bulk_metadata", None) or {}
-        if (
-            getattr(self, "view_mode", "") == "gallery"
-            and getattr(self, "_gallery_bookmark_filter_active", False)
-        ):
+        if getattr(self, "view_mode", "") == "gallery" and getattr(self, "_gallery_bookmark_filter_active", False):
             files = self._gallery_files_for_display()
         else:
             files = list(self.image_files)
@@ -208,19 +202,11 @@ class GalleryPart5:
         # In gallery mode, prefer the open file / explicit anchor -- not scroll=0
         # (get_scroll_anchor_path() at y=0 is the first thumbnail, not the current image).
         anchor_state = None
-        anchor = (
-            scroll_anchor_path
-            or getattr(self, "_gallery_scroll_anchor_path", None)
-        )
+        anchor = scroll_anchor_path or getattr(self, "_gallery_scroll_anchor_path", None)
         if anchor is None and scroll_to_current:
             anchor = getattr(self, "current_file_path", None)
         # While already in gallery during a passive resort, keep viewport position.
-        if (
-            anchor is None
-            and getattr(self, "view_mode", "") == "gallery"
-            and gj
-            and not force
-        ):
+        if anchor is None and getattr(self, "view_mode", "") == "gallery" and gj and not force:
             anchor = gj.get_scroll_anchor_path()
         if gj is not None and hasattr(gj, "_capture_scroll_anchor_state"):
             try:

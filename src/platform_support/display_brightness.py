@@ -9,8 +9,6 @@ Never uses ``SetDeviceGammaRamp`` — that would distort colour management.
 Callers must restore any saved value when leaving Adjust.
 """
 
-from __future__ import annotations
-
 import contextlib
 import sys
 from typing import Any, Protocol
@@ -18,18 +16,15 @@ from typing import Any, Protocol
 _core_display = None
 _cg = None
 _mac_ready = False
-_active_backend: _BrightnessBackend | None = None
+_active_backend: "_BrightnessBackend | None" = None
 
 
 class _BrightnessBackend(Protocol):
-    def get(self) -> float | None:
-        ...
+    def get(self) -> float | None: ...
 
-    def set(self, value: float) -> bool:
-        ...
+    def set(self, value: float) -> bool: ...
 
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
 
 
 def _clamp01(value: float) -> float:
@@ -86,12 +81,8 @@ def _ensure_mac_loaded() -> bool:
     try:
         from ctypes import CDLL, c_double, c_uint32
 
-        _core_display = CDLL(
-            "/System/Library/Frameworks/CoreDisplay.framework/CoreDisplay"
-        )
-        _cg = CDLL(
-            "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"
-        )
+        _core_display = CDLL("/System/Library/Frameworks/CoreDisplay.framework/CoreDisplay")
+        _cg = CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
         _core_display.CoreDisplay_Display_GetUserBrightness.argtypes = [c_uint32]
         _core_display.CoreDisplay_Display_GetUserBrightness.restype = c_double
         _core_display.CoreDisplay_Display_SetUserBrightness.argtypes = [
@@ -131,9 +122,7 @@ class _MacBackend:
         try:
             from ctypes import c_uint32
 
-            val = float(
-                _core_display.CoreDisplay_Display_GetUserBrightness(c_uint32(int(did)))
-            )
+            val = float(_core_display.CoreDisplay_Display_GetUserBrightness(c_uint32(int(did))))
             if val < 0.0 or val > 1.0:
                 return None
             return val
@@ -147,9 +136,7 @@ class _MacBackend:
         try:
             from ctypes import c_double, c_uint32
 
-            _core_display.CoreDisplay_Display_SetUserBrightness(
-                c_uint32(int(did)), c_double(_clamp01(value))
-            )
+            _core_display.CoreDisplay_Display_SetUserBrightness(c_uint32(int(did)), c_double(_clamp01(value)))
             return True
         except Exception:
             return False
@@ -175,9 +162,7 @@ class _Dxva2Backend:
             mn = wintypes.DWORD()
             cur = wintypes.DWORD()
             mx = wintypes.DWORD()
-            if not dxva2.GetMonitorBrightness(
-                self._hphys, ctypes.byref(mn), ctypes.byref(cur), ctypes.byref(mx)
-            ):
+            if not dxva2.GetMonitorBrightness(self._hphys, ctypes.byref(mn), ctypes.byref(cur), ctypes.byref(mx)):
                 return None
             self._mn = int(mn.value)
             self._mx = int(mx.value)
@@ -397,9 +382,7 @@ def _try_dxva2(hwnd: int | None) -> _Dxva2Backend | None:
 
         for hmon in _win_hmonitors(hwnd):
             count = wintypes.DWORD()
-            if not dxva2.GetNumberOfPhysicalMonitorsFromHMONITOR(
-                hmon, ctypes.byref(count)
-            ):
+            if not dxva2.GetNumberOfPhysicalMonitorsFromHMONITOR(hmon, ctypes.byref(count)):
                 continue
             if int(count.value) <= 0:
                 continue
@@ -466,9 +449,7 @@ def _try_wmi() -> _WmiBackend | None:
         locator = comtypes.client.CreateObject("WbemScripting.SWbemLocator")
         svc = locator.ConnectServer(".", "root\\wmi")
         monitors = _iter_swbem(svc.ExecQuery("SELECT * FROM WmiMonitorBrightness"))
-        methods = _iter_swbem(
-            svc.ExecQuery("SELECT * FROM WmiMonitorBrightnessMethods")
-        )
+        methods = _iter_swbem(svc.ExecQuery("SELECT * FROM WmiMonitorBrightnessMethods"))
         if not monitors or not methods:
             return None
 
@@ -509,9 +490,7 @@ def _win_pick_backend(hwnd: int | None = None) -> _BrightnessBackend | None:
     return None
 
 
-def get_brightness(
-    display_id: int | None = None, hwnd: int | None = None
-) -> float | None:
+def get_brightness(display_id: int | None = None, hwnd: int | None = None) -> float | None:
     """Return current user brightness in 0..1, or None if unavailable."""
     if sys.platform == "darwin":
         if not _ensure_mac_loaded():

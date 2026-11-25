@@ -1,6 +1,4 @@
-
 """batch mixin, part 1 of 1 (15 methods, 669 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -42,9 +40,7 @@ class BatchPart1:
         """Top-bar Export…: pre-export dialog, then a serial off-thread batch run."""
         if self._any_batch_op_in_progress():
             if hasattr(self, "status_bar"):
-                self.status_bar.showMessage(
-                    "A batch operation is already running", 3500
-                )
+                self.status_bar.showMessage("A batch operation is already running", 3500)
             return
         paths = self._gallery_selected_canonical_paths()
         if not paths:
@@ -55,17 +51,14 @@ class BatchPart1:
 
         from rawviewer_app.core.widgets import BatchExportDialog, _norm_dir_key
 
-        source_dir_keys = {
-            _norm_dir_key(os.path.dirname(os.path.abspath(p))) for p in paths
-        }
+        source_dir_keys = {_norm_dir_key(os.path.dirname(os.path.abspath(p))) for p in paths}
         dlg = BatchExportDialog(
             parent=self,
             count=len(paths),
             source_dir_keys=source_dir_keys,
             writable_check=self._directory_looks_writable,
         )
-        dlg.pick_directory = (
-            lambda title="Choose Destination Folder", start=None:  # noqa: B008
+        dlg.pick_directory = lambda title="Choose Destination Folder", start=None: (  # noqa: B008
             self._pick_directory_dialog(title, start or dlg.destination_edit.text())
         )
         dlg.exec()
@@ -88,7 +81,10 @@ class BatchPart1:
             self._start_batch_op("copy", paths, cfg["destination"], cfg["reveal"])
         else:
             self._start_batch_op(
-                "edited", paths, cfg["destination"], cfg["reveal"],
+                "edited",
+                paths,
+                cfg["destination"],
+                cfg["reveal"],
                 export_format=cfg["format"],
                 use_ai_denoise=bool(cfg.get("ai_denoise")),
                 ai_amount=ai_amount,
@@ -122,13 +118,18 @@ class BatchPart1:
         signals = BatchFileOpSignals()
         signals.progress.connect(self._on_batch_op_progress)
         signals.finished.connect(
-            lambda done, failed, cancelled, detail, k=kind, d=dest_dir:
-            self._on_batch_op_finished(done, failed, cancelled, detail, k, d, reveal)
+            lambda done, failed, cancelled, detail, k=kind, d=dest_dir: self._on_batch_op_finished(
+                done, failed, cancelled, detail, k, d, reveal
+            )
         )
         if kind == "edited":
             pool = getattr(getattr(self, "image_manager", None), "_process_pool", None)
             worker = BatchExportWorker(
-                paths, dest_dir, export_format, pool, signals=signals,
+                paths,
+                dest_dir,
+                export_format,
+                pool,
+                signals=signals,
                 use_ai_denoise=use_ai_denoise,
                 ai_amount=ai_amount,
             )
@@ -201,7 +202,9 @@ class BatchPart1:
         self._batch_op_worker = None
         self._close_batch_progress_dialog()
         verb = {
-            "copy": "Copied", "trash": "Deleted", "discard": "Discarded",
+            "copy": "Copied",
+            "trash": "Deleted",
+            "discard": "Discarded",
             "edited": "Exported",
         }.get(kind, "Processed")
         if kind in ("trash", "discard"):
@@ -265,9 +268,7 @@ class BatchPart1:
             if failed:
                 msg += f" ({failed} failed)"
             self.status_bar.showMessage(msg, 5000)
-        self._after_gallery_bulk_file_removal(
-            anchor_path=getattr(self, "_batch_removal_anchor", None)
-        )
+        self._after_gallery_bulk_file_removal(anchor_path=getattr(self, "_batch_removal_anchor", None))
         self._batch_removal_anchor = None
         self.schedule_save_session_state()
         if failed:
@@ -311,10 +312,7 @@ class BatchPart1:
                     "(camera cards / network shares are often read-only)."
                 )
         if os.path.exists(output_path) and not os.access(output_path, os.W_OK):
-            return (
-                f"Cannot overwrite (permission denied):\n{output_path}\n\n"
-                "Pick another name or folder."
-            )
+            return f"Cannot overwrite (permission denied):\n{output_path}\n\nPick another name or folder."
         if not self._directory_looks_writable(parent):
             return (
                 f"Cannot write to this folder (permission denied or read-only volume):\n"
@@ -342,9 +340,7 @@ class BatchPart1:
         self._display_pixmap_converter = None
         self._pending_display_pixmap_context = None
 
-    def _on_adjust_panel_export_requested(
-        self, export_format: str, adj: dict, use_ai_denoise: bool = False
-    ) -> None:
+    def _on_adjust_panel_export_requested(self, export_format: str, adj: dict, use_ai_denoise: bool = False) -> None:
         logger = logging.getLogger(__name__)
         path = getattr(self, "current_file_path", None)
         if not path:
@@ -361,7 +357,9 @@ class BatchPart1:
             return
         logger.info(
             "[EXPORT] Requested format=%s for %s (ai_denoise=%s)",
-            export_format, os.path.basename(path), use_ai_denoise,
+            export_format,
+            os.path.basename(path),
+            use_ai_denoise,
         )
         from PyQt6.QtWidgets import QFileDialog
 
@@ -389,10 +387,7 @@ class BatchPart1:
         nn_suffix = " + AI denoise" if use_ai_denoise else ""
         if use_ai_denoise:
             with contextlib.suppress(TypeError, ValueError, AttributeError):
-                nn_suffix = (
-                    " + AI denoise "
-                    f"{int(round(float(adj.get('AIDenoiseAmount', 100.0))))}%"
-                )
+                nn_suffix = f" + AI denoise {int(round(float(adj.get('AIDenoiseAmount', 100.0))))}%"
         if fmt == EXPORT_FORMAT_JPEG:
             default_name = f"{base}_edited.jpg"
             dialog_title = "Export JPEG" + nn_suffix
@@ -429,9 +424,7 @@ class BatchPart1:
                     options=QFileDialog.Option.DontUseNativeDialog,
                 )
             elif sys.platform == "darwin":
-                output_path = self._save_file_dialog_macos_native(
-                    start_dir, default_name, dialog_title, file_types
-                )
+                output_path = self._save_file_dialog_macos_native(start_dir, default_name, dialog_title, file_types)
             else:
                 self._prepare_for_modal_dialog()
                 output_path, _ = QFileDialog.getSaveFileName(
@@ -446,8 +439,8 @@ class BatchPart1:
             return
 
         if os.environ.get("RAWVIEWER_DEBUG", "").strip() == "1":
-            backend = "qt" if self._use_qt_file_dialog() else (
-                "macos-native" if sys.platform == "darwin" else "qfiledialog"
+            backend = (
+                "qt" if self._use_qt_file_dialog() else ("macos-native" if sys.platform == "darwin" else "qfiledialog")
             )
             logger.info("[EXPORT] Save dialog done (backend=%s, selected=%r)", backend, output_path or "")
 
@@ -477,9 +470,7 @@ class BatchPart1:
         if panel is not None and hasattr(panel, "set_export_enabled"):
             panel.set_export_enabled(False)
         if hasattr(self, "status_bar"):
-            self.status_bar.showMessage(
-                f"Exporting {os.path.basename(output_path)}…", 0
-            )
+            self.status_bar.showMessage(f"Exporting {os.path.basename(output_path)}…", 0)
         # adj comes straight from the panel's export_requested signal, which
         # (like every other adjustments snapshot) has no knowledge of the
         # dodge/burn / heal masks -- without this, exported files would
@@ -527,9 +518,7 @@ class BatchPart1:
         try:
             from rawviewer_app.core.widgets import TaskProgressDialog
 
-            dlg = TaskProgressDialog(
-                self, title="Export", message=f"Exporting {os.path.basename(output_path)}…"
-            )
+            dlg = TaskProgressDialog(self, title="Export", message=f"Exporting {os.path.basename(output_path)}…")
             dlg.canceled.connect(worker.cancel_event.set)
             self._adjust_export_dialog = dlg
             self._adjust_export_dialog_path = path
@@ -538,9 +527,7 @@ class BatchPart1:
             # been running for a moment.
             QTimer.singleShot(
                 300,
-                lambda d=dlg: d.show()
-                if getattr(self, "_adjust_export_dialog", None) is d
-                else None,
+                lambda d=dlg: d.show() if getattr(self, "_adjust_export_dialog", None) is d else None,
             )
         except Exception:
             self._adjust_export_dialog = None
@@ -549,9 +536,7 @@ class BatchPart1:
 
     def _on_adjust_export_progress(self, source_path: str, percent: int, stage: str) -> None:
         dlg = getattr(self, "_adjust_export_dialog", None)
-        if dlg is None or _norm_path(source_path) != _norm_path(
-            getattr(self, "_adjust_export_dialog_path", "") or ""
-        ):
+        if dlg is None or _norm_path(source_path) != _norm_path(getattr(self, "_adjust_export_dialog_path", "") or ""):
             return
         try:
             dlg.set_progress(percent)
@@ -590,9 +575,7 @@ class BatchPart1:
         panel = getattr(self, "single_image_adjust_panel", None)
         if panel is not None and hasattr(panel, "set_export_enabled"):
             panel.set_export_enabled(True)
-        if _norm_path(source_path) != _norm_path(
-            getattr(self, "current_file_path", "") or ""
-        ):
+        if _norm_path(source_path) != _norm_path(getattr(self, "current_file_path", "") or ""):
             # User navigated to a different image while this export was still
             # running in the background. The status bar now belongs to that
             # other image, so we don't overwrite it -- but the user who
@@ -618,8 +601,7 @@ class BatchPart1:
                             self.show_error("Export failed", f"{name}: {msg}")
                 else:
                     self.status_bar.showMessage(
-                        f"Exported {name} to {os.path.basename(output_path)}"
-                        " (while viewing another image)",
+                        f"Exported {name} to {os.path.basename(output_path)} (while viewing another image)",
                         7000,
                     )
                     self.register_new_file(output_path)
@@ -640,13 +622,8 @@ class BatchPart1:
                     "The export folder may be read-only (SD card / camera volume / "
                     "network share). Choose Desktop, Pictures, or Downloads and try again."
                 )
-            elif isinstance(err, PermissionError) or (
-                isinstance(err, OSError) and "Permission" in msg
-            ):
-                msg = (
-                    f"{msg}\n\n"
-                    "Choose a writable folder (Desktop, Pictures, or Downloads) and try again."
-                )
+            elif isinstance(err, PermissionError) or (isinstance(err, OSError) and "Permission" in msg):
+                msg = f"{msg}\n\nChoose a writable folder (Desktop, Pictures, or Downloads) and try again."
             if hasattr(self, "status_bar"):
                 self.status_bar.showMessage(f"Export failed: {msg}", 7000)
             with contextlib.suppress(Exception):
@@ -662,14 +639,11 @@ class BatchPart1:
         if hasattr(self, "status_bar"):
             if xmp_warning is not None:
                 self.status_bar.showMessage(
-                    f"Exported {label}: {os.path.basename(output_path)}"
-                    f" (source XMP not updated: {xmp_warning})",
+                    f"Exported {label}: {os.path.basename(output_path)} (source XMP not updated: {xmp_warning})",
                     7000,
                 )
             else:
-                self.status_bar.showMessage(
-                    f"Exported {label}: {os.path.basename(output_path)}", 5000
-                )
+                self.status_bar.showMessage(f"Exported {label}: {os.path.basename(output_path)}", 5000)
         # Show it now if it landed in the folder being browsed, rather than
         # leaving it invisible until the folder is reopened.
         self.register_new_file(output_path)

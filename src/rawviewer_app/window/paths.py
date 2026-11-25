@@ -1,5 +1,4 @@
 """Filesystem resource and path helpers for the main window."""
-from __future__ import annotations
 
 import os
 import platform
@@ -26,8 +25,7 @@ def resource_path(relative_path):
         if base_path is None:
             raise AttributeError
     except Exception:
-        base_path = os.path.abspath(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), ".."))
+        base_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     return os.path.join(base_path, relative_path)
 
 

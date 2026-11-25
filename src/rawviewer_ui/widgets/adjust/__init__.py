@@ -1,4 +1,5 @@
 """ImageAdjustPanelWidget package: image adjustment panel (Phase 4 split)."""
+
 from .helpers import (
     _EDIT_SETTINGS_CLIPBOARD,
     _GLOBAL_SECTION_DEFAULT_ORDER,

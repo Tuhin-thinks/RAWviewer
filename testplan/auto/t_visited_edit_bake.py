@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import QApplication  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -41,17 +41,17 @@ _app = QApplication.instance() or QApplication([])
 class _Host:
     """Only what the bake helper touches."""
 
-    def __init__(self, path, render, *, render_path=None):
+    def __init__(self, path, render, *, render_path=None) -> None:
         self._adjust_last_render = (render, {}) if render is not None else None
         self._adjust_last_render_norm = render_path or path
         self.baked = []
         self.invalidated = []
         self.gallery_justified = self
 
-    def _persist_editor_aligned_browse_caches(self, path):
+    def _persist_editor_aligned_browse_caches(self, path) -> None:
         self.baked.append(path)
 
-    def invalidate_thumbnails_for_path(self, path):
+    def invalidate_thumbnails_for_path(self, path) -> None:
         self.invalidated.append(path)
 
 
@@ -68,8 +68,8 @@ def main() -> int:
     raw = "/photos/shot.CR3"
     jpg = "/photos/shot.jpg"
 
-    def with_adjustments(edited: bool):
-        raw_adjustments.load_adjustments_for_file = lambda p: ({"Exposure2012": 0.8} if edited else {})
+    def with_adjustments(edited: bool) -> None:
+        raw_adjustments.load_adjustments_for_file = lambda p: {"Exposure2012": 0.8} if edited else {}
         raw_adjustments.is_default_adjustments = lambda a: not a
 
     try:

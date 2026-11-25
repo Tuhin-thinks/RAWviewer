@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import types
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
@@ -22,17 +23,18 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
-    from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import QPoint
-    from rawviewer_ui.widgets import ThumbnailLabel
+    from PyQt6.QtWidgets import QApplication
+
     from main import RAWImageViewer, _norm_path
+    from rawviewer_ui.widgets import ThumbnailLabel
 
     app = QApplication.instance() or QApplication([])  # noqa: F841 (keeps the app alive)
     assert app is not None
@@ -59,7 +61,7 @@ def main() -> int:
     class _StyleCountLabel(ThumbnailLabel):
         setstyle_calls = 0
 
-        def setStyleSheet(self, style):  # noqa: N802
+        def setStyleSheet(self, style) -> None:  # noqa: N802
             _StyleCountLabel.setstyle_calls += 1
             super().setStyleSheet(style)
 
@@ -89,11 +91,11 @@ def main() -> int:
     # --- selection core via borrowed methods --------------------------------
 
     class _GalleryStub:
-        def refresh_gallery_selection_visuals(self):
+        def refresh_gallery_selection_visuals(self) -> None:
             self.refreshed = True
 
     class _Host:
-        def __init__(self, files, display=None):
+        def __init__(self, files, display=None) -> None:
             self.view_mode = "gallery"
             self.image_files = list(files)
             self._gallery_selected_paths = set()
@@ -105,49 +107,27 @@ def main() -> int:
         def _gallery_files_for_display(self):
             return list(self._display)
 
-        def _is_burst_grouping_enabled(self):
+        def _is_burst_grouping_enabled(self) -> bool:
             return False
 
-    def borrow(name):
+    def borrow(name: str):
         return RAWImageViewer.__dict__[name]
 
     host = _Host([])
-    host._gallery_set_selection_keys = types.MethodType(
-        borrow("_gallery_set_selection_keys"), host
-    )
-    host._gallery_select_all_displayed = types.MethodType(
-        borrow("_gallery_select_all_displayed"), host
-    )
-    host._prune_gallery_selection_to_displayed = types.MethodType(
-        borrow("_prune_gallery_selection_to_displayed"), host
-    )
-    host._sync_gallery_selection_chrome = types.MethodType(
-        borrow("_sync_gallery_selection_chrome"), host
-    )
-    host._sync_gallery_selection_bar = types.MethodType(
-        borrow("_sync_gallery_selection_bar"), host
-    )
-    host._gallery_selected_expanded_norm_keys = types.MethodType(
-        borrow("_gallery_selected_expanded_norm_keys"), host
-    )
-    host._gallery_selected_canonical_paths = types.MethodType(
-        borrow("_gallery_selected_canonical_paths"), host
-    )
+    host._gallery_set_selection_keys = types.MethodType(borrow("_gallery_set_selection_keys"), host)
+    host._gallery_select_all_displayed = types.MethodType(borrow("_gallery_select_all_displayed"), host)
+    host._prune_gallery_selection_to_displayed = types.MethodType(borrow("_prune_gallery_selection_to_displayed"), host)
+    host._sync_gallery_selection_chrome = types.MethodType(borrow("_sync_gallery_selection_chrome"), host)
+    host._sync_gallery_selection_bar = types.MethodType(borrow("_sync_gallery_selection_bar"), host)
+    host._gallery_selected_expanded_norm_keys = types.MethodType(borrow("_gallery_selected_expanded_norm_keys"), host)
+    host._gallery_selected_canonical_paths = types.MethodType(borrow("_gallery_selected_canonical_paths"), host)
     host._gallery_selected_canonical_paths_from_keys = types.MethodType(
         borrow("_gallery_selected_canonical_paths_from_keys"), host
     )
-    host._sync_share_button_visibility = types.MethodType(
-        borrow("_sync_share_button_visibility"), host
-    )
-    host._sync_compare_button_visibility = types.MethodType(
-        borrow("_sync_compare_button_visibility"), host
-    )
-    host._gallery_has_selection = types.MethodType(
-        borrow("_gallery_has_selection"), host
-    )
-    host._gallery_refresh_selection_ui = types.MethodType(
-        borrow("_gallery_refresh_selection_ui"), host
-    )
+    host._sync_share_button_visibility = types.MethodType(borrow("_sync_share_button_visibility"), host)
+    host._sync_compare_button_visibility = types.MethodType(borrow("_sync_compare_button_visibility"), host)
+    host._gallery_has_selection = types.MethodType(borrow("_gallery_has_selection"), host)
+    host._gallery_refresh_selection_ui = types.MethodType(borrow("_gallery_refresh_selection_ui"), host)
 
     files = [f"C:\\x\\f{i:04d}.jpg" for i in range(120)]
     host.image_files = list(files)
@@ -172,8 +152,7 @@ def main() -> int:
     canonical = host._gallery_selected_canonical_paths()
     check(
         "canonical paths resolve all pruned selection",
-        sorted(os.path.basename(p) for p in canonical)
-        == sorted(os.path.basename(p) for p in subset),
+        sorted(os.path.basename(p) for p in canonical) == sorted(os.path.basename(p) for p in subset),
         f"{len(canonical)}",
     )
 
@@ -186,7 +165,7 @@ def main() -> int:
     keys = host._gallery_selected_expanded_norm_keys()
     canonical = host._gallery_selected_canonical_paths()
     elapsed = time.perf_counter() - t0
-    check("10k select-all+expand under 0.5s", elapsed < 0.5, f"{elapsed*1000:.0f} ms")
+    check("10k select-all+expand under 0.5s", elapsed < 0.5, f"{elapsed * 1000:.0f} ms")
     check("10k count = 10000", len(keys) == 10000 and len(canonical) == 10000)
 
     # clear empties and bar sync does not explode
@@ -195,24 +174,21 @@ def main() -> int:
     t0 = time.perf_counter()
     host._sync_gallery_selection_chrome()
     check(
-        "bar sync cheap", time.perf_counter() - t0 < 0.5,
+        "bar sync cheap",
+        time.perf_counter() - t0 < 0.5,
     )
 
     # --- source pins --------------------------------------------------------
-    src = open(
-        os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_ui", "widgets", "__init__.py"),
-        encoding="utf-8",
-    ).read()
+    src = Path(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_ui", "widgets", "__init__.py"),
+    ).read_text(encoding="utf-8")
     check(
         "no _STYLE_SELECTED / setStyleSheet in selection path",
         "_STYLE_SELECTED" not in src and "self.setStyleSheet(\n            self._STYLE_SELECTED" not in src,
     )
-    bops_src = open(
-        os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                     "rawviewer_app", "services", "batch.py"),
-        encoding="utf-8",
-    ).read()
+    bops_src = Path(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "services", "batch.py"),
+    ).read_text(encoding="utf-8")
     check(
         "no UI/cache imports in batch_ops (QPixmaps stay on UI thread)",
         "from PyQt6.QtGui import" not in bops_src and "from image_cache" not in bops_src,
@@ -220,12 +196,12 @@ def main() -> int:
     from _source_utils import main_source
 
     vp = main_source()
+    widgets_src = Path(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "core", "widgets.py")
+    ).read_text(encoding="utf-8")
     check(
         "TaskProgressDialog rename complete (no ExportProgressDialog left)",
-        "ExportProgressDialog" not in vp
-        and open(os.path.join(os.path.dirname(__file__), "..", "..", "src",
-                              "rawviewer_app", "core", "widgets.py"),
-                 encoding="utf-8").read().count("ExportProgressDialog") == 0,
+        "ExportProgressDialog" not in vp and widgets_src.count("ExportProgressDialog") == 0,
     )
     check(
         "single export reuses export_one_file (no duplicated decode body)",
@@ -234,9 +210,14 @@ def main() -> int:
 
     # --- batch_ops unit checks ----------------------------------------------
     import tempfile
+
     from rawviewer_app.services.batch import (
-        BatchFileOpSignals, BatchFileOpWorker, BatchExportWorker,
-        copy_one_file, discard_one_file, unique_destination,
+        BatchExportWorker,
+        BatchFileOpSignals,
+        BatchFileOpWorker,
+        copy_one_file,
+        discard_one_file,
+        unique_destination,
     )
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -266,22 +247,19 @@ def main() -> int:
             "copy preserves mtime and source untouched",
             os.path.getmtime(copied) == 1500000000
             and os.path.isfile(a)
-            and open(copied, "rb").read() == b"imagepayload",
+            and Path(copied).read_bytes() == b"imagepayload",
         )
 
         copied_sidecar = copy_one_file(a, dst_dir, set())  # will copy a.xmp alongside
         check(
             "sidecar copied alongside",
-            os.path.isfile(os.path.join(dst_dir, os.path.splitext(
-                os.path.basename(copied_sidecar))[0] + ".xmp")),
+            os.path.isfile(os.path.join(dst_dir, os.path.splitext(os.path.basename(copied_sidecar))[0] + ".xmp")),
         )
 
         disc = discard_one_file(a)
         check(
             "discard keeps naming rule and removes source",
-            os.path.basename(disc) == "a.arw"
-            and "Discard" in disc
-            and not os.path.exists(a),
+            os.path.basename(disc) == "a.arw" and "Discard" in disc and not os.path.exists(a),
         )
         # second discard of a same-named file gets _discarded suffix
         with open(a, "wb") as fh:
@@ -307,7 +285,7 @@ def main() -> int:
         loop = QEventLoop()
         state = {"done": None}
 
-        def _fin(done, failed, cancelled, detail):
+        def _fin(done, failed, cancelled, detail) -> None:
             state["done"] = (done, failed, cancelled, detail)
             loop.quit()
 
@@ -335,7 +313,7 @@ def main() -> int:
         loop2 = QEventLoop()
         state2 = {}
 
-        def _fin2(done, failed, cancelled, detail):
+        def _fin2(done, failed, cancelled, detail) -> None:
             state2["done"] = (done, failed, cancelled)
             loop2.quit()
 
@@ -354,6 +332,7 @@ def main() -> int:
 
         # batch export with stubbed per-file export: order + continue-on-error
         import rawviewer_app.services.batch as bops
+
         real_export = bops.export_one_file
         calls = []
         bops.export_one_file = lambda src, out, adj, fmt, pool, **kw: (
@@ -364,7 +343,7 @@ def main() -> int:
         loop3 = QEventLoop()
         state3 = {}
 
-        def _fin3(done, failed, cancelled, detail):
+        def _fin3(done, failed, cancelled, detail) -> None:
             state3["done"] = (done, failed, cancelled)
             loop3.quit()
 
@@ -382,14 +361,14 @@ def main() -> int:
     import image_cache as _image_cache
 
     class _StubCache:
-        def __init__(self):
+        def __init__(self) -> None:
             self.invalidated = []
 
-        def invalidate_file(self, p):
+        def invalidate_file(self, p) -> None:
             self.invalidated.append(p)
 
     class _RemovalHost:
-        def __init__(self, files):
+        def __init__(self, files) -> None:
             self.image_files = list(files)
             self.current_file_path = files[0] if files else None
             self.current_file_index = 0
@@ -400,16 +379,16 @@ def main() -> int:
             self.bulk_calls = []
             self.saves = 0
 
-        def _drop_discarded_from_semantic_corpus(self, p):
+        def _drop_discarded_from_semantic_corpus(self, p) -> None:
             self.corpus_dropped.append(p)
 
-        def _after_gallery_bulk_file_removal(self, anchor_path=None):
+        def _after_gallery_bulk_file_removal(self, anchor_path=None) -> None:
             self.bulk_calls.append(anchor_path)
 
-        def schedule_save_session_state(self):
+        def schedule_save_session_state(self) -> None:
             self.saves += 1
 
-        def show_error(self, *a, **k):
+        def show_error(self, *a, **k) -> None:
             self._errors = a
 
     rhost = _RemovalHost(files)
@@ -431,14 +410,8 @@ def main() -> int:
         _image_cache.get_image_cache = orig_get_cache
     check(
         "removal post-pass skips failed path, removes the rest",
-        _norm_path(files[2]) in {
-            _norm_path(p) for p in rhost.image_files
-        }
-        and all(
-            _norm_path(p) != _norm_path(f)
-            for p in rhost.image_files
-            for f in (files[0], files[1], files[3])
-        ),
+        _norm_path(files[2]) in {_norm_path(p) for p in rhost.image_files}
+        and all(_norm_path(p) != _norm_path(f) for p in rhost.image_files for f in (files[0], files[1], files[3])),
         str([os.path.basename(p) for p in rhost.image_files]),
     )
     check(
@@ -456,20 +429,17 @@ def main() -> int:
     phost._cancel_load_and_preload_for_path = lambda p: phost._cancelled.append(p)
     recorded = {}
 
-    def _fake_start(kind, paths, dest_dir="", reveal=False, **kw):
+    def _fake_start(kind, paths, dest_dir: str = "", reveal: bool = False, **kw) -> None:
         recorded["args"] = (kind, list(paths), dest_dir, reveal)
 
     phost._start_batch_op = _fake_start
     types.MethodType(borrow("_surviving_anchor_after_removal"), phost)
-    phost._surviving_anchor_after_removal = types.MethodType(
-        borrow("_surviving_anchor_after_removal"), phost
-    )
+    phost._surviving_anchor_after_removal = types.MethodType(borrow("_surviving_anchor_after_removal"), phost)
     types.MethodType(borrow("_start_batch_removal"), phost)("discard", files)
     kind, rpaths, rdest, rreveal = recorded["args"]
     check(
         "pre-cancel touches every path before the worker starts",
-        sorted(map(os.path.basename, phost._cancelled))
-        == sorted(map(os.path.basename, files)),
+        sorted(map(os.path.basename, phost._cancelled)) == sorted(map(os.path.basename, files)),
         str(len(phost._cancelled)),
     )
     check(

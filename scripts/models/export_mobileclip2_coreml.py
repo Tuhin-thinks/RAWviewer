@@ -16,8 +16,6 @@ Example (from repository root, with a venv that has torch + coremltools + editab
     python scripts/models/export_mobileclip2_coreml.py --model MobileCLIP2-S0 --verify
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys
@@ -79,21 +77,17 @@ def main() -> int:
         )
         slug = "mobileclip2_s0"
     else:
-        out_dir = (
-            Path(args.out_dir).expanduser().resolve()
-            if args.out_dir
-            else default_out.expanduser().resolve()
-        )
+        out_dir = Path(args.out_dir).expanduser().resolve() if args.out_dir else default_out.expanduser().resolve()
         slug = args.model.replace("/", "-")
 
     hub_cache = _bootstrap_hf_cache(args, repo_root)
 
     try:
+        import coremltools as ct
         import numpy as np
+        import open_clip
         import torch
         import torch.nn as nn
-        import coremltools as ct
-        import open_clip
         from mobileclip.modules.common.mobileone import reparameterize_model
     except ImportError as e:
         print("Missing dependency:", e, file=sys.stderr)

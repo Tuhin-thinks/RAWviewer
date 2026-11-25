@@ -15,6 +15,7 @@ max_size requests.
 
 Skips (not fails) if the machine-local sample folder isn't present.
 """
+
 import glob
 import os
 import sys
@@ -26,7 +27,7 @@ FAILURES = []
 SAMPLE_DIR = os.environ.get("RAWVIEWER_TEST_ASSETS", "/tmp/RAW_Sample")
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)

@@ -5,8 +5,6 @@ Used by gallery `format:raw` filtering and `is_raw_file()`. Aligned with README 
 Formats” plus common LibRaw-supported types (not every exotic variant).
 """
 
-from __future__ import annotations
-
 RAW_FILE_EXTENSIONS: frozenset[str] = frozenset(
     {
         # README-listed & app paths

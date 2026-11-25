@@ -1,5 +1,4 @@
 """BatchExportDialog: batch export confirmation dialog."""
-from __future__ import annotations
 
 import os
 
@@ -29,16 +28,13 @@ class BatchExportDialog(CustomConfirmDialog):
         start_dir: str = "",
         source_dir_keys: set | None = None,
         writable_check=None,
-    ):
+    ) -> None:
         noun = "photo" if count == 1 else "photos"
         super().__init__(
             parent=parent,
             title="Export",
             message=f"Export {count} {noun}",
-            informative_text=(
-                "Existing files are kept — new files get _1, _2 suffixes. "
-                "Nothing is deleted or moved."
-            ),
+            informative_text=("Existing files are kept — new files get _1, _2 suffixes. Nothing is deleted or moved."),
             confirm_action="Export",
         )
 
@@ -222,17 +218,13 @@ class BatchExportDialog(CustomConfirmDialog):
                 ai_amount = max(0, min(100, int(ai_amount_raw)))
             except (TypeError, ValueError):
                 ai_amount = 100
-            self.reveal_check.setChecked(
-                settings.value("batch_export_reveal", "0") in ("1", True, "true")
-            )
+            self.reveal_check.setChecked(settings.value("batch_export_reveal", "0") in ("1", True, "true"))
         else:
             mode, fmt, start, ai, ai_amount = "copy", "jpeg", "", False, 100
         ai_ready = self._ai_denoise_available()
         self.ai_denoise_check.setEnabled(ai_ready)
         if not ai_ready:
-            self.ai_denoise_check.setToolTip(
-                "AI denoise is not available: the AI model is not installed."
-            )
+            self.ai_denoise_check.setToolTip("AI denoise is not available: the AI model is not installed.")
         self.ai_denoise_check.setChecked(bool(ai and ai_ready))
         self.ai_denoise_slider.setValue(ai_amount)
         self.ai_amount_label.setText(f"AI Amount: {ai_amount}%")
@@ -307,10 +299,7 @@ class BatchExportDialog(CustomConfirmDialog):
                 "Destination folder is not writable (SD card / read-only volume). "
                 "Choose Desktop, Pictures, or Downloads."
             )
-        if (
-            self.mode_copy_btn.isChecked()
-            and _norm_dir_key(dest) in self._source_dir_keys
-        ):
+        if self.mode_copy_btn.isChecked() and _norm_dir_key(dest) in self._source_dir_keys:
             return (
                 "Destination is the same folder as the originals — choose a "
                 "different folder (or use Export edited copies)."
@@ -325,9 +314,7 @@ class BatchExportDialog(CustomConfirmDialog):
         self.result_config = {
             "mode": "edited" if self.mode_edited_btn.isChecked() else "copy",
             "format": (
-                "tiff16" if self.format_tiff_btn.isChecked()
-                else "webp" if self.format_webp_btn.isChecked()
-                else "jpeg"
+                "tiff16" if self.format_tiff_btn.isChecked() else "webp" if self.format_webp_btn.isChecked() else "jpeg"
             ),
             "destination": os.path.normpath(self.destination_edit.text().strip()),
             "reveal": self.reveal_check.isChecked(),

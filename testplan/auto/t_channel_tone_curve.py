@@ -9,6 +9,7 @@ IS expected to shift hue -- that is the feature. Checks:
     treating an all-empty CHANNEL_CURVE_KEYS as "no edit").
   - reset (all keys absent) equals doing nothing.
 """
+
 import os
 import sys
 
@@ -19,7 +20,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)

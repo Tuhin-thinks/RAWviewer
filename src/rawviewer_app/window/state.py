@@ -1,7 +1,5 @@
 """Mutable module-level state shared by the main-window modules."""
 
-from __future__ import annotations
-
 from typing import Any
 
 # Set by the ultra-fast splash block in ``main`` and cleared by splash teardown.

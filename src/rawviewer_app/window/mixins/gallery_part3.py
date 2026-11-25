@@ -1,5 +1,4 @@
 """gallery mixin, part 3 of 5 (8 methods, 881 lines)."""
-from __future__ import annotations
 
 import contextlib
 import sys
@@ -24,6 +23,7 @@ class GalleryPart3:
         """
         import logging
         import os
+
         logging.getLogger(__name__)
 
         # 1. Check in-memory cache
@@ -34,9 +34,9 @@ class GalleryPart3:
         try:
             exif_data = self.image_cache.get_exif(file_path)
             if exif_data:
-                w = exif_data.get('original_width')
-                h = exif_data.get('original_height')
-                orientation = exif_data.get('orientation', 1)
+                w = exif_data.get("original_width")
+                h = exif_data.get("original_height")
+                orientation = exif_data.get("orientation", 1)
 
                 if w and h and h > 0:
                     # Respect orientation (5,6,7,8 are rotated formats)
@@ -50,21 +50,54 @@ class GalleryPart3:
 
         # 3. Extract dimensions and orientation directly from file
         ext = os.path.splitext(file_path)[1].lower()
-        raw_extensions = {'.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw',
-                        '.pef', '.x3f', '.3fr', '.fff', '.iiq', '.cap', '.erf', '.mef', '.mos', '.nrw', '.srf'}
+        raw_extensions = {
+            ".arw",
+            ".cr2",
+            ".nef",
+            ".raf",
+            ".orf",
+            ".dng",
+            ".cr3",
+            ".rw2",
+            ".rwl",
+            ".srw",
+            ".pef",
+            ".x3f",
+            ".3fr",
+            ".fff",
+            ".iiq",
+            ".cap",
+            ".erf",
+            ".mef",
+            ".mos",
+            ".nrw",
+            ".srf",
+        }
         is_raw = ext in raw_extensions
 
         # A. Try EXIF (pyexiv2 preferred, else exifread) for JPEG/TIFF and some RAW formats
-        exif_likely_exts = {'.jpg', '.jpeg', '.tif', '.tiff', '.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.heic', '.heif'}
+        exif_likely_exts = {
+            ".jpg",
+            ".jpeg",
+            ".tif",
+            ".tiff",
+            ".arw",
+            ".cr2",
+            ".nef",
+            ".raf",
+            ".orf",
+            ".dng",
+            ".cr3",
+            ".heic",
+            ".heif",
+        }
         if ext in exif_likely_exts:
             try:
-                tags = process_file_from_path(
-                    file_path, details=False, stop_tag="EXIF ExifImageWidth"
-                )
+                tags = process_file_from_path(file_path, details=False, stop_tag="EXIF ExifImageWidth")
 
                 # Search for width and height in various tags
                 w = h = None
-                for w_tag in ['EXIF ExifImageWidth', 'Image ImageWidth']:
+                for w_tag in ["EXIF ExifImageWidth", "Image ImageWidth"]:
                     if w_tag in tags:
                         try:
                             w = int(str(tags[w_tag]))
@@ -72,7 +105,7 @@ class GalleryPart3:
                         except Exception:
                             pass
 
-                for h_tag in ['EXIF ExifImageLength', 'Image ImageLength']:
+                for h_tag in ["EXIF ExifImageLength", "Image ImageLength"]:
                     if h_tag in tags:
                         try:
                             h = int(str(tags[h_tag]))
@@ -82,9 +115,9 @@ class GalleryPart3:
 
                 # Handle Orientation
                 orientation = 1
-                if 'Image Orientation' in tags:
+                if "Image Orientation" in tags:
                     try:
-                        val = tags['Image Orientation'].values[0]
+                        val = tags["Image Orientation"].values[0]
                         # Handle both integer and string orientation values
                         orientation = val if isinstance(val, int) else int(str(val))
                     except Exception:
@@ -98,9 +131,9 @@ class GalleryPart3:
                     # Update cache with un-swapped dimensions but correct orientation
                     try:
                         cached_exif = self.image_cache.get_exif(file_path) or {}
-                        cached_exif['original_width'] = w
-                        cached_exif['original_height'] = h
-                        cached_exif['orientation'] = orientation
+                        cached_exif["original_width"] = w
+                        cached_exif["original_height"] = h
+                        cached_exif["orientation"] = orientation
                         self.image_cache.put_exif(file_path, cached_exif)
                     except Exception:
                         pass
@@ -112,6 +145,7 @@ class GalleryPart3:
         if is_raw:
             try:
                 import rawpy
+
                 with rawpy.imread(file_path) as raw:
                     # rawpy dimensions are usually the sensor dimensions (un-rotated)
                     w, h = raw.sizes.width, raw.sizes.height
@@ -120,7 +154,7 @@ class GalleryPart3:
                     # 3 = 180, 5 = 90 CCW, 6 = 90 CW
                     flip = raw.sizes.flip
 
-                    if flip in (5, 6): # Rotated 90 degrees
+                    if flip in (5, 6):  # Rotated 90 degrees
                         real_w, real_h = h, w
                         aspect = real_w / real_h
                     else:
@@ -130,18 +164,18 @@ class GalleryPart3:
                     # Update cache
                     try:
                         cached_exif = self.image_cache.get_exif(file_path) or {}
-                        cached_exif['original_width'] = w
-                        cached_exif['original_height'] = h
+                        cached_exif["original_width"] = w
+                        cached_exif["original_height"] = h
                         # Map rawpy flip to EXIF orientation for consistency if possible
                         # 0->1, 3->3, 6->6, 5->8 (approximate)
                         if flip == 6:
-                            cached_exif['orientation'] = 6
+                            cached_exif["orientation"] = 6
                         elif flip == 3:
-                            cached_exif['orientation'] = 3
+                            cached_exif["orientation"] = 3
                         elif flip == 5:
-                            cached_exif['orientation'] = 8
+                            cached_exif["orientation"] = 8
                         else:
-                            cached_exif['orientation'] = 1
+                            cached_exif["orientation"] = 1
                         self.image_cache.put_exif(file_path, cached_exif)
                     except Exception:
                         pass
@@ -152,6 +186,7 @@ class GalleryPart3:
         # C. Try PIL fallback (for TIFF/JPEG)
         try:
             from PIL import Image
+
             with Image.open(file_path) as img:
                 w, h = img.size
                 # orientation handling in PIL
@@ -178,6 +213,7 @@ class GalleryPart3:
         """Get pixmap for gallery view, loading if necessary - optimized for performance"""
         import logging
         import os
+
         logger = logging.getLogger(__name__)
 
         # Check cache first (fastest)
@@ -220,13 +256,14 @@ class GalleryPart3:
         except Exception as e:
             logger.warning(f"Error getting thumbnail from cache for {file_path}: {e}")
             import traceback
+
             logger.debug(f"Traceback: {traceback.format_exc()}")
 
         # For RAW files, try to extract embedded JPEG preview (fast)
         try:
             if os.path.exists(file_path):
                 file_ext = os.path.splitext(file_path)[1].lower()
-                raw_extensions = ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw']
+                raw_extensions = [".arw", ".cr2", ".nef", ".raf", ".orf", ".dng", ".cr3", ".rw2", ".rwl", ".srw"]
                 if file_ext in raw_extensions:
                     pixmap = self._extract_embedded_preview(file_path)
                     if pixmap and not pixmap.isNull():
@@ -246,7 +283,7 @@ class GalleryPart3:
         try:
             if os.path.exists(file_path):
                 file_ext = os.path.splitext(file_path)[1].lower()
-                if file_ext not in ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw']:
+                if file_ext not in [".arw", ".cr2", ".nef", ".raf", ".orf", ".dng", ".cr3", ".rw2", ".rwl", ".srw"]:
                     pixmap = self._load_pixmap_safe(file_path)
                     if not pixmap.isNull():
                         self.gallery_pixmaps[file_path] = pixmap
@@ -264,10 +301,10 @@ class GalleryPart3:
         # This allows layout to proceed without blocking
         return None
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _add_grid_row(self, row_files, available_width, row_height, item_spacing, row_index=0, start_index=0):
-    #     """Create a simple grid row with fixed height - basic gallery layout"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _add_grid_row(self, row_files, available_width, row_height, item_spacing, row_index=0, start_index=0):
+        #     """Create a simple grid row with fixed height - basic gallery layout"""
+        #     pass  # Gallery functionality disabled
         # Dummy assignments for old method parameters (gallery disabled)
         available_width, row_height, item_spacing, row_index, start_index = 0, 0, 0, 0, 0
         row_files, thumb_width = [], 0
@@ -311,7 +348,7 @@ class GalleryPart3:
             thumb_label.file_path = file_path
 
             # Store reference
-            if not hasattr(self, '_gallery_thumb_labels'):
+            if not hasattr(self, "_gallery_thumb_labels"):
                 self._gallery_thumb_labels = {}
             self._gallery_thumb_labels[file_path] = thumb_label
 
@@ -329,10 +366,10 @@ class GalleryPart3:
         # Add row to gallery
         self.gallery_content_layout.addWidget(row_widget)
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _add_justified_row(self, row_items, row_width, available_width, row_height, min_spacing, row_index=0):
-    #     """Create a row of thumbnails with equal horizontal spacing between images"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _add_justified_row(self, row_items, row_width, available_width, row_height, min_spacing, row_index=0):
+        #     """Create a row of thumbnails with equal horizontal spacing between images"""
+        #     pass  # Gallery functionality disabled
         # Dummy assignments for old method parameters (gallery disabled)
         row_items, _row_width, min_spacing, row_index = [], 0, 0, 0
         _target_width, target_height, thumb_width = 0, 0, 0
@@ -424,7 +461,7 @@ class GalleryPart3:
             # Store file path for async loading
             thumb_label.file_path = file_path
             # Store reference to thumb_label for later updates
-            if not hasattr(self, '_gallery_thumb_labels'):
+            if not hasattr(self, "_gallery_thumb_labels"):
                 self._gallery_thumb_labels = {}
             self._gallery_thumb_labels[file_path] = thumb_label
 
@@ -471,25 +508,28 @@ class GalleryPart3:
         self.gallery_content_layout.setSpacing(0)
         self.gallery_content_layout.setContentsMargins(0, 0, 0, 0)
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _load_gallery_thumbnail_async_justified(self, file_path, thumb_label, target_width, target_height, delay=10):
-    #     """Load thumbnail for justified gallery item asynchronously"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _load_gallery_thumbnail_async_justified(self, file_path, thumb_label, target_width, target_height, delay=10):
+        #     """Load thumbnail for justified gallery item asynchronously"""
+        #     pass  # Gallery functionality disabled
         import logging
         import os
         import time
 
         from PyQt6.QtCore import QTimer
+
         logger = logging.getLogger(__name__)
 
         # Validate inputs
         if not file_path or not thumb_label:
-            logger.warning(f"[GALLERY] Invalid inputs for thumbnail load: file_path={file_path}, thumb_label={thumb_label}")
+            logger.warning(
+                f"[GALLERY] Invalid inputs for thumbnail load: file_path={file_path}, thumb_label={thumb_label}"
+            )
             return
 
         # Track loading start time
         if file_path in self._gallery_load_tracking:
-            self._gallery_load_tracking[file_path]['start_time'] = time.time()
+            self._gallery_load_tracking[file_path]["start_time"] = time.time()
         else:
             logger.warning(f"[GALLERY] File {os.path.basename(file_path)} not in load tracking")
 
@@ -509,7 +549,7 @@ class GalleryPart3:
                     # Try to load asynchronously if not in cache
                     logger.debug(f"[GALLERY] Pixmap not in cache for {os.path.basename(file_path)}, loading async")
                     if file_path in self._gallery_load_tracking:
-                        self._gallery_load_tracking[file_path]['loaded'] = False
+                        self._gallery_load_tracking[file_path]["loaded"] = False
                     # Load pixmap asynchronously - it will update the label when ready
                     self._load_gallery_pixmap_async(file_path)
                     # Return early - label will be updated by _load_gallery_pixmap_async
@@ -518,15 +558,17 @@ class GalleryPart3:
                 # Mark as loaded
                 load_time = time.time() - load_start
                 if file_path in self._gallery_load_tracking:
-                    self._gallery_load_tracking[file_path]['loaded'] = True
-                    self._gallery_load_tracking[file_path]['load_time'] = load_time
+                    self._gallery_load_tracking[file_path]["loaded"] = True
+                    self._gallery_load_tracking[file_path]["load_time"] = load_time
                 logger.info(f"[GALLERY] [PIXMAP] {os.path.basename(file_path)} - Loaded from cache in {load_time:.3f}s")
 
                 # Get actual image dimensions
                 pixmap_width = pixmap.width()
                 pixmap_height = pixmap.height()
                 if pixmap_width <= 0 or pixmap_height <= 0:
-                    logger.warning(f"[GALLERY] Invalid pixmap size for {os.path.basename(file_path)}: {pixmap_width}x{pixmap_height}")
+                    logger.warning(
+                        f"[GALLERY] Invalid pixmap size for {os.path.basename(file_path)}: {pixmap_width}x{pixmap_height}"
+                    )
                     return
 
                 # Update aspect cache with actual image dimensions
@@ -534,7 +576,9 @@ class GalleryPart3:
                 self.gallery_aspect_cache[file_path] = actual_aspect
 
                 # Log original image dimensions and aspect ratio
-                logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Original: {pixmap_width}x{pixmap_height}, Aspect: {actual_aspect:.3f}")
+                logger.info(
+                    f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Original: {pixmap_width}x{pixmap_height}, Aspect: {actual_aspect:.3f}"
+                )
 
                 # For fixed height gallery: scale to fixed height while preserving aspect ratio
                 # Reference code: resized = pixmap.scaled(QSize(w, ROW_HEIGHT), Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -545,19 +589,23 @@ class GalleryPart3:
                 label_width = thumb_label.width()
                 label_height = thumb_label.height()
                 label_aspect = label_width / label_height if label_height > 0 else 0
-                logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Label: {label_width}x{label_height}, Label Aspect: {label_aspect:.3f}")
+                logger.info(
+                    f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Label: {label_width}x{label_height}, Label Aspect: {label_aspect:.3f}"
+                )
 
                 # Calculate width based on actual image aspect ratio and fixed height
                 scaled_width = int(target_height * actual_aspect)
                 scaled_height = target_height
                 scaled_aspect = scaled_width / scaled_height if scaled_height > 0 else 0
-                logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Target: {scaled_width}x{scaled_height}, Scaled Aspect: {scaled_aspect:.3f}")
+                logger.info(
+                    f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Target: {scaled_width}x{scaled_height}, Scaled Aspect: {scaled_aspect:.3f}"
+                )
 
                 # Scale pixmap to fixed height while preserving aspect ratio
                 scaled_pixmap = pixmap.scaled(
                     QSize(scaled_width, scaled_height),
                     Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
+                    Qt.TransformationMode.SmoothTransformation,
                 )
 
                 if scaled_pixmap.isNull():
@@ -568,7 +616,9 @@ class GalleryPart3:
                 actual_scaled_width = scaled_pixmap.width()
                 actual_scaled_height = scaled_pixmap.height()
                 actual_scaled_aspect = actual_scaled_width / actual_scaled_height if actual_scaled_height > 0 else 0
-                logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Result: {actual_scaled_width}x{actual_scaled_height}, Result Aspect: {actual_scaled_aspect:.3f}")
+                logger.info(
+                    f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Result: {actual_scaled_width}x{actual_scaled_height}, Result Aspect: {actual_scaled_aspect:.3f}"
+                )
 
                 # CRITICAL: Resize label to match scaled pixmap size (like reference code: thumb.setFixedSize(resized.size()))
                 # This ensures the label matches the pixmap dimensions exactly, preventing compression
@@ -583,48 +633,54 @@ class GalleryPart3:
                 final_label_height = thumb_label.height()
                 final_pixmap_width = scaled_pixmap.width()
                 final_pixmap_height = scaled_pixmap.height()
-                logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Final Label: {final_label_width}x{final_label_height}, Pixmap: {final_pixmap_width}x{final_pixmap_height}")
+                logger.info(
+                    f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Final Label: {final_label_width}x{final_label_height}, Pixmap: {final_pixmap_width}x{final_pixmap_height}"
+                )
                 display_time = time.time() - display_start
 
                 # Mark as displayed
                 if file_path in self._gallery_load_tracking:
-                    self._gallery_load_tracking[file_path]['displayed'] = True
-                    self._gallery_load_tracking[file_path]['display_time'] = display_time
-                    total_time = time.time() - self._gallery_load_tracking[file_path]['start_time']
-                    logger.info(f"[GALLERY] [IMAGE] {os.path.basename(file_path)} - Loaded in {load_time:.3f}s, Displayed in {display_time:.3f}s, Total: {total_time:.3f}s")
+                    self._gallery_load_tracking[file_path]["displayed"] = True
+                    self._gallery_load_tracking[file_path]["display_time"] = display_time
+                    total_time = time.time() - self._gallery_load_tracking[file_path]["start_time"]
+                    logger.info(
+                        f"[GALLERY] [IMAGE] {os.path.basename(file_path)} - Loaded in {load_time:.3f}s, Displayed in {display_time:.3f}s, Total: {total_time:.3f}s"
+                    )
             except Exception as e:
                 logger.warning(f"Error loading justified thumbnail for {os.path.basename(file_path)}: {e}")
                 import traceback
+
                 logger.debug(f"Traceback: {traceback.format_exc()}")
                 if file_path in self._gallery_load_tracking:
-                    self._gallery_load_tracking[file_path]['loaded'] = False
-                    self._gallery_load_tracking[file_path]['displayed'] = False
+                    self._gallery_load_tracking[file_path]["loaded"] = False
+                    self._gallery_load_tracking[file_path]["displayed"] = False
 
         # Use a small delay to allow UI to update first
         QTimer.singleShot(10, load_thumbnail)
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _load_gallery_pixmap_async(self, file_path):
-    #     """Load pixmap asynchronously and update specific thumbnail when ready"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _load_gallery_pixmap_async(self, file_path):
+        #     """Load pixmap asynchronously and update specific thumbnail when ready"""
+        #     pass  # Gallery functionality disabled
         import logging
         import time
 
         from PIL import Image
         from PyQt6.QtCore import QTimer
+
         logger = logging.getLogger(__name__)
 
         # Track loading start time if not already tracked
         if file_path not in self._gallery_load_tracking:
             self._gallery_load_tracking[file_path] = {
-                'start_time': time.time(),
-                'loaded': False,
-                'displayed': False,
-                'load_time': None,
-                'display_time': None
+                "start_time": time.time(),
+                "loaded": False,
+                "displayed": False,
+                "load_time": None,
+                "display_time": None,
             }
-        elif self._gallery_load_tracking[file_path]['start_time'] is None:
-            self._gallery_load_tracking[file_path]['start_time'] = time.time()
+        elif self._gallery_load_tracking[file_path]["start_time"] is None:
+            self._gallery_load_tracking[file_path]["start_time"] = time.time()
 
         def load_pixmap():
             load_start = time.time()
@@ -635,9 +691,12 @@ class GalleryPart3:
                     if pixmap and not pixmap.isNull():
                         # Already loaded, skip reloading but still update label if needed
                         load_time = time.time() - load_start
-                        if file_path in self._gallery_load_tracking and not self._gallery_load_tracking[file_path]['loaded']:
-                                self._gallery_load_tracking[file_path]['loaded'] = True
-                                self._gallery_load_tracking[file_path]['load_time'] = load_time
+                        if (
+                            file_path in self._gallery_load_tracking
+                            and not self._gallery_load_tracking[file_path]["loaded"]
+                        ):
+                            self._gallery_load_tracking[file_path]["loaded"] = True
+                            self._gallery_load_tracking[file_path]["load_time"] = load_time
                         # Continue to update label below
                         # (label update logic is at the end of this function)
                     else:
@@ -651,50 +710,57 @@ class GalleryPart3:
                 # If not in cache, try to load directly
 
                 if (not pixmap or pixmap.isNull()) and os.path.exists(file_path):
-                        file_ext = os.path.splitext(file_path)[1].lower()
-                        raw_extensions = ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw']
+                    file_ext = os.path.splitext(file_path)[1].lower()
+                    raw_extensions = [".arw", ".cr2", ".nef", ".raf", ".orf", ".dng", ".cr3", ".rw2", ".rwl", ".srw"]
 
-                        # For RAW files, try to extract embedded JPEG preview (fast)
-                        if file_ext in raw_extensions:
+                    # For RAW files, try to extract embedded JPEG preview (fast)
+                    if file_ext in raw_extensions:
+                        try:
+                            pixmap = self._extract_embedded_preview(file_path)
+                            if pixmap and not pixmap.isNull():
+                                logger.debug(
+                                    f"[GALLERY] Loaded embedded preview for gallery: {os.path.basename(file_path)}"
+                                )
+                        except Exception as raw_error:
+                            logger.debug(
+                                f"Error extracting embedded preview for {os.path.basename(file_path)}: {raw_error}"
+                            )
+                            pixmap = None
+
+                    # For non-RAW files, try direct QPixmap load
+                    if (not pixmap or pixmap.isNull()) and file_ext not in raw_extensions:
+                        pixmap = self._load_pixmap_safe(file_path)
+                        if pixmap.isNull():
+                            # If QPixmap fails, try PIL Image
                             try:
-                                pixmap = self._extract_embedded_preview(file_path)
-                                if pixmap and not pixmap.isNull():
-                                    logger.debug(f"[GALLERY] Loaded embedded preview for gallery: {os.path.basename(file_path)}")
-                            except Exception as raw_error:
-                                logger.debug(f"Error extracting embedded preview for {os.path.basename(file_path)}: {raw_error}")
+                                pil_image = Image.open(file_path)
+                                if pil_image.mode != "RGB":
+                                    pil_image = pil_image.convert("RGB")
+                                # Convert PIL Image to QPixmap
+                                width, height = pil_image.size
+                                image_bytes = pil_image.tobytes("raw", "RGB")
+                                # CRITICAL: Calculate bytes_per_line for PIL Image
+                                bytes_per_line = 3 * width  # RGB = 3 channels
+                                qimage = QImage(image_bytes, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+                                pixmap = QPixmap.fromImage(qimage) if not qimage.isNull() else None
+                            except Exception as pil_error:
+                                logger.debug(f"Error loading with PIL for {os.path.basename(file_path)}: {pil_error}")
                                 pixmap = None
 
-                        # For non-RAW files, try direct QPixmap load
-                        if (not pixmap or pixmap.isNull()) and file_ext not in raw_extensions:
-                            pixmap = self._load_pixmap_safe(file_path)
-                            if pixmap.isNull():
-                                # If QPixmap fails, try PIL Image
-                                try:
-                                    pil_image = Image.open(file_path)
-                                    if pil_image.mode != 'RGB':
-                                        pil_image = pil_image.convert('RGB')
-                                    # Convert PIL Image to QPixmap
-                                    width, height = pil_image.size
-                                    image_bytes = pil_image.tobytes('raw', 'RGB')
-                                    # CRITICAL: Calculate bytes_per_line for PIL Image
-                                    bytes_per_line = 3 * width  # RGB = 3 channels
-                                    qimage = QImage(image_bytes, width, height, bytes_per_line, QImage.Format.Format_RGB888)
-                                    pixmap = QPixmap.fromImage(qimage) if not qimage.isNull() else None
-                                except Exception as pil_error:
-                                    logger.debug(f"Error loading with PIL for {os.path.basename(file_path)}: {pil_error}")
-                                    pixmap = None
+                    # If still no pixmap, try to get thumbnail from image cache
+                    if (not pixmap or pixmap.isNull()) and hasattr(self, "image_cache"):
+                        try:
+                            thumbnail_data = self.image_cache.get_thumbnail(file_path)
+                            if thumbnail_data is not None:
+                                # Use unified conversion method
+                                pixmap = self._numpy_to_qpixmap(thumbnail_data)
+                        except Exception as thumb_error:
+                            logger.debug(
+                                f"Error getting thumbnail from cache for {os.path.basename(file_path)}: {thumb_error}"
+                            )
+                            import traceback
 
-                        # If still no pixmap, try to get thumbnail from image cache
-                        if (not pixmap or pixmap.isNull()) and hasattr(self, 'image_cache'):
-                            try:
-                                thumbnail_data = self.image_cache.get_thumbnail(file_path)
-                                if thumbnail_data is not None:
-                                    # Use unified conversion method
-                                    pixmap = self._numpy_to_qpixmap(thumbnail_data)
-                            except Exception as thumb_error:
-                                logger.debug(f"Error getting thumbnail from cache for {os.path.basename(file_path)}: {thumb_error}")
-                                import traceback
-                                logger.debug(f"Traceback: {traceback.format_exc()}")
+                            logger.debug(f"Traceback: {traceback.format_exc()}")
 
                 if pixmap and not pixmap.isNull():
                     # Store in gallery cache
@@ -709,12 +775,14 @@ class GalleryPart3:
 
                     # Mark as loaded
                     if file_path in self._gallery_load_tracking:
-                        self._gallery_load_tracking[file_path]['loaded'] = True
-                        self._gallery_load_tracking[file_path]['load_time'] = load_time
-                        logger.debug(f"[GALLERY] [PIXMAP] {os.path.basename(file_path)} - Loaded pixmap in {load_time:.3f}s")
+                        self._gallery_load_tracking[file_path]["loaded"] = True
+                        self._gallery_load_tracking[file_path]["load_time"] = load_time
+                        logger.debug(
+                            f"[GALLERY] [PIXMAP] {os.path.basename(file_path)} - Loaded pixmap in {load_time:.3f}s"
+                        )
 
                     # Update the specific thumbnail label directly instead of refreshing entire gallery
-                    if hasattr(self, '_gallery_thumb_labels') and file_path in self._gallery_thumb_labels:
+                    if hasattr(self, "_gallery_thumb_labels") and file_path in self._gallery_thumb_labels:
                         thumb_label = self._gallery_thumb_labels[file_path]
                         if thumb_label:
                             # Get actual image dimensions
@@ -728,7 +796,9 @@ class GalleryPart3:
                             self.gallery_aspect_cache[file_path] = actual_aspect
 
                             # Log original image dimensions and aspect ratio
-                            logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Original: {pixmap_width}x{pixmap_height}, Aspect: {actual_aspect:.3f}")
+                            logger.info(
+                                f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Original: {pixmap_width}x{pixmap_height}, Aspect: {actual_aspect:.3f}"
+                            )
 
                             # For fixed height gallery: scale to fixed height while preserving aspect ratio
                             # Reference code: resized = pixmap.scaled(QSize(w, ROW_HEIGHT), Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -739,19 +809,23 @@ class GalleryPart3:
 
                             label_width = thumb_label.width()
                             label_aspect = label_width / label_height if label_height > 0 else 0
-                            logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Label: {label_width}x{label_height}, Label Aspect: {label_aspect:.3f}")
+                            logger.info(
+                                f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Label: {label_width}x{label_height}, Label Aspect: {label_aspect:.3f}"
+                            )
 
                             # Calculate width based on actual image aspect ratio and fixed height
                             scaled_width = int(label_height * actual_aspect)
                             scaled_height = label_height
                             scaled_aspect = scaled_width / scaled_height if scaled_height > 0 else 0
-                            logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Target: {scaled_width}x{scaled_height}, Scaled Aspect: {scaled_aspect:.3f}")
+                            logger.info(
+                                f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Target: {scaled_width}x{scaled_height}, Scaled Aspect: {scaled_aspect:.3f}"
+                            )
 
                             # Scale pixmap to fixed height while preserving aspect ratio
                             scaled_pixmap = pixmap.scaled(
                                 QSize(scaled_width, scaled_height),
                                 Qt.AspectRatioMode.KeepAspectRatio,
-                                Qt.TransformationMode.SmoothTransformation
+                                Qt.TransformationMode.SmoothTransformation,
                             )
 
                             if scaled_pixmap.isNull():
@@ -761,8 +835,12 @@ class GalleryPart3:
                             # Log actual scaled pixmap dimensions
                             actual_scaled_width = scaled_pixmap.width()
                             actual_scaled_height = scaled_pixmap.height()
-                            actual_scaled_aspect = actual_scaled_width / actual_scaled_height if actual_scaled_height > 0 else 0
-                            logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Result: {actual_scaled_width}x{actual_scaled_height}, Result Aspect: {actual_scaled_aspect:.3f}")
+                            actual_scaled_aspect = (
+                                actual_scaled_width / actual_scaled_height if actual_scaled_height > 0 else 0
+                            )
+                            logger.info(
+                                f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Scaled Result: {actual_scaled_width}x{actual_scaled_height}, Result Aspect: {actual_scaled_aspect:.3f}"
+                            )
 
                             # CRITICAL: Resize label to match scaled pixmap size (like reference code: thumb.setFixedSize(resized.size()))
                             # This ensures the label matches the pixmap dimensions exactly, preventing compression
@@ -777,38 +855,42 @@ class GalleryPart3:
                             final_label_height = thumb_label.height()
                             final_pixmap_width = scaled_pixmap.width()
                             final_pixmap_height = scaled_pixmap.height()
-                            logger.info(f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Final Label: {final_label_width}x{final_label_height}, Pixmap: {final_pixmap_width}x{final_pixmap_height}")
+                            logger.info(
+                                f"[GALLERY] [THUMBNAIL] {os.path.basename(file_path)} - Final Label: {final_label_width}x{final_label_height}, Pixmap: {final_pixmap_width}x{final_pixmap_height}"
+                            )
                             display_time = time.time() - display_start
 
                             # Mark as displayed
                             if file_path in self._gallery_load_tracking:
-                                self._gallery_load_tracking[file_path]['displayed'] = True
-                                self._gallery_load_tracking[file_path]['display_time'] = display_time
-                                total_time = time.time() - self._gallery_load_tracking[file_path]['start_time']
-                                logger.debug(f"[GALLERY] [IMAGE] {os.path.basename(file_path)} - Displayed in {display_time:.3f}s, Total: {total_time:.3f}s")
+                                self._gallery_load_tracking[file_path]["displayed"] = True
+                                self._gallery_load_tracking[file_path]["display_time"] = display_time
+                                total_time = time.time() - self._gallery_load_tracking[file_path]["start_time"]
+                                logger.debug(
+                                    f"[GALLERY] [IMAGE] {os.path.basename(file_path)} - Displayed in {display_time:.3f}s, Total: {total_time:.3f}s"
+                                )
                 else:
                     # Failed to load
                     logger.warning(f"[GALLERY] [PIXMAP] Failed to load pixmap for {os.path.basename(file_path)}")
                     if file_path in self._gallery_load_tracking:
-                        self._gallery_load_tracking[file_path]['loaded'] = False
-                        self._gallery_load_tracking[file_path]['displayed'] = False
+                        self._gallery_load_tracking[file_path]["loaded"] = False
+                        self._gallery_load_tracking[file_path]["displayed"] = False
             except Exception as e:
                 logger.warning(f"Error loading pixmap async for {os.path.basename(file_path)}: {e}")
                 import traceback
+
                 logger.debug(f"Traceback: {traceback.format_exc()}")
                 if file_path in self._gallery_load_tracking:
-                    self._gallery_load_tracking[file_path]['loaded'] = False
-                    self._gallery_load_tracking[file_path]['displayed'] = False
+                    self._gallery_load_tracking[file_path]["loaded"] = False
+                    self._gallery_load_tracking[file_path]["displayed"] = False
 
         QTimer.singleShot(50, load_pixmap)
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _create_gallery_item(self, file_path, thumb_width=200):
-    #     """Create a single gallery item with thumbnail"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _create_gallery_item(self, file_path, thumb_width=200):
+        #     """Create a single gallery item with thumbnail"""
+        #     pass  # Gallery functionality disabled
 
         from PyQt6.QtWidgets import QLabel
-
 
         item = QWidget()
         item.setStyleSheet(f"""
@@ -846,10 +928,10 @@ class GalleryPart3:
 
         return item
 
-    # GALLERY FUNCTIONALITY COMMENTED OUT
-    # def _load_gallery_thumbnail_async(self, file_path, item_widget):
-    #     """Load thumbnail for gallery item asynchronously (non-blocking)"""
-    #     pass  # Gallery functionality disabled
+        # GALLERY FUNCTIONALITY COMMENTED OUT
+        # def _load_gallery_thumbnail_async(self, file_path, item_widget):
+        #     """Load thumbnail for gallery item asynchronously (non-blocking)"""
+        #     pass  # Gallery functionality disabled
         # Use QThread or simple delayed loading to avoid blocking UI
         from PyQt6.QtCore import QTimer
 
@@ -858,6 +940,7 @@ class GalleryPart3:
                 self._load_gallery_thumbnail(file_path, item_widget.thumb_label)
             except Exception as e:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.debug(f"Error in async thumbnail load: {e}")
 
@@ -876,10 +959,7 @@ class GalleryPart3:
 
     def _gallery_has_extend_modifier(self, modifiers) -> bool:
         """Ctrl (Windows/Linux) or Cmd (macOS) for gallery extend-selection."""
-        return bool(
-            modifiers
-            & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
-        )
+        return bool(modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier))
 
     def _gallery_has_shift_modifier(self, modifiers) -> bool:
         return bool(modifiers & Qt.KeyboardModifier.ShiftModifier)

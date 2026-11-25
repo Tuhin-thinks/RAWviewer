@@ -1,4 +1,5 @@
 """Background RAW / pixmap processing."""
+
 import contextlib
 import logging
 import os
@@ -14,6 +15,7 @@ from metadata.backend import process_file_from_path
 
 class RAWProcessorPart1(QThread):
     """Thread for processing RAW images to avoid UI blocking (part 1)."""
+
     image_processed = pyqtSignal(object)  # Accepts np.ndarray or None
     error_occurred = pyqtSignal(str)
     # Signal when thumbnail fallback is used
@@ -22,7 +24,7 @@ class RAWProcessorPart1(QThread):
     processing_progress = pyqtSignal(str)  # Status message for progress updates
     exif_data_ready = pyqtSignal(dict)  # EXIF data dictionary when ready
 
-    def __init__(self, file_path, is_raw, use_full_resolution=False):
+    def __init__(self, file_path, is_raw: bool, use_full_resolution: bool = False) -> None:
         super().__init__()
         self.file_path = file_path
         self.is_raw = is_raw
@@ -34,15 +36,15 @@ class RAWProcessorPart1(QThread):
         # Use ThumbnailExtractor for cleaner thumbnail extraction (following 複製 version pattern)
         self.thumbnail_extractor = ThumbnailExtractor()
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Request processing to stop"""
         self._should_stop = True
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up the thread gracefully - optimized for fast navigation"""
         logger = logging.getLogger(__name__)
 
-        file_basename = os.path.basename(self.file_path) if hasattr(self, 'file_path') else 'unknown'
+        file_basename = os.path.basename(self.file_path) if hasattr(self, "file_path") else "unknown"
         logger.debug(f"RAWProcessor.cleanup() called for: {file_basename}")
 
         try:
@@ -70,9 +72,13 @@ class RAWProcessorPart1(QThread):
                 if not wait_result and self.isRunning():
                     # Thread is still running, likely in rawpy operation
                     # Wait longer to allow rawpy operations to complete safely
-                    logger.debug(f"Thread still running after initial wait, waiting additional 300ms for rawpy operations: {file_basename}")
+                    logger.debug(
+                        f"Thread still running after initial wait, waiting additional 300ms for rawpy operations: {file_basename}"
+                    )
                     additional_wait = self.wait(300)  # Additional 300ms for rawpy operations
-                    logger.debug(f"Additional wait(300) returned: {additional_wait}, is_running: {self.isRunning()} for: {file_basename}")
+                    logger.debug(
+                        f"Additional wait(300) returned: {additional_wait}, is_running: {self.isRunning()} for: {file_basename}"
+                    )
 
                     if not additional_wait and self.isRunning():
                         # Thread still running after all waits - likely stuck or in long operation
@@ -80,7 +86,9 @@ class RAWProcessorPart1(QThread):
                         logger.debug(f"Thread still running after all waits, calling terminate() for: {file_basename}")
                         self.terminate()
                         terminate_wait = self.wait(50)  # Short wait after terminate
-                        logger.debug(f"After terminate(), wait(50) returned: {terminate_wait}, is_running: {self.isRunning()} for: {file_basename}")
+                        logger.debug(
+                            f"After terminate(), wait(50) returned: {terminate_wait}, is_running: {self.isRunning()} for: {file_basename}"
+                        )
                 else:
                     logger.debug(f"Thread stopped gracefully for: {file_basename}")
             else:
@@ -98,16 +106,18 @@ class RAWProcessorPart1(QThread):
                         error_str = str(close_error)
                         error_type = type(close_error).__name__
                         is_cancellation = (
-                            self._should_stop or
-                            'OutOfOrderCall' in error_type or
-                            'LibRaw' in error_type or
-                            'Out of order' in error_str or
-                            'out of order' in error_str.lower()
+                            self._should_stop
+                            or "OutOfOrderCall" in error_type
+                            or "LibRaw" in error_type
+                            or "Out of order" in error_str
+                            or "out of order" in error_str.lower()
                         )
                         if not is_cancellation:
                             logger.warning(f"Error closing rawpy handle for {file_basename}: {close_error}")
                         else:
-                            logger.debug(f"Expected cancellation error when closing handle for {file_basename}: {close_error}")
+                            logger.debug(
+                                f"Expected cancellation error when closing handle for {file_basename}: {close_error}"
+                            )
                     finally:
                         self._raw_handle = None
                         logger.debug(f"rawpy handle reference cleared for: {file_basename}")
@@ -128,9 +138,7 @@ class RAWProcessorPart1(QThread):
     def get_orientation_from_exif(self, file_path):
         """Extract orientation from EXIF data - optimized for minimal logging"""
         try:
-            tags = process_file_from_path(
-                file_path, details=False, stop_tag="Image Orientation"
-            )
+            tags = process_file_from_path(file_path, details=False, stop_tag="Image Orientation")
 
             # Check for orientation tag
             orientation_tag = tags.get("Image Orientation")
@@ -139,14 +147,14 @@ class RAWProcessorPart1(QThread):
 
                 # Map orientation descriptions to numeric values
                 orientation_map = {
-                    'Horizontal (normal)': 1,
-                    'Mirrored horizontal': 2,
-                    'Rotated 180': 3,
-                    'Mirrored vertical': 4,
-                    'Mirrored horizontal then rotated 90 CCW': 5,
-                    'Rotated 90 CW': 6,
-                    'Mirrored horizontal then rotated 90 CW': 7,
-                    'Rotated 90 CCW': 8
+                    "Horizontal (normal)": 1,
+                    "Mirrored horizontal": 2,
+                    "Rotated 180": 3,
+                    "Mirrored vertical": 4,
+                    "Mirrored horizontal then rotated 90 CCW": 5,
+                    "Rotated 90 CW": 6,
+                    "Mirrored horizontal then rotated 90 CW": 7,
+                    "Rotated 90 CCW": 8,
                 }
 
                 return orientation_map.get(orientation_str, 1)
@@ -168,7 +176,7 @@ class RAWProcessorPart1(QThread):
 
         return apply_container_orientation_to_array(image_array, orientation, exif_data)
 
-    def is_raw_data_pre_rotated(self):
+    def is_raw_data_pre_rotated(self) -> bool:
         """Check if this camera/file stores RAW data pre-rotated - optimized"""
         # CRITICAL: Even for SONY/Leica/Hasselblad cameras, we should apply orientation correction
         # based on EXIF orientation tag, as the RAW data may not always be pre-rotated correctly
@@ -202,18 +210,16 @@ class RAWProcessorPart1(QThread):
         #
         # return False
 
-    def is_canon_camera(self):
+    def is_canon_camera(self) -> bool:
         """Check if this is a Canon camera that needs special white balance processing"""
         try:
             # First try to detect by file extension (more reliable for CR3)
             file_ext = os.path.splitext(self.file_path)[1].lower()
-            if file_ext in ['.cr2', '.cr3']:
+            if file_ext in [".cr2", ".cr3"]:
                 return True
 
             # Fallback to EXIF detection for other formats - only read Image Make tag
-            tags = process_file_from_path(
-                self.file_path, details=False, stop_tag="Image Make"
-            )
+            tags = process_file_from_path(self.file_path, details=False, stop_tag="Image Make")
             make = tags.get("Image Make")
 
             if make:
@@ -227,18 +233,16 @@ class RAWProcessorPart1(QThread):
 
         return False
 
-    def is_fujifilm_camera(self):
+    def is_fujifilm_camera(self) -> bool:
         """Check if this is a Fujifilm camera that needs special white balance processing"""
         try:
             # First try to detect by file extension (more reliable for RAF)
             file_ext = os.path.splitext(self.file_path)[1].lower()
-            if file_ext in ['.raf']:
+            if file_ext in [".raf"]:
                 return True
 
             # Fallback to EXIF detection for other formats - only read Image Make tag
-            tags = process_file_from_path(
-                self.file_path, details=False, stop_tag="Image Make"
-            )
+            tags = process_file_from_path(self.file_path, details=False, stop_tag="Image Make")
             make = tags.get("Image Make")
 
             if make:
@@ -256,8 +260,9 @@ class RAWProcessorPart1(QThread):
         """Check if there's enough memory to process the file"""
         try:
             import psutil
+
             memory = psutil.virtual_memory()
-            available_gb = memory.available / (1024 ** 3)
+            available_gb = memory.available / (1024**3)
 
             # Check file size
             file_size_mb = os.path.getsize(self.file_path) / (1024 * 1024)
@@ -316,7 +321,9 @@ class RAWProcessorPart1(QThread):
                 # For very large files (>80MB), force half_size for memory efficiency
                 if file_size_mb > 80:
                     use_fast_processing = True
-                    logger.debug(f"Very large file detected ({file_size_mb:.1f}MB), using half_size for memory efficiency")
+                    logger.debug(
+                        f"Very large file detected ({file_size_mb:.1f}MB), using half_size for memory efficiency"
+                    )
 
                 # CRITICAL: Disable auto-brightness to show original RAW colors
                 # Auto-brightness applies exposure compensation which changes the original RAW appearance
@@ -344,17 +351,17 @@ class RAWProcessorPart1(QThread):
                     # Use auto-brightness for full resolution to match initial display brightness
                     # Performance optimizations: use camera WB (faster), 8-bit output, fast gamma
                     postprocess_params = {
-                        'use_camera_wb': True,
-                        'half_size': use_fast_processing,
-                        'output_bps': 8,  # Use 8-bit for faster processing
-                        'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                        'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                        "use_camera_wb": True,
+                        "half_size": use_fast_processing,
+                        "output_bps": 8,  # Use 8-bit for faster processing
+                        "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                        "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                        "user_flip": 0,
                     }
                     # Add performance optimizations if available
                     with contextlib.suppress(AttributeError, TypeError):
                         # Use fastest demosaicing algorithm for speed (if supported)
-                        postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                        postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                     rgb_image = raw.postprocess(**postprocess_params)
                     # Check again after postprocess
                     if self._should_stop:
@@ -372,16 +379,16 @@ class RAWProcessorPart1(QThread):
                         # Use auto-brightness for full resolution to match initial display brightness
                         # Performance optimizations: use auto WB (fallback), 8-bit output, fast gamma
                         postprocess_params = {
-                            'use_auto_wb': True,
-                            'half_size': use_fast_processing,
-                            'output_bps': 8,  # Use 8-bit for faster processing
-                            'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                            'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                            "use_auto_wb": True,
+                            "half_size": use_fast_processing,
+                            "output_bps": 8,  # Use 8-bit for faster processing
+                            "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                            "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                            "user_flip": 0,
                         }
                         # Add performance optimizations if available
                         with contextlib.suppress(AttributeError, TypeError):
-                            postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                            postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -397,15 +404,15 @@ class RAWProcessorPart1(QThread):
                         # Use auto-brightness for full resolution to match initial display brightness
                         # Performance optimizations: default processing, 8-bit output, fast gamma
                         postprocess_params = {
-                            'half_size': use_fast_processing,
-                            'output_bps': 8,  # Use 8-bit for faster processing
-                            'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                            'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                            "half_size": use_fast_processing,
+                            "output_bps": 8,  # Use 8-bit for faster processing
+                            "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                            "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                            "user_flip": 0,
                         }
                         # Add performance optimizations if available
                         with contextlib.suppress(AttributeError, TypeError):
-                            postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                            postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -415,7 +422,9 @@ class RAWProcessorPart1(QThread):
                 # Fujifilm cameras (especially RAF) need proper white balance correction
                 # to avoid green hue issues and improve processing speed
                 if use_fast_processing:
-                    logger.debug(f"Applying Fujifilm-specific processing with fast mode for large file ({file_size_mb:.1f}MB)...")
+                    logger.debug(
+                        f"Applying Fujifilm-specific processing with fast mode for large file ({file_size_mb:.1f}MB)..."
+                    )
                 else:
                     logger.debug("Applying Fujifilm-specific white balance correction...")
                 try:
@@ -428,17 +437,17 @@ class RAWProcessorPart1(QThread):
                     # Use auto-brightness for full resolution to match initial display brightness
                     # Performance optimizations: use camera WB (faster), 8-bit output, fast gamma
                     postprocess_params = {
-                        'use_camera_wb': True,
-                        'half_size': use_fast_processing,
-                        'output_bps': 8,  # Use 8-bit for faster processing
-                        'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                        'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                        "use_camera_wb": True,
+                        "half_size": use_fast_processing,
+                        "output_bps": 8,  # Use 8-bit for faster processing
+                        "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                        "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                        "user_flip": 0,
                     }
                     # Add performance optimizations if available
                     with contextlib.suppress(AttributeError, TypeError):
                         # Use fastest demosaicing algorithm for speed (if supported)
-                        postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                        postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                     rgb_image = raw.postprocess(**postprocess_params)
                     if self._should_stop:
                         return None
@@ -455,16 +464,16 @@ class RAWProcessorPart1(QThread):
                         # Use auto-brightness for full resolution to match initial display brightness
                         # Performance optimizations: use auto WB (fallback), 8-bit output, fast gamma
                         postprocess_params = {
-                            'use_auto_wb': True,
-                            'half_size': use_fast_processing,
-                            'output_bps': 8,  # Use 8-bit for faster processing
-                            'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                            'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                            "use_auto_wb": True,
+                            "half_size": use_fast_processing,
+                            "output_bps": 8,  # Use 8-bit for faster processing
+                            "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                            "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                            "user_flip": 0,
                         }
                         # Add performance optimizations if available
                         with contextlib.suppress(AttributeError, TypeError):
-                            postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                            postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -480,15 +489,15 @@ class RAWProcessorPart1(QThread):
                         # Use auto-brightness for full resolution to match initial display brightness
                         # Performance optimizations: default processing, 8-bit output, fast gamma
                         postprocess_params = {
-                            'half_size': use_fast_processing,
-                            'output_bps': 8,  # Use 8-bit for faster processing
-                            'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                            'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                        'user_flip': 0
+                            "half_size": use_fast_processing,
+                            "output_bps": 8,  # Use 8-bit for faster processing
+                            "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                            "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                            "user_flip": 0,
                         }
                         # Add performance optimizations if available
                         with contextlib.suppress(AttributeError, TypeError):
-                            postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                            postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                         rgb_image = raw.postprocess(**postprocess_params)
                         if self._should_stop:
                             return None
@@ -504,15 +513,15 @@ class RAWProcessorPart1(QThread):
                 # Use auto-brightness for full resolution to match initial display brightness
                 # Performance optimizations: default processing, 8-bit output, fast gamma
                 postprocess_params = {
-                    'half_size': use_fast_processing,
-                    'output_bps': 8,  # Use 8-bit for faster processing
-                    'no_auto_bright': not use_auto_bright,  # Use auto-brightness for full resolution
-                    'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                    'user_flip': 0
+                    "half_size": use_fast_processing,
+                    "output_bps": 8,  # Use 8-bit for faster processing
+                    "no_auto_bright": not use_auto_bright,  # Use auto-brightness for full resolution
+                    "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                    "user_flip": 0,
                 }
                 # Add performance optimizations if available
                 with contextlib.suppress(AttributeError, TypeError):
-                    postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                    postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
                 rgb_image = raw.postprocess(**postprocess_params)
                 if self._should_stop:
                     return None
@@ -526,16 +535,15 @@ class RAWProcessorPart1(QThread):
                     return None
             # Fallback with optimized parameters for speed (keep LibRaw auto-brightness off)
             postprocess_params = {
-                'output_bps': 8,  # Use 8-bit for faster processing
-                'no_auto_bright': True,
-                'gamma': (2.222, 4.5),  # Standard sRGB gamma
-                'user_flip': 0
+                "output_bps": 8,  # Use 8-bit for faster processing
+                "no_auto_bright": True,
+                "gamma": (2.222, 4.5),  # Standard sRGB gamma
+                "user_flip": 0,
             }
             # Add performance optimizations if available
             with contextlib.suppress(AttributeError, TypeError):
-                postprocess_params['demosaic_algorithm'] = rawpy.DemosaicAlgorithm.LINEAR
+                postprocess_params["demosaic_algorithm"] = rawpy.DemosaicAlgorithm.LINEAR
             rgb_image = raw.postprocess(**postprocess_params)
             if self._should_stop:
                 return None
             return rgb_image
-

@@ -1,6 +1,4 @@
-
 """gallery mixin, part 4 of 5 (47 methods, 813 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -131,9 +129,7 @@ class GalleryPart4:
         bar = getattr(self, "gallery_selection_bar", None)
         if bar is None:
             return
-        bar.setVisible(
-            getattr(self, "view_mode", "single") == "gallery" and shown > 0
-        )
+        bar.setVisible(getattr(self, "view_mode", "single") == "gallery" and shown > 0)
         if not bar.isVisible():
             return
         label = getattr(self, "gallery_selection_count_label", None)
@@ -194,18 +190,13 @@ class GalleryPart4:
         self._refresh_gallery_bookmark_visuals()
         self._sync_bookmark_indicator()
         cleared_empty_filter = self._maybe_clear_empty_bookmark_filter()
-        if (
-            getattr(self, "view_mode", "") == "gallery"
-            and getattr(self, "_gallery_bookmark_filter_active", False)
-        ):
+        if getattr(self, "view_mode", "") == "gallery" and getattr(self, "_gallery_bookmark_filter_active", False):
             self._apply_gallery_bookmark_filter()
         elif getattr(self, "view_mode", "") == "gallery":
             self._sync_share_button_visibility()
             if cleared_empty_filter:
                 self._apply_gallery_bookmark_filter()
-        if getattr(self, "view_mode", "single") == "single" and getattr(
-            self, "_gallery_bookmark_filter_active", False
-        ):
+        if getattr(self, "view_mode", "single") == "single" and getattr(self, "_gallery_bookmark_filter_active", False):
             self._sync_filmstrip_to_folder()
         self._save_persisted_gallery_bookmarks()
 
@@ -254,10 +245,7 @@ class GalleryPart4:
 
     def _gallery_viewport_scroll_path(self) -> str | None:
         """Resolve the path shown in the gallery grid for scroll-to-current."""
-        path = (
-            getattr(self, "current_file_path", None)
-            or getattr(self, "_gallery_scroll_target_path", None)
-        )
+        path = getattr(self, "current_file_path", None) or getattr(self, "_gallery_scroll_target_path", None)
         if not path:
             return None
         gj = getattr(self, "gallery_justified", None)
@@ -309,9 +297,10 @@ class GalleryPart4:
         if btn is None:
             return
         in_gallery = getattr(self, "view_mode", "") == "gallery"
-        filter_active = bool(
-            getattr(self, "_gallery_bookmark_filter_active", False)
-        ) or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+        filter_active = (
+            bool(getattr(self, "_gallery_bookmark_filter_active", False))
+            or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+        )
         btn.setVisible(in_gallery and filter_active)
 
     def _clear_gallery_bookmark_filter(self) -> bool:
@@ -348,9 +337,10 @@ class GalleryPart4:
         self._maybe_clear_empty_rating_filter()
         self._sync_gallery_rating_filter_stars()
         self._sync_gallery_clear_filter_button()
-        filter_active = bool(
-            getattr(self, "_gallery_bookmark_filter_active", False)
-        ) or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+        filter_active = (
+            bool(getattr(self, "_gallery_bookmark_filter_active", False))
+            or int(getattr(self, "_gallery_rating_filter_min", 0) or 0) > 0
+        )
         display_files = self._gallery_files_for_display()
         display_keys = {_norm_path(p) for p in display_files}
         selected = set(getattr(self, "_gallery_selected_paths", set()) or set())
@@ -364,9 +354,7 @@ class GalleryPart4:
                 if not display_files:
                     scope_desc = self._gallery_scope_filter_description()
                     empty_msg = (
-                        f"No matching {scope_desc}"
-                        if self._is_semantic_search_filter_active()
-                        else f"No {scope_desc}"
+                        f"No matching {scope_desc}" if self._is_semantic_search_filter_active() else f"No {scope_desc}"
                     )
                     gj.set_images([], meta if meta else None)
                     gj.show_empty_message(empty_msg)
@@ -386,11 +374,7 @@ class GalleryPart4:
                 display_files = list(getattr(self, "image_files", []) or [])
                 if not display_files:
                     gj.set_images([], meta if meta else None)
-                    empty_msg = (
-                        "No matching images"
-                        if self._is_semantic_search_filter_active()
-                        else "No images"
-                    )
+                    empty_msg = "No matching images" if self._is_semantic_search_filter_active() else "No images"
                     gj.show_empty_message(empty_msg)
                 else:
                     self._sync_gallery_to_folder_files(
@@ -428,9 +412,7 @@ class GalleryPart4:
     def _refresh_filmstrip_bookmark_visuals(self) -> None:
         bar = self._filmstrip_bar()
         if bar is not None and hasattr(bar, "set_bookmarked_norm_paths"):
-            bar.set_bookmarked_norm_paths(
-                getattr(self, "_gallery_bookmarked_paths", set()) or set()
-            )
+            bar.set_bookmarked_norm_paths(getattr(self, "_gallery_bookmarked_paths", set()) or set())
         self._sync_bookmark_indicator()
 
     def _refresh_gallery_bookmark_visuals(self) -> None:
@@ -477,9 +459,7 @@ class GalleryPart4:
         self._sync_share_button_visibility()
         self._save_persisted_gallery_bookmarks()
         if not self.image_files:
-            had_semantic_scope = bool(
-                self._semantic_search_backup_files or self._semantic_search_corpus_files
-            )
+            had_semantic_scope = bool(self._semantic_search_backup_files or self._semantic_search_corpus_files)
             if had_semantic_scope:
                 self._clear_semantic_search_results(silent=True, exit_to_gallery=True)
                 inp = getattr(self, "gallery_search_input", None)
@@ -583,13 +563,13 @@ class GalleryPart4:
         self.current_zoom_level = 1.0
         self.zoom_center_point = None
         # Clear any pending zoom state
-        if hasattr(self, '_pending_zoom'):
+        if hasattr(self, "_pending_zoom"):
             self._pending_zoom = False
-        if hasattr(self, '_pending_zoom_restore'):
+        if hasattr(self, "_pending_zoom_restore"):
             self._pending_zoom_restore = False
-        if hasattr(self, '_restore_zoom_center'):
+        if hasattr(self, "_restore_zoom_center"):
             self._restore_zoom_center = None
-        if hasattr(self, '_restore_zoom_level'):
+        if hasattr(self, "_restore_zoom_level"):
             self._restore_zoom_level = None
 
         # Settle-to-fit guarantee. Multiple independent races have landed a
@@ -620,7 +600,8 @@ class GalleryPart4:
             logging.getLogger(__name__).info(
                 "[GALLERY_FIT] Correcting non-fit landing after gallery click "
                 "(scale=%.4f fit=%.4f) -- residual zoom path still active",
-                g.current_scale(), g.fit_scale(),
+                g.current_scale(),
+                g.fit_scale(),
             )
             g.fit_to_window()
 
@@ -630,12 +611,12 @@ class GalleryPart4:
         QTimer.singleShot(80, _enforce_gallery_fit)
         QTimer.singleShot(450, _enforce_gallery_fit)
 
-        self.view_mode = 'single'
-        if hasattr(self, 'view_mode_button'):
+        self.view_mode = "single"
+        if hasattr(self, "view_mode_button"):
             # Update icon if using qtawesome
             if qta is not None:
                 try:
-                    gallery_icon = _qta_icon('fa5s.th', color=theme.INK_MUTED)
+                    gallery_icon = _qta_icon("fa5s.th", color=theme.INK_MUTED)
                     self.view_mode_button.setIcon(gallery_icon)
                     self.view_mode_button.setIconSize(QSize(20, 20))
                     self.view_mode_button.setText("")  # Clear text if using icon
@@ -656,7 +637,9 @@ class GalleryPart4:
                 cached_pixmap = self.image_cache.get_pixmap(file_path)
                 if cached_pixmap and not cached_pixmap.isNull():
                     # Scale to fit thumbnail size
-                    scaled_pixmap = cached_pixmap.scaled(200, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    scaled_pixmap = cached_pixmap.scaled(
+                        200, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                    )
                     label.setPixmap(scaled_pixmap)
                     return
 
@@ -664,11 +647,13 @@ class GalleryPart4:
                 if os.path.exists(file_path):
                     # For non-RAW files, use safe loader (handles TIFF properly)
                     file_ext = os.path.splitext(file_path)[1].lower()
-                    if file_ext not in ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3']:
+                    if file_ext not in [".arw", ".cr2", ".nef", ".raf", ".orf", ".dng", ".cr3"]:
                         pixmap = self._load_pixmap_safe(file_path)
                         if not pixmap.isNull():
                             # Ensure dimensions > 0 (already 200x150 here, but good for safety)
-                            scaled_pixmap = pixmap.scaled(200, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                            scaled_pixmap = pixmap.scaled(
+                                200, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                            )
                             label.setPixmap(scaled_pixmap)
                             return
 
@@ -677,13 +662,14 @@ class GalleryPart4:
                     label.setText("RAW\nLoading...")
             except Exception as e:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.debug(f"Error loading gallery thumbnail for {file_path}: {e}")
                 label.setText("Error")
 
     def _update_sort_button_text(self):
         """Update the sort toggle button text based on current preference"""
-        if hasattr(self, 'sort_toggle_button'):
+        if hasattr(self, "sort_toggle_button"):
             if self.get_sort_preference():
                 self.sort_toggle_button.setText("⇅ Newest")
             else:
@@ -709,12 +695,16 @@ class GalleryPart4:
         logger = logging.getLogger(__name__)
         logger.debug("RAW preview thumbnail: %s", message)
         # Optional dev-only status hint (default off -- avoids truncated "warning thumbnail…" text).
-        if os.environ.get("RAWVIEWER_VERBOSE_RAW_PREVIEW", "").strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        ) and self.current_file_path:
+        if (
+            os.environ.get("RAWVIEWER_VERBOSE_RAW_PREVIEW", "").strip().lower()
+            in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            )
+            and self.current_file_path
+        ):
             name = os.path.basename(_require_str_path(self.current_file_path))
             self.status_bar.showMessage(f"{name}: Loading preview…")
 
@@ -724,13 +714,11 @@ class GalleryPart4:
             # Smart thumbnail display: only show thumbnail if it makes sense
             if self._should_show_thumbnail() and not self._full_res_only_mode():
                 self.display_numpy_image(thumbnail)
-                self.status_bar.showMessage(
-                    "Preview loaded - processing full image...")
+                self.status_bar.showMessage("Preview loaded - processing full image...")
             else:
                 # Store thumbnail but don't display it yet
                 self._pending_thumbnail = thumbnail
-                self.status_bar.showMessage(
-                    "Processing full image for quality evaluation...")
+                self.status_bar.showMessage("Processing full image for quality evaluation...")
 
     def _should_show_thumbnail(self):
         """Determine if we should show thumbnail immediately or wait for full image."""
@@ -749,7 +737,7 @@ class GalleryPart4:
 
         # Don't show thumbnail if we're maintaining zoom state from navigation
         # (user was previously at 100% zoom checking sharpness)
-        if hasattr(self, '_maintain_zoom_on_navigation'):
+        if hasattr(self, "_maintain_zoom_on_navigation"):
             return False
 
         if getattr(self, "_pending_zoom_restore", False):
@@ -780,9 +768,7 @@ class GalleryPart4:
             return
         import logging
 
-        logging.getLogger(__name__).info(
-            "[SESSION] Aborting staged restore loads for gallery entry"
-        )
+        logging.getLogger(__name__).info("[SESSION] Aborting staged restore loads for gallery entry")
         self._session_restore_defer_preload = False
         self._session_restore_staged_scheduled = False
         self._session_restore_full_decode_allowed = False

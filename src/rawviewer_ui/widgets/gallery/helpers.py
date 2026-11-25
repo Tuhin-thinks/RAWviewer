@@ -1,5 +1,4 @@
 """Module-level helpers for the JustifiedGallery package (Phase 4 split)."""
-from __future__ import annotations
 
 import logging
 import os
@@ -11,7 +10,7 @@ from PyQt6.QtGui import QImage, QPixmap, QTransform
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from core import theme
-from image_load_manager import Priority
+from image_load_manager.helpers import Priority
 
 logger = logging.getLogger(__name__)
 
@@ -273,9 +272,7 @@ def _gallery_warmup_scheduling_budgets(file_count: int) -> tuple[int, int, int]:
 
 def _batch_tile_apply_enabled() -> bool:
     """Default ON. Set RAWVIEWER_GALLERY_BATCH_TILE_APPLY=0 to apply tile pixmaps inline."""
-    return os.environ.get(
-        "RAWVIEWER_GALLERY_BATCH_TILE_APPLY", "1"
-    ).strip().lower() not in {"0", "false", "no", "off"}
+    return os.environ.get("RAWVIEWER_GALLERY_BATCH_TILE_APPLY", "1").strip().lower() not in {"0", "false", "no", "off"}
 
 
 def _tile_apply_batch_size() -> int:
@@ -286,7 +283,10 @@ def _tile_apply_batch_size() -> int:
 def _orient_debug_enabled() -> bool:
     """Diagnostic only: RAWVIEWER_ORIENT_DEBUG=1 logs per-tile orientation decisions."""
     return os.environ.get("RAWVIEWER_ORIENT_DEBUG", "0").strip().lower() in {
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     }
 
 
@@ -341,14 +341,10 @@ def _thumbnail_data_to_base_pixmap(thumbnail_data) -> QPixmap | None:
                 arr = np.ascontiguousarray(arr)
             if c == 3:
                 bytes_per_line = arr.strides[0]
-                qimg = QImage(
-                    arr.data, w, h, bytes_per_line, QImage.Format.Format_RGB888
-                ).copy()
+                qimg = QImage(arr.data, w, h, bytes_per_line, QImage.Format.Format_RGB888).copy()
             elif c == 4:
                 bytes_per_line = arr.strides[0]
-                qimg = QImage(
-                    arr.data, w, h, bytes_per_line, QImage.Format.Format_RGBA8888
-                ).copy()
+                qimg = QImage(arr.data, w, h, bytes_per_line, QImage.Format.Format_RGBA8888).copy()
             else:
                 return None
         else:

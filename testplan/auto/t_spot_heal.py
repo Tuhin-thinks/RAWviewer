@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Spot heal (cv2.inpaint) invariants + undo restore wiring."""
+
 import inspect
 import os
 import sys
@@ -11,7 +12,7 @@ import numpy as np
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -183,16 +184,16 @@ def main() -> int:
     import main as mainmod
 
     class FakePanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.heal_calls = []
 
-        def set_spot_heal_mask_present(self, present):
+        def set_spot_heal_mask_present(self, present) -> None:
             self.heal_calls.append(present)
 
-        def dodge_burn_show_mask(self):
+        def dodge_burn_show_mask(self) -> bool:
             return False
 
-        def dodge_burn_mode(self):
+        def dodge_burn_mode(self) -> str:
             return "heal"
 
     m = type("M", (), {})()
@@ -200,15 +201,9 @@ def main() -> int:
     stamp_heal_brush(m._spot_heal_mask, 8.0, 8.0, 4.0, 1.0)
     m.single_image_adjust_panel = FakePanel()
     m.gpu_view = None
-    m._apply_spot_heal_mask_from_adj = (
-        mainmod.RAWImageViewer._apply_spot_heal_mask_from_adj.__get__(m)
-    )
-    m._sync_dodge_burn_mask_overlay = (
-        mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
-    )
-    m._active_local_mask_for_overlay = (
-        mainmod.RAWImageViewer._active_local_mask_for_overlay.__get__(m)
-    )
+    m._apply_spot_heal_mask_from_adj = mainmod.RAWImageViewer._apply_spot_heal_mask_from_adj.__get__(m)
+    m._sync_dodge_burn_mask_overlay = mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
+    m._active_local_mask_for_overlay = mainmod.RAWImageViewer._active_local_mask_for_overlay.__get__(m)
     m._apply_spot_heal_mask_from_adj({})
     check("undo to empty clears heal mask", m._spot_heal_mask is None)
     check("panel told heal gone", m.single_image_adjust_panel.heal_calls == [False])
@@ -217,8 +212,7 @@ def main() -> int:
     check(
         "undo restores spot heal before editing_finished",
         "_apply_spot_heal_mask_from_adj" in undo_src
-        and undo_src.find("_apply_spot_heal_mask_from_adj")
-        < undo_src.find("_on_adjust_panel_editing_finished"),
+        and undo_src.find("_apply_spot_heal_mask_from_adj") < undo_src.find("_on_adjust_panel_editing_finished"),
     )
 
     # 5. Pipeline stage key includes heal mask
@@ -228,9 +222,11 @@ def main() -> int:
     check("pre_tone keys include spot heal", HEAL_KEY in _PRE_TONE_KEYS)
 
     # 6. Reset must strip SpotHealMask from XMP (else gallery stays "edited")
-    from raw_adjustments import _OUR_CRS_CHILD_LOCALS, write_xmp_adjustments
-    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
     import tempfile
+
+    from raw_spot_heal import MASK_KEY as HEAL_MASK_KEY
+
+    from raw_adjustments import _OUR_CRS_CHILD_LOCALS, write_xmp_adjustments
 
     check(
         "SpotHealMask is in our CRS strip set",
@@ -239,8 +235,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         xmp = os.path.join(td, "t.xmp")
         write_xmp_adjustments(xmp, {HEAL_MASK_KEY: serial})
-        from raw_adjustments import parse_spot_heal_mask_from_xmp, is_default_adjustments
-        from raw_adjustments import load_adjustments_from_xmp
+        from raw_adjustments import is_default_adjustments, load_adjustments_from_xmp, parse_spot_heal_mask_from_xmp
 
         check(
             "heal serial round-trips into XMP",

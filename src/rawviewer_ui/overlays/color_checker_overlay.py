@@ -1,17 +1,12 @@
 """Interactive pin overlay for a 24-patch ColorChecker chart."""
 
-from __future__ import annotations
-
 import math
 
 from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QWidget
 
-try:
-    import rawviewer_ui.theme as theme
-except ModuleNotFoundError:
-    from core import theme as theme
+from core import theme
 
 
 class ColorCheckerOverlay(QWidget):
@@ -52,7 +47,7 @@ class ColorCheckerOverlay(QWidget):
                 return i
         return -1
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             idx = self._nearest_handle(event.position(), self.width(), self.height())
             if idx >= 0:
@@ -62,7 +57,7 @@ class ColorCheckerOverlay(QWidget):
                 return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         w, h = max(1, self.width()), max(1, self.height())
         pos = event.position()
         if self._drag_index >= 0:
@@ -76,16 +71,12 @@ class ColorCheckerOverlay(QWidget):
         nxt = self._nearest_handle(pos, w, h)
         if nxt != self._hover_index:
             self._hover_index = nxt
-            shape = (
-                Qt.CursorShape.PointingHandCursor
-                if nxt >= 0
-                else Qt.CursorShape.ArrowCursor
-            )
+            shape = Qt.CursorShape.PointingHandCursor if nxt >= 0 else Qt.CursorShape.ArrowCursor
             self.setCursor(QCursor(shape))
             self.update()
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self._drag_index >= 0:
             self._drag_index = -1
             self.update()
@@ -93,7 +84,7 @@ class ColorCheckerOverlay(QWidget):
             return
         super().mouseReleaseEvent(event)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         qp = QPainter(self)
         qp.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()

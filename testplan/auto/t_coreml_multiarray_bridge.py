@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Unit tests for Core ML MultiArray / CVPixelBuffer bulk-copy helpers."""
-from __future__ import annotations
 
 import ctypes
 import os
@@ -20,7 +19,7 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 class _FakeMultiArray:
-    def __init__(self, data: np.ndarray, data_type: int = 65568):
+    def __init__(self, data: np.ndarray, data_type: int = 65568) -> None:
         self._buf = np.ascontiguousarray(data)
         self._dtype = data_type
 
@@ -87,10 +86,7 @@ def main() -> int:
     # Fallback path: bad pointer returns False
     check(
         "copy_numpy rejects None pointer",
-        copy_numpy_into_mlmultiarray(
-            type("X", (), {"dataPointer": lambda self: None})(), src
-        )
-        is False,
+        copy_numpy_into_mlmultiarray(type("X", (), {"dataPointer": lambda self: None})(), src) is False,
     )
 
     if FAILURES:

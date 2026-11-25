@@ -1,7 +1,5 @@
 """PV2012 parametric tone curve + Lightroom ToneCurvePV2012 point LUT."""
 
-from __future__ import annotations
-
 import numpy as np
 
 TONE_CURVE_SERIAL_KEY = "_tone_curve_pv2012"
@@ -42,12 +40,7 @@ def is_identity_tone_curve_points(points: list[tuple[float, float]]) -> bool:
     if len(points) == 2:
         x0, y0 = points[0]
         x1, y1 = points[1]
-        return (
-            abs(x0) < 1e-3
-            and abs(y0) < 1e-3
-            and abs(x1 - 255.0) < 1e-3
-            and abs(y1 - 255.0) < 1e-3
-        )
+        return abs(x0) < 1e-3 and abs(y0) < 1e-3 and abs(x1 - 255.0) < 1e-3 and abs(y1 - 255.0) < 1e-3
     return False
 
 
@@ -59,9 +52,7 @@ def normalize_tone_curve_points(
         return default_tone_curve_points()
     cleaned: list[tuple[float, float]] = []
     for x, y in points:
-        cleaned.append(
-            (float(max(0.0, min(255.0, x))), float(max(0.0, min(255.0, y))))
-        )
+        cleaned.append((float(max(0.0, min(255.0, x))), float(max(0.0, min(255.0, y)))))
     cleaned.sort(key=lambda p: p[0])
     if cleaned[0][0] > 0.0:
         cleaned.insert(0, (0.0, cleaned[0][1]))
@@ -297,9 +288,7 @@ def build_point_curve_lut(points: list[tuple[float, float]]) -> np.ndarray | Non
     return fit(grid).astype(np.float32)
 
 
-def apply_channel_curves_encoded(
-    encoded: np.ndarray, adj: dict[str, float], max_val: float
-) -> np.ndarray:
+def apply_channel_curves_encoded(encoded: np.ndarray, adj: dict[str, float], max_val: float) -> np.ndarray:
     """Standard-mode R/G/B curves, applied to an already gamma-encoded
     display-referred buffer (uint8 preview or uint16 export -- whichever
     ``encoded``/``max_val`` the caller is finishing with). Each channel is

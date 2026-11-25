@@ -1,6 +1,4 @@
-
 """dialogs mixin, part 1 of 1 (40 methods, 852 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -63,20 +61,16 @@ class DialogsPart1:
                     return
         try:
             from raw_adjustments.file_extensions import get_supported_extensions
+
             exts = get_supported_extensions()
         except Exception:
-            exts = ['.arw', '.cr2', '.nef', '.dng', '.jpg', '.jpeg', '.png']
+            exts = [".arw", ".cr2", ".nef", ".dng", ".jpg", ".jpeg", ".png"]
 
         dialog = CustomWarningDialog(
             self,
             title="Unsupported File Format",
-            message=(
-                f"The file '{os.path.basename(file_path)}' is not supported by "
-                f"RAWviewer or is corrupt."
-            ),
-            informative_text=(
-                f"Check if the file is corrupt. Supported formats list: {', '.join(exts)}"
-            ),
+            message=(f"The file '{os.path.basename(file_path)}' is not supported by RAWviewer or is corrupt."),
+            informative_text=(f"Check if the file is corrupt. Supported formats list: {', '.join(exts)}"),
         )
         dialog.exec()
 
@@ -89,9 +83,7 @@ class DialogsPart1:
         signals.finished.connect(self._on_release_update_check_finished)
         _get_bg_thread_pool().start(_ReleaseUpdateCheckWorker(signals))
 
-    def _show_release_update_available_dialog(
-        self, current: str, latest: str, release_url: str
-    ) -> bool:
+    def _show_release_update_available_dialog(self, current: str, latest: str, release_url: str) -> bool:
         """Return True when the user chose Not Now (or dismissed), False after Open Download Page."""
         from core.release_update import RELEASE_PAGE_URL
         from rawviewer_ui.dialogs.release_update_dialog import ReleaseUpdateDialog
@@ -151,9 +143,7 @@ class DialogsPart1:
 
         dialog = MobileCLIPDownloadDialog(self)
         self._mobileclip_download_dialog = dialog
-        dialog.download_requested.connect(
-            lambda: self._start_semantic_asset_download_background(corpus_files)
-        )
+        dialog.download_requested.connect(lambda: self._start_semantic_asset_download_background(corpus_files))
         dialog.exec()
         self._mobileclip_download_dialog = None
         if dialog.download_started:
@@ -181,13 +171,8 @@ class DialogsPart1:
         if gv is not None:
             try:
                 if hasattr(gv, "release_for_gallery_entry"):
-                    hidden = (
-                        hasattr(gv, "_viewport_hidden_for_teardown")
-                        and gv._viewport_hidden_for_teardown()
-                    )
-                    had_heavy = (
-                        hasattr(gv, "has_heavy_pixmap") and gv.has_heavy_pixmap()
-                    )
+                    hidden = hasattr(gv, "_viewport_hidden_for_teardown") and gv._viewport_hidden_for_teardown()
+                    had_heavy = hasattr(gv, "has_heavy_pixmap") and gv.has_heavy_pixmap()
                     gv.release_for_gallery_entry()
                     if sys.platform == "win32" and gv.is_opengl_viewport():
                         if hidden and not had_heavy:
@@ -292,11 +277,7 @@ class DialogsPart1:
 
     def _open_file_dialog_macos_applescript(self, last_dir: str) -> str:
         """Native macOS Finder file picker via AppleScript (works with Qt + Terminal)."""
-        types = [
-            ext.lstrip(".").lower()
-            for ext in self.get_supported_extensions()
-            if ext
-        ]
+        types = [ext.lstrip(".").lower() for ext in self.get_supported_extensions() if ext]
         type_clause = ""
         if types:
             type_list = ", ".join(f'"{_applescript_escape(t)}"' for t in types)
@@ -305,9 +286,7 @@ class DialogsPart1:
         start = self._sanitize_dialog_start_dir(last_dir)
         location_clause = ""
         if start:
-            location_clause = (
-                f' default location (POSIX file "{_applescript_escape(start)}")'
-            )
+            location_clause = f' default location (POSIX file "{_applescript_escape(start)}")'
 
         # A bare top-level "activate" (no tell-application context) does not
         # reliably bring this dialog forward -- confirmed live: the osascript
@@ -330,9 +309,7 @@ class DialogsPart1:
         start = self._sanitize_dialog_start_dir(last_dir)
         location_clause = ""
         if start:
-            location_clause = (
-                f' default location (POSIX file "{_applescript_escape(start)}")'
-            )
+            location_clause = f' default location (POSIX file "{_applescript_escape(start)}")'
         script = (
             'tell application "Finder"\n'
             "    activate\n"
@@ -348,9 +325,7 @@ class DialogsPart1:
 
         logger = logging.getLogger(__name__)
         if not self._macos_nsopenpanel_reliable():
-            logger.info(
-                "Skipping NSOpenPanel (unbundled dev launch), using AppleScript choose file"
-            )
+            logger.info("Skipping NSOpenPanel (unbundled dev launch), using AppleScript choose file")
             return self._open_file_dialog_macos_applescript(last_dir)
         try:
             return self._open_file_dialog_macos_nsopenpanel(last_dir)
@@ -366,9 +341,7 @@ class DialogsPart1:
 
         logger = logging.getLogger(__name__)
         if not self._macos_nsopenpanel_reliable():
-            logger.info(
-                "Skipping NSOpenPanel (unbundled dev launch), using AppleScript choose folder"
-            )
+            logger.info("Skipping NSOpenPanel (unbundled dev launch), using AppleScript choose folder")
             return self._open_folder_dialog_macos_applescript(last_dir)
         try:
             return self._open_folder_dialog_macos_nsopenpanel(last_dir)
@@ -422,16 +395,12 @@ class DialogsPart1:
         url = panel.URL()
         return url.path() if url is not None else ""
 
-    def _save_file_dialog_macos_applescript(
-        self, default_dir: str, default_name: str, prompt: str
-    ) -> str:
+    def _save_file_dialog_macos_applescript(self, default_dir: str, default_name: str, prompt: str) -> str:
         """Native macOS Finder save picker via AppleScript (works with Qt + Terminal)."""
         start = self._sanitize_dialog_start_dir(default_dir)
         location_clause = ""
         if start:
-            location_clause = (
-                f' default location (POSIX file "{_applescript_escape(start)}")'
-            )
+            location_clause = f' default location (POSIX file "{_applescript_escape(start)}")'
         name_clause = ""
         if default_name:
             name_clause = f' default name "{_applescript_escape(default_name)}"'
@@ -497,14 +466,10 @@ class DialogsPart1:
 
         logger = logging.getLogger(__name__)
         if not self._macos_nsopenpanel_reliable():
-            logger.info(
-                "Skipping NSSavePanel (unbundled dev launch), using AppleScript choose file name"
-            )
+            logger.info("Skipping NSSavePanel (unbundled dev launch), using AppleScript choose file name")
             return self._save_file_dialog_macos_applescript(default_dir, default_name, prompt)
         try:
-            return self._save_file_dialog_macos_nssavepanel(
-                default_dir, default_name, prompt, file_types
-            )
+            return self._save_file_dialog_macos_nssavepanel(default_dir, default_name, prompt, file_types)
         except Exception as exc:
             logger.warning(
                 "NSSavePanel unavailable (%s), using AppleScript choose file name",
@@ -515,9 +480,7 @@ class DialogsPart1:
     def _choose_macos_editing_app_applescript(self, start_dir: str) -> str:
         """Native app picker via AppleScript (works when Qt owns NSApplication)."""
         start = self._sanitize_dialog_start_dir(start_dir) or "/Applications"
-        location_clause = (
-            f' default location (POSIX file "{_applescript_escape(start)}")'
-        )
+        location_clause = f' default location (POSIX file "{_applescript_escape(start)}")'
         script = (
             'tell application "Finder"\n'
             "    activate\n"
@@ -566,9 +529,7 @@ class DialogsPart1:
             )
             return app_path or ""
         if not self._macos_nsopenpanel_reliable():
-            logger.info(
-                "Skipping NSOpenPanel app chooser (unbundled dev launch), using AppleScript"
-            )
+            logger.info("Skipping NSOpenPanel app chooser (unbundled dev launch), using AppleScript")
             return self._choose_macos_editing_app_applescript(start_dir)
         try:
             return self._choose_macos_editing_app_nsopenpanel(start_dir)
@@ -612,8 +573,7 @@ class DialogsPart1:
                 viewport_center_y = scroll_y + viewport_size.height() // 2
                 # Update zoom_center_point to current viewport center
                 self.zoom_center_point = QPoint(viewport_center_x, viewport_center_y)
-                self.image_label.setCursor(
-                    QCursor(Qt.CursorShape.OpenHandCursor))
+                self.image_label.setCursor(QCursor(Qt.CursorShape.OpenHandCursor))
             elif self.fit_to_window:
                 self.image_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         # Always ensure main window has focus for keyboard events
@@ -676,8 +636,7 @@ class DialogsPart1:
         gv.set_color_pick_mode(True)
         if hasattr(self, "status_bar"):
             self.status_bar.showMessage(
-                "Click a neutral gray/white area in the image to set white balance"
-                " -- Esc to cancel",
+                "Click a neutral gray/white area in the image to set white balance -- Esc to cancel",
                 0,
             )
 
@@ -724,7 +683,7 @@ class DialogsPart1:
                 )
             return
 
-        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
+        from raw_adjustments.checks import solve_white_balance_from_sample, wb_reference_temperature
 
         radius = 3
         y0, y1 = max(0, cy - radius), min(h, cy + radius + 1)
@@ -736,9 +695,7 @@ class DialogsPart1:
         temperature, tint = solve_white_balance_from_sample(r, g, b, ref_temp)
         panel.apply_picked_white_balance(temperature, tint)
         if hasattr(self, "status_bar"):
-            self.status_bar.showMessage(
-                f"White balance set from picked pixel ({int(round(temperature))}K)", 3000
-            )
+            self.status_bar.showMessage(f"White balance set from picked pixel ({int(round(temperature))}K)", 3000)
         QTimer.singleShot(0, self._restore_keyboard_focus)
 
     def _on_auto_wb_requested(self) -> None:
@@ -750,8 +707,8 @@ class DialogsPart1:
             if hasattr(self, "status_bar"):
                 self.status_bar.showMessage("Auto WB needs a decoded RAW edit base -- try again in a moment", 3000)
             return
-        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.auto_adjust import estimate_neutral_rgb
+        from raw_adjustments.checks import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.pipeline import _linear_float_from_buffer
 
         est = estimate_neutral_rgb(_linear_float_from_buffer(base))
@@ -812,9 +769,7 @@ class DialogsPart1:
         self._macos_share_cached_services = None
 
     def _macos_share_try_native_picker(self) -> bool:
-        return _env_true("RAWVIEWER_SHARE_TRY_NATIVE_PICKER") or _env_true(
-            "RAWVIEWER_SHARE_NATIVE_PICKER"
-        )
+        return _env_true("RAWVIEWER_SHARE_TRY_NATIVE_PICKER") or _env_true("RAWVIEWER_SHARE_NATIVE_PICKER")
 
     def _share_macos_picker_ui_for_url(self, urls) -> None:
         """Show NSSharingServicePicker for prepared NSURL(s) (AirDrop-only experiments)."""
@@ -829,9 +784,7 @@ class DialogsPart1:
             if not self._macos_share_ensure_appkit_context(require_window=True):
                 self._macos_share_end_picker_session("picker_fail")
                 return
-            self._macos_share_cached_services = (
-                NSSharingService.sharingServicesForItems_(items) or []
-            )
+            self._macos_share_cached_services = NSSharingService.sharingServicesForItems_(items) or []
             if not self._macos_share_on_main_thread():
                 _share_log(logging.ERROR, "refusing AirDrop picker: not on Qt GUI thread")
                 self._macos_share_end_picker_session("picker_fail")
@@ -903,10 +856,13 @@ class DialogsPart1:
         if ok:
             _share_log(logging.INFO, "NSSharingServicePicker shown OK (heavy; session ends on dismiss)")
             self.status_bar.showMessage("Share", 1500)
-            QTimer.singleShot(120000, lambda: (
-                self._macos_share_end_picker_session("safety_timeout"),
-                self._macos_cleanup_share_temp(),
-            ))
+            QTimer.singleShot(
+                120000,
+                lambda: (
+                    self._macos_share_end_picker_session("safety_timeout"),
+                    self._macos_cleanup_share_temp(),
+                ),
+            )
             return True
         self._macos_share_end_picker_session("picker_fail")
         self._macos_cleanup_share_temp()

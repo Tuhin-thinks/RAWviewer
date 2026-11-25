@@ -1,5 +1,4 @@
 """Unified mixin part 1 of 7 for UnifiedImageProcessor."""
-from __future__ import annotations
 
 import os
 
@@ -23,7 +22,7 @@ from .helpers import (
 
 
 class UnifiedPart1:
-    def __init__(self):
+    def __init__(self) -> None:
         self.cache = get_image_cache()
         self.thumbnail_extractor = ThumbnailExtractor()
         self.exif_extractor = EXIFExtractor()
@@ -135,9 +134,7 @@ class UnifiedPart1:
                 strings.update(f"{_k}=obj{id(_v)}\x00".encode())
         return (tuple(numeric), strings.hexdigest(), shape)
 
-    def _peek_adjusted_full(
-        self, file_path: str, adj: dict, shape
-    ) -> np.ndarray | None:
+    def _peek_adjusted_full(self, file_path: str, adj: dict, shape) -> np.ndarray | None:
         """Return a warm full-res adjusted buffer, or None. Non-blocking."""
         if adj is None or shape is None:
             return None

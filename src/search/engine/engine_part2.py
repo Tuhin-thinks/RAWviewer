@@ -1,5 +1,4 @@
 """Engine mixin part 2 of 7 for SemanticImageIndex."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -30,7 +29,6 @@ from search.types import MetadataRow
 
 
 class EnginePart2:
-
     def _gps_to_decimal(self, gps_vals: Any, ref: str) -> float | None:
         try:
             # If gps_vals is an IfdTag/IfdTagLite, it has a .values attribute
@@ -40,6 +38,7 @@ class EnginePart2:
             if isinstance(vals, str):
                 # Common formats: "25/1 10/1 0/1" or "25, 10, 0"
                 import re
+
                 parts = re.split(r"[\s,]+", vals.strip())
                 if len(parts) >= 3:
                     parsed = []
@@ -182,14 +181,14 @@ class EnginePart2:
 
                     orientation_str = str(val).strip()
                     orientation_map = {
-                        'Horizontal (normal)': 1,
-                        'Mirrored horizontal': 2,
-                        'Rotated 180': 3,
-                        'Mirrored vertical': 4,
-                        'Mirrored horizontal then rotated 90 CCW': 5,
-                        'Rotated 90 CW': 6,
-                        'Mirrored horizontal then rotated 90 CW': 7,
-                        'Rotated 90 CCW': 8
+                        "Horizontal (normal)": 1,
+                        "Mirrored horizontal": 2,
+                        "Rotated 180": 3,
+                        "Mirrored vertical": 4,
+                        "Mirrored horizontal then rotated 90 CCW": 5,
+                        "Rotated 90 CW": 6,
+                        "Mirrored horizontal then rotated 90 CW": 7,
+                        "Rotated 90 CCW": 8,
                     }
                     if orientation_str in orientation_map:
                         orientation = orientation_map[orientation_str]
@@ -218,7 +217,11 @@ class EnginePart2:
                 result["gps_raw"] = f"{lat_ref} {lat} | {lon_ref} {lon}"
 
             # Reverse Geocoding
-            if result["gps_lat"] is not None and result["gps_lon"] is not None and (abs(result["gps_lat"]) > 0.001 or abs(result["gps_lon"]) > 0.001):
+            if (
+                result["gps_lat"] is not None
+                and result["gps_lon"] is not None
+                and (abs(result["gps_lat"]) > 0.001 or abs(result["gps_lon"]) > 0.001)
+            ):
                 # Skip (0,0) as it's often a placeholder for no-fix
                 geo = self._ensure_reverse_geocoder()
                 if isinstance(geo, CustomReverseGeocoder):
@@ -227,10 +230,12 @@ class EnginePart2:
                         # reverse_geocoder is not thread-safe; serialize lookups.
                         with self._rg_lock:
                             recs = geo.search(
-                                [(
-                                    _coerce_float(result["gps_lat"]) or 0.0,
-                                    _coerce_float(result["gps_lon"]) or 0.0,
-                                )],
+                                [
+                                    (
+                                        _coerce_float(result["gps_lat"]) or 0.0,
+                                        _coerce_float(result["gps_lon"]) or 0.0,
+                                    )
+                                ],
                                 mode=1,
                             )
                         dur_geo = time.time() - t_geo
@@ -254,7 +259,7 @@ class EnginePart2:
                 try:
                     orientation = result.get("orientation") or 1
 
-                    from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+                    from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
                     from image_cache import get_image_cache
 
                     t_cache = time.time()
@@ -277,7 +282,7 @@ class EnginePart2:
                             "lens_model": str(result["lens_model"]),
                             "iso": int(result["iso"] or 0),
                             "raw_exif_sensor_meta_ver": RAW_EXIF_SENSOR_META_VER,
-                        }
+                        },
                     }
                     # Skip the write when the shared cache already holds an
                     # equivalent, version-fresh row (e.g. populated moments earlier
@@ -315,6 +320,7 @@ class EnginePart2:
                     dur_cache = time.time() - t_cache
                 except Exception as e:
                     import logging
+
                     logging.getLogger(__name__).warning(f"[INDEX] Could not populate ImageCache for {file_path}: {e}")
                     dur_cache = 0.0
             else:
@@ -322,6 +328,7 @@ class EnginePart2:
             total_dur = dur_exif + dur_dims + dur_geo + dur_cache
             if total_dur > 2.0:
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "[INDEX] Slow metadata phases for %s: total=%.3fs exif=%.3fs dims=%.3fs geo=%.3fs cache_put=%.3fs",
                     os.path.basename(file_path),
@@ -365,9 +372,7 @@ class EnginePart2:
         try:
             bytes_per_row = int(Quartz.CVPixelBufferGetBytesPerRow(pixel_buffer))
             base = Quartz.CVPixelBufferGetBaseAddress(pixel_buffer)
-            if not copy_bgra_into_cvpixelbuffer(
-                base, bytes_per_row, bgra, height=height, width=width
-            ):
+            if not copy_bgra_into_cvpixelbuffer(base, bytes_per_row, bgra, height=height, width=width):
                 buf = base.as_buffer(bytes_per_row * height)
                 row_bytes = width * 4
                 for y in range(height):
@@ -396,9 +401,7 @@ class EnginePart2:
                 # Prefer CVPixelBuffer — avoids disk I/O and JPEG re-encode.
                 try:
                     pixel_buffer = SemanticImageIndex._pil_to_cvpixelbuffer_bgra(im, Quartz)
-                    handler = Vision.VNImageRequestHandler.alloc().initWithCVPixelBuffer_options_(
-                        pixel_buffer, None
-                    )
+                    handler = Vision.VNImageRequestHandler.alloc().initWithCVPixelBuffer_options_(pixel_buffer, None)
                 except Exception:
                     # In-memory JPEG via NSData if pixel-buffer path fails.
                     buf = BytesIO()
@@ -407,9 +410,7 @@ class EnginePart2:
                     ns_data = Foundation.NSData.dataWithBytes_length_(payload, len(payload))
                     if ns_data is None:
                         return None
-                    handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(
-                        ns_data, None
-                    )
+                    handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(ns_data, None)
                 ok, err = handler.performRequests_error_([request], None)
                 if not ok or err is not None:
                     return None
@@ -465,16 +466,12 @@ class EnginePart2:
                             os.makedirs(models_dir, exist_ok=True)
 
                             prototxt_path = os.path.join(models_dir, "deploy.prototxt")
-                            caffemodel_path = os.path.join(
-                                models_dir, "res10_300x300_ssd_iter_140000.caffemodel"
-                            )
+                            caffemodel_path = os.path.join(models_dir, "res10_300x300_ssd_iter_140000.caffemodel")
 
                             if not os.path.exists(prototxt_path):
                                 import logging
 
-                                logging.getLogger(__name__).info(
-                                    "[VISION] Downloading DNN face detector prototxt..."
-                                )
+                                logging.getLogger(__name__).info("[VISION] Downloading DNN face detector prototxt...")
                                 from core.ssl_certs import urlretrieve
 
                                 urlretrieve(
@@ -484,18 +481,14 @@ class EnginePart2:
                             if not os.path.exists(caffemodel_path):
                                 import logging
 
-                                logging.getLogger(__name__).info(
-                                    "[VISION] Downloading DNN face detector weights..."
-                                )
+                                logging.getLogger(__name__).info("[VISION] Downloading DNN face detector weights...")
                                 from core.ssl_certs import urlretrieve
 
                                 urlretrieve(
                                     "https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel",
                                     caffemodel_path,
                                 )
-                            _FACE_DETECTOR_NET = cv2.dnn.readNetFromCaffe(
-                                prototxt_path, caffemodel_path
-                            )
+                            _FACE_DETECTOR_NET = cv2.dnn.readNetFromCaffe(prototxt_path, caffemodel_path)
                             _apply_opencv_dnn_acceleration(_FACE_DETECTOR_NET)
 
                 img_bgr = np.array(im.convert("RGB"))[:, :, ::-1].copy()
@@ -577,9 +570,7 @@ class EnginePart2:
         if not rows:
             return True
         for row in rows:
-            if self._row_matches_file(row, st) and (
-                self._row_semantic_ready(row) or self._row_semantic_skipped(row)
-            ):
+            if self._row_matches_file(row, st) and (self._row_semantic_ready(row) or self._row_semantic_skipped(row)):
                 return False
         return True
 
@@ -619,9 +610,7 @@ class EnginePart2:
             emb = model.encode(im, normalize_embeddings=True)
             return np.asarray(emb, dtype=np.float32)
         except Exception as exc:
-            raise RuntimeError(
-                f"Cannot decode image for semantic index: {os.path.basename(file_path)}"
-            ) from exc
+            raise RuntimeError(f"Cannot decode image for semantic index: {os.path.basename(file_path)}") from exc
 
     def _encode_images_best_effort(self, file_paths: Sequence[str]) -> list[np.ndarray]:
         """
@@ -650,15 +639,10 @@ class EnginePart2:
                 backend = self._mobileclip_backend or resolve_mobileclip_backend()
                 self._mobileclip_backend = backend
                 if isinstance(backend, MobileCLIPONNXBackend):
-                    selected = resolve_onnx_execution_providers(
-                        _ort_get_available_providers()
-                    )
+                    selected = resolve_onnx_execution_providers(_ort_get_available_providers())
                     ep = ",".join(selected)
                 else:
                     ep = backend.__class__.__name__
         except Exception:
             ep = accel_detail or "unknown"
-        return (
-            f"{sys.platform}|{self.model_name}|{ep}|{accel_detail or ''}"
-            f"|{SEMANTIC_BATCH_TUNE_CACHE_VERSION}"
-        )
+        return f"{sys.platform}|{self.model_name}|{ep}|{accel_detail or ''}|{SEMANTIC_BATCH_TUNE_CACHE_VERSION}"

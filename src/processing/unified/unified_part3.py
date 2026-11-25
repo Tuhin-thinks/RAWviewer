@@ -1,5 +1,4 @@
 """Unified mixin part 3 of 7 for UnifiedImageProcessor."""
-from __future__ import annotations
 
 import logging
 import os
@@ -135,17 +134,12 @@ class UnifiedPart3:
             half_size = not use_full_resolution
             # Browse-brightness decode (Blend highlights, no exp_shift) with
             # the corrected-WB handling built in; see edit_base_decode_params.
-            edit_params = edit_base_decode_params(
-                half_size=half_size, demosaic="AHD", for_file=file_path
-            )
+            edit_params = edit_base_decode_params(half_size=half_size, demosaic="AHD", for_file=file_path)
 
             rgb_image: np.ndarray | None = None
             if skip_key not in _LIBRAW_UNSUPPORTED_PATHS:
                 try:
-                    from enhanced_raw_processor import (
-                        _heavy_fallback_semaphore,
-                        _rawpy_global_lock,
-                    )
+                    from enhanced_raw_processor.extraction import _heavy_fallback_semaphore, _rawpy_global_lock
                     from processing.raw_decode.fast import (
                         decode_half_from_unpacked,
                         params_supported_half,
@@ -156,14 +150,9 @@ class UnifiedPart3:
                     # opening Adjust skips a second LibRaw unpack when possible.
                     if half_size:
                         stashed = self._peek_unpacked_raw(file_path)
-                        if (
-                            stashed is not None
-                            and params_supported_half(edit_params, return_linear=True)
-                        ):
+                        if stashed is not None and params_supported_half(edit_params, return_linear=True):
                             try:
-                                rgb_image = decode_half_from_unpacked(
-                                    stashed, return_linear=True
-                                )
+                                rgb_image = decode_half_from_unpacked(stashed, return_linear=True)
                             except Exception:
                                 rgb_image = None
 
@@ -181,14 +170,11 @@ class UnifiedPart3:
                         # the GIL for the AHD/rawpy fallback. macOS usually
                         # has executor=None (pool off). Same helper as browse.
                         try:
-                            future = executor.submit(
-                                decode_raw_file, file_path, edit_params
-                            )
+                            future = executor.submit(decode_raw_file, file_path, edit_params)
                             rgb_image = future.result()
                         except Exception as pool_err:
                             logging.getLogger(__name__).warning(
-                                "[EDIT] Process pool edit-base decode failed "
-                                "for %s: %s; falling back in-process",
+                                "[EDIT] Process pool edit-base decode failed for %s: %s; falling back in-process",
                                 os.path.basename(file_path),
                                 pool_err,
                             )
@@ -212,21 +198,17 @@ class UnifiedPart3:
                     # headroom that Exposure/Highlights can pull back down
                     # (display clips them to white, matching browse).
                     try:
-                        from processing.raw_decode.fast import get_corrected_camera_wb
+                        from processing.raw_decode.camera_wb import get_corrected_camera_wb
 
                         mul = get_corrected_camera_wb(file_path) or cam_mul_for_scale
                         if mul is None and edit_params.get("user_wb"):
                             mul = edit_params.get("user_wb")
                         mul3 = [float(m) for m in (mul or [])[:3] if float(m) > 0]
-                        dmax_over_dmin = (
-                            (max(mul3) / min(mul3)) if len(mul3) == 3 else 1.0
-                        )
+                        dmax_over_dmin = (max(mul3) / min(mul3)) if len(mul3) == 3 else 1.0
                     except Exception:
                         dmax_over_dmin = 1.0
                     if rgb_image is not None and rgb_image.dtype == np.uint16:
-                        rgb_image = rgb_image.astype(np.float32) * (
-                            dmax_over_dmin / 65535.0
-                        )
+                        rgb_image = rgb_image.astype(np.float32) * (dmax_over_dmin / 65535.0)
                 except Exception as libraw_err:
                     if _is_libraw_unsupported_error(libraw_err):
                         _mark_libraw_unsupported(skip_key)
@@ -242,9 +224,7 @@ class UnifiedPart3:
                     exif_data = self.exif_extractor.extract_exif_data(file_path)
                 orientation = exif_data.get("orientation", 1) if exif_data else 1
                 if orientation != 1:
-                    rgb_image = self._apply_orientation_correction(
-                        rgb_image, orientation, exif_data
-                    )
+                    rgb_image = self._apply_orientation_correction(rgb_image, orientation, exif_data)
                 if apply_lens_correction:
                     from raw_adjustments.lens_correction import apply_lens_correction as _apply_lens_correction
 
@@ -273,13 +253,10 @@ class UnifiedPart3:
             # WB / highlight recovery have far less headroom than a real RAW
             # base, but tone/colour/masks/crop/detail match the JPEG path the
             # pipeline already supports via uint8→linear.
-            embedded = self._embedded_jpeg_edit_base(
-                file_path, use_full_resolution=use_full_resolution
-            )
+            embedded = self._embedded_jpeg_edit_base(file_path, use_full_resolution=use_full_resolution)
             if embedded is not None:
                 logging.getLogger(__name__).info(
-                    "[EDIT] Embedded-JPEG edit base for %s (%dx%d, 8-bit) "
-                    "-- no LibRaw demosaic available",
+                    "[EDIT] Embedded-JPEG edit base for %s (%dx%d, 8-bit) -- no LibRaw demosaic available",
                     os.path.basename(file_path),
                     embedded.shape[1],
                     embedded.shape[0],

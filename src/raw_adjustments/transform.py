@@ -24,8 +24,6 @@ Order: distortion first (a capture property), then straighten/keystone,
 then crop insets, then anamorphic desqueeze.
 """
 
-from __future__ import annotations
-
 import numpy as np
 
 TRANSFORM_KEYS = (
@@ -127,9 +125,7 @@ def _apply_distortion(img: np.ndarray, k: float, *, preview: bool) -> np.ndarray
 
 def _warped_quad(w: float, h: float, angle_deg: float, pv: float, ph: float) -> np.ndarray:
     """Destination positions of the 4 source corners (TL, TR, BR, BL)."""
-    corners = np.array(
-        [[0.0, 0.0], [w, 0.0], [w, h], [0.0, h]], dtype=np.float64
-    )
+    corners = np.array([[0.0, 0.0], [w, 0.0], [w, h], [0.0, h]], dtype=np.float64)
     cx, cy = w / 2.0, h / 2.0
     # Rotation about the center.
     a = np.deg2rad(angle_deg)
@@ -143,7 +139,7 @@ def _warped_quad(w: float, h: float, angle_deg: float, pv: float, ph: float) -> 
     for i in range(4):
         x, y = pts[i]
         fy = 1.0 - (y / h)  # 1 at top, 0 at bottom
-        fx = x / w          # 0 at left, 1 at right
+        fx = x / w  # 0 at left, 1 at right
         if kv >= 0:
             pts[i, 0] = cx + (x - cx) * (1.0 - kv * fy)
         else:
@@ -168,9 +164,7 @@ def _point_in_quad(px: np.ndarray, quad: np.ndarray) -> bool:
     return True
 
 
-def _inscribed_rect(
-    w: int, h: int, quad: np.ndarray, *, iterations: int = 24
-) -> tuple[int, int, int, int]:
+def _inscribed_rect(w: int, h: int, quad: np.ndarray, *, iterations: int = 24) -> tuple[int, int, int, int]:
     """Largest centered rect of the ORIGINAL aspect fully inside ``quad``.
 
     Binary search on scale -- ~24 iterations bound the error under a pixel at
@@ -239,17 +233,19 @@ def apply_geometry(
             h, w = out.shape[:2]
 
         if abs(angle) > 1e-4 or abs(pv) > 1e-4 or abs(ph) > 1e-4:
-            src = np.array(
-                [[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32
-            )
+            src = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32)
             dst = _warped_quad(w, h, angle, pv, ph)
             m = cv2.getPerspectiveTransform(src, dst)
             # INTER_NEAREST is ~2–4× faster than LINEAR on large float buffers
             # and is fine for 640px live-drag / instant overlay feedback.
             flags = cv2.INTER_NEAREST if preview else cv2.INTER_LINEAR
             out = cv2.warpPerspective(
-                out, m, (w, h), flags=flags,
-                borderMode=cv2.BORDER_CONSTANT, borderValue=0,
+                out,
+                m,
+                (w, h),
+                flags=flags,
+                borderMode=cv2.BORDER_CONSTANT,
+                borderValue=0,
             )
             iters = 12 if preview else 24
             x0, y0, x1, y1 = _inscribed_rect(w, h, dst, iterations=iters)
@@ -273,11 +269,7 @@ def apply_geometry(
         if abs(ratio - 1.0) > 1e-4 and ratio > 0.1:
             ch, cw = out.shape[:2]
             new_w = max(1, int(round(cw * ratio)))
-            interp = (
-                cv2.INTER_NEAREST
-                if preview
-                else (cv2.INTER_AREA if ratio < 1.0 else cv2.INTER_CUBIC)
-            )
+            interp = cv2.INTER_NEAREST if preview else (cv2.INTER_AREA if ratio < 1.0 else cv2.INTER_CUBIC)
             out = cv2.resize(out, (new_w, ch), interpolation=interp)
         return np.ascontiguousarray(out)
     except Exception:

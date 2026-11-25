@@ -4,8 +4,6 @@ Scene coordinates == image pixels. Insets are fractions of width/height
 (CropLeft/Right/Top/Bottom), matching raw_transform.apply_geometry.
 """
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
@@ -26,7 +24,7 @@ class CropOverlayItem(QGraphicsObject):
     insetsChanged = pyqtSignal(float, float, float, float)  # L, R, T, B
     editingFinished = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setZValue(20)
         self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
@@ -91,15 +89,9 @@ class CropOverlayItem(QGraphicsObject):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(dim)
         painter.drawRect(QRectF(full.left(), full.top(), full.width(), crop.top() - full.top()))
-        painter.drawRect(
-            QRectF(full.left(), crop.bottom(), full.width(), full.bottom() - crop.bottom())
-        )
-        painter.drawRect(
-            QRectF(full.left(), crop.top(), crop.left() - full.left(), crop.height())
-        )
-        painter.drawRect(
-            QRectF(crop.right(), crop.top(), full.right() - crop.right(), crop.height())
-        )
+        painter.drawRect(QRectF(full.left(), crop.bottom(), full.width(), full.bottom() - crop.bottom()))
+        painter.drawRect(QRectF(full.left(), crop.top(), crop.left() - full.left(), crop.height()))
+        painter.drawRect(QRectF(crop.right(), crop.top(), full.right() - crop.right(), crop.height()))
 
         pen = QPen(QColor(theme.INK))
         pen.setWidthF(1.25)

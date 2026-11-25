@@ -1,5 +1,4 @@
 """TaskProgressDialog: background task progress dialog."""
-from __future__ import annotations
 
 import contextlib
 import sys
@@ -26,7 +25,7 @@ class TaskProgressDialog(QDialog):
 
     canceled = pyqtSignal()
 
-    def __init__(self, parent=None, title: str = "Export", message: str = ""):
+    def __init__(self, parent=None, title: str = "Export", message: str = "") -> None:
         super().__init__(parent)
         flags = Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint
         if sys.platform == "darwin":
@@ -55,8 +54,10 @@ class TaskProgressDialog(QDialog):
         content.setStyleSheet("background-color: transparent;")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(
-            self._CONTENT_MARGIN_H, self._CONTENT_MARGIN_V,
-            self._CONTENT_MARGIN_H, self._CONTENT_MARGIN_V,
+            self._CONTENT_MARGIN_H,
+            self._CONTENT_MARGIN_V,
+            self._CONTENT_MARGIN_H,
+            self._CONTENT_MARGIN_V,
         )
         content_layout.setSpacing(12)
 
@@ -182,7 +183,7 @@ class TaskProgressDialog(QDialog):
         self._bar.setValue(percent)
         self._percent_label.setText(f"{percent}%")
 
-    def showEvent(self, event):
+    def showEvent(self, event) -> None:
         super().showEvent(event)
         _activate_macos_foreground_app()
         self.raise_()
@@ -192,7 +193,7 @@ class TaskProgressDialog(QDialog):
             app.applicationStateChanged.connect(self._on_application_state_changed)
             self._app_state_connected = True
 
-    def hideEvent(self, event):
+    def hideEvent(self, event) -> None:
         app = QApplication.instance()
         if app and self._app_state_connected:
             with contextlib.suppress(Exception):
@@ -205,14 +206,14 @@ class TaskProgressDialog(QDialog):
         # (alt-tab while an export churns) must not auto-cancel the job.
         pass
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key.Key_Escape:
             self._on_cancel_clicked()
             event.accept()
             return
         super().keyPressEvent(event)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = True
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
@@ -220,14 +221,14 @@ class TaskProgressDialog(QDialog):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if getattr(self, "_dragging", False):
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()

@@ -1,4 +1,5 @@
 """Folder load and session persistence (mixin for RAWImageViewer)."""
+
 import contextlib
 import logging
 import os
@@ -10,7 +11,7 @@ from rawviewer_app.signals import FolderLoadSignals
 
 
 class SessionMixin:
-    def load_folder_images(self, folder_path, start_file=None, start_view=None):
+    def load_folder_images(self, folder_path, start_file=None, start_view=None) -> None:
         """Load images from a folder without blocking the UI during scan/sort."""
         logger = logging.getLogger(__name__)
         folder_path = os.path.abspath(folder_path)
@@ -21,15 +22,11 @@ class SessionMixin:
             # concurrency; only confirmed-slow drives get throttled.
             self.image_manager.prime_volume_speed_async(folder_path, start_file)
         same_folder = bool(
-            getattr(self, "current_folder", None)
-            and _norm_path(self.current_folder) == _norm_path(folder_path)
+            getattr(self, "current_folder", None) and _norm_path(self.current_folder) == _norm_path(folder_path)
         )
         fast_open = self._should_fast_open_single_file(start_file, start_view)
         preserve_folder_index = bool(
-            same_folder
-            and fast_open
-            and start_file
-            and len(getattr(self, "image_files", []) or []) > 1
+            same_folder and fast_open and start_file and len(getattr(self, "image_files", []) or []) > 1
         )
         if not same_folder:
             self._gallery_bookmarked_paths = self._load_persisted_gallery_bookmarks(folder_path)
@@ -70,9 +67,7 @@ class SessionMixin:
             self._folder_load_generation = getattr(self, "_folder_load_generation", 0) + 1
             token = self._folder_load_generation
             if not preserve_folder_index and hasattr(self, "_cancel_stale_folder_async_work"):
-                self._cancel_stale_folder_async_work(
-                    f"load_folder_images -> {os.path.basename(folder_path)}"
-                )
+                self._cancel_stale_folder_async_work(f"load_folder_images -> {os.path.basename(folder_path)}")
             self._folder_sort_refinement_applied_token = None
             extensions = set(self.get_supported_extensions())
             newest_first = self.get_sort_preference()
@@ -92,8 +87,8 @@ class SessionMixin:
                 else:
                     fast_open = False
 
-            if hasattr(self, 'view_mode'):
-                if self.view_mode == 'gallery':
+            if hasattr(self, "view_mode"):
+                if self.view_mode == "gallery":
                     self._ensure_gallery_widget()
                     if self.gallery_justified:
                         self.gallery_justified.set_images([])
@@ -101,9 +96,9 @@ class SessionMixin:
                     # Hide single view immediately so gallery mode never stacks two panes.
                     self._show_gallery_view()
                 else:
-                    if hasattr(self, 'loading_overlay') and not fast_open:
+                    if hasattr(self, "loading_overlay") and not fast_open:
                         self.loading_overlay.show_loading("Scanning folder...")
-                    if hasattr(self, 'image_label') and not fast_open:
+                    if hasattr(self, "image_label") and not fast_open:
                         self.image_label.clear()
 
             signals = FolderLoadSignals()
@@ -114,8 +109,9 @@ class SessionMixin:
             viewer = self
 
             class _FolderLoadWorker(QRunnable):
-                def __init__(self_inner, token, folder_path, extensions, newest_first,
-                             start_file, start_view, signals):
+                def __init__(
+                    self_inner, token, folder_path, extensions, newest_first, start_file, start_view, signals
+                ) -> None:
                     super().__init__()
                     self_inner.token = token
                     self_inner.folder_path = folder_path
@@ -125,15 +121,14 @@ class SessionMixin:
                     self_inner.start_view = start_view
                     self_inner.signals = signals
 
-                def run(self_inner):
+                def run(self_inner) -> None:
                     import time
+
                     try:
                         scan_start = time.time()
                         image_files = []
                         file_stats = {}
-                        for ap, stat_info in viewer._scan_folder_image_paths(
-                            self_inner.folder_path
-                        ):
+                        for ap, stat_info in viewer._scan_folder_image_paths(self_inner.folder_path):
                             image_files.append(ap)
                             file_stats[ap] = (stat_info.st_size, stat_info.st_mtime)
 
@@ -142,13 +137,13 @@ class SessionMixin:
                         sort_start = time.time()
                         bulk_metadata = {}
                         if image_files:
-
                             if self_inner.start_file:
                                 image_files = viewer._mtime_sort_image_files(
                                     image_files, file_stats, self_inner.newest_first
                                 )
                             else:
                                 from image_cache import get_image_cache
+
                                 cache = get_image_cache()
                                 bulk_metadata = cache.get_multiple_exif(image_files, file_stats)
                                 probed_timestamps = viewer._parallel_probe_capture_times(image_files, bulk_metadata)
@@ -159,12 +154,13 @@ class SessionMixin:
                                     mtime = file_stats.get(fp, (0, 0))[1]
                                     probed_ts = probed_timestamps.get(fp, 0.0)
                                     from common_image_loader import is_raw_file, resolve_folder_sort_timestamp
+
                                     _has_capture, timestamp, _source = resolve_folder_sort_timestamp(
                                         fp,
                                         metadata=meta,
                                         file_mtime=mtime,
                                         probe_file=False,
-                                        probed_capture_timestamp=probed_ts
+                                        probed_capture_timestamp=probed_ts,
                                     )
                                     base_name = os.path.basename(fp).lower()
                                     stem = os.path.splitext(base_name)[0]
@@ -183,6 +179,7 @@ class SessionMixin:
 
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
                                 self_inner.signals.ready.emit(
                                     self_inner.token,
@@ -200,6 +197,7 @@ class SessionMixin:
                     except OSError as e:
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
                                 self_inner.signals.error.emit(
                                     self_inner.token,
@@ -211,6 +209,7 @@ class SessionMixin:
                     except Exception as e:
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
                                 self_inner.signals.error.emit(
                                     self_inner.token,
@@ -225,7 +224,7 @@ class SessionMixin:
             if fast_open:
                 defer_ms = _env_int("RAWVIEWER_FAST_OPEN_FOLDER_LOAD_DEFER_MS", 2500, minimum=0)
 
-                def _deferred_start(w=worker):
+                def _deferred_start(w=worker) -> None:
                     if token == getattr(viewer, "_folder_load_generation", None):
                         QThreadPool.globalInstance().start(w, priority=-1)
 
@@ -298,7 +297,7 @@ class SessionMixin:
         with contextlib.suppress(ValueError):
             lst.remove(file_path)
 
-    def save_session_state(self):
+    def save_session_state(self) -> None:
         settings = self.get_settings()
 
         # Always save window geometry and state
@@ -306,12 +305,11 @@ class SessionMixin:
         settings.setValue("window_state", self.saveState())
 
         if self.current_folder and self.current_file_index >= 0 and self.image_files:
-            filename = os.path.basename(
-                self.image_files[self.current_file_index])
+            filename = os.path.basename(self.image_files[self.current_file_index])
             settings.setValue("last_session_folder", self.current_folder)
             settings.setValue("last_session_file", filename)
             # Save view mode so we can restore it
-            if hasattr(self, 'view_mode'):
+            if hasattr(self, "view_mode"):
                 settings.setValue("last_session_view_mode", self.view_mode)
         else:
             settings.remove("last_session_folder")
@@ -364,7 +362,7 @@ class SessionMixin:
         except Exception:
             pass
 
-    def restore_session_state(self):
+    def restore_session_state(self) -> bool:
         """Restore the last session's folder and file, with error handling for unavailable drives"""
         logger = logging.getLogger(__name__)
 
@@ -397,10 +395,7 @@ class SessionMixin:
 
                 # Member set from the shared scanner: parent-fallback scopes
                 # (card layouts) store the last file one level down.
-                file_names = {
-                    os.path.normcase(os.path.basename(p))
-                    for p, _ in self._scan_folder_image_paths(folder)
-                }
+                file_names = {os.path.normcase(os.path.basename(p)) for p, _ in self._scan_folder_image_paths(folder)}
 
                 if os.path.normcase(file) in file_names:
                     try:
@@ -408,14 +403,14 @@ class SessionMixin:
                         # If last view mode was 'gallery', open in 'single' mode instead
                         # to avoid slow gallery loading on large folders
                         view_mode = settings.value("last_session_view_mode", "single")
-                        if view_mode == 'gallery':
+                        if view_mode == "gallery":
                             # Force single view mode for better launch experience
-                            self.view_mode = 'single'
-                        elif view_mode in ('single', 'gallery'):
+                            self.view_mode = "single"
+                        elif view_mode in ("single", "gallery"):
                             self.view_mode = view_mode
                         else:
-                            self.view_mode = 'single'
-                        self._orientation_already_applied = False # Reset flag on mode switch to be safe
+                            self.view_mode = "single"
+                        self._orientation_already_applied = False  # Reset flag on mode switch to be safe
 
                         self._session_restore_defer_preload = True
                         self._session_restore_staged_scheduled = False
@@ -453,4 +448,3 @@ class SessionMixin:
                 return False
 
         return False
-

@@ -3,6 +3,7 @@
 
 No ONNX runtime or model file is needed -- the tiled inference core is stubbed.
 """
+
 import os
 import sys
 
@@ -13,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -22,6 +23,7 @@ def check(name, ok, detail=""):
 def main() -> int:
     os.environ["RAWVIEWER_AI_BACKEND"] = "scunet"
     from onnx_scunet import SCUNetONNX
+
     from raw_adjustments import (
         DEFAULT_ADJUSTMENTS,
         SLIDER_SPECS,
@@ -64,7 +66,7 @@ def main() -> int:
 
     # Blend math against a stubbed core: the model "denoises" to black.
     class FakeDenoiser(SCUNetONNX):
-        def __init__(self):
+        def __init__(self) -> None:
             self.model_path = "<fake>"
             self._session = object()
             self._input_name = "in"
@@ -114,7 +116,7 @@ def main() -> int:
     calls = []
 
     class StubSCUNet:
-        def __init__(self, _path):
+        def __init__(self, _path) -> None:
             pass
 
         def process(self, img, **kwargs):
@@ -129,9 +131,7 @@ def main() -> int:
     os.environ["RAWVIEWER_EXPORT_SCUNET_ONNX"] = "1"
     try:
         img = np.full((32, 32, 3), 0.3, dtype=np.float32)
-        rep.process_linear_edit_buffer(
-            img, {"AIDenoiseAmount": 40.0}, preview=False, use_ai_denoise=True
-        )
+        rep.process_linear_edit_buffer(img, {"AIDenoiseAmount": 40.0}, preview=False, use_ai_denoise=True)
         check(
             "pipeline passes amount as strength",
             len(calls) == 1 and abs(calls[0].get("strength", -1.0) - 0.4) < 1e-6,
@@ -139,9 +139,7 @@ def main() -> int:
         )
 
         calls.clear()
-        rep.process_linear_edit_buffer(
-            img, {"AIDenoiseAmount": 0.0}, preview=False, use_ai_denoise=True
-        )
+        rep.process_linear_edit_buffer(img, {"AIDenoiseAmount": 0.0}, preview=False, use_ai_denoise=True)
         check("amount 0 skips the model entirely", calls == [], f"calls={calls!r}")
     finally:
         onnx_scunet.SCUNetONNX = orig_cls

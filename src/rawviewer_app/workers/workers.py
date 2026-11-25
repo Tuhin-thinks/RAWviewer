@@ -1,4 +1,5 @@
 """QRunnable background workers."""
+
 import logging
 import os
 import threading
@@ -12,7 +13,7 @@ from rawviewer_app.signals import RawRecoverySignals, ReleaseUpdateCheckSignals
 class _ReleaseUpdateCheckWorker(QRunnable):
     """Fetch latest GitHub release tag and compare to the running app version."""
 
-    def __init__(self, signals: ReleaseUpdateCheckSignals, *, timeout: float = 5.0):
+    def __init__(self, signals: ReleaseUpdateCheckSignals, *, timeout: float = 5.0) -> None:
         super().__init__()
         self.signals = signals
         self.timeout = float(timeout)
@@ -36,10 +37,12 @@ class _ReleaseUpdateCheckWorker(QRunnable):
             }
         try:
             from PyQt6 import sip
+
             if not sip.isdeleted(self.signals):
                 self.signals.finished.emit(result)
         except Exception:
             pass
+
 
 class _SemanticIndexPrepWorker(QRunnable):
     """Background task to prepare semantic/metadata index (coverage & pending scans).
@@ -49,14 +52,14 @@ class _SemanticIndexPrepWorker(QRunnable):
     (observed ~10s+ freezes during gallery fill on large folders).
     """
 
-    def __init__(self, corpus_files, index, signals, *, metadata_only: bool = False):
+    def __init__(self, corpus_files, index, signals, *, metadata_only: bool = False) -> None:
         super().__init__()
         self.corpus_files = corpus_files
         self.index = index
         self.signals = signals
         self.metadata_only = bool(metadata_only)
 
-    def run(self):
+    def run(self) -> None:
         try:
             coverage = self.index.get_index_coverage(self.corpus_files)
             if self.metadata_only:
@@ -64,9 +67,7 @@ class _SemanticIndexPrepWorker(QRunnable):
                 # Skipping get_pending_paths avoids a multi-10s scan of every
                 # file that merely lacks semantic embeddings (Plus CUDA +
                 # large folders were freezing gallery tile paint for this).
-                extract_pending = self.index.get_metadata_extraction_pending_paths(
-                    self.corpus_files
-                )
+                extract_pending = self.index.get_metadata_extraction_pending_paths(self.corpus_files)
                 pending = list(extract_pending)
                 face_pending = 0
             else:
@@ -79,25 +80,27 @@ class _SemanticIndexPrepWorker(QRunnable):
                     face_pending = self.index.get_face_pending_count(self.corpus_files)
             try:
                 from PyQt6 import sip
+
                 if not sip.isdeleted(self.signals):
-                    self.signals.done.emit(
-                        coverage, pending, face_pending, extract_pending
-                    )
+                    self.signals.done.emit(coverage, pending, face_pending, extract_pending)
             except Exception:
                 pass
         except Exception as e:
             try:
                 from PyQt6 import sip
+
                 if not sip.isdeleted(self.signals):
                     self.signals.error.emit(str(e))
             except Exception:
                 pass
 
+
 class SemanticAssetDownloadSignals(QObject):
     """Signal carrier for background semantic backend asset download."""
-    progress = pyqtSignal(object, int, str)         # token, pct, short status
-    done = pyqtSignal(object, str, object)        # token, asset path, corpus files
-    error = pyqtSignal(object, str)               # token, error
+
+    progress = pyqtSignal(object, int, str)  # token, pct, short status
+    done = pyqtSignal(object, str, object)  # token, asset path, corpus files
+    error = pyqtSignal(object, str)  # token, error
 
 
 # -----------------------------
@@ -105,7 +108,10 @@ class SemanticAssetDownloadSignals(QObject):
 # -----------------------------
 class ImageLoadTask(QRunnable):
     """Background task to load and scale images"""
-    def __init__(self, index, file_path, target_width, target_height, signal, parent_viewer=None, generation=0):
+
+    def __init__(
+        self, index, file_path, target_width, target_height, signal, parent_viewer=None, generation: int = 0
+    ) -> None:
         super().__init__()
         self.index = index
         self.file_path = file_path
@@ -117,7 +123,7 @@ class ImageLoadTask(QRunnable):
         self._cancelled = False
         self._lock = threading.Lock()
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the task"""
         with self._lock:
             self._cancelled = True
@@ -127,18 +133,18 @@ class ImageLoadTask(QRunnable):
         with self._lock:
             return self._cancelled
 
-
-    def run(self):
+    def run(self) -> None:
         """Load and scale image in worker thread - returns QImage, not QPixmap"""
         import logging
         import os
+
         logger = logging.getLogger(__name__)
 
         if self.is_cancelled():
             return
 
         task_start = time.time()
-        file_basename = os.path.basename(self.file_path) if self.file_path else 'unknown'
+        file_basename = os.path.basename(self.file_path) if self.file_path else "unknown"
 
         try:
             from PyQt6.QtCore import QSize, Qt
@@ -146,8 +152,29 @@ class ImageLoadTask(QRunnable):
 
             # Check if this is a RAW file
             file_ext = os.path.splitext(self.file_path)[1].lower()
-            raw_extensions = ['.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3', '.rw2', '.rwl', '.srw',
-                             '.pef', '.x3f', '.3fr', '.fff', '.iiq', '.cap', '.erf', '.mef', '.mos', '.nrw', '.srf']
+            raw_extensions = [
+                ".arw",
+                ".cr2",
+                ".nef",
+                ".raf",
+                ".orf",
+                ".dng",
+                ".cr3",
+                ".rw2",
+                ".rwl",
+                ".srw",
+                ".pef",
+                ".x3f",
+                ".3fr",
+                ".fff",
+                ".iiq",
+                ".cap",
+                ".erf",
+                ".mef",
+                ".mos",
+                ".nrw",
+                ".srf",
+            ]
             is_raw = file_ext in raw_extensions
 
             # For RAW files, try to extract embedded JPEG thumbnail first
@@ -176,12 +203,12 @@ class ImageLoadTask(QRunnable):
                             # Apply EXIF orientation correction
                             pil_image = ImageOps.exif_transpose(pil_image)
                             # Convert to RGB if needed
-                            if pil_image.mode != 'RGB':
-                                pil_image = pil_image.convert('RGB')
+                            if pil_image.mode != "RGB":
+                                pil_image = pil_image.convert("RGB")
 
                             # Convert PIL image to QImage
                             width, height = pil_image.size
-                            image_bytes = pil_image.tobytes('raw', 'RGB')
+                            image_bytes = pil_image.tobytes("raw", "RGB")
                             bytes_per_line = 3 * width
                             qimage = QImage(image_bytes, width, height, bytes_per_line, QImage.Format.Format_RGB888)
 
@@ -194,7 +221,9 @@ class ImageLoadTask(QRunnable):
                                 # Ensure we don't exceed target width
                                 if scaled_width > self.target_width:
                                     scaled_width = self.target_width
-                                    scaled_height = int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                    scaled_height = (
+                                        int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                    )
 
                                 # Ensure dimensions are at least 1px to prevent crash in SmoothTransformation
                                 scaled_width = max(1, scaled_width)
@@ -204,20 +233,28 @@ class ImageLoadTask(QRunnable):
                                     scaled_width,
                                     scaled_height,
                                     Qt.AspectRatioMode.KeepAspectRatio,
-                                    Qt.TransformationMode.SmoothTransformation
+                                    Qt.TransformationMode.SmoothTransformation,
                                 )
 
                                 if not scaled_image.isNull():
                                     total_time = time.time() - task_start
-                                    logger.info(f"[IMAGE_LOAD_TASK] Loaded thumbnail from disk cache for {file_basename} in {total_time:.3f}s (size: {scaled_width}x{scaled_height})")
+                                    logger.info(
+                                        f"[IMAGE_LOAD_TASK] Loaded thumbnail from disk cache for {file_basename} in {total_time:.3f}s (size: {scaled_width}x{scaled_height})"
+                                    )
                                     self.signal.loaded.emit(self.index, scaled_image, self.generation)
                                     return
                                 else:
-                                    logger.warning(f"[IMAGE_LOAD_TASK] Failed to scale QImage from disk cache for {file_basename}")
+                                    logger.warning(
+                                        f"[IMAGE_LOAD_TASK] Failed to scale QImage from disk cache for {file_basename}"
+                                    )
                             else:
-                                logger.warning(f"[IMAGE_LOAD_TASK] Failed to create QImage from disk cache JPEG for {file_basename}")
+                                logger.warning(
+                                    f"[IMAGE_LOAD_TASK] Failed to create QImage from disk cache JPEG for {file_basename}"
+                                )
                         except Exception as e:
-                            logger.warning(f"[IMAGE_LOAD_TASK] Failed to load from disk cache, will extract from RAW: {e}")
+                            logger.warning(
+                                f"[IMAGE_LOAD_TASK] Failed to load from disk cache, will extract from RAW: {e}"
+                            )
                             # Remove invalid cache entry
                             cache.disk_thumbnail_cache.remove(self.file_path)
 
@@ -237,13 +274,16 @@ class ImageLoadTask(QRunnable):
                             thumb_extract_start = time.time()
                             thumb = raw.extract_thumb()
                             thumb_extract_time = time.time() - thumb_extract_start
-                            logger.debug(f"[IMAGE_LOAD_TASK] Thumbnail extracted in {thumb_extract_time:.3f}s: {file_basename}")
+                            logger.debug(
+                                f"[IMAGE_LOAD_TASK] Thumbnail extracted in {thumb_extract_time:.3f}s: {file_basename}"
+                            )
 
                             if thumb.format == rawpy.ThumbFormat.JPEG:
                                 # Thumbnail is JPEG - load it directly
                                 from io import BytesIO
 
                                 from PIL import Image, ImageOps
+
                                 jpeg_data = thumb.data
 
                                 # Save to disk cache for future use
@@ -258,12 +298,12 @@ class ImageLoadTask(QRunnable):
                                 # Apply EXIF orientation correction
                                 pil_image = ImageOps.exif_transpose(pil_image)
                                 # Convert to RGB if needed
-                                if pil_image.mode != 'RGB':
-                                    pil_image = pil_image.convert('RGB')
+                                if pil_image.mode != "RGB":
+                                    pil_image = pil_image.convert("RGB")
 
                                 # Convert PIL image to QImage
                                 width, height = pil_image.size
-                                image_bytes = pil_image.tobytes('raw', 'RGB')
+                                image_bytes = pil_image.tobytes("raw", "RGB")
                                 bytes_per_line = 3 * width
                                 qimage = QImage(image_bytes, width, height, bytes_per_line, QImage.Format.Format_RGB888)
 
@@ -276,7 +316,9 @@ class ImageLoadTask(QRunnable):
                                     # Ensure we don't exceed target width
                                     if scaled_width > self.target_width:
                                         scaled_width = self.target_width
-                                        scaled_height = int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                        scaled_height = (
+                                            int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                        )
 
                                     # Ensure dimensions are at least 1px to prevent crash in SmoothTransformation
                                     scaled_width = max(1, scaled_width)
@@ -286,13 +328,15 @@ class ImageLoadTask(QRunnable):
                                         scaled_width,
                                         scaled_height,
                                         Qt.AspectRatioMode.KeepAspectRatio,
-                                        Qt.TransformationMode.SmoothTransformation
+                                        Qt.TransformationMode.SmoothTransformation,
                                     )
 
                                     if not scaled_image.isNull():
                                         raw_time = time.time() - raw_start
                                         total_time = time.time() - task_start
-                                        logger.debug(f"[IMAGE_LOAD_TASK] Loaded embedded JPEG thumbnail for {file_basename} in {raw_time:.3f}s (total: {total_time:.3f}s)")
+                                        logger.debug(
+                                            f"[IMAGE_LOAD_TASK] Loaded embedded JPEG thumbnail for {file_basename} in {raw_time:.3f}s (total: {total_time:.3f}s)"
+                                        )
                                         self.signal.loaded.emit(self.index, scaled_image, self.generation)
                                         return
 
@@ -304,7 +348,7 @@ class ImageLoadTask(QRunnable):
                                     height, width = bitmap.shape[:2]
 
                                     # Ensure contiguous array
-                                    if not bitmap.flags['C_CONTIGUOUS']:
+                                    if not bitmap.flags["C_CONTIGUOUS"]:
                                         bitmap = np.ascontiguousarray(bitmap)
 
                                     if len(bitmap.shape) == 3:
@@ -315,17 +359,27 @@ class ImageLoadTask(QRunnable):
                                             # Ensure uint8
                                             if rgb.dtype != np.uint8:
                                                 rgb = rgb.astype(np.uint8)
-                                            qimage = QImage(rgb.data, width, height, width * 3, QImage.Format.Format_RGB888)
+                                            qimage = QImage(
+                                                rgb.data, width, height, width * 3, QImage.Format.Format_RGB888
+                                            )
                                         else:
                                             # Other color formats - try direct conversion
                                             if bitmap.dtype != np.uint8:
                                                 bitmap = bitmap.astype(np.uint8)
-                                            qimage = QImage(bitmap.data, width, height, width * bitmap.shape[2], QImage.Format.Format_RGB888)
+                                            qimage = QImage(
+                                                bitmap.data,
+                                                width,
+                                                height,
+                                                width * bitmap.shape[2],
+                                                QImage.Format.Format_RGB888,
+                                            )
                                     else:
                                         # Grayscale
                                         if bitmap.dtype != np.uint8:
                                             bitmap = bitmap.astype(np.uint8)
-                                        qimage = QImage(bitmap.data, width, height, width, QImage.Format.Format_Grayscale8)
+                                        qimage = QImage(
+                                            bitmap.data, width, height, width, QImage.Format.Format_Grayscale8
+                                        )
 
                                     if not qimage.isNull():
                                         # Scale to target size
@@ -335,7 +389,9 @@ class ImageLoadTask(QRunnable):
 
                                         if scaled_width > self.target_width:
                                             scaled_width = self.target_width
-                                            scaled_height = int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                            scaled_height = (
+                                                int(self.target_width / aspect) if aspect > 0 else self.target_height
+                                            )
 
                                         # Ensure dimensions are at least 1px to prevent crash in SmoothTransformation
                                         scaled_width = max(1, scaled_width)
@@ -345,23 +401,29 @@ class ImageLoadTask(QRunnable):
                                             scaled_width,
                                             scaled_height,
                                             Qt.AspectRatioMode.KeepAspectRatio,
-                                            Qt.TransformationMode.SmoothTransformation
+                                            Qt.TransformationMode.SmoothTransformation,
                                         )
 
                                         if not scaled_image.isNull():
                                             raw_time = time.time() - raw_start
                                             total_time = time.time() - task_start
-                                            logger.debug(f"[IMAGE_LOAD_TASK] Loaded embedded bitmap thumbnail for {file_basename} in {raw_time:.3f}s (total: {total_time:.3f}s)")
+                                            logger.debug(
+                                                f"[IMAGE_LOAD_TASK] Loaded embedded bitmap thumbnail for {file_basename} in {raw_time:.3f}s (total: {total_time:.3f}s)"
+                                            )
                                             self.signal.loaded.emit(self.index, scaled_image, self.generation)
                                             return
                         except Exception as thumb_error:
-                            logger.debug(f"[IMAGE_LOAD_TASK] Could not extract thumbnail from RAW file {os.path.basename(self.file_path)}: {thumb_error}")
+                            logger.debug(
+                                f"[IMAGE_LOAD_TASK] Could not extract thumbnail from RAW file {os.path.basename(self.file_path)}: {thumb_error}"
+                            )
                             if self.is_cancelled():
                                 return
                             # Fall through to regular loading
 
                 except Exception as raw_error:
-                    logger.debug(f"[IMAGE_LOAD_TASK] Error processing RAW file {os.path.basename(self.file_path)}: {raw_error}")
+                    logger.debug(
+                        f"[IMAGE_LOAD_TASK] Error processing RAW file {os.path.basename(self.file_path)}: {raw_error}"
+                    )
                     # Fall through to regular loading
 
             # Use QImageReader with setScaledSize to load already-scaled image
@@ -373,7 +435,7 @@ class ImageLoadTask(QRunnable):
             original_size = reader.size()
             if not original_size.isValid():
                 # FALLBACK path (existing)...
-                pass # This chunk only shows the start of the fix
+                pass  # This chunk only shows the start of the fix
 
             aspect = original_size.width() / original_size.height() if original_size.height() > 0 else 1.0
             scaled_width = int(self.target_height * aspect)
@@ -401,6 +463,7 @@ class ImageLoadTask(QRunnable):
                 # FALLBACK: Try PIL if QImageReader fails to read
                 try:
                     from PIL import Image, ImageOps
+
                     with Image.open(self.file_path) as img:
                         img = ImageOps.exif_transpose(img)
                         w, h = img.size
@@ -416,17 +479,21 @@ class ImageLoadTask(QRunnable):
                         sh = max(1, sh)
 
                         img = img.resize((sw, sh), Image.Resampling.HAMMING)
-                        if img.mode != 'RGB':
-                            img = img.convert('RGB')
+                        if img.mode != "RGB":
+                            img = img.convert("RGB")
 
                         # Convert to QImage
-                        image_bytes = img.tobytes('raw', 'RGB')
+                        image_bytes = img.tobytes("raw", "RGB")
                         scaled_image = QImage(image_bytes, sw, sh, sw * 3, QImage.Format.Format_RGB888)
 
                         if not scaled_image.isNull():
-                            logger.debug(f"[IMAGE_LOAD_TASK] Loaded via PIL fallback (read failed): {os.path.basename(self.file_path)}")
+                            logger.debug(
+                                f"[IMAGE_LOAD_TASK] Loaded via PIL fallback (read failed): {os.path.basename(self.file_path)}"
+                            )
                 except Exception as pil_err:
-                    logger.debug(f"[IMAGE_LOAD_TASK] PIL fallback failed for {os.path.basename(self.file_path)}: {pil_err}")
+                    logger.debug(
+                        f"[IMAGE_LOAD_TASK] PIL fallback failed for {os.path.basename(self.file_path)}: {pil_err}"
+                    )
 
             if self.is_cancelled():
                 return
@@ -435,8 +502,10 @@ class ImageLoadTask(QRunnable):
             total_time = time.time() - task_start
             if is_raw:
                 # For RAW files that fall through to non-RAW path, read_time should be defined
-                if 'read_time' in locals():
-                    logger.debug(f"[IMAGE_LOAD_TASK] Loaded non-RAW fallback for {file_basename} in {total_time:.3f}s (read: {read_time:.3f}s)")
+                if "read_time" in locals():
+                    logger.debug(
+                        f"[IMAGE_LOAD_TASK] Loaded non-RAW fallback for {file_basename} in {total_time:.3f}s (read: {read_time:.3f}s)"
+                    )
                 else:
                     logger.debug(f"[IMAGE_LOAD_TASK] Loaded non-RAW fallback for {file_basename} in {total_time:.3f}s")
             else:
@@ -449,7 +518,10 @@ class ImageLoadTask(QRunnable):
                 logger.debug(f"[IMAGE_LOAD_TASK] Signal carrier deleted, ignoring result for: {file_basename}")
 
         except Exception as e:
-            logger.error(f"[IMAGE_LOAD_TASK] Error loading image {os.path.basename(self.file_path) if self.file_path else 'unknown'}: {e}", exc_info=True)
+            logger.error(
+                f"[IMAGE_LOAD_TASK] Error loading image {os.path.basename(self.file_path) if self.file_path else 'unknown'}: {e}",
+                exc_info=True,
+            )
 
 
 class RawRecoveryWorker(QRunnable):
@@ -461,7 +533,7 @@ class RawRecoveryWorker(QRunnable):
         signals: RawRecoverySignals,
         *,
         exif_data: dict | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.file_path = file_path
         self.signals = signals
@@ -476,7 +548,7 @@ class RawRecoveryWorker(QRunnable):
             os.path.basename(self.file_path),
         )
         try:
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
 
             processor = UnifiedImageProcessor()
 
@@ -510,4 +582,3 @@ class RawRecoveryWorker(QRunnable):
                     self.signals.failed.emit(self.file_path, str(exc))
             except Exception:
                 pass
-

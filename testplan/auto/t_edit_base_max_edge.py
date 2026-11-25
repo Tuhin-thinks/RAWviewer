@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Working Adjust edit base can be long-edge capped; export bases are not."""
-from __future__ import annotations
 
 import os
 import sys
@@ -12,7 +11,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     extra = f"  {detail}" if detail else ""
     print(f"{'PASS' if ok else 'FAIL'}  {name}{extra}")
     if not ok:
@@ -40,8 +39,7 @@ def main() -> int:
     )
     check(
         "aspect is preserved",
-        capped is not None
-        and abs(capped.shape[1] / capped.shape[0] - 4500 / 3000) < 0.02,
+        capped is not None and abs(capped.shape[1] / capped.shape[0] - 4500 / 3000) < 0.02,
         getattr(capped, "shape", None),
     )
     export = cap_working_edit_base(img, use_full_resolution=True)

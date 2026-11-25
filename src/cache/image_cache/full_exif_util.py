@@ -1,5 +1,4 @@
 """Full image, EXIF, pixmap, orientation verify, and utility operations."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -24,6 +23,7 @@ from cache.memory import LRUCache, MemoryMonitor, MemoryOnlyPersistentCache
 from cache.metadata import PersistentEXIFCache
 
 logger = logging.getLogger(__name__)
+
 
 class ImageCacheFullExifUtil:
     """Full image, EXIF, pixmap, orientation verify, and utility operations."""
@@ -56,7 +56,7 @@ class ImageCacheFullExifUtil:
     disk_grid_cache: PersistentGridCache | MemoryOnlyPersistentCache
     disk_preview_cache: PersistentPreviewCache | MemoryOnlyPersistentCache
     exif_memory_cache: LRUCache
-    _orient_verify_lock: threading.Lock
+    _orient_verify_lock: "threading.Lock"
     _orient_verify_thread: threading.Thread | None
     _orient_verify_attempted: set[str]
     _orient_verify_queue: Any  # queue.Queue
@@ -75,15 +75,15 @@ class ImageCacheFullExifUtil:
 
     def get_full_image(self, file_path: str) -> np.ndarray | None:
         """Get cached full image or return None if not cached."""
-        self.stats['full_image_requests'] += 1
+        self.stats["full_image_requests"] += 1
         self._check_memory_pressure()
 
         image = self.full_image_cache.get(file_path)
         if image is not None:
-            self.cache_hit.emit(file_path, 'full_image')
+            self.cache_hit.emit(file_path, "full_image")
             return image  # type: ignore[no-any-return]
         else:
-            self.cache_miss.emit(file_path, 'full_image')
+            self.cache_miss.emit(file_path, "full_image")
             if os.environ.get("RAWVIEWER_DEBUG_FULLCACHE"):
                 import logging
 
@@ -96,9 +96,7 @@ class ImageCacheFullExifUtil:
                 )
             return None
 
-    def put_full_image(
-        self, file_path: str, image: np.ndarray, *, copy: bool = True
-    ) -> None:
+    def put_full_image(self, file_path: str, image: np.ndarray, *, copy: bool = True) -> None:
         """Cache a full processed image.
 
         ``copy=False`` transfers ownership of a freshly allocated buffer the
@@ -107,9 +105,7 @@ class ImageCacheFullExifUtil:
         inputs are still compacted with ``ascontiguousarray``.
         """
         if image is not None:
-            stored = (
-                np.ascontiguousarray(image) if not copy else image.copy()
-            )
+            stored = np.ascontiguousarray(image) if not copy else image.copy()
             self.full_image_cache.put(file_path, stored)
 
     def mark_full_image_source(self, file_path: str, *, is_embedded_jpeg: bool) -> None:
@@ -220,14 +216,14 @@ class ImageCacheFullExifUtil:
 
     def get_pixmap(self, file_path: str) -> QPixmap | None:
         """Get cached QPixmap or return None if not cached."""
-        self.stats['pixmap_requests'] += 1
+        self.stats["pixmap_requests"] += 1
 
         pixmap = self.pixmap_cache.get(file_path)
         if pixmap is not None:
-            self.cache_hit.emit(file_path, 'pixmap')
+            self.cache_hit.emit(file_path, "pixmap")
             return pixmap
         else:
-            self.cache_miss.emit(file_path, 'pixmap')
+            self.cache_miss.emit(file_path, "pixmap")
             return None
 
     def put_pixmap(self, file_path: str, pixmap: QPixmap) -> None:
@@ -279,7 +275,7 @@ class ImageCacheFullExifUtil:
         """Folder scope changed: free heavy RAM; leave disk thumbs for warm reopen."""
         self.clear_heavy_memory_tiers(keep_path=keep_path)
         try:
-            from processing.unified import prune_libraw_unsupported_paths
+            from processing.unified.helpers import prune_libraw_unsupported_paths
 
             prune_libraw_unsupported_paths(clear_all=False, max_keep=512)
         except Exception:
@@ -293,9 +289,7 @@ class ImageCacheFullExifUtil:
         """UI hot path: never blocks (see get_exif's verify=False default)."""
         return self.get_exif(file_path)
 
-    def get_exif(
-        self, file_path: str, *, verify: bool = False
-    ) -> dict[str, Any] | None:
+    def get_exif(self, file_path: str, *, verify: bool = False) -> dict[str, Any] | None:
         """Get cached EXIF data or return None if not cached.
 
         RAW orientation trustworthiness: records lacking ``verified_orientation``
@@ -315,7 +309,7 @@ class ImageCacheFullExifUtil:
         decisions on this record, e.g. image_load_manager's deferred-EXIF
         emits) keeps the synchronous probe but now memoizes success.
         """
-        self.stats['exif_requests'] += 1
+        self.stats["exif_requests"] += 1
 
         # 1. Check in-memory cache first
         exif_data = self.exif_memory_cache.get(file_path)
@@ -326,24 +320,23 @@ class ImageCacheFullExifUtil:
                 self.exif_memory_cache.put(file_path, exif_data)
 
         if exif_data is None:
-            self.cache_miss.emit(file_path, 'exif')
+            self.cache_miss.emit(file_path, "exif")
             return None
 
         try:
-            from enhanced_raw_processor import (
+            from enhanced_raw_processor.extraction import (
                 RAW_EXIF_SENSOR_META_VER,
                 cached_raw_exif_orientation_trustworthy,
             )
-            cached_ver = exif_data.get('raw_exif_sensor_meta_ver', 0)
+
+            cached_ver = exif_data.get("raw_exif_sensor_meta_ver", 0)
             if cached_ver < RAW_EXIF_SENSOR_META_VER:
-                self.cache_miss.emit(file_path, 'exif')
+                self.cache_miss.emit(file_path, "exif")
                 return None
             if not exif_data.get("verified_orientation"):
                 if verify:
-                    if not cached_raw_exif_orientation_trustworthy(
-                        file_path, exif_data
-                    ):
-                        self.cache_miss.emit(file_path, 'exif')
+                    if not cached_raw_exif_orientation_trustworthy(file_path, exif_data):
+                        self.cache_miss.emit(file_path, "exif")
                         return None
                     # Memoize the successful probe so no caller ever re-pays it.
                     exif_data = dict(exif_data)
@@ -354,12 +347,10 @@ class ImageCacheFullExifUtil:
         except Exception:
             pass
 
-        self.cache_hit.emit(file_path, 'exif')
+        self.cache_hit.emit(file_path, "exif")
         return exif_data
 
-    def _schedule_orientation_verify(
-        self, file_path: str, exif_data: dict[str, Any]
-    ) -> None:
+    def _schedule_orientation_verify(self, file_path: str, exif_data: dict[str, Any]) -> None:
         """Queue a background trustworthiness probe for an unverified RAW record.
 
         One attempt per path per session; a single lazily-started daemon
@@ -367,9 +358,9 @@ class ImageCacheFullExifUtil:
         anyway, so more workers would only pile up blocked threads).
         """
         try:
-            import common_image_loader
+            from common_image_loader.helpers import is_raw_file
 
-            if not common_image_loader.is_raw_file(file_path):
+            if not is_raw_file(file_path):
                 return
         except Exception:
             return
@@ -384,10 +375,7 @@ class ImageCacheFullExifUtil:
                 self._orient_verify_attempted.clear()
             self._orient_verify_attempted.add(file_path)
             self._orient_verify_queue.append(file_path)
-            if (
-                self._orient_verify_thread is None
-                or not self._orient_verify_thread.is_alive()
-            ):
+            if self._orient_verify_thread is None or not self._orient_verify_thread.is_alive():
                 self._orient_verify_thread = threading.Thread(
                     target=self._orientation_verify_worker,
                     name="exif-orient-verify",
@@ -403,9 +391,7 @@ class ImageCacheFullExifUtil:
                     return
                 path = self._orient_verify_queue.pop(0)
             try:
-                from enhanced_raw_processor import (
-                    cached_raw_exif_orientation_trustworthy,
-                )
+                from enhanced_raw_processor.extraction import cached_raw_exif_orientation_trustworthy
 
                 cached = self.exif_memory_cache.peek(path)
                 if not cached:
@@ -425,7 +411,7 @@ class ImageCacheFullExifUtil:
                         self.exif_memory_cache.remove(path)
                     with contextlib.suppress(Exception):
                         self.exif_cache.remove(path)
-                    self.cache_miss.emit(path, 'exif')
+                    self.cache_miss.emit(path, "exif")
             except Exception:
                 pass
 
@@ -473,9 +459,7 @@ class ImageCacheFullExifUtil:
             if not ts or ts <= 0:
                 continue
             try:
-                iso_times[path] = datetime.datetime.fromtimestamp(ts).strftime(
-                    "%Y:%m:%d %H:%M:%S"
-                )
+                iso_times[path] = datetime.datetime.fromtimestamp(ts).strftime("%Y:%m:%d %H:%M:%S")
             except Exception:
                 continue
         self.exif_cache.update_capture_time_bulk(iso_times)
@@ -484,7 +468,9 @@ class ImageCacheFullExifUtil:
         """All capture_time rows under folder_path (normalized path keys)."""
         return self.exif_cache.get_capture_times_for_folder(folder_path)
 
-    def get_multiple_exif(self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
+    def get_multiple_exif(
+        self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True
+    ) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.
 
         Orientation trust for unverified RAW records is optimistic + deferred
@@ -498,13 +484,14 @@ class ImageCacheFullExifUtil:
         bulk sibling had the same synchronous check duplicated inline and
         was missed.
         """
-        self.stats['exif_requests'] += len(file_paths)
+        self.stats["exif_requests"] += len(file_paths)
 
         results = {}
         missing_paths = []
 
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
+
             has_ver = True
         except Exception:
             has_ver = False
@@ -515,11 +502,11 @@ class ImageCacheFullExifUtil:
             exif = self.exif_memory_cache.get(path)
             if exif:
                 if has_ver:
-                    cached_ver = exif.get('raw_exif_sensor_meta_ver', 0)
+                    cached_ver = exif.get("raw_exif_sensor_meta_ver", 0)
                     if cached_ver < RAW_EXIF_SENSOR_META_VER:
                         missing_paths.append(path)
                         continue
-                    if not exif.get('verified_orientation'):
+                    if not exif.get("verified_orientation"):
                         self._schedule_orientation_verify(path, exif)
                 results[path] = exif
             else:
@@ -530,10 +517,10 @@ class ImageCacheFullExifUtil:
             db_results = self.exif_cache.get_multiple(missing_paths, file_stats, fast_mode)
             for path, exif in db_results.items():
                 if has_ver:
-                    cached_ver = exif.get('raw_exif_sensor_meta_ver', 0)
+                    cached_ver = exif.get("raw_exif_sensor_meta_ver", 0)
                     if cached_ver < RAW_EXIF_SENSOR_META_VER:
                         continue
-                    if not exif.get('verified_orientation'):
+                    if not exif.get("verified_orientation"):
                         self._schedule_orientation_verify(path, exif)
                 self.exif_memory_cache.put(path, exif)
                 results[path] = exif
@@ -578,7 +565,7 @@ class ImageCacheFullExifUtil:
         # critical-pressure purge freed everything except a couple of
         # hundred MB of float32 bases.
         try:
-            from processing.unified import (
+            from processing.unified.helpers import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,
@@ -589,17 +576,11 @@ class ImageCacheFullExifUtil:
             # them useful, and also what puts them outside every cache this
             # class owns -- a critical-pressure purge used to clear everything
             # it could see and leave these whole.
-            freed = (
-                release_edit_base_cache()
-                + release_adjusted_full_cache()
-                + release_unpacked_raw_cache()
-            )
+            freed = release_edit_base_cache() + release_adjusted_full_cache() + release_unpacked_raw_cache()
             if freed:
                 import logging
 
-                logging.getLogger(__name__).info(
-                    "[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6
-                )
+                logging.getLogger(__name__).info("[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6)
         except Exception:
             pass
         self.libraw_preview_paths.clear()
@@ -618,14 +599,14 @@ class ImageCacheFullExifUtil:
         memory_info = self.memory_monitor.get_memory_info()
 
         return {
-            'thumbnail_cache': self.thumbnail_cache.get_stats(),
-            'grid_cache': self.grid_cache.get_stats(),
-            'full_image_cache': self.full_image_cache.get_stats(),
-            'pixmap_cache': self.pixmap_cache.get_stats(),
-            'memory_info': memory_info,
-            'request_stats': self.stats.copy(),
-            'cache_budget_mb': self.max_memory_mb,
-            'persistent_cache_enabled': self.persistent_cache_enabled
+            "thumbnail_cache": self.thumbnail_cache.get_stats(),
+            "grid_cache": self.grid_cache.get_stats(),
+            "full_image_cache": self.full_image_cache.get_stats(),
+            "pixmap_cache": self.pixmap_cache.get_stats(),
+            "memory_info": memory_info,
+            "request_stats": self.stats.copy(),
+            "cache_budget_mb": self.max_memory_mb,
+            "persistent_cache_enabled": self.persistent_cache_enabled,
         }
 
     def cleanup_old_cache(self) -> None:
@@ -650,9 +631,7 @@ class ImageCacheFullExifUtil:
 
         logger = logging.getLogger(__name__)
         if max_mb is None:
-            max_mb = _env_int(
-                "RAWVIEWER_DISK_CACHE_MAX_MB", 4096, minimum=256, maximum=1024 * 1024
-            )
+            max_mb = _env_int("RAWVIEWER_DISK_CACHE_MAX_MB", 4096, minimum=256, maximum=1024 * 1024)
         max_bytes = max_mb * 1024 * 1024
         target_bytes = int(max_bytes * 0.9)
 
@@ -700,6 +679,7 @@ class ImageCacheFullExifUtil:
         try:
             if self._libraw_preview_paths_file and os.path.isfile(self._libraw_preview_paths_file):
                 import json
+
                 with open(self._libraw_preview_paths_file, encoding="utf-8") as f:
                     loaded = json.load(f)
                 self.libraw_preview_paths = set(loaded) if isinstance(loaded, list) else set()
@@ -711,6 +691,7 @@ class ImageCacheFullExifUtil:
         try:
             if self._libraw_preview_paths_file:
                 import json
+
                 with open(self._libraw_preview_paths_file, "w", encoding="utf-8") as f:
                     json.dump(list(self.libraw_preview_paths), f)
         except Exception:
@@ -726,11 +707,11 @@ class ImageCacheFullExifUtil:
         if self._orient_verify_thread is not None and self._orient_verify_thread.is_alive():
             self._orient_verify_thread.join(timeout=2.0)
 
-        if hasattr(self, 'exif_cache'):
+        if hasattr(self, "exif_cache"):
             self.exif_cache.close()
-        if hasattr(self, 'disk_thumbnail_cache'):
+        if hasattr(self, "disk_thumbnail_cache"):
             self.disk_thumbnail_cache.close()
-        if hasattr(self, 'disk_grid_cache'):
+        if hasattr(self, "disk_grid_cache"):
             self.disk_grid_cache.close()
-        if hasattr(self, 'disk_preview_cache'):
+        if hasattr(self, "disk_preview_cache"):
             self.disk_preview_cache.close()

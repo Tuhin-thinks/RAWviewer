@@ -1,6 +1,6 @@
 """Adjust mixin part 3 of 5 for ImageAdjustPanelWidget."""
-from __future__ import annotations
 
+import logging
 import os
 
 from PyQt6.QtCore import QSize, Qt
@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core import theme
-from raw_adjustments import (
+from raw_adjustments.defaults import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,
     DEFAULT_ADJUSTMENTS,
@@ -41,7 +41,6 @@ from .helpers import (
 
 
 class AdjustPart3:
-
     def _build_looks_section(self, sect: CollapsibleSection) -> None:
         """Shared library for Creative LUT (.cube) and XMP presets (.xmp)."""
         tip = QLabel(
@@ -171,11 +170,7 @@ class AdjustPart3:
         lw = getattr(self, "_looks_list", None)
         if lw is None:
             return
-        wanted_lut = (
-            select_lut
-            if select_lut is not None
-            else getattr(self, "_lut_active_name", "")
-        )
+        wanted_lut = select_lut if select_lut is not None else getattr(self, "_lut_active_name", "")
         wanted_xmp = str(getattr(self, "_xmp_highlight_name", "") or "")
         lw.blockSignals(True)
         try:
@@ -199,9 +194,7 @@ class AdjustPart3:
                     else "XMP preset — click to paste onto this image; click again to deselect"
                 )
                 row = _LooksRowWidget(name, kind)
-                row.remove_clicked.connect(
-                    lambda checked=False, n=name, k=kind: self._remove_look(n, k)
-                )
+                row.remove_clicked.connect(lambda checked=False, n=name, k=kind: self._remove_look(n, k))
                 item.setSizeHint(QSize(0, max(28, row.sizeHint().height())))
                 lw.addItem(item)
                 lw.setItemWidget(item, row)
@@ -209,11 +202,11 @@ class AdjustPart3:
                     self._lut_thumb_rows[name] = row
                 # Prefer the just-applied .xmp highlight over an embedded .cube
                 # so click-to-apply feedback stays on the preset row.
-                if kind == "xmp" and wanted_xmp and name == wanted_xmp or (
-                    kind == "cube"
-                    and wanted_lut
-                    and name == wanted_lut
-                    and select_item is None
+                if (
+                    kind == "xmp"
+                    and wanted_xmp
+                    and name == wanted_xmp
+                    or (kind == "cube" and wanted_lut and name == wanted_lut and select_item is None)
                 ):
                     select_item = item
             if select_item is not None:
@@ -242,9 +235,7 @@ class AdjustPart3:
             return
         sample = ", ".join(names[:3])
         extra = f" (+{len(names) - 3} more)" if len(names) > 3 else ""
-        self.looks_drop_rejected.emit(
-            f"Only .cube and .xmp files can be added here — ignored: {sample}{extra}"
-        )
+        self.looks_drop_rejected.emit(f"Only .cube and .xmp files can be added here — ignored: {sample}{extra}")
 
     def _import_looks_paths(self, paths: list[str]) -> None:
         """Drop / import only adds to the library — click a row to apply."""
@@ -261,10 +252,8 @@ class AdjustPart3:
                 else:
                     self._on_looks_unsupported_dropped([p])
             except Exception as exc:
-                print(f"[LOOKS] import failed: {p}: {exc}")
-        self._refresh_looks_list(
-            select_lut=getattr(self, "_lut_active_name", "") or None
-        )
+                logging.getLogger(__name__).warning("[LOOKS] import failed: %s: %s", p, exc)
+        self._refresh_looks_list(select_lut=getattr(self, "_lut_active_name", "") or None)
 
     def _remove_look(self, name: str, kind: str) -> None:
         from raw_adjustments.lut import remove_managed_lut
@@ -283,9 +272,7 @@ class AdjustPart3:
                     self._xmp_highlight_name = ""
         except Exception:
             pass
-        self._refresh_looks_list(
-            select_lut=getattr(self, "_lut_active_name", "") or None
-        )
+        self._refresh_looks_list(select_lut=getattr(self, "_lut_active_name", "") or None)
 
     def _remove_selected_look(self) -> None:
         """Back-compat helper — remove the current list selection."""
@@ -383,7 +370,7 @@ class AdjustPart3:
 
             preset = load_preset_adjustments(name)
         except Exception as exc:
-            print(f"[XMP_PRESET] apply failed: {name}: {exc}")
+            logging.getLogger(__name__).warning("[XMP_PRESET] apply failed: %s: %s", name, exc)
             return
         current = self.get_adjustments()
         as_shot = current.get(AS_SHOT_TEMP_KEY)
@@ -405,9 +392,7 @@ class AdjustPart3:
         # set_adjustments clears the ephemeral xmp highlight; restore selection
         # on the *new* list items after the rebuild.
         self._xmp_highlight_name = name
-        self._refresh_looks_list(
-            select_lut=getattr(self, "_lut_active_name", "") or None
-        )
+        self._refresh_looks_list(select_lut=getattr(self, "_lut_active_name", "") or None)
         self.editing_finished.emit(self.get_adjustments())
 
     def _build_hsl_section(self, layout: QVBoxLayout) -> None:
@@ -438,12 +423,8 @@ class AdjustPart3:
             slider.setTracking(True)
             slider.setRange(-100, 100)
             slider.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            slider.sliderMoved.connect(
-                lambda _v, ch=channel: self._update_hsl_label(ch)
-            )
-            slider.valueChanged.connect(
-                lambda _v, ch=channel: self._on_hsl_slider_changed(ch)
-            )
+            slider.sliderMoved.connect(lambda _v, ch=channel: self._update_hsl_label(ch))
+            slider.valueChanged.connect(lambda _v, ch=channel: self._on_hsl_slider_changed(ch))
             slider.sliderReleased.connect(self._on_slider_released)
             row.addWidget(slider, 1)
             val_lbl = AdjustValueLabel()
@@ -537,18 +518,14 @@ class AdjustPart3:
         try:
             from raw_adjustments.spot_heal import MASK_KEY as _heal_mask_key
 
-            self.set_spot_heal_mask_present(
-                bool(str((adj or {}).get(_heal_mask_key, "") or ""))
-            )
+            self.set_spot_heal_mask_present(bool(str((adj or {}).get(_heal_mask_key, "") or "")))
         except Exception:
             pass
         self._block_emit = True
         try:
             merged = dict(DEFAULT_ADJUSTMENTS)
             merged.update(adj or {})
-            self._as_shot_temperature = float(
-                merged.get(AS_SHOT_TEMP_KEY, DEFAULT_ADJUSTMENTS["Temperature"])
-            )
+            self._as_shot_temperature = float(merged.get(AS_SHOT_TEMP_KEY, DEFAULT_ADJUSTMENTS["Temperature"]))
             temp_slider = getattr(self, "_temperature_slider", None)
             if temp_slider is not None:
                 temp_slider.set_center_value(self._as_shot_temperature)
@@ -561,9 +538,7 @@ class AdjustPart3:
                 slider.setValue(spec.value_to_slider(value))
                 if val_lbl is not None:
                     val_lbl.setText(spec.format_value(value))
-            self._set_lens_correction_checked(
-                float(merged.get("LensCorrectionEnabled", 0.0)) > 0.5
-            )
+            self._set_lens_correction_checked(float(merged.get("LensCorrectionEnabled", 0.0)) > 0.5)
             if self._tone_curve_row is not None:
                 for name, key in _CHANNEL_CURVE_KEYS_BY_NAME.items():
                     self._channel_curve_cache[name] = str(merged.get(key, "") or "")
@@ -576,9 +551,7 @@ class AdjustPart3:
             if hasattr(self, "_hsl_sliders"):
                 self._current_hsl_color = self._hsl_color_name()
                 self._load_hsl_sliders_from_adj(self._hsl_cache)
-            self.set_recovery_baseline(
-                float(merged.get(RECOVERY_BASELINE_KEY, 0.0)) > 0.5
-            )
+            self.set_recovery_baseline(float(merged.get(RECOVERY_BASELINE_KEY, 0.0)) > 0.5)
             nr_amount = float(merged.get("ColorNoiseReduction", 0.0))
             if nr_amount > 0.0:
                 method_idx = int(float(merged.get("DenoiseMethod", 0.0)))
@@ -713,9 +686,7 @@ class AdjustPart3:
         """
         global _EDIT_SETTINGS_CLIPBOARD
         adj = self.get_adjustments()
-        _EDIT_SETTINGS_CLIPBOARD = {
-            k: v for k, v in adj.items() if k != AS_SHOT_TEMP_KEY
-        }
+        _EDIT_SETTINGS_CLIPBOARD = {k: v for k, v in adj.items() if k != AS_SHOT_TEMP_KEY}
         self._paste_btn.setEnabled(True)
 
     def _on_paste_settings_clicked(self) -> None:

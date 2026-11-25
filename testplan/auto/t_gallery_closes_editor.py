@@ -29,9 +29,9 @@ fragile to be a reliable regression guard; this checks the fix via source
 inspection, but specifically replicates the real call order this time
 (view_mode already "gallery" at the point the check would run).
 """
+
 import inspect
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -64,7 +64,7 @@ def main() -> int:
     )
     check(
         "close-editor check reads _adjust_overlay_visible directly instead",
-        "getattr(self, \"_adjust_overlay_visible\", False)" in src,
+        'getattr(self, "_adjust_overlay_visible", False)' in src,
     )
     check(
         "_show_gallery_view closes the panel via _close_adjust_panel_from_ui "
@@ -83,7 +83,7 @@ def main() -> int:
     # set to "gallery" -- replicating the real call order, unlike the
     # original (flawed) version of this test.
     class FakePanel:
-        def __init__(self, visible):
+        def __init__(self, visible) -> None:
             self._visible = visible
 
         def isVisible(self):

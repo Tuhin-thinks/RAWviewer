@@ -1,5 +1,4 @@
 """Background workers for the adjust panel preview, masks and export."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -157,7 +156,7 @@ class _AdjustPreviewWorker(QRunnable):
                     settle_fast=self.settle_fast,
                 )
             else:
-                from raw_adjustments import apply_adjustments_to_rgb
+                from raw_adjustments.apply import apply_adjustments_to_rgb
 
                 out = apply_adjustments_to_rgb(self.base_rgb, self.adj)
                 if out is not None and str(getattr(out, "dtype", "")) in {
@@ -171,7 +170,7 @@ class _AdjustPreviewWorker(QRunnable):
                         "Adjust preview returned non-display buffer (%s); forcing encode",
                         getattr(out, "dtype", None),
                     )
-                    from raw_adjustments import apply_adjustments_to_linear
+                    from raw_adjustments.apply import apply_adjustments_to_linear
 
                     out = apply_adjustments_to_linear(self.base_rgb, self.adj)
             if out is not None and str(getattr(out, "dtype", "")) != "uint8":
@@ -235,7 +234,8 @@ class _AdjustCompareOriginalWorker(QRunnable):
     def run(self) -> None:
         out = None
         try:
-            from raw_adjustments import DEFAULT_ADJUSTMENTS, apply_adjustments_to_rgb
+            from raw_adjustments.apply import apply_adjustments_to_rgb
+            from raw_adjustments.defaults import DEFAULT_ADJUSTMENTS
             from raw_adjustments.transform import TRANSFORM_KEYS
 
             adj = dict(DEFAULT_ADJUSTMENTS)
@@ -320,7 +320,7 @@ class _AdjustEditBaseWorker(QRunnable):
         has_lens_profile = False
         lens_profile_name = ""
         try:
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
 
             processor = UnifiedImageProcessor()
             base = processor.decode_raw_edit_base(
@@ -332,6 +332,7 @@ class _AdjustEditBaseWorker(QRunnable):
             has_lens_profile = processor.lens_profile_available(self.file_path)
             if has_lens_profile:
                 from raw_adjustments.lens_correction import get_lens_profile_name
+
                 exif_data = processor.exif_extractor.extract_exif_data(self.file_path)
                 lens_profile_name = get_lens_profile_name(exif_data)
         except Exception:
@@ -400,6 +401,4 @@ class _AdjustExportWorker(QRunnable):
             err = exc
         finally:
             self.done_event.set()
-        self.signals.finished.emit(
-            self.file_path, self.output_path, self.export_format, err, xmp_warning
-        )
+        self.signals.finished.emit(self.file_path, self.output_path, self.export_format, err, xmp_warning)

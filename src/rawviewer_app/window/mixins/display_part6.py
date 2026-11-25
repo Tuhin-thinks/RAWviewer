@@ -1,5 +1,4 @@
 """display mixin, part 6 of 6 (14 methods, 408 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -19,9 +18,7 @@ lazy.register(sys.modules[__name__])
 class DisplayPart6:
     def _capture_nav_zoom_state_before_load(self) -> None:
         """Snapshot GPU/legacy zoom so rapid or coalesced navigation can restore it."""
-        logging.getLogger(__name__).debug(
-            "[ZOOMNAV] capture: zoomed_in=%s", self._single_view_is_zoomed_in()
-        )
+        logging.getLogger(__name__).debug("[ZOOMNAV] capture: zoomed_in=%s", self._single_view_is_zoomed_in())
         self._nav_zoom_interim_active = False
         if not self._single_view_is_zoomed_in():
             self._preserve_nav_zoom_active = False
@@ -64,9 +61,7 @@ class DisplayPart6:
                 pm_max = max(pm.width(), pm.height())
                 s_max = max(sdims)
                 if pm_max > 0 and s_max > 0 and self._restore_zoom_level:
-                    self._restore_sensor_level = (
-                        float(self._restore_zoom_level) * pm_max / s_max
-                    )
+                    self._restore_sensor_level = float(self._restore_zoom_level) * pm_max / s_max
         except Exception:
             self._restore_sensor_level = None
         # Remember this file's framing so navigating back restores *its* zoom
@@ -74,12 +69,7 @@ class DisplayPart6:
         try:
             gv_mem = getattr(self, "gpu_view", None)
             cur = getattr(self, "current_file_path", None)
-            if (
-                cur
-                and gv_mem is not None
-                and gv_mem.has_pixmap()
-                and self._restore_sensor_level is not None
-            ):
+            if cur and gv_mem is not None and gv_mem.has_pixmap() and self._restore_sensor_level is not None:
                 c = gv_mem.mapToScene(gv_mem.viewport().rect().center())
                 fx = c.x() / max(1, gv_mem._img_w)
                 fy = c.y() / max(1, gv_mem._img_h)
@@ -107,9 +97,17 @@ class DisplayPart6:
 
     def _clear_all_zoom_state(self):
         """Clear all variables that could cause accidental zoom restorations."""
-        for attr in ['_pending_zoom', '_pending_zoom_center', '_pending_zoom_thumbnail_size',
-                     '_pending_zoom_level', '_pending_zoom_restore', '_restore_zoom_center',
-                     '_restore_zoom_level', '_preserve_nav_zoom_active', '_maintain_zoom_on_navigation']:
+        for attr in [
+            "_pending_zoom",
+            "_pending_zoom_center",
+            "_pending_zoom_thumbnail_size",
+            "_pending_zoom_level",
+            "_pending_zoom_restore",
+            "_restore_zoom_center",
+            "_restore_zoom_level",
+            "_preserve_nav_zoom_active",
+            "_maintain_zoom_on_navigation",
+        ]:
             if hasattr(self, attr):
                 delattr(self, attr)
         # GPU-era flags grew after this helper was written and were never
@@ -136,6 +134,7 @@ class DisplayPart6:
             self._on_dodge_burn_brush_size_wheel(120 if direction < 0 else -120)
             return
         import time
+
         now = time.monotonic()
         last = float(getattr(self, "_last_wheel_nav_ts", 0.0))
         # 250ms cooldown prevents trackpad flick inertia from skipping multiple images
@@ -170,6 +169,7 @@ class DisplayPart6:
     def toggle_zoom(self):
         """Toggle between fit-to-window and 100% zoom modes"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         self._touch_single_view_interactivity()
@@ -193,22 +193,15 @@ class DisplayPart6:
                 ):
                     pm = self.current_pixmap
                     if pm is not None and not pm.isNull():
-                        self.zoom_center_point = QPoint(
-                            pm.width() // 2, pm.height() // 2
-                        )
+                        self.zoom_center_point = QPoint(pm.width() // 2, pm.height() // 2)
                     elif gv.has_pixmap():
                         w, h = gv.image_size()
-                        self.zoom_center_point = QPoint(
-                            max(0, w // 2), max(0, h // 2)
-                        )
+                        self.zoom_center_point = QPoint(max(0, w // 2), max(0, h // 2))
                 self._allow_full_decode_for_user_zoom()
                 self._try_sync_full_before_zoom()
                 self._restore_adjust_hires_before_zoom()
                 self._gpu_zoom_in_to_point_finish()
-                if (
-                    not self._adjust_panel_active()
-                    and self._needs_full_resolution_upgrade()
-                ):
+                if not self._adjust_panel_active() and self._needs_full_resolution_upgrade():
                     self._pending_zoom = True
                     self._pending_zoom_center = self.zoom_center_point
                     self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
@@ -242,7 +235,7 @@ class DisplayPart6:
         # Allow toggle even if pixmap is not ready yet - check if image is loading
         if not self.current_pixmap:
             # If image is currently loading, wait a bit and try again
-            if hasattr(self, 'current_file_path') and self.current_file_path:
+            if hasattr(self, "current_file_path") and self.current_file_path:
                 # Always set the pending flag so we don't drop the user's spacebar press
                 self._pending_zoom_toggle = True
                 self._pending_zoom_target_path = self.current_file_path
@@ -257,14 +250,14 @@ class DisplayPart6:
             # Prefer the half-size preview flag -- EXIF embedded-preview WxH often matches pixmap and poison the cache comparison.
             should_load_full_resolution = False
             if self.current_pixmap:
-                if hasattr(self, '_is_half_size_displayed') and self._is_half_size_displayed:
+                if hasattr(self, "_is_half_size_displayed") and self._is_half_size_displayed:
                     should_load_full_resolution = True
                     logger.info("User zoomed in -- preview/half-resolution display, loading full resolution")
                 else:
                     cached_exif = self.image_cache.get_exif(self.current_file_path)
-                    if cached_exif and cached_exif.get('original_width') and cached_exif.get('original_height'):
-                        original_width = cached_exif['original_width']
-                        original_height = cached_exif['original_height']
+                    if cached_exif and cached_exif.get("original_width") and cached_exif.get("original_height"):
+                        original_width = cached_exif["original_width"]
+                        original_height = cached_exif["original_height"]
                         current_max = max(self.current_pixmap.width(), self.current_pixmap.height())
                         original_max = max(original_width, original_height)
                         if original_max > 0 and current_max < original_max * 0.8:
@@ -276,15 +269,19 @@ class DisplayPart6:
 
             # If currently displaying thumbnail/half_size and user zooms in, load full resolution FIRST
             if should_load_full_resolution:
-                if getattr(self, '_full_resolution_loading', False):
+                if getattr(self, "_full_resolution_loading", False):
                     self._pending_zoom = True
-                    self._pending_zoom_center = QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2) if self.current_pixmap else None
+                    self._pending_zoom_center = (
+                        QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2)
+                        if self.current_pixmap
+                        else None
+                    )
                     self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
                     # Keep fit preview until full-res decode completes.
                     self.update_status_bar()
                     self.setFocus()
                     return
-                if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
+                if not hasattr(self, "_full_resolution_loading") or not self._full_resolution_loading:
                     # Check if full resolution is already cached - if so, load it immediately
                     cached_full = self.image_cache.get_full_image(self.current_file_path)
                     if cached_full is not None:
@@ -299,15 +296,21 @@ class DisplayPart6:
                             self._is_half_size_displayed = False
                             self._full_resolution_loading = False
                             # Clear the flag after display
-                            if hasattr(self, '_maintain_zoom_on_navigation'):
-                                delattr(self, '_maintain_zoom_on_navigation')
+                            if hasattr(self, "_maintain_zoom_on_navigation"):
+                                delattr(self, "_maintain_zoom_on_navigation")
                             # Continue to zoom setup below
                         else:
                             logger.info("Cached image is half_size, processing full resolution...")
                             self._load_full_resolution_on_demand()
                             self._pending_zoom = True
-                            self._pending_zoom_center = QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2) if self.current_pixmap else None
-                            self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
+                            self._pending_zoom_center = (
+                                QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2)
+                                if self.current_pixmap
+                                else None
+                            )
+                            self._pending_zoom_thumbnail_size = (
+                                self.current_pixmap.size() if self.current_pixmap else None
+                            )
                             logger.debug("Stored pending 100% zoom - full decode first")
                             self.status_bar.showMessage("Loading full resolution for 100% zoom...")
                             # Do not render fake zoom on preview; apply native 100% after full-res.
@@ -317,7 +320,11 @@ class DisplayPart6:
                     else:
                         self._load_full_resolution_on_demand()
                         self._pending_zoom = True
-                        self._pending_zoom_center = QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2) if self.current_pixmap else None
+                        self._pending_zoom_center = (
+                            QPoint(self.current_pixmap.width() // 2, self.current_pixmap.height() // 2)
+                            if self.current_pixmap
+                            else None
+                        )
                         self._pending_zoom_thumbnail_size = self.current_pixmap.size() if self.current_pixmap else None
                         logger.debug("Stored pending 100% zoom - full decode first")
                         self.status_bar.showMessage("Loading full resolution for 100% zoom...")

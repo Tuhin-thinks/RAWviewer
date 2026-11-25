@@ -1,4 +1,5 @@
 """PyInstaller runtime hook: configure certifi CA bundle before any HTTPS."""
+
 import os
 import ssl
 

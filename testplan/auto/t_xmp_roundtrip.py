@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """XMP sidecar round-trip: every persisted control survives write -> load."""
+
 import os
 import shutil
 import sys
@@ -12,13 +13,20 @@ os.environ["RAWVIEWER_ENABLE_EDITING"] = "1"
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
+    from raw_tone_curve import (
+        TONE_CURVE_BLUE_KEY,
+        TONE_CURVE_GREEN_KEY,
+        TONE_CURVE_RED_KEY,
+        TONE_CURVE_SERIAL_KEY,
+    )
+
     from raw_adjustments import (
         AS_SHOT_TEMP_KEY,
         DEFAULT_ADJUSTMENTS,
@@ -27,26 +35,30 @@ def main() -> int:
         resolve_xmp_path,
         write_xmp_adjustments_for_file,
     )
-    from raw_tone_curve import (
-        TONE_CURVE_BLUE_KEY,
-        TONE_CURVE_GREEN_KEY,
-        TONE_CURVE_RED_KEY,
-        TONE_CURVE_SERIAL_KEY,
-    )
 
     tmpd = tempfile.mkdtemp()
     try:
         img = os.path.join(tmpd, "t.CR3")
-        open(img, "wb").write(b"stub")
+        with open(img, "wb") as fh:
+            fh.write(b"stub")
 
         adj = dict(DEFAULT_ADJUSTMENTS)
         adj[AS_SHOT_TEMP_KEY] = 5500.0
         edits = {
-            "Exposure2012": 1.25, "Contrast2012": 10.0, "Highlights2012": -45.0,
-            "Shadows2012": 60.0, "Whites2012": -20.0, "Blacks2012": 30.0,
-            "Temperature": 4800.0, "Tint": 12.0, "Saturation": 5.0,
-            "Vibrance": 15.0, "Sharpness": 40.0, "Clarity2012": 8.0,
-            "ColorNoiseReduction": 50.0, "DenoiseMethod": 1.0,
+            "Exposure2012": 1.25,
+            "Contrast2012": 10.0,
+            "Highlights2012": -45.0,
+            "Shadows2012": 60.0,
+            "Whites2012": -20.0,
+            "Blacks2012": 30.0,
+            "Temperature": 4800.0,
+            "Tint": 12.0,
+            "Saturation": 5.0,
+            "Vibrance": 15.0,
+            "Sharpness": 40.0,
+            "Clarity2012": 8.0,
+            "ColorNoiseReduction": 50.0,
+            "DenoiseMethod": 1.0,
             "DenoiseDetail": 75.0,
             "AIDenoiseAmount": 30.0,
             "LensCorrectionEnabled": 1.0,
@@ -55,7 +67,11 @@ def main() -> int:
             TONE_CURVE_GREEN_KEY: "0,0;128,110;255,255",
             TONE_CURVE_BLUE_KEY: "0,10;128,140;255,245",
         }
-        hsl = [k for k in DEFAULT_ADJUSTMENTS if k.startswith(("HueAdjustment", "SaturationAdjustment", "LuminanceAdjustment"))][:3]
+        hsl = [
+            k
+            for k in DEFAULT_ADJUSTMENTS
+            if k.startswith(("HueAdjustment", "SaturationAdjustment", "LuminanceAdjustment"))
+        ][:3]
         for k in hsl:
             edits[k] = 25.0
         adj.update(edits)
@@ -66,10 +82,7 @@ def main() -> int:
         back = load_adjustments_for_file(img)
         for k, v in edits.items():
             got = back.get(k, "<MISSING>")
-            if isinstance(v, str):
-                ok = str(got) == v
-            else:
-                ok = got != "<MISSING>" and abs(float(got) - float(v)) < 0.51
+            ok = str(got) == v if isinstance(v, str) else got != "<MISSING>" and abs(float(got) - float(v)) < 0.51
             check(f"round-trip {k}", ok, f"wrote {v!r} loaded {got!r}")
 
         # as-shot memo deterministic
@@ -111,7 +124,8 @@ def main() -> int:
         adj2[AS_SHOT_TEMP_KEY] = 5500.0
         adj2["Exposure2012"] = 0.5
         write_xmp_adjustments_for_file(img, adj2)
-        text = open(xmp, encoding="utf-8").read()
+        with open(xmp, encoding="utf-8") as fh:
+            text = fh.read()
         check("merge keeps GrainAmount", "GrainAmount" in text and "25" in text)
         check("merge keeps LookTable", "LookTable" in text)
         check("merge writes Exposure2012", "Exposure2012" in text)

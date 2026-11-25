@@ -84,7 +84,7 @@ class GpuImageView(
     _FIT_SCALE_EPS = 1.002  # treat within ~0.2% of fit as fit-to-window
     _shortcut_handler: Any
 
-    def __init__(self, parent=None, background="#14120F"):
+    def __init__(self, parent=None, background: str = "#14120F") -> None:
         # Attributes read from event()/viewportEvent() must exist before super().__init__()
         # because Qt may deliver events during construction.
         self._fit_mode = True
@@ -141,9 +141,7 @@ class GpuImageView(
         # Dodge/burn brush preview: soft radial falloff (matches stamp kernel).
         self._brush_cursor_item = QGraphicsPixmapItem()
         self._brush_cursor_item.setZValue(25)
-        self._brush_cursor_item.setTransformationMode(
-            Qt.TransformationMode.SmoothTransformation
-        )
+        self._brush_cursor_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self._brush_cursor_item.hide()
         self._dodge_burn_brush_radius = 40.0
         self._dodge_burn_brush_flow = 0.55
@@ -206,9 +204,7 @@ class GpuImageView(
         self._compare_divider_handle.hide()
         self._scene.addItem(self._compare_divider_handle)
 
-        self.setRenderHints(
-            QPainter.RenderHint.SmoothPixmapTransform | QPainter.RenderHint.Antialiasing
-        )
+        self.setRenderHints(QPainter.RenderHint.SmoothPixmapTransform | QPainter.RenderHint.Antialiasing)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
@@ -217,9 +213,7 @@ class GpuImageView(
         self.setFrameShape(QGraphicsView.Shape.NoFrame)
         self.setBackgroundBrush(QColor(background))
         self.setStyleSheet(f"border: none; background-color: {background};")
-        self.setOptimizationFlag(
-            QGraphicsView.OptimizationFlag.DontAdjustForAntialiasing, True
-        )
+        self.setOptimizationFlag(QGraphicsView.OptimizationFlag.DontAdjustForAntialiasing, True)
         self.viewport().setMouseTracking(True)
         self.viewport().setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
@@ -228,6 +222,7 @@ class GpuImageView(
 
         self._maybe_enable_opengl()
         from PyQt6.QtCore import QTimer
+
         QTimer.singleShot(500, self._enable_macos_edr)
 
         # Centered placeholder text shown when no image is loaded (parity with the
@@ -235,8 +230,6 @@ class GpuImageView(
         self._placeholder = QLabel(self.viewport())
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._placeholder.setWordWrap(True)
-        self._placeholder.setStyleSheet(
-            "QLabel { color: #666; font-size: 14px; background-color: transparent; }"
-        )
+        self._placeholder.setStyleSheet("QLabel { color: #666; font-size: 14px; background-color: transparent; }")
         self._placeholder.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._placeholder.hide()

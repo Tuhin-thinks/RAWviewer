@@ -1,7 +1,5 @@
 """Short MobileCLIP / Hugging Face download progress helpers (installer + in-app)."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 
 INSTALLER_PROGRESS_PREFIX = "@RAWVIEWER_PROGRESS"

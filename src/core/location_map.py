@@ -1,7 +1,5 @@
 """Simplified OSM tile map engine for displaying single-image GPS coordinates."""
 
-from __future__ import annotations
-
 import logging
 import math
 import os
@@ -219,8 +217,6 @@ def _draw_pin(
     painter.setBrush(QBrush(fill))
     painter.setPen(Qt.PenStyle.NoPen)
     painter.drawPath(path)
-
-
 
 
 class LocationMapModel:

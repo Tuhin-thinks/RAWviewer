@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ctrl+scroll zoom keeps the image point under the pointer fixed."""
+
 import os
 import sys
 
@@ -11,13 +12,13 @@ FAILURES = []
 TOL_PX = 2.0
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
-def ctrl_wheel(view, pos, notches_up=True, count=1):
+def ctrl_wheel(view, pos, notches_up: bool = True, count: int = 1) -> None:
     from PyQt6.QtCore import QPoint, QPointF, Qt
     from PyQt6.QtGui import QWheelEvent
 
@@ -90,10 +91,13 @@ def main() -> int:
     app.processEvents()
     new_scene = view.mapToScene(pos)
     new_frac = (new_scene.x() / 8000.0, new_scene.y() / 6000.0)
-    drift = max(
-        abs(new_frac[0] - old_frac[0]) * 8000.0,
-        abs(new_frac[1] - old_frac[1]) * 6000.0,
-    ) * view.current_scale()
+    drift = (
+        max(
+            abs(new_frac[0] - old_frac[0]) * 8000.0,
+            abs(new_frac[1] - old_frac[1]) * 6000.0,
+        )
+        * view.current_scale()
+    )
     check("full-res swap keeps pointer point fixed", drift <= TOL_PX, f"drift={drift:.2f}px")
 
     view.fit_to_window()

@@ -12,8 +12,6 @@ overlays prefer :func:`read_exif_raw_string_dict` + ``exif_subject_area``; exifr
 fallback is in ``exifread_af``.
 """
 
-from __future__ import annotations
-
 import os
 import re
 from collections.abc import Mapping
@@ -29,6 +27,7 @@ import logging
 
 logging.getLogger("exifread").setLevel(logging.ERROR)
 
+
 def _ensure_pyexiv2():
     global _HAS_PYEXIV2, _pyexiv2
     if _HAS_PYEXIV2 is not None:
@@ -36,12 +35,14 @@ def _ensure_pyexiv2():
 
     try:
         import pyexiv2 as _p
+
         _pyexiv2 = _p
         _HAS_PYEXIV2 = True
     except Exception:
         _pyexiv2 = None
         _HAS_PYEXIV2 = False
     return _HAS_PYEXIV2
+
 
 _BACKEND = os.environ.get("RAWVIEWER_EXIF_BACKEND", "auto").strip().lower()
 
@@ -146,9 +147,7 @@ def rotate_exif_orientation_meta_cw90(path: str) -> None:
         with _pyexiv2.Image(path) as img:
             img.modify_exif({"Exif.Image.Orientation": str(new_o)})
     except Exception as e:
-        raise RuntimeError(
-            f"Could not write EXIF Orientation to {path!r}: {e}"
-        ) from e
+        raise RuntimeError(f"Could not write EXIF Orientation to {path!r}: {e}") from e
 
 
 @dataclass
@@ -326,6 +325,7 @@ def process_file_from_path(
         # which reads only headers and avoids pyexiv2/Exiv2 loading the huge raw sensor data (700ms -> 1ms).
         ext = os.path.splitext(path)[1].lower().lstrip(".")
         from raw_adjustments.file_extensions import RAW_FILE_EXTENSIONS
+
         if ext in RAW_FILE_EXTENSIONS:
             tags = _exifread_process_path(path, details=False, stop_tag=stop_tag)
             # Canon CR2/CR3: exifread header-only reads often omit orientation and capture time.
@@ -361,9 +361,7 @@ def process_file(
     """
     name = getattr(fh, "name", None)
     if isinstance(name, str) and name and os.path.isfile(name):
-        return process_file_from_path(
-            name, details=details, stop_tag=stop_tag
-        )
+        return process_file_from_path(name, details=details, stop_tag=stop_tag)
     import warnings
 
     import exifread

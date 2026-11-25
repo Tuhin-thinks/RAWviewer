@@ -18,6 +18,7 @@ thread's reads for that whole duration -- directly matching the observed
 This test holds cache.lock in a background thread (simulating a slow write
 in progress) and asserts a concurrent get() does NOT wait for it.
 """
+
 import os
 import shutil
 import sys
@@ -30,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -49,7 +50,7 @@ def main() -> int:
 
         hold_released = threading.Event()
 
-        def hold_lock():
+        def hold_lock() -> None:
             with cache.lock:
                 hold_released.wait(timeout=5.0)
 
@@ -78,7 +79,7 @@ def main() -> int:
         holder2 = threading.Thread(target=hold_lock, daemon=True)
         hold_released2 = threading.Event()
 
-        def hold_lock2():
+        def hold_lock2() -> None:
             with cache.lock:
                 hold_released2.wait(timeout=5.0)
 

@@ -1,7 +1,6 @@
 """
 Fast thumbnail extractor for immediate display.
 """
-from __future__ import annotations
 
 import contextlib
 import os
@@ -16,7 +15,7 @@ from common_image_loader import (
     decode_embedded_jpeg_bytes,
     is_slow_storage_path,
 )
-from image_load_manager import yield_if_current_task_active
+from image_load_manager.helpers import yield_if_current_task_active
 from processing.raw_decode.gil import rawpy_imread_warm
 
 from .extraction import (
@@ -34,9 +33,13 @@ class ThumbnailExtractor(QObject):
     def __init__(self):
         super().__init__()
 
-    def extract_thumbnail_from_raw(self, file_path: str, max_size: int = 1024,
-                                   allow_scan_fallback: bool = True,
-                                   raw_object: rawpy.RawPy | None = None) -> np.ndarray | None:
+    def extract_thumbnail_from_raw(
+        self,
+        file_path: str,
+        max_size: int = 1024,
+        allow_scan_fallback: bool = True,
+        raw_object: rawpy.RawPy | None = None,
+    ) -> np.ndarray | None:
         """Extract embedded thumbnail from RAW file and resize to max_size."""
         thumb = None
 
@@ -87,6 +90,7 @@ class ThumbnailExtractor(QObject):
                         thumb = self._extract_from_raw_obj(raw, file_path, max_size)
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).debug(
                 "raw.extract_thumb failed for %s: %s",
                 os.path.basename(file_path),
@@ -95,6 +99,7 @@ class ThumbnailExtractor(QObject):
 
         if thumb is not None:
             import logging
+
             logging.getLogger(__name__).debug(
                 "Embedded thumbnail via rawpy.extract_thumb, shape=%s",
                 getattr(thumb, "shape", thumb),
@@ -114,58 +119,67 @@ class ThumbnailExtractor(QObject):
             # Fallback 2: OS decode via Qt (handles DNGs without LibRaw JPEG previews, or weird TIFFs)
             thumb = _thumbnail_via_qimage_reader(file_path, max_size, auto_transform=False)
         if thumb is None and allow_scan_fallback and sys.platform == "darwin":
+            try:
+                import subprocess
+                import tempfile
+
+                from PIL import Image
+
+                tmp_name = None
                 try:
-                    import subprocess
-                    import tempfile
+                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                        tmp_name = tmp.name
 
-                    from PIL import Image
-                    tmp_name = None
-                    try:
-                        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                            tmp_name = tmp.name
+                    result = subprocess.run(
+                        ["sips", "-Z", str(max_size), "-s", "format", "jpeg", file_path, "--out", tmp_name],
+                        capture_output=True,
+                    )
 
-                        result = subprocess.run(['sips', '-Z', str(max_size), '-s', 'format', 'jpeg', file_path, '--out', tmp_name],
-                                     capture_output=True)
+                    if os.path.exists(tmp_name) and os.path.getsize(tmp_name) > 0:
+                        jpeg_image = Image.open(tmp_name)
+                        if jpeg_image.mode != "RGB":
+                            jpeg_image = jpeg_image.convert("RGB")
+                        thumb = np.array(jpeg_image)
+                        jpeg_image.close()
+                    else:
+                        import logging
 
-                        if os.path.exists(tmp_name) and os.path.getsize(tmp_name) > 0:
-                            jpeg_image = Image.open(tmp_name)
-                            if jpeg_image.mode != 'RGB':
-                                jpeg_image = jpeg_image.convert('RGB')
-                            thumb = np.array(jpeg_image)
-                            jpeg_image.close()
-                        else:
-                            import logging
-                            logging.getLogger(__name__).debug(f"[SIPS] Failed to generate thumbnail for {file_path}. Exit code: {result.returncode}, Error: {result.stderr.decode('utf-8', 'ignore')}")
+                        logging.getLogger(__name__).debug(
+                            f"[SIPS] Failed to generate thumbnail for {file_path}. Exit code: {result.returncode}, Error: {result.stderr.decode('utf-8', 'ignore')}"
+                        )
 
-                            # Fallback to QuickLook (qlmanage)
-                            try:
-                                ql_dir = tempfile.mkdtemp()
-                                subprocess.run(['qlmanage', '-t', '-s', str(max_size), '-o', ql_dir, file_path], capture_output=True)
+                        # Fallback to QuickLook (qlmanage)
+                        try:
+                            ql_dir = tempfile.mkdtemp()
+                            subprocess.run(
+                                ["qlmanage", "-t", "-s", str(max_size), "-o", ql_dir, file_path], capture_output=True
+                            )
 
-                                ql_out = None
-                                for f in os.listdir(ql_dir):
-                                    if f.endswith('.png'):
-                                        ql_out = os.path.join(ql_dir, f)
-                                        break
+                            ql_out = None
+                            for f in os.listdir(ql_dir):
+                                if f.endswith(".png"):
+                                    ql_out = os.path.join(ql_dir, f)
+                                    break
 
-                                if ql_out and os.path.exists(ql_out) and os.path.getsize(ql_out) > 0:
-                                    ql_image = Image.open(ql_out)
-                                    if ql_image.mode != 'RGB':
-                                        ql_image = ql_image.convert('RGB')
-                                    thumb = np.array(ql_image)
-                                    ql_image.close()
-                            except Exception as ql_e:
-                                logging.getLogger(__name__).warning(f"[QLMANAGE] Fallback failed: {ql_e}")
-                            finally:
-                                if 'ql_dir' in locals() and os.path.exists(ql_dir):
-                                    import shutil
-                                    shutil.rmtree(ql_dir, ignore_errors=True)
-                    finally:
-                        if tmp_name and os.path.exists(tmp_name):
-                            with contextlib.suppress(Exception):
-                                os.remove(tmp_name)
-                except Exception:
-                    pass
+                            if ql_out and os.path.exists(ql_out) and os.path.getsize(ql_out) > 0:
+                                ql_image = Image.open(ql_out)
+                                if ql_image.mode != "RGB":
+                                    ql_image = ql_image.convert("RGB")
+                                thumb = np.array(ql_image)
+                                ql_image.close()
+                        except Exception as ql_e:
+                            logging.getLogger(__name__).warning(f"[QLMANAGE] Fallback failed: {ql_e}")
+                        finally:
+                            if "ql_dir" in locals() and os.path.exists(ql_dir):
+                                import shutil
+
+                                shutil.rmtree(ql_dir, ignore_errors=True)
+                finally:
+                    if tmp_name and os.path.exists(tmp_name):
+                        with contextlib.suppress(Exception):
+                            os.remove(tmp_name)
+            except Exception:
+                pass
         return thumb
 
     def _orient_thumb_array_by_flip(self, arr, raw):
@@ -201,25 +215,27 @@ class ThumbnailExtractor(QObject):
 
             elif thumb.format == rawpy.ThumbFormat.BITMAP:
                 thumb_array = thumb.data.copy()
-                if thumb_array is None or not hasattr(thumb_array, 'shape'):
+                if thumb_array is None or not hasattr(thumb_array, "shape"):
                     return None
 
                 thumb_array = self._orient_thumb_array_by_flip(thumb_array, raw)
 
                 h, w = thumb_array.shape[:2]
                 if max_size > 0 and (w > max_size or h > max_size):
-                     from PIL import Image
-                     pil_thumb = Image.fromarray(thumb_array)
-                     pil_thumb.thumbnail((max_size, max_size), Image.Resampling.HAMMING)
-                     return np.array(pil_thumb)
+                    from PIL import Image
+
+                    pil_thumb = Image.fromarray(thumb_array)
+                    pil_thumb.thumbnail((max_size, max_size), Image.Resampling.HAMMING)
+                    return np.array(pil_thumb)
                 return thumb_array
 
             return None
         except Exception:
             return None
 
-    def extract_preview_from_raw(self, file_path: str, max_size: int = 2048,
-                                 allow_scan_fallback: bool = True) -> np.ndarray | None:
+    def extract_preview_from_raw(
+        self, file_path: str, max_size: int = 2048, allow_scan_fallback: bool = True
+    ) -> np.ndarray | None:
         """Extract high-quality preview from RAW file (embedded JPEG)."""
         # Reuse thumbnail logic but with larger size
         return self.extract_thumbnail_from_raw(
@@ -228,9 +244,7 @@ class ThumbnailExtractor(QObject):
             allow_scan_fallback=allow_scan_fallback,
         )
 
-    def extract_embedded_native_preview(
-        self, file_path: str, allow_scan_fallback: bool = True
-    ) -> np.ndarray | None:
+    def extract_embedded_native_preview(self, file_path: str, allow_scan_fallback: bool = True) -> np.ndarray | None:
         """Extract embedded JPEG at native resolution (max_size=0 disables downscaling)."""
         return self.extract_thumbnail_from_raw(
             file_path,
@@ -238,8 +252,9 @@ class ThumbnailExtractor(QObject):
             allow_scan_fallback=allow_scan_fallback,
         )
 
-    def extract_thumbnail_from_image(self, file_path: str, max_size: int = 1024,
-                                     target_size: QSize | None = None) -> np.ndarray | QImage | None:
+    def extract_thumbnail_from_image(
+        self, file_path: str, max_size: int = 1024, target_size: QSize | None = None
+    ) -> np.ndarray | QImage | None:
         """Extract thumbnail from regular image file. Returns QImage (preferred) or np.ndarray."""
         try:
             reader = QImageReader(file_path)
@@ -255,7 +270,9 @@ class ThumbnailExtractor(QObject):
                     # HIGH FIDELITY: Load at 2x the target size (oversampling) for sharper downscaling
                     load_w, load_h = target_size.width() * 2, target_size.height() * 2
                     if load_w < w and load_h < h:
-                        reader.setScaledSize(size.scaled(QSize(load_w, load_h), Qt.AspectRatioMode.KeepAspectRatioByExpanding))
+                        reader.setScaledSize(
+                            size.scaled(QSize(load_w, load_h), Qt.AspectRatioMode.KeepAspectRatioByExpanding)
+                        )
                     else:
                         reader.setScaledSize(size.scaled(target_size, Qt.AspectRatioMode.KeepAspectRatioByExpanding))
                 elif w > max_size or h > max_size:
@@ -276,9 +293,18 @@ class ThumbnailExtractor(QObject):
                 # Perform high-quality final scaling if the loaded image is still larger than needed
                 if target_size is not None and isinstance(target_size, QSize) and target_size.isValid():
                     if image.size().width() > target_size.width() or image.size().height() > target_size.height():
-                        image = image.scaled(target_size, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+                        image = image.scaled(
+                            target_size,
+                            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                            Qt.TransformationMode.SmoothTransformation,
+                        )
                 elif image.width() > max_size or image.height() > max_size:
-                    image = image.scaled(max_size, max_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    image = image.scaled(
+                        max_size,
+                        max_size,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
 
                 return image
         except Exception:
@@ -286,6 +312,7 @@ class ThumbnailExtractor(QObject):
 
         try:
             from PIL import Image, ImageOps
+
             with Image.open(file_path) as img:
                 img = ImageOps.exif_transpose(img)
                 if target_size is not None and isinstance(target_size, QSize):
@@ -293,8 +320,8 @@ class ThumbnailExtractor(QObject):
                 else:
                     img.thumbnail((max_size, max_size), Image.Resampling.HAMMING)
 
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
                 return np.array(img)
         except Exception:
             pass

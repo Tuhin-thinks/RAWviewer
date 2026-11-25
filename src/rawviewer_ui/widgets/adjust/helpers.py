@@ -1,7 +1,5 @@
 """Draggable RAW adjustment panel for single-image view (E to toggle)."""
 
-from __future__ import annotations
-
 from PyQt6.QtCore import (
     QObject,
     QRectF,
@@ -56,9 +54,7 @@ _CHANNEL_CURVE_KEYS_BY_NAME = {
 # Point-curve + parametric PV rows.
 _SHOW_TONE_CURVE_UI = True
 
-_TRANSFORM_SLIDER_KEYS = frozenset(
-    {"CropAngle", "PerspectiveVertical", "PerspectiveHorizontal", "Distortion"}
-)
+_TRANSFORM_SLIDER_KEYS = frozenset({"CropAngle", "PerspectiveVertical", "PerspectiveHorizontal", "Distortion"})
 
 # Session-wide copy/paste clipboard for edit settings (survives navigation and
 # panel rebuilds; intentionally not persisted across app restarts).
@@ -165,11 +161,11 @@ class AdjustValueLabel(QLabel):
 
     clicked = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit()
             event.accept()
@@ -190,7 +186,7 @@ class _FileDropFrame(QFrame):
     files_dropped = pyqtSignal(list)
     unsupported_dropped = pyqtSignal(list)  # rejected local paths (basenames ok)
 
-    def __init__(self, suffixes: tuple[str, ...], parent=None):
+    def __init__(self, suffixes: tuple[str, ...], parent=None) -> None:
         super().__init__(parent)
         self._suffixes = tuple(s.lower() for s in suffixes)
 
@@ -233,9 +229,8 @@ class _FileDropFrame(QFrame):
 
 # Back-compat alias
 class _LutDropFrame(_FileDropFrame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__((".cube",), parent)
-
 
 
 _LOOKS_NAME_ROLE = int(Qt.ItemDataRole.UserRole) + 1
@@ -328,7 +323,7 @@ class _LutThumbWorker(QRunnable):
         amount: float,
         space: str,
         signals: _LutThumbSignals,
-    ):
+    ) -> None:
         super().__init__()
         self.setAutoDelete(True)
         self.token = int(token)
@@ -351,12 +346,8 @@ class _LutThumbWorker(QRunnable):
                 return
             tiny = np.asarray(base)
             if str(getattr(tiny, "dtype", "")) != "uint8":
-                tiny = np.clip(
-                    np.asarray(tiny, dtype=np.float32) * 255.0 + 0.5, 0, 255
-                ).astype(np.uint8)
-            out = render_lut_chooser_previews(
-                tiny, self.lut_names, amount=self.amount, space=self.space
-            )
+                tiny = np.clip(np.asarray(tiny, dtype=np.float32) * 255.0 + 0.5, 0, 255).astype(np.uint8)
+            out = render_lut_chooser_previews(tiny, self.lut_names, amount=self.amount, space=self.space)
         except Exception:
             out = None
         self.signals.finished.emit(self.token, out)
@@ -386,7 +377,7 @@ class _LooksRowWidget(QWidget):
 
     remove_clicked = pyqtSignal()
 
-    def __init__(self, name: str, kind: str, parent=None):
+    def __init__(self, name: str, kind: str, parent=None) -> None:
         super().__init__(parent)
         self._suppress_item_click = False
         row = QHBoxLayout(self)
@@ -396,9 +387,7 @@ class _LooksRowWidget(QWidget):
         self._preview = QLabel()
         self._preview.setFixedSize(_LOOKS_THUMB_PX, _LOOKS_THUMB_PX)
         self._preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._preview.setStyleSheet(
-            f"background: {theme.VOID}; border-radius: 3px; border: 1px solid {theme.LINE};"
-        )
+        self._preview.setStyleSheet(f"background: {theme.VOID}; border-radius: 3px; border: 1px solid {theme.LINE};")
         self._preview.hide()
         row.addWidget(self._preview)
 
@@ -408,9 +397,7 @@ class _LooksRowWidget(QWidget):
         row.addWidget(title, 1)
 
         badge = QLabel(".cube" if kind == "cube" else ".xmp")
-        badge.setStyleSheet(
-            f"color: {theme.INK_FAINT}; font-size: 10px; background: transparent;"
-        )
+        badge.setStyleSheet(f"color: {theme.INK_FAINT}; font-size: 10px; background: transparent;")
         row.addWidget(badge)
 
         rem = QPushButton("×")
@@ -479,7 +466,8 @@ class CollapsibleSection(QWidget):
     persists across sessions (QSettings) -- so a user who never touches HSL
     doesn't have to keep collapsing it every time they open the editor.
     """
-    def __init__(self, title: str, parent=None, *, settings_key: str | None = None):
+
+    def __init__(self, title: str, parent=None, *, settings_key: str | None = None) -> None:
         super().__init__(parent)
         self._settings_key = settings_key
         self._expanded = self._load_expanded_default()
@@ -515,8 +503,7 @@ class CollapsibleSection(QWidget):
         self.arrow.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.arrow.setAutoFillBackground(False)
         self.arrow.setStyleSheet(
-            f"color: {theme.INK_FAINT}; font-size: 10px; font-weight: bold;"
-            " background: transparent; border: none;"
+            f"color: {theme.INK_FAINT}; font-size: 10px; font-weight: bold; background: transparent; border: none;"
         )
         header_layout.addWidget(self.arrow)
 
@@ -615,7 +602,7 @@ class AdjustSlider(QSlider):
     _THUMB_W = 10
     _THUMB_H = 14
 
-    def __init__(self, orientation=Qt.Orientation.Horizontal, parent=None):
+    def __init__(self, orientation=Qt.Orientation.Horizontal, parent=None) -> None:
         super().__init__(orientation, parent)
         self.setMinimumHeight(22)
         self.setMouseTracking(True)
@@ -681,9 +668,7 @@ class AdjustSlider(QSlider):
 
     def _handle_center_x(self, value: float, groove: QRectF, handle_w: float, upside_down: bool) -> float:
         span = max(1, int(round(groove.width() - handle_w)))
-        pos = QStyle.sliderPositionFromValue(
-            self.minimum(), self.maximum(), int(round(value)), span, upside_down
-        )
+        pos = QStyle.sliderPositionFromValue(self.minimum(), self.maximum(), int(round(value)), span, upside_down)
         return groove.x() + pos + handle_w / 2.0
 
     def paintEvent(self, _event) -> None:
@@ -725,9 +710,7 @@ class AdjustSlider(QSlider):
         painter.drawRoundedRect(track_rect, 2, 2)
 
         value_x = self._handle_center_x(self.value(), QRectF(groove), handle.width(), opt.upsideDown)
-        center_x = self._handle_center_x(
-            self._effective_center(), QRectF(groove), handle.width(), opt.upsideDown
-        )
+        center_x = self._handle_center_x(self._effective_center(), QRectF(groove), handle.width(), opt.upsideDown)
         fill_left, fill_right = (value_x, center_x) if value_x < center_x else (center_x, value_x)
         if fill_right - fill_left > 0.5:
             fill_rect = QRectF(fill_left, track_y, fill_right - fill_left, self._TRACK_HEIGHT)

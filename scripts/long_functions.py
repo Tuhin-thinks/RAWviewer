@@ -8,8 +8,6 @@ Usage:
     python scripts/long_functions.py [--max 200] [--root src]
 """
 
-from __future__ import annotations
-
 import argparse
 import ast
 import sys
@@ -32,8 +30,7 @@ class _Collector(ast.NodeVisitor):
         name = getattr(node, "name", "<lambda>")
         self.stack.append(name)
         end = getattr(node, "end_lineno", None) or node.lineno
-        self.found.append((end - node.lineno + 1,
-                           ".".join([self.module, *self.stack]), node.lineno))
+        self.found.append((end - node.lineno + 1, ".".join([self.module, *self.stack]), node.lineno))
         self.generic_visit(node)
         self.stack.pop()
 
@@ -63,8 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         over.extend(row for row in collector.found if row[0] > args.max)
 
     for lines, name, lineno in sorted(over, reverse=True):
-        print(f"error: {name} at line {lineno} has {lines} lines (max {args.max})",
-              file=sys.stderr)
+        print(f"error: {name} at line {lineno} has {lines} lines (max {args.max})", file=sys.stderr)
 
     print(f"found {len(over)} callables over {args.max} lines")
     return 1 if over else 0

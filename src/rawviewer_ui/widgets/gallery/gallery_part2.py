@@ -1,5 +1,4 @@
 """Gallery mixin part 2 of 7 for JustifiedGallery."""
-from __future__ import annotations
 
 import logging
 import os
@@ -15,8 +14,8 @@ from .helpers import _env_int, _focus_gallery_switch_logs, _orient_debug_enabled
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart2:
 
+class GalleryPart2:
     def _get_first_visible_image_index(self) -> int:
         idx = self._get_upper_left_visible_image_index()
         if idx >= 0:
@@ -35,9 +34,7 @@ class GalleryPart2:
         if not self._gallery_layout_items:
             return False
         scroll = self._scroll_area_widget()
-        scroll_y = (
-            int(scroll.verticalScrollBar().value()) if scroll is not None else 0
-        )
+        scroll_y = int(scroll.verticalScrollBar().value()) if scroll is not None else 0
         idx = self._get_upper_left_visible_image_index()
         if idx < 0:
             idx = self._get_first_visible_image_index()
@@ -183,9 +180,7 @@ class GalleryPart2:
     def _entry_prefetch_radius(self) -> int:
         return self._gallery_center_prefetch_radius()
 
-    def _entry_prefetch_active(
-        self, anchor_idx: int | None, scroll_y: int, viewport_h: int
-    ) -> bool:
+    def _entry_prefetch_active(self, anchor_idx: int | None, scroll_y: int, viewport_h: int) -> bool:
         """True when scroll has not yet reached the entry thumbnail neighborhood."""
         if anchor_idx is None:
             return False
@@ -247,9 +242,7 @@ class GalleryPart2:
     def _missing_thumbnail_stage(self, path: str) -> bool:
         return not self._thumbnail_cache.get((path, self._thumb_base_key))
 
-    def _missing_load_stages_for_path(
-        self, path: str, *, jpeg_only: bool = False
-    ) -> set[str]:
+    def _missing_load_stages_for_path(self, path: str, *, jpeg_only: bool = False) -> set[str]:
         stages: set[str] = set()
         if self._missing_thumbnail_stage(path):
             stages.add("thumbnail")
@@ -297,9 +290,8 @@ class GalleryPart2:
             self._gallery_folder_token = self._current_folder_load_token()
             if new_images:
                 self.hide_empty_message()
-            same_order = (
-                len(new_images) == len(self.images)
-                and all(a == b for a, b in zip(new_images, self.images, strict=False))
+            same_order = len(new_images) == len(self.images) and all(
+                a == b for a, b in zip(new_images, self.images, strict=False)
             )
             if _focus_gallery_switch_logs():
                 logger.debug(
@@ -320,16 +312,11 @@ class GalleryPart2:
                     missing_paths = [
                         p
                         for p in paths
-                        if p not in self._metadata_cache
-                        or self._metadata_cache[p].get("minimal_preview_exif")
+                        if p not in self._metadata_cache or self._metadata_cache[p].get("minimal_preview_exif")
                     ]
                     if missing_paths:
-                        fetch_paths = self._prioritize_entry_paths(
-                            missing_paths, cap=self.BUILD_EXIF_PREFETCH_MAX
-                        )
-                        bulk_fetched = self.parent_viewer.image_cache.get_multiple_exif(
-                            fetch_paths
-                        )
+                        fetch_paths = self._prioritize_entry_paths(missing_paths, cap=self.BUILD_EXIF_PREFETCH_MAX)
+                        bulk_fetched = self.parent_viewer.image_cache.get_multiple_exif(fetch_paths)
                         if bulk_fetched:
                             self._metadata_cache.update(bulk_fetched)
                             # If any aspect ratios/rotations changed, trigger a layout rebuild
@@ -543,9 +530,7 @@ class GalleryPart2:
             if 0 <= cfi < len(images):
                 resolved = images[cfi]
             elif pv is not None:
-                resolved = self._resolve_gallery_path(
-                    getattr(pv, "current_file_path", None)
-                )
+                resolved = self._resolve_gallery_path(getattr(pv, "current_file_path", None))
         if not resolved:
             attempts = getattr(self, "_scroll_to_file_attempts", 0) + 1
             self._scroll_to_file_attempts = attempts
@@ -633,7 +618,7 @@ class GalleryPart2:
         if base is None or base.isNull():
             return False
         try:
-            from image_load_manager import _gallery_grid_min_dim
+            from image_load_manager.helpers import _gallery_grid_min_dim
 
             dpr = float(base.devicePixelRatio() or 1.0)
             effective = max(int(base.width() * dpr), int(base.height() * dpr))
@@ -728,7 +713,7 @@ class GalleryPart2:
         for_display); nothing is written back to the thumbnail caches.
         """
         try:
-            from raw_adjustments import apply_saved_edits_for_display
+            from raw_adjustments.saved_edits import apply_saved_edits_for_display
 
             return apply_saved_edits_for_display(file_path, arr)
         except Exception:
@@ -778,7 +763,9 @@ class GalleryPart2:
             if _orient_debug_enabled():
                 logger.info(
                     "[ORIENT] base file=%s pix=%dx%d(%s) EXIF=MISSING -> no rotation",
-                    os.path.basename(file_path), pixmap.width(), pixmap.height(),
+                    os.path.basename(file_path),
+                    pixmap.width(),
+                    pixmap.height(),
                     "P" if pixmap.height() > pixmap.width() else "L",
                 )
             return pixmap
@@ -790,17 +777,29 @@ class GalleryPart2:
                 exif_rotation_degrees_for_pixmap,
                 pixmap_matches_exif_display,
             )
+
             ow = int(m.get("original_width") or 0)
             oh = int(m.get("original_height") or 0)
             o = int(m.get("orientation", 1) or 1)
             _deg = exif_rotation_degrees_for_pixmap(pixmap.width(), pixmap.height(), ow, oh, o)
             _match = pixmap_matches_exif_display(
-                pixmap.width(), pixmap.height(), ow, oh, o,
+                pixmap.width(),
+                pixmap.height(),
+                ow,
+                oh,
+                o,
                 pixels_display_oriented=exif_pixels_display_oriented(m),
             )
             logger.info(
                 "[ORIENT] base file=%s pix=%dx%d(%s) exif(o=%s ow=%d oh=%d) match=%s deg=%s",
-                os.path.basename(file_path), pixmap.width(), pixmap.height(),
-                "P" if pixmap.height() > pixmap.width() else "L", o, ow, oh, _match, _deg,
+                os.path.basename(file_path),
+                pixmap.width(),
+                pixmap.height(),
+                "P" if pixmap.height() > pixmap.width() else "L",
+                o,
+                ow,
+                oh,
+                _match,
+                _deg,
             )
         return apply_container_orientation_to_pixmap(pixmap, m)

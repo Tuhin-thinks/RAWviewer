@@ -23,14 +23,14 @@ FAILURES = []
 _QAPP = None
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 class _Task:
-    def __init__(self, path, priority):
+    def __init__(self, path, priority: int) -> None:
         self.file_path = path
         self.priority = priority
         self.stages = {"full"}
@@ -38,7 +38,7 @@ class _Task:
         self._cancelled = False
         self.task_key = f"{path}:full"
 
-    def cancel(self):
+    def cancel(self) -> None:
         self._cancelled = True
 
     def is_cancelled(self):
@@ -64,13 +64,13 @@ def _manager():
     return m
 
 
-def _admit(m, task):
+def _admit(m, task) -> None:
     with m._queue_lock:
         m._active_tasks[task.task_key] = task
         m._claim_raw_slot_locked(task)
 
 
-def _finish(m, task):
+def _finish(m, task) -> None:
     """What _task_finished does to the slot."""
     with m._queue_lock:
         m._active_tasks.pop(task.task_key, None)
@@ -78,14 +78,14 @@ def _finish(m, task):
 
 
 def main() -> int:
-    import image_load_manager as ilm
-    from image_load_manager import Priority
-
     # Construct the REAL object first. Every other case here uses __new__ to
     # isolate the slot accounting, which meant __init__ was never exercised --
     # and a lock aliased one line before it was created shipped green, with
     # the app unable to start at all. Cheap check, caught nothing else.
     from PyQt6.QtWidgets import QApplication
+
+    import image_load_manager as ilm
+    from image_load_manager import Priority
 
     # Bound to a name: an unreferenced QApplication is collected, and
     # ImageLoadManager refuses to construct without one.
@@ -229,8 +229,7 @@ def main() -> int:
     )
     check(
         "and that place is the finally, which owns the bookkeeping",
-        "finally:" in run_src.split("_task_finished(")[0].rsplit("def ", 1)[-1]
-        or "emit=self._safe_emit()" in run_src,
+        "finally:" in run_src.split("_task_finished(")[0].rsplit("def ", 1)[-1] or "emit=self._safe_emit()" in run_src,
     )
 
     # --- reconcile agrees with the holder set, not the task map ---

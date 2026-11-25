@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Dodge/Burn brush: wheel changes size; preview uses flow; no hard ring."""
+
 import inspect
 import os
 import sys
@@ -9,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -19,8 +20,8 @@ def main() -> int:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
-    from rawviewer_ui import gpu_image_view as giv
     from rawviewer_ui import adjust_panel as ap
+    from rawviewer_ui import gpu_image_view as giv
 
     wheel_src = inspect.getsource(giv.GpuImageView.wheelEvent)
     check(

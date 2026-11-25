@@ -17,6 +17,7 @@ The import itself still runs on the main thread (OpenMP constraint), but
 callers can pass a ``pump`` callback (typically QApplication.processEvents)
 between heavy stages so paints/timers can flush mid-import.
 """
+
 import contextlib
 import os
 import threading
@@ -70,9 +71,7 @@ def import_gpu_backend_on_main_thread(
                         os.path.join(_cuda_base, _e)
                         for _e in os.listdir(_cuda_base)
                         if os.path.isdir(os.path.join(_cuda_base, _e))
-                        and os.path.isfile(
-                            os.path.join(_cuda_base, _e, "bin", "nvcc.exe")
-                        )
+                        and os.path.isfile(os.path.join(_cuda_base, _e, "bin", "nvcc.exe"))
                     ]
                     if _candidates:
                         _candidates.sort(reverse=True)
@@ -97,9 +96,7 @@ def import_gpu_backend_on_main_thread(
         try:
             import torch  # noqa: F401
 
-            if torch.cuda.is_available() or (
-                hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
-            ):
+            if torch.cuda.is_available() or (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()):
                 torch_ok = True
                 logger.info("[GPU] Optional torch GPU backend available.")
         except Exception:
@@ -113,15 +110,13 @@ def import_gpu_backend_on_main_thread(
                 logger.debug("[GPU] kornia not importable; torch path limited", exc_info=True)
 
         if not cupy_ok and not torch_ok:
-            logger.info(
-                "[GPU] No CuPy/torch CUDA/MPS backend; demosaic stays on CPU Fast RAW."
-            )
+            logger.info("[GPU] No CuPy/torch CUDA/MPS backend; demosaic stays on CPU Fast RAW.")
 
         _pump()
         from processing.raw_decode import gpu_processor as gpu_raw_processor  # noqa: F401 -- wires decode + backend probe
 
         try:
-            from image_load_manager import apply_gpu_decode_profile_to_manager
+            from image_load_manager.helpers import apply_gpu_decode_profile_to_manager
 
             apply_gpu_decode_profile_to_manager()
         except Exception:

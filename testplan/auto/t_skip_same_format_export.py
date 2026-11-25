@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Skip re-encode: copy source verbatim when it already matches the target format."""
+
 import os
 import sys
 import tempfile
@@ -9,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -17,9 +18,10 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     import threading
+
     from rawviewer_app.services.batch import (
-        _should_skip_reencode,
         _BYPASS_EXT,
+        _should_skip_reencode,
         export_one_file,
     )
 
@@ -38,25 +40,32 @@ def main() -> int:
     check("jpg -> jpeg + no edits skips", _should_skip_reencode(jpg_src, "jpeg", {}, False) is True)
     check("jpg -> jpeg + None adj skips", _should_skip_reencode(jpg_src, "jpeg", None, False) is True)
     check("JPG (upper) -> jpeg skips", _should_skip_reencode(jpg_src.upper().lower(), "jpeg", {}, False) is True)
-    check("jpeg -> jpeg + edits does NOT skip",
-          _should_skip_reencode(jpg_src, "jpeg", {"Exposure2012": 0.5}, False) is False)
-    check("jpg -> jpeg + ai_denoise does NOT skip",
-          _should_skip_reencode(jpg_src, "jpeg", {}, True) is False)
-    check("arw -> jpeg does NOT skip",
-          _should_skip_reencode(os.path.join(tmp, "a.arw"), "jpeg", {}, False) is False)
-    check("jpg -> webp does NOT skip",
-          _should_skip_reencode(jpg_src, "webp", {}, False) is False)
-    check("tif -> tiff16 + no edits skips",
-          _should_skip_reencode(os.path.join(tmp, "x.tif"), "tiff16", {}, False) is True)
+    check(
+        "jpeg -> jpeg + edits does NOT skip",
+        _should_skip_reencode(jpg_src, "jpeg", {"Exposure2012": 0.5}, False) is False,
+    )
+    check("jpg -> jpeg + ai_denoise does NOT skip", _should_skip_reencode(jpg_src, "jpeg", {}, True) is False)
+    check("arw -> jpeg does NOT skip", _should_skip_reencode(os.path.join(tmp, "a.arw"), "jpeg", {}, False) is False)
+    check("jpg -> webp does NOT skip", _should_skip_reencode(jpg_src, "webp", {}, False) is False)
+    check(
+        "tif -> tiff16 + no edits skips", _should_skip_reencode(os.path.join(tmp, "x.tif"), "tiff16", {}, False) is True
+    )
 
     # --- export_one_file actually copies ---
     out_path = os.path.join(tmp, "out.jpg")
     err, xmp_warn = export_one_file(
-        jpg_src, out_path, {}, "jpeg", None,
+        jpg_src,
+        out_path,
+        {},
+        "jpeg",
+        None,
         cancel_event=threading.Event(),
     )
-    check("export_one_file copies without re-encode", err is None and os.path.isfile(out_path),
-          f"err={err!r} exists={os.path.isfile(out_path)}")
+    check(
+        "export_one_file copies without re-encode",
+        err is None and os.path.isfile(out_path),
+        f"err={err!r} exists={os.path.isfile(out_path)}",
+    )
     if os.path.isfile(out_path):
         with open(jpg_src, "rb") as f:
             src_bytes = f.read()
@@ -67,15 +76,19 @@ def main() -> int:
     # export progress fired (copy path returns None, None without calling progress_cb).
     progress_stages = []
 
-    def _cb(pct, stage=""):
+    def _cb(pct, stage: str = "") -> None:
         progress_stages.append((pct, stage))
 
     export_one_file(
-        jpg_src, os.path.join(tmp, "out2.jpg"), {}, "jpeg", None,
-        cancel_event=threading.Event(), progress_cb=_cb,
+        jpg_src,
+        os.path.join(tmp, "out2.jpg"),
+        {},
+        "jpeg",
+        None,
+        cancel_event=threading.Event(),
+        progress_cb=_cb,
     )
-    check("copy path does not emit decode/encode progress", progress_stages == [],
-          f"progress={progress_stages!r}")
+    check("copy path does not emit decode/encode progress", progress_stages == [], f"progress={progress_stages!r}")
 
     print(f"\n{len(FAILURES)} failure(s)")
     return 1 if FAILURES else 0

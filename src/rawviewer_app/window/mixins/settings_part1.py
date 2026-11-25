@@ -1,5 +1,4 @@
 """settings mixin, part 1 of 1 (21 methods, 474 lines)."""
-from __future__ import annotations
 
 import os
 import sys
@@ -19,9 +18,7 @@ class SettingsPart1:
         try:
             from core.burst_grouping import burst_grouping_enabled_from_settings
 
-            self._burst_grouping_enabled = burst_grouping_enabled_from_settings(
-                self.get_settings()
-            )
+            self._burst_grouping_enabled = burst_grouping_enabled_from_settings(self.get_settings())
         except Exception:
             self._burst_grouping_enabled = False
 
@@ -92,7 +89,8 @@ class SettingsPart1:
             lm = getattr(self, "image_manager", None)
             if lm is None:
                 return
-            from image_load_manager import Priority
+            from image_load_manager.helpers import Priority
+
             if hasattr(lm, "cancel_tasks_by_priority"):
                 lm.cancel_tasks_by_priority(Priority.PRELOAD_NEXT)
                 lm.cancel_tasks_by_priority(Priority.BACKGROUND)
@@ -108,7 +106,8 @@ class SettingsPart1:
         if self._in_nav_quiet_window():
             QTimer.singleShot(200, self._drain_filmstrip_prefetch_chunk)
             return
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
+
         chunk = _env_int("RAWVIEWER_FILMSTRIP_FLUSH_CHUNK", 4, minimum=1)
         interval_ms = _env_int("RAWVIEWER_FILMSTRIP_FLUSH_INTERVAL_MS", 180, minimum=0)
         current = getattr(self, "current_file_path", None)
@@ -182,9 +181,7 @@ class SettingsPart1:
         min_dim = 2800 if zoomed else self._single_view_cache_min_dim(for_navigation=False)
         if self._display_quality_buffer_cached(file_path, min_dim=min_dim):
             return False
-        cached_item, _cache_type = check_memory_cache_for_image(
-            file_path, use_full_resolution=zoomed
-        )
+        cached_item, _cache_type = check_memory_cache_for_image(file_path, use_full_resolution=zoomed)
         return cached_item is None
 
     def _nav_prefetch_stages_for_path(
@@ -252,13 +249,10 @@ class SettingsPart1:
                 use_libraw_consistent_preview_first,
             )
 
-            if use_full_embedded_raw_preview() and not embedded_preview_rarely_covers_sensor(
-                file_path
-            ):
+            if use_full_embedded_raw_preview() and not embedded_preview_rarely_covers_sensor(file_path):
                 stages = stages | {"full"}
-            elif (
-                use_libraw_consistent_preview_first(file_path)
-                and not embedded_preview_rarely_covers_sensor(file_path)
+            elif use_libraw_consistent_preview_first(file_path) and not embedded_preview_rarely_covers_sensor(
+                file_path
             ):
                 # RAW High Quality + GPU: warm ±1 sensor demosaic once CURRENT
                 # full is already in flight (urgent prefetch gates on that).
@@ -283,9 +277,7 @@ class SettingsPart1:
     ) -> None:
         if not self._needs_display_buffer_prefetch(file_path, zoomed=zoomed):
             return
-        stages, use_full = self._nav_prefetch_stages_for_path(
-            file_path, zoomed=zoomed, near=near
-        )
+        stages, use_full = self._nav_prefetch_stages_for_path(file_path, zoomed=zoomed, near=near)
         self.image_manager.load_image(
             file_path=file_path,
             priority=priority,
@@ -294,9 +286,7 @@ class SettingsPart1:
             stages=stages,
         )
 
-    def _paths_within_nav_prefetch_radius(
-        self, center_index: int | None = None
-    ) -> list[str]:
+    def _paths_within_nav_prefetch_radius(self, center_index: int | None = None) -> list[str]:
         if not self.image_files or self.current_file_index < 0:
             return []
         idx = self.current_file_index if center_index is None else center_index
@@ -328,7 +318,9 @@ class SettingsPart1:
             # feel unfinished for ~3s+. ±1 neighbors already warm at TTFR
             # (_queue_urgent_neighbor_prefetch); a shorter pause is enough for
             # the first paint to settle before sensor full + wider preload.
-            "RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS", 800, minimum=200
+            "RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS",
+            800,
+            minimum=200,
         )
         QTimer.singleShot(full_delay_ms, self._run_post_session_restore_full_decode)
 
@@ -368,7 +360,7 @@ class SettingsPart1:
                     return
             except Exception:
                 pass
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         zoomed = self._single_view_is_zoomed_in()
         n = len(self.image_files)
@@ -382,12 +374,8 @@ class SettingsPart1:
             os.path.basename(next_path),
             os.path.basename(prev_path),
         )
-        self._request_display_buffer_prefetch(
-            next_path, priority=Priority.PRELOAD_NEXT, zoomed=zoomed, near=True
-        )
-        self._request_display_buffer_prefetch(
-            prev_path, priority=Priority.PRELOAD_PREV, zoomed=zoomed, near=True
-        )
+        self._request_display_buffer_prefetch(next_path, priority=Priority.PRELOAD_NEXT, zoomed=zoomed, near=True)
+        self._request_display_buffer_prefetch(prev_path, priority=Priority.PRELOAD_PREV, zoomed=zoomed, near=True)
 
     def _queue_display_tier_prefetch_for_paths(self, paths) -> None:
         """Background embedded-preview decode for navigation neighbors (not sensor full)."""
@@ -396,7 +384,7 @@ class SettingsPart1:
 
         if self._should_defer_nav_preload():
             return
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         for path in paths or []:
             if not path:
@@ -406,9 +394,7 @@ class SettingsPart1:
                     continue
             except Exception:
                 continue
-            if self._display_quality_buffer_cached(
-                path, min_dim=self._single_view_cache_min_dim(for_navigation=False)
-            ):
+            if self._display_quality_buffer_cached(path, min_dim=self._single_view_cache_min_dim(for_navigation=False)):
                 continue
             if self.image_manager.has_active_work_for_path(path):
                 continue
@@ -434,7 +420,7 @@ class SettingsPart1:
 
     def _idle_display_prefetch_tick(self) -> None:
         """Background prefetch of display-quality buffers for upcoming navigation targets."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         if not _env_true("RAWVIEWER_IDLE_DISPLAY_PREFETCH", default=True):
             return
@@ -498,14 +484,10 @@ class SettingsPart1:
                 else Priority.BACKGROUND
             )
             near = step_dist <= self._nav_preload_display_near_count()
-            self._request_display_buffer_prefetch(
-                path, priority=priority, zoomed=zoomed, near=near
-            )
+            self._request_display_buffer_prefetch(path, priority=priority, zoomed=zoomed, near=near)
             loaded += 1
 
         self._idle_display_prefetch_cursor = cursor
-        if loaded > 0 or any(
-            self._needs_display_buffer_prefetch(p, zoomed=zoomed) for _, p in candidates
-        ):
+        if loaded > 0 or any(self._needs_display_buffer_prefetch(p, zoomed=zoomed) for _, p in candidates):
             interval_ms = _env_int("RAWVIEWER_IDLE_DISPLAY_PREFETCH_INTERVAL_MS", 450, minimum=150)
             self._idle_display_prefetch_timer.start(interval_ms)

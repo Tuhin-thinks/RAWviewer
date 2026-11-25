@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Structural tests for idle timer system - verifies code structure via AST parsing."""
 
-import os
-import sys
 import ast
 import importlib
+import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -71,10 +71,8 @@ def main() -> int:
 
     check("_full_res_idle_timer attribute exists in __init__", has_idle_timer)
     check("_full_res_idle_path attribute exists in __init__", has_idle_path)
-    check("_restart_full_res_idle_timer method exists",
-          "_restart_full_res_idle_timer" in methods)
-    check("_on_full_res_idle_timeout method exists",
-          "_on_full_res_idle_timeout" in methods)
+    check("_restart_full_res_idle_timer method exists", "_restart_full_res_idle_timer" in methods)
+    check("_on_full_res_idle_timeout method exists", "_on_full_res_idle_timeout" in methods)
 
     # Verify old watchdog methods are removed
     old_methods = [
@@ -107,15 +105,11 @@ def main() -> int:
         text, node = load_entry
         method_src = ast.get_source_segment(text, node) or ""
         checks = [
-            ("Full image cache check (via image_cache)",
-             "self.image_cache.get_full_image" in method_src),
-            ("Preview/thumbnail cache check",
-             "get_preview_memory_only" in method_src),
+            ("Full image cache check (via image_cache)", "self.image_cache.get_full_image" in method_src),
+            ("Preview/thumbnail cache check", "get_preview_memory_only" in method_src),
             ("Pixmap cache check (non-RAW)", "get_pixmap" in method_src),
-            ("image_manager.load_image call",
-             "self.image_manager.load_image" in method_src),
-            ("_is_raw_file check",
-             "_is_raw_file" in method_src or "is_raw_file" in method_src),
+            ("image_manager.load_image call", "self.image_manager.load_image" in method_src),
+            ("_is_raw_file check", "_is_raw_file" in method_src or "is_raw_file" in method_src),
         ]
         for name, condition in checks:
             check(name, condition)
@@ -128,15 +122,24 @@ def main() -> int:
     check("FullImageCache class defined", full_cache_class is not None)
 
     if full_cache_class:
-        required_methods = ["__init__", "get", "put", "remove", "clear", "get_stats",
-                            "get_full_image", "put_full_image", "peek", "__contains__"]
+        required_methods = [
+            "__init__",
+            "get",
+            "put",
+            "remove",
+            "clear",
+            "get_stats",
+            "get_full_image",
+            "put_full_image",
+            "peek",
+            "__contains__",
+        ]
         for method_name in required_methods:
-            check(f"FullImageCache.{method_name} exists",
-                  hasattr(full_cache_class, method_name))
+            check(f"FullImageCache.{method_name} exists", hasattr(full_cache_class, method_name))
 
     # Summary
-    print(f"\n{'='*60}")
-    print(f"Total checks run: ~35")
+    print(f"\n{'=' * 60}")
+    print("Total checks run: ~35")
     print(f"Failures: {len(FAILURES)}")
 
     if FAILURES:

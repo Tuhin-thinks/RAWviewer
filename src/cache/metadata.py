@@ -1,7 +1,5 @@
 """Persistent SQLite EXIF metadata cache for RAWviewer."""
 
-from __future__ import annotations
-
 import contextlib
 import logging
 import os
@@ -27,7 +25,7 @@ logger = logging.getLogger(__name__)
 class PersistentEXIFCache:
     """Persistent cache for EXIF data using SQLite."""
 
-    def __init__(self, cache_dir: str = None):
+    def __init__(self, cache_dir: str = None) -> None:
         if cache_dir is None:
             cache_dir = os.path.expanduser("~/.rawviewer_cache")
         os.makedirs(cache_dir, exist_ok=True)
@@ -48,12 +46,8 @@ class PersistentEXIFCache:
 
     def _get_connection(self):
         """Get thread-local database connection (read-optimized)."""
-        if not hasattr(self._local, 'conn'):
-            conn = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False,
-                timeout=30.0
-            )
+        if not hasattr(self._local, "conn"):
+            conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=30.0)
             # Enable WAL mode for better concurrent performance
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
@@ -91,21 +85,21 @@ class PersistentEXIFCache:
         storage_path = _exif_cache_path_key(file_path)
         exif_blob = _encode_exif_blob(exif_info.get("exif_data", {}))
 
-        capture_time = exif_info.get('capture_time')
+        capture_time = exif_info.get("capture_time")
         if not capture_time:
-            exif_dict = exif_info.get('exif_data', {})
+            exif_dict = exif_info.get("exif_data", {})
             if isinstance(exif_dict, dict):
-                capture_time = exif_dict.get('capture_time')
+                capture_time = exif_dict.get("capture_time")
 
-        width = exif_info.get('original_width')
-        height = exif_info.get('original_height')
+        width = exif_info.get("original_width")
+        height = exif_info.get("original_height")
         if not width or not height:
-            exif_dict = exif_info.get('exif_data', {})
+            exif_dict = exif_info.get("exif_data", {})
             if isinstance(exif_dict, dict):
                 if not width:
-                    width = exif_dict.get('original_width')
+                    width = exif_dict.get("original_width")
                 if not height:
-                    height = exif_dict.get('original_height')
+                    height = exif_dict.get("original_height")
 
         # Never persist preview/thumbnail IFD sizes as sensor dimensions for RAW —
         # those (often 160x120) poison image_covers_sensor_resolution and stall
@@ -116,13 +110,18 @@ class PersistentEXIFCache:
                 is_raw_file,
             )
 
-            if is_raw_file(file_path) and width and height and max(int(width), int(height)) < _MIN_TRUSTED_SENSOR_LONG_EDGE:
+            if (
+                is_raw_file(file_path)
+                and width
+                and height
+                and max(int(width), int(height)) < _MIN_TRUSTED_SENSOR_LONG_EDGE
+            ):
                 width = None
                 height = None
         except Exception:
             pass
 
-        sensor_meta_ver = exif_info.get('raw_exif_sensor_meta_ver')
+        sensor_meta_ver = exif_info.get("raw_exif_sensor_meta_ver")
         if sensor_meta_ver is None:
             sensor_meta_ver = 0
 
@@ -130,9 +129,9 @@ class PersistentEXIFCache:
             storage_path,
             file_size,
             file_mtime,
-            exif_info.get('orientation', 1),
-            exif_info.get('camera_make', ''),
-            exif_info.get('camera_model', ''),
+            exif_info.get("orientation", 1),
+            exif_info.get("camera_make", ""),
+            exif_info.get("camera_model", ""),
             exif_blob,
             time.time(),
             capture_time,
@@ -160,7 +159,7 @@ class PersistentEXIFCache:
         with self.lock:
             self._flush_pending_writes()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize the SQLite database."""
         with self.lock:
             conn = self._get_connection()
@@ -185,26 +184,24 @@ class PersistentEXIFCache:
                 cursor = conn.execute("PRAGMA table_info(exif_cache)")
                 columns = [info[1] for info in cursor.fetchall()]
 
-                if 'capture_time' not in columns:
-                    print("[CACHE] Migrating database: adding capture_time column")
+                if "capture_time" not in columns:
+                    logger.info("[CACHE] Migrating database: adding capture_time column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN capture_time TEXT")
 
-                if 'original_width' not in columns:
-                    print("[CACHE] Migrating database: adding original_width column")
+                if "original_width" not in columns:
+                    logger.info("[CACHE] Migrating database: adding original_width column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN original_width INTEGER")
 
-                if 'original_height' not in columns:
-                    print("[CACHE] Migrating database: adding original_height column")
+                if "original_height" not in columns:
+                    logger.info("[CACHE] Migrating database: adding original_height column")
                     conn.execute("ALTER TABLE exif_cache ADD COLUMN original_height INTEGER")
 
-                if 'sensor_meta_ver' not in columns:
-                    print("[CACHE] Migrating database: adding sensor_meta_ver column")
-                    conn.execute(
-                        "ALTER TABLE exif_cache ADD COLUMN sensor_meta_ver INTEGER DEFAULT 0"
-                    )
+                if "sensor_meta_ver" not in columns:
+                    logger.info("[CACHE] Migrating database: adding sensor_meta_ver column")
+                    conn.execute("ALTER TABLE exif_cache ADD COLUMN sensor_meta_ver INTEGER DEFAULT 0")
 
             except Exception as e:
-                print(f"[CACHE] Error checking/migrating schema: {e}")
+                logger.warning("[CACHE] Error checking/migrating schema: %s", e)
 
             conn.commit()
 
@@ -254,8 +251,8 @@ class PersistentEXIFCache:
 
                 # Ensure consistent data (DB columns override/augment blob)
                 result_capture_time = row[6]
-                if result_capture_time and 'capture_time' not in exif_data:
-                     exif_data['capture_time'] = result_capture_time
+                if result_capture_time and "capture_time" not in exif_data:
+                    exif_data["capture_time"] = result_capture_time
 
                 result_width = row[7]
                 result_height = row[8]
@@ -263,19 +260,19 @@ class PersistentEXIFCache:
                 if sensor_meta_ver is None:
                     sensor_meta_ver = 0
                 if result_width:
-                    exif_data['original_width'] = result_width
+                    exif_data["original_width"] = result_width
                 if result_height:
-                    exif_data['original_height'] = result_height
+                    exif_data["original_height"] = result_height
 
                 return {
-                    'orientation': row[2],
-                    'camera_make': row[3],
-                    'camera_model': row[4],
-                    'exif_data': exif_data,
-                    'capture_time': result_capture_time,
-                    'original_width': result_width if result_width else exif_data.get('original_width'),
-                    'original_height': result_height if result_height else exif_data.get('original_height'),
-                    'raw_exif_sensor_meta_ver': int(sensor_meta_ver),
+                    "orientation": row[2],
+                    "camera_make": row[3],
+                    "camera_model": row[4],
+                    "exif_data": exif_data,
+                    "capture_time": result_capture_time,
+                    "original_width": result_width if result_width else exif_data.get("original_width"),
+                    "original_height": result_height if result_height else exif_data.get("original_height"),
+                    "raw_exif_sensor_meta_ver": int(sensor_meta_ver),
                     # rating is stored inside the pickled exif_data blob (see
                     # _prepare_put_row/rate_current_image), not its own column --
                     # promote it to the top level so callers doing exif.get('rating')
@@ -283,7 +280,7 @@ class PersistentEXIFCache:
                     # this a rating survived to disk fine but read back as 0 on
                     # every app restart, since only the in-memory cache (which
                     # stores the dict as-passed) ever had the top-level key.
-                    'rating': exif_data.get('rating', 0),
+                    "rating": exif_data.get("rating", 0),
                 }
         except Exception:
             pass
@@ -316,9 +313,7 @@ class PersistentEXIFCache:
         commit: bool = False,
     ) -> None:
         """Cache EXIF data. Pass file_size/file_mtime when already known (avoids stat under lock)."""
-        row = self._prepare_put_row(
-            file_path, exif_info, file_size=file_size, file_mtime=file_mtime
-        )
+        row = self._prepare_put_row(file_path, exif_info, file_size=file_size, file_mtime=file_mtime)
         if row is None:
             return
 
@@ -365,9 +360,7 @@ class PersistentEXIFCache:
             try:
                 self._flush_pending_writes()
                 writer = self._get_writer_connection()
-                writer.execute(
-                    "DELETE FROM exif_cache WHERE cached_time < ?", (cutoff_time,)
-                )
+                writer.execute("DELETE FROM exif_cache WHERE cached_time < ?", (cutoff_time,))
                 writer.commit()
             except Exception:
                 pass
@@ -383,7 +376,9 @@ class PersistentEXIFCache:
             except Exception:
                 pass
 
-    def get_multiple(self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True) -> dict[str, dict[str, Any]]:
+    def get_multiple(
+        self, file_paths: list[str], file_stats: dict[str, tuple[int, float]] | None = None, fast_mode: bool = True
+    ) -> dict[str, dict[str, Any]]:
         """Get cached EXIF data for multiple files at once.
 
         Args:
@@ -432,9 +427,7 @@ class PersistentEXIFCache:
                     else:
                         file_size, file_mtime = self._get_file_hash(req_path)
 
-                    mtime_ok = int(row[1]) == int(file_size) and _mtime_matches(
-                        row[2], file_mtime
-                    )
+                    mtime_ok = int(row[1]) == int(file_size) and _mtime_matches(row[2], file_mtime)
 
                     exif_data: dict[str, Any] = {}
                     result_capture_time = _capture_time_from_exif_row(row)
@@ -450,9 +443,7 @@ class PersistentEXIFCache:
                         continue
 
                     sensor_meta_ver = int(row[10] or 0) if len(row) > 10 else 0
-                    has_fast_data = (
-                        row[7] is not None and row[8] is not None and row[9] is not None
-                    )
+                    has_fast_data = row[7] is not None and row[8] is not None and row[9] is not None
 
                     if mtime_ok and fast_mode and has_fast_data:
                         exif_data = {}
@@ -542,10 +533,7 @@ class PersistentEXIFCache:
                     lookup[nk] = p
                     query_keys.append(nk)
                 placeholders = ",".join(["?"] * len(query_keys))
-                query = (
-                    f"SELECT file_path, capture_time, exif_data FROM exif_cache "
-                    f"WHERE file_path IN ({placeholders})"
-                )
+                query = f"SELECT file_path, capture_time, exif_data FROM exif_cache WHERE file_path IN ({placeholders})"
                 with self.lock:
                     rows = conn.execute(query, query_keys).fetchall()
                 for db_path, ct_col, blob in rows:
@@ -579,9 +567,7 @@ class PersistentEXIFCache:
         """
         if not timestamps:
             return
-        rows = [
-            (str(ct), _exif_cache_path_key(p)) for p, ct in timestamps.items() if ct
-        ]
+        rows = [(str(ct), _exif_cache_path_key(p)) for p, ct in timestamps.items() if ct]
         if not rows:
             return
         try:
@@ -675,7 +661,7 @@ class PersistentEXIFCache:
             )
         return out
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection for the current thread.
 
         Flushes batched writes first -- without this, any EXIF update that
@@ -686,7 +672,7 @@ class PersistentEXIFCache:
         with contextlib.suppress(Exception):
             self.flush()
         try:
-            if hasattr(self, '_local') and hasattr(self._local, 'conn'):
+            if hasattr(self, "_local") and hasattr(self._local, "conn"):
                 self._local.conn.close()
                 del self._local.conn
         except Exception:

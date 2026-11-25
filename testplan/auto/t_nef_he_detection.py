@@ -21,6 +21,7 @@ real NEFs spanning Z5/Z6/Z6II/Z6III/Z7/Z7II/Z8/Z9/Z50/Z50II/Zf/Zfc/Z30/D780/
 D850), this matched LibRaw's ground truth on all 61 files (20 true positives,
 41 true negatives, 0 mismatches).
 """
+
 import inspect
 import os
 import struct
@@ -34,7 +35,7 @@ SAMPLE_DIR = os.environ.get("RAWVIEWER_TEST_ASSETS", "/tmp/RAW_Sample")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -43,8 +44,8 @@ def check(name, ok, detail=""):
 def build_nef_fixture(
     nef_compression_value=None,
     *,
-    nikon_makernote=True,
-    via_tag51=False,
+    nikon_makernote: bool = True,
+    via_tag51: bool = False,
 ):
     """Minimal little-endian TIFF: IFD0 -> Exif IFD (0x8769) -> MakerNote
     (0x927C) -> Nikon inner TIFF -> compression value, either directly at
@@ -90,10 +91,7 @@ def build_nef_fixture(
         tag51_blob_offset = inner_ifd_offset + inner_ifd_size
         tag51_blob = b"01020501" + b"\x00" * 2 + pack("H", nef_compression_value)
         inner_ifd = pack("H", 1)
-        inner_ifd += (
-            pack("H", 0x0051) + pack("H", 7) + pack("I", len(tag51_blob))
-            + pack("I", tag51_blob_offset)
-        )
+        inner_ifd += pack("H", 0x0051) + pack("H", 7) + pack("I", len(tag51_blob)) + pack("I", tag51_blob_offset)
         inner_ifd += pack("I", 0)
         mn_blob = b"Nikon\x00" + b"\x02\x11" + b"\x00\x00"
         mn_blob += b"II" + pack("H", 42) + pack("I", inner_ifd_offset)
@@ -102,10 +100,7 @@ def build_nef_fixture(
         mn_blob = b"Nikon\x00" + b"\x02\x10" + b"\x00\x00"
         mn_blob += b"II" + pack("H", 42) + pack("I", 8)
         mn_blob += pack("H", 1)
-        mn_blob += (
-            pack("H", 0x0093) + pack("H", 3) + pack("I", 1)
-            + pack("H", nef_compression_value) + b"\x00\x00"
-        )
+        mn_blob += pack("H", 0x0093) + pack("H", 3) + pack("I", 1) + pack("H", nef_compression_value) + b"\x00\x00"
         mn_blob += pack("I", 0)
 
     mn_len = len(mn_blob)
@@ -121,19 +116,27 @@ def main() -> int:
     from enhanced_raw_processor import _detect_nef_he_compression
 
     cases = [
-        ("tag 0x0093: High Efficiency (13)", dict(nef_compression_value=13), True),
-        ("tag 0x0093: High Efficiency* (14)", dict(nef_compression_value=14), True),
-        ("tag 0x0093: Lossless (3, not HE)", dict(nef_compression_value=3), False),
-        ("tag 0x0093: Uncompressed (2, not HE)", dict(nef_compression_value=2), False),
-        ("tag 0x0051 (Z9-gen relocation): High Efficiency (13)",
-         dict(nef_compression_value=13, via_tag51=True), True),
-        ("tag 0x0051 (Z9-gen relocation): High Efficiency* (14)",
-         dict(nef_compression_value=14, via_tag51=True), True),
-        ("tag 0x0051 (Z9-gen relocation): Lossless (3, not HE)",
-         dict(nef_compression_value=3, via_tag51=True), False),
-        ("Nikon MakerNote, no compression tag anywhere (older format)",
-         dict(nef_compression_value=None), None),
-        ("non-Nikon MakerNote", dict(nef_compression_value=None, nikon_makernote=False), None),
+        ("tag 0x0093: High Efficiency (13)", {"nef_compression_value": 13}, True),
+        ("tag 0x0093: High Efficiency* (14)", {"nef_compression_value": 14}, True),
+        ("tag 0x0093: Lossless (3, not HE)", {"nef_compression_value": 3}, False),
+        ("tag 0x0093: Uncompressed (2, not HE)", {"nef_compression_value": 2}, False),
+        (
+            "tag 0x0051 (Z9-gen relocation): High Efficiency (13)",
+            {"nef_compression_value": 13, "via_tag51": True},
+            True,
+        ),
+        (
+            "tag 0x0051 (Z9-gen relocation): High Efficiency* (14)",
+            {"nef_compression_value": 14, "via_tag51": True},
+            True,
+        ),
+        (
+            "tag 0x0051 (Z9-gen relocation): Lossless (3, not HE)",
+            {"nef_compression_value": 3, "via_tag51": True},
+            False,
+        ),
+        ("Nikon MakerNote, no compression tag anywhere (older format)", {"nef_compression_value": None}, None),
+        ("non-Nikon MakerNote", {"nef_compression_value": None, "nikon_makernote": False}, None),
     ]
 
     tmpd = tempfile.mkdtemp()
@@ -184,10 +187,7 @@ def main() -> int:
     else:
         import glob
 
-        nef_paths = sorted(
-            p for p in glob.glob(os.path.join(SAMPLE_DIR, "*"))
-            if p.lower().endswith(".nef")
-        )
+        nef_paths = sorted(p for p in glob.glob(os.path.join(SAMPLE_DIR, "*")) if p.lower().endswith(".nef"))
         if not nef_paths:
             print(f"SKIP  real-file ground-truth sweep: no NEF files found in {SAMPLE_DIR}")
         else:

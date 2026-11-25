@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Creative .cube LUT parse / apply smoke tests."""
+
 import os
 import sys
 import tempfile
@@ -11,27 +12,25 @@ import numpy as np
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def _write_identity_cube(path: str, size: int = 3) -> None:
-    lines = [f"TITLE \"Identity\"", f"LUT_3D_SIZE {size}"]
+    lines = ['TITLE "Identity"', f"LUT_3D_SIZE {size}"]
     for b in range(size):
         for g in range(size):
             for r in range(size):
-                lines.append(
-                    f"{r / (size - 1):.6f} {g / (size - 1):.6f} {b / (size - 1):.6f}"
-                )
+                lines.append(f"{r / (size - 1):.6f} {g / (size - 1):.6f} {b / (size - 1):.6f}")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
 
 def _write_scale_cube(path: str, scale, size: int = 5) -> None:
     sr, sg, sb = scale
-    lines = [f'TITLE "Scale"', f"LUT_3D_SIZE {size}"]
+    lines = ['TITLE "Scale"', f"LUT_3D_SIZE {size}"]
     for b in range(size):
         for g in range(size):
             for r in range(size):
@@ -45,7 +44,7 @@ def _write_scale_cube(path: str, scale, size: int = 5) -> None:
 
 
 def main() -> int:
-    from raw_lut import apply_cube_lut, apply_creative_lut, parse_cube_file
+    from raw_lut import apply_creative_lut, apply_cube_lut, parse_cube_file
 
     with tempfile.TemporaryDirectory() as td:
         cube = os.path.join(td, "id.cube")
@@ -149,8 +148,9 @@ def main() -> int:
         finally:
             _rl.luts_dir = prev_dir
 
-        from raw_adjustments import AS_SHOT_TEMP_KEY, is_default_adjustments
         from raw_lut import lut_chooser_as_shot_display_u8, lut_chooser_identity_adj
+
+        from raw_adjustments import AS_SHOT_TEMP_KEY, is_default_adjustments
 
         graded = {
             "Exposure2012": 1.75,
@@ -183,8 +183,7 @@ def main() -> int:
         check(
             "as-shot thumb helper ignores Exposure in adj",
             u8_graded.shape == u8_plain.shape
-            and float(np.max(np.abs(u8_graded.astype(np.int16) - u8_plain.astype(np.int16))))
-            == 0.0,
+            and float(np.max(np.abs(u8_graded.astype(np.int16) - u8_plain.astype(np.int16)))) == 0.0,
         )
 
     print(f"\n{len(FAILURES)} failure(s)")

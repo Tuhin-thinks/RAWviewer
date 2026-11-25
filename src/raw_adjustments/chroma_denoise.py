@@ -11,8 +11,6 @@ sizes, with comparable noise reduction and negligible edge bleed (bilateral
 filter transition width across a hard edge stays ~0px even at max strength).
 """
 
-from __future__ import annotations
-
 import os
 
 import numpy as np
@@ -84,7 +82,7 @@ def _denoise_channel(channel: np.ndarray, sigma_color: float, *, method: int = 0
         r = 2 + int(round(sigma_color * 50.0))
         if preview:
             r = max(1, r // 2)
-        eps = float(sigma_color ** 2)
+        eps = float(sigma_color**2)
         return apply_guided_filter(channel, channel, r, eps)
     else:
         return _bilateral_channel(channel, sigma_color, preview=preview)
@@ -109,9 +107,7 @@ def _downsample_blur_upsample(channel: np.ndarray, factor: int, blur_sigma: floa
 
     h, w = channel.shape
     sh, sw = max(1, h // factor), max(1, w // factor)
-    small = cv2.resize(
-        np.ascontiguousarray(channel, dtype=np.float32), (sw, sh), interpolation=cv2.INTER_AREA
-    )
+    small = cv2.resize(np.ascontiguousarray(channel, dtype=np.float32), (sw, sh), interpolation=cv2.INTER_AREA)
     if blur_sigma > 1e-3:
         small = cv2.GaussianBlur(small, (0, 0), blur_sigma)
     return cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)

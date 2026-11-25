@@ -1,4 +1,5 @@
 """PyInstaller runtime hook: release defaults (opt-out via environment variables)."""
+
 import os
 import sys
 

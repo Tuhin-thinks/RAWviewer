@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Dodge & burn engine invariants: stamping, apply, edge-snap, persistence."""
+
 import os
 import shutil
 import sys
@@ -14,7 +15,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -22,9 +23,9 @@ def check(name, ok, detail=""):
 
 def main() -> int:
     from raw_dodge_burn import (
-        DodgeBurnMask,
         MASK_KEY,
         STRENGTH_KEY,
+        DodgeBurnMask,
         apply_dodge_burn,
         deserialize_mask,
         edge_snap_region,
@@ -47,7 +48,7 @@ def main() -> int:
     check("dodge brightens center", dodged[50, 75, 0] > img[50, 75, 0])
     check("dodge leaves far corner unchanged", np.allclose(dodged[2, 2], img[2, 2], atol=1e-4))
     # Soft circular kernel: bbox corners stay near empty (not a filled square).
-    x0, y0, x1, y1 = 75 - 20 - 1, 50 - 20 - 1, 75 + 20 + 2, 50 + 20 + 2
+    x0, y0 = 75 - 20 - 1, 50 - 20 - 1
     corner = float(abs(mask.data[y0, x0]))
     center = float(abs(mask.data[50, 75]))
     check(
@@ -117,9 +118,7 @@ def main() -> int:
     split[:, :100] = 0.15  # dark left half
     mask_e = DodgeBurnMask.empty(120, 200)
     # Brush centered on dark side, large enough to geometrically cover the bright side
-    stamp_brush(
-        mask_e, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=True
-    )
+    stamp_brush(mask_e, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=True)
     left = float(np.abs(mask_e.data[60, 70]).mean()) if False else float(np.abs(mask_e.data[55:65, 60:80]).mean())
     right = float(np.abs(mask_e.data[55:65, 120:140]).mean())
     check(
@@ -128,9 +127,7 @@ def main() -> int:
         f"left={left:.4f} right={right:.4f}",
     )
     mask_plain = DodgeBurnMask.empty(120, 200)
-    stamp_brush(
-        mask_plain, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=False
-    )
+    stamp_brush(mask_plain, 90, 60, 40, 0.5, dodge=True, luminance=split, edge_assist=False)
     right_plain = float(np.abs(mask_plain.data[55:65, 120:140]).mean())
     check(
         "without edge-assist bright side receives more paint",
@@ -150,7 +147,7 @@ def main() -> int:
     check("deserialize empty string returns None", deserialize_mask("") is None)
 
     # 7. is_default_adjustments treats a present mask as non-default
-    from raw_adjustments import DEFAULT_ADJUSTMENTS, AS_SHOT_TEMP_KEY, is_default_adjustments
+    from raw_adjustments import AS_SHOT_TEMP_KEY, DEFAULT_ADJUSTMENTS, is_default_adjustments
 
     adj = dict(DEFAULT_ADJUSTMENTS)
     adj[AS_SHOT_TEMP_KEY] = 5500.0
@@ -168,7 +165,8 @@ def main() -> int:
         )
 
         img_path = os.path.join(tmpd, "t.CR3")
-        open(img_path, "wb").write(b"stub")
+        with open(img_path, "wb") as fh:
+            fh.write(b"stub")
         adj[STRENGTH_KEY] = 2.1
         write_xmp_adjustments_for_file(img_path, adj)
         check("sidecar written for mask-only edit", os.path.isfile(resolve_xmp_path(img_path)))

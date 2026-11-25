@@ -9,6 +9,7 @@ what the "reset" dict contains. reset_requested was emitted by the panel
 but never connected to anything in main.py, so Reset silently left the
 mask (and its saved sidecar entry) in place.
 """
+
 import os
 import sys
 
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -27,17 +28,18 @@ def main() -> int:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
-    import main as mainmod
     from raw_dodge_burn import DodgeBurnMask
 
+    import main as mainmod
+
     class FakePanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.mask_present_calls = []
 
-        def set_dodge_burn_mask_present(self, present):
+        def set_dodge_burn_mask_present(self, present) -> None:
             self.mask_present_calls.append(present)
 
-        def dodge_burn_show_mask(self):
+        def dodge_burn_show_mask(self) -> bool:
             return False
 
     def make_mock(*, mask):
@@ -46,9 +48,7 @@ def main() -> int:
         m.single_image_adjust_panel = FakePanel()
         m.gpu_view = None
         m._on_adjust_panel_reset = mainmod.RAWImageViewer._on_adjust_panel_reset.__get__(m)
-        m._sync_dodge_burn_mask_overlay = (
-            mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
-        )
+        m._sync_dodge_burn_mask_overlay = mainmod.RAWImageViewer._sync_dodge_burn_mask_overlay.__get__(m)
         return m
 
     # 1. A painted mask must be cleared by reset.
@@ -69,9 +69,7 @@ def main() -> int:
     import re
 
     src = inspect.getsource(mainmod.RAWImageViewer.init_ui)
-    wired = re.search(
-        r"reset_requested\.connect\(\s*self\._on_adjust_panel_reset\s*\)", src
-    )
+    wired = re.search(r"reset_requested\.connect\(\s*self\._on_adjust_panel_reset\s*\)", src)
     check(
         "init_ui connects reset_requested to _on_adjust_panel_reset",
         wired is not None,

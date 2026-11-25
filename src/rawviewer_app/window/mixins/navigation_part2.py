@@ -1,5 +1,4 @@
 """navigation mixin, part 2 of 2 (9 methods, 336 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -17,6 +16,7 @@ class NavigationPart2:
     def scan_folder_for_images(self, file_path):
         """Scan the folder containing the given file for all image files"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
@@ -34,10 +34,7 @@ class NavigationPart2:
                         self.current_file_index = i
                         self.current_file_path = img_file
                         return
-            if (
-                prev_folder is not None
-                and _norm_path(prev_folder) == _norm_path(folder_path)
-            ):
+            if prev_folder is not None and _norm_path(prev_folder) == _norm_path(folder_path):
                 # Unknown file in the same folder: nothing to update (no rescan).
                 return
             if prev_folder is not None and _norm_path(prev_folder) != _norm_path(folder_path):
@@ -46,8 +43,7 @@ class NavigationPart2:
             # Validate folder
             if not os.path.isdir(folder_path):
                 logger.warning(f"Folder does not exist: {folder_path}")
-                self.show_error("Folder Not Found",
-                              f"The folder does not exist:\n{folder_path}")
+                self.show_error("Folder Not Found", f"The folder does not exist:\n{folder_path}")
                 return
 
             self.current_folder = folder_path
@@ -166,7 +162,7 @@ class NavigationPart2:
         try:
             with os.scandir(folder_path) as it:
                 for entry in it:
-                    if entry.name.startswith('.'):
+                    if entry.name.startswith("."):
                         continue
                     if not entry.is_file(follow_symlinks=False):
                         continue
@@ -175,6 +171,7 @@ class NavigationPart2:
                         continue
                     if ext == ".dng":
                         from common_image_loader import dng_prefers_embedded_preview_first
+
                         if dng_prefers_embedded_preview_first(entry.path):
                             continue
                     try:

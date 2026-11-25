@@ -6,8 +6,6 @@ Existing installs keep legacy behavior until RAWVIEWER_PERF_V2=1 or the user
 clears cache / opts in via env.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import sys
@@ -133,13 +131,9 @@ def apply_upgrade_compat_defaults() -> str:
     if v2:
         # Perf v2: ONNX batch on Windows; macOS Core ML uses serial predict (see semantic_coreml_use_native_batch).
         if "RAWVIEWER_SEMANTIC_BATCH_SIZE" not in os.environ:
-            os.environ.setdefault(
-                "RAWVIEWER_SEMANTIC_BATCH_SIZE", str(_tier_semantic_batch_default())
-            )
+            os.environ.setdefault("RAWVIEWER_SEMANTIC_BATCH_SIZE", str(_tier_semantic_batch_default()))
         if sys.platform != "darwin" and "RAWVIEWER_SEMANTIC_COREML_CHUNK" not in os.environ:
-            os.environ.setdefault(
-                "RAWVIEWER_SEMANTIC_COREML_CHUNK", str(_tier_coreml_chunk_default())
-            )
+            os.environ.setdefault("RAWVIEWER_SEMANTIC_COREML_CHUNK", str(_tier_coreml_chunk_default()))
         os.environ.setdefault("RAWVIEWER_SEARCH_SYNC_METADATA", "0")
         label = "perf_v2"
     else:
@@ -158,4 +152,3 @@ def apply_upgrade_compat_defaults() -> str:
     state["mode"] = label
     _save_state(state)
     return label
-

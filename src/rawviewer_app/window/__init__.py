@@ -4,8 +4,6 @@ Import order note: ``main.py`` sets the Qt/OpenMP environment flags before
 importing anything from this package.
 """
 
-from __future__ import annotations
-
 __all__ = [
     "bootstrap",
     "lazy",

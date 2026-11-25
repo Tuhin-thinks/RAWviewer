@@ -139,11 +139,11 @@ def ensure_scunet_model_downloaded() -> bool:
 class SCUNetONNX:
     """Wraps an ONNX-based SCUNet noise reduction model with tiled execution."""
 
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str) -> None:
         self.model_path = model_path
         self._session = None
 
-    def _init_session(self):
+    def _init_session(self) -> None:
         import onnxruntime as ort
 
         key = _session_key(self.model_path)
@@ -235,9 +235,7 @@ class SCUNetONNX:
             gain = max(0.0, min(1.0, float(detail_gain)))
             result = up + hf * w * gain
         else:
-            result = self._process_tiles(
-                rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check
-            )
+            result = self._process_tiles(rgb_linear, tile_size, tile_overlap, progress_callback, cancel_check)
 
         if s < 1.0:
             # Blend toward the input: s=1 is byte-identical to the old path.
@@ -289,7 +287,7 @@ class SCUNetONNX:
         for y in h_idx_list:
             for x in w_idx_list:
                 if cancel_check is not None and cancel_check():
-                    from raw_adjustments.pipeline import ExportCancelled
+                    from core.errors import ExportCancelled
 
                     raise ExportCancelled()
 

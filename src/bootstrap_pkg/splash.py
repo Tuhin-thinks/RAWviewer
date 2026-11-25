@@ -2,7 +2,6 @@
 
 Kept out of main.py so tests can import it without constructing the app.
 """
-from __future__ import annotations
 
 import os
 import sys
@@ -22,9 +21,7 @@ def _resource_path(relative_path: str) -> str:
         if base_path is None:
             raise AttributeError
     except Exception:
-        base_path = os.path.abspath(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-        )
+        base_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     return os.path.join(base_path, relative_path)
 
 
@@ -130,9 +127,7 @@ def make_splash_pixmap():
         font.setPointSize(28)
         font.setBold(True)
         painter.setFont(font)
-        painter.drawText(
-            QRect(0, 80, SPLASH_CARD_W, 64), Qt.AlignmentFlag.AlignCenter, "RAW"
-        )
+        painter.drawText(QRect(0, 80, SPLASH_CARD_W, 64), Qt.AlignmentFlag.AlignCenter, "RAW")
         title_top = 160
 
     title_font = QFont()

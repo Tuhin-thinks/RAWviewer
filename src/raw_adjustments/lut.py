@@ -11,8 +11,6 @@ land in the domain they expect. **Linear** restores the older
 display-linear (pre-encode) apply for scene-referred / identity cubes.
 """
 
-from __future__ import annotations
-
 import os
 import re
 import shutil
@@ -46,9 +44,7 @@ def luts_dir() -> str:
     try:
         from PyQt6.QtCore import QStandardPaths
 
-        root = QStandardPaths.writableLocation(
-            QStandardPaths.StandardLocation.AppDataLocation
-        )
+        root = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
     except Exception:
         root = ""
     # Offscreen / unnamed QApplication can yield a useless path like "/…/-c".
@@ -238,9 +234,7 @@ def apply_creative_lut(img: np.ndarray, adj: dict | None) -> np.ndarray:
     return apply_cube_lut(img, lut, amount)
 
 
-def apply_creative_lut_encoded(
-    encoded: np.ndarray, adj: dict | None, peak: float
-) -> np.ndarray:
+def apply_creative_lut_encoded(encoded: np.ndarray, adj: dict | None, peak: float) -> np.ndarray:
     """Apply LUT on display-encoded pixels (uint8/uint16), return same dtype."""
     if encoded is None or not adj:
         return encoded
@@ -264,9 +258,7 @@ def apply_pipeline_lut_linear(display_linear: np.ndarray, adj: dict | None) -> n
     return apply_creative_lut(display_linear, adj)
 
 
-def apply_pipeline_lut_encoded(
-    encoded: np.ndarray, adj: dict | None, peak: float
-) -> np.ndarray:
+def apply_pipeline_lut_encoded(encoded: np.ndarray, adj: dict | None, peak: float) -> np.ndarray:
     """Post-gamma apply when working space is Rec709 (default)."""
     if lut_working_space(adj) == LUT_SPACE_LINEAR:
         return encoded
@@ -286,7 +278,7 @@ def lut_chooser_identity_adj(adj: dict | None = None) -> dict:
     grading. Only ``AsShotTemperature`` is kept so Temperature stays at
     as-shot (identity WB).
     """
-    from raw_adjustments import AS_SHOT_TEMP_KEY
+    from raw_adjustments.defaults import AS_SHOT_TEMP_KEY
 
     out: dict = {}
     shot = (adj or {}).get(AS_SHOT_TEMP_KEY)
@@ -301,27 +293,6 @@ def lut_chooser_identity_adj(adj: dict | None = None) -> dict:
     return out
 
 
-def lut_chooser_as_shot_display_u8(
-    base: np.ndarray,
-    adj: dict | None = None,
-) -> np.ndarray:
-    """Tiny as-shot display RGB for LUT thumbs.
-
-    Downscales once, then encodes with identity adj. ``adj`` is accepted so
-    a helper call can pass the live Adjust dict; Exposure and other user
-    sliders are ignored (see ``lut_chooser_identity_adj``). uint8 buffers
-    are treated as already display-referred (embedded JPEG / browse).
-    """
-    identity = lut_chooser_identity_adj(adj)
-    tiny = downscale_rgb_for_lut_preview(base)
-    if tiny is None or getattr(tiny, "ndim", 0) < 2:
-        return tiny
-    if getattr(tiny, "dtype", None) == np.uint8:
-        return np.ascontiguousarray(tiny)
-    from raw_adjustments.pipeline import linear_to_display_uint8, process_linear_edit_buffer
-
-    lin = process_linear_edit_buffer(tiny, identity, preview=True)
-    return np.ascontiguousarray(linear_to_display_uint8(lin, identity))
 
 
 def lut_preview_cache_key(
@@ -339,9 +310,7 @@ def lut_preview_cache_key(
     )
 
 
-def downscale_rgb_for_lut_preview(
-    rgb: np.ndarray, long_edge: int = LUT_PREVIEW_LONG_EDGE
-) -> np.ndarray:
+def downscale_rgb_for_lut_preview(rgb: np.ndarray, long_edge: int = LUT_PREVIEW_LONG_EDGE) -> np.ndarray:
     """Resize RGB to ``long_edge`` (64–96px). Preserves dtype (uint8 display or linear)."""
     if rgb is None or getattr(rgb, "ndim", 0) < 2:
         return rgb
@@ -362,13 +331,11 @@ def downscale_rgb_for_lut_preview(
 def _u8_to_linear_approx(encoded: np.ndarray) -> np.ndarray:
     """Approximate BT.709 EOTF inverse for Linear-space LUT thumbs."""
     x = encoded.astype(np.float32) / 255.0
-    return np.where(x < 0.081, x / 4.5, ((x + 0.099) / 1.099) ** (1.0 / 0.45)).astype(
-        np.float32
-    )
+    return np.where(x < 0.081, x / 4.5, ((x + 0.099) / 1.099) ** (1.0 / 0.45)).astype(np.float32)
 
 
 def _linear_to_u8_bt709(linear: np.ndarray) -> np.ndarray:
-    from processing.raw_decode.fast import _gamma_lut8
+    from processing.raw_decode.gamma import _gamma_lut8
 
     idx = np.clip(linear.astype(np.float32) * 65535.0 + 0.5, 0, 65535).astype(np.uint16)
     return np.ascontiguousarray(_gamma_lut8()[idx])
@@ -407,9 +374,7 @@ def render_lut_chooser_previews(
         return {}
     tiny = downscale_rgb_for_lut_preview(base_u8)
     if tiny.dtype != np.uint8:
-        tiny = np.clip(np.asarray(tiny, dtype=np.float32) * 255.0 + 0.5, 0, 255).astype(
-            np.uint8
-        )
+        tiny = np.clip(np.asarray(tiny, dtype=np.float32) * 255.0 + 0.5, 0, 255).astype(np.uint8)
     tiny = np.ascontiguousarray(tiny)
     out: dict[str, np.ndarray] = {"": tiny}
     for name in lut_names:

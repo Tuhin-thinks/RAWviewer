@@ -1,6 +1,4 @@
-
 """Windows share helpers for the shared widget layer."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -59,6 +57,7 @@ def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
 
     # SHOpenWithDialog — must pass OAIF_EXEC or user only sees the Settings redirect.
     try:
+
         class _OPENASINFO(Structure):
             _fields_ = [
                 ("pcszFile", wintypes.LPCWSTR),
@@ -112,9 +111,7 @@ def _open_windows_open_with_dialog(path: str, owner_hwnd: int = 0) -> bool:
     try:
         import win32com.client  # type: ignore
 
-        folder = win32com.client.Dispatch("Shell.Application").Namespace(
-            os.path.dirname(abs_path)
-        )
+        folder = win32com.client.Dispatch("Shell.Application").Namespace(os.path.dirname(abs_path))
         item = folder.ParseName(os.path.basename(abs_path))
         if item is None:
             return False
@@ -184,9 +181,7 @@ def _share_windows_clipboard_cf_hdrop_paths(file_paths: list[str]) -> bool:
     except ImportError:
         return False
 
-    abs_paths = [
-        os.path.abspath(p) for p in file_paths if p and os.path.isfile(os.path.abspath(p))
-    ]
+    abs_paths = [os.path.abspath(p) for p in file_paths if p and os.path.isfile(os.path.abspath(p))]
     if not abs_paths:
         return False
     if len(abs_paths) == 1:

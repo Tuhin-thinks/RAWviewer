@@ -9,7 +9,6 @@ test Qt's shutdown ordering rather than this feature. The methods under test
 touch only the handful of attributes the stub provides; nothing about them
 needs the host to be a QWidget.
 """
-from __future__ import annotations
 
 import datetime
 import os
@@ -60,10 +59,10 @@ def main() -> int:
         _SCROLL_BUBBLE_THROTTLE_S = JustifiedGallery._SCROLL_BUBBLE_THROTTLE_S
         _thumb_base_key = "__base__"
 
-        def _on_scroll_settled(self):
+        def _on_scroll_settled(self) -> None:
             pass
 
-        def _on_slider_released(self):
+        def _on_slider_released(self) -> None:
             # Mirrors the real one minus the thumbnail work it also triggers.
             self._is_scrollbar_dragging = False
             self._hide_scroll_date_bubble()
@@ -76,14 +75,8 @@ def main() -> int:
     gallery._scroll_area = scroll
 
     paths = [f"/nonexistent/IMG_{i:04}.CR3" for i in range(300)]
-    gallery._gallery_layout_items = [
-        {"rect": QRect(0, i * 200, 300, 180), "file_path": p}
-        for i, p in enumerate(paths)
-    ]
-    dates = {
-        p: datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i * 3)
-        for i, p in enumerate(paths)
-    }
+    gallery._gallery_layout_items = [{"rect": QRect(0, i * 200, 300, 180), "file_path": p} for i, p in enumerate(paths)]
+    dates = {p: datetime.datetime(2024, 1, 1) + datetime.timedelta(days=i * 3) for i, p in enumerate(paths)}
 
     bar = scroll.verticalScrollBar()
     bar.setRange(0, 60000)
@@ -210,7 +203,7 @@ def main() -> int:
         gallery._scroll_preview_pixmap(paths[0]) is None,
     )
 
-    from PyQt6.QtGui import QPixmap, QColor
+    from PyQt6.QtGui import QColor, QPixmap
 
     hit = QPixmap(120, 80)
     hit.fill(QColor(40, 80, 120))
@@ -240,9 +233,7 @@ def main() -> int:
     gallery._update_scroll_date_bubble(force=True)
     check(
         "a new path that misses stays date-only",
-        bubble.isVisible()
-        and gallery._scroll_preview_path() == paths[100]
-        and not bubble.preview_is_visible(),
+        bubble.isVisible() and gallery._scroll_preview_path() == paths[100] and not bubble.preview_is_visible(),
         f"path={gallery._scroll_preview_path()!r} preview={bubble.preview_is_visible()}",
     )
     gallery._thumbnail_cache = {(paths[100], "__base__"): hit}

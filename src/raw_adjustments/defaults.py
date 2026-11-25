@@ -3,8 +3,6 @@ RAW adjustments parser and NumPy math helper.
 Applies Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Saturation, and Vibrance.
 """
 
-from __future__ import annotations
-
 import os
 import threading
 from collections.abc import Callable
@@ -24,11 +22,11 @@ import numpy as np
 # hold a reference to it would defeat the whole point -- a second thread
 # creating a fresh Lock for the same path after eviction would no longer be
 # synchronized with the first.
-_xmp_write_locks: dict[str, threading.Lock] = {}
+_xmp_write_locks: "dict[str, threading.Lock]" = {}
 _xmp_write_locks_guard = threading.Lock()
 
 
-def _xmp_write_lock(xmp_path: str) -> threading.Lock:
+def _xmp_write_lock(xmp_path: str) -> "threading.Lock":
     key = os.path.normcase(os.path.abspath(xmp_path)) if xmp_path else ""
     with _xmp_write_locks_guard:
         lock = _xmp_write_locks.get(key)
@@ -274,7 +272,7 @@ def _kelvin_to_rgb(k: float) -> tuple[float, float, float]:
         r = 255.0
     else:
         r = temp - 60.0
-        r = 329.698727446 * (r ** -0.1332047592)
+        r = 329.698727446 * (r**-0.1332047592)
         r = max(0.0, min(255.0, r))
 
     # Green
@@ -285,7 +283,7 @@ def _kelvin_to_rgb(k: float) -> tuple[float, float, float]:
         g = max(0.0, min(255.0, g))
     else:
         g = temp - 60.0
-        g = 288.1221695283 * (g ** -0.0755148492)
+        g = 288.1221695283 * (g**-0.0755148492)
         g = max(0.0, min(255.0, g))
 
     # Blue

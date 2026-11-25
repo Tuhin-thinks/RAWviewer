@@ -1,5 +1,4 @@
 """status mixin, part 1 of 2 (20 methods, 227 lines)."""
-from __future__ import annotations
 
 import logging
 import os
@@ -64,12 +63,13 @@ class StatusPart1:
         # switched to single during folder scan, leaving a stale "Scanning folder..." label.
         if self.gallery_justified:
             self.gallery_justified.hide_loading_message()
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
 
     def on_manager_progress(self, file_path: str, status_message: str):
         """處理 ImageLoadManager 的進度更新信號"""
         import logging
+
         logging.getLogger(__name__)
 
         # Only handle current file's progress (normalize for Windows path format differences)

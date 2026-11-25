@@ -5,8 +5,6 @@ browser search so the user can pick a studio/sample file themselves, then
 upload it with the existing file picker.
 """
 
-from __future__ import annotations
-
 import re
 import urllib.parse
 
@@ -68,4 +66,3 @@ def dpreview_open_url(make: str = "", model: str = "") -> str:
     if not query:
         return DPREVIEW_STUDIO_HUB_URL
     return f"{DPREVIEW_SEARCH_URL}{urllib.parse.quote_plus(query)}"
-

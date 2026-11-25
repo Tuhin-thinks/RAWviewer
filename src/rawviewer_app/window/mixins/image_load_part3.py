@@ -1,5 +1,4 @@
 """image_load mixin, part 3 of 3 (25 methods, 747 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -38,6 +37,7 @@ class ImageLoadPart3:
         is_dng_file = os.path.splitext(requested_file_path)[1].lower() == ".dng"
         if is_dng_file and getattr(self, "view_mode", "single") == "single":
             from common_image_loader import dng_prefers_embedded_preview_first
+
             if not dng_prefers_embedded_preview_first(requested_file_path):
                 return {"full"}
 
@@ -88,13 +88,15 @@ class ImageLoadPart3:
             # Skip if already full-res on screen.
             try:
                 from common_image_loader import is_raw_file
+
                 if not is_raw_file(fp):
                     return
             except Exception:
                 return
             # Request full decode (CURRENT priority).
             try:
-                from image_load_manager import Priority as _Prio
+                from image_load_manager.helpers import Priority as _Prio
+
                 self.image_manager.load_image(
                     file_path=fp,
                     priority=_Prio.CURRENT,
@@ -111,7 +113,8 @@ class ImageLoadPart3:
     def _request_full_res_decode(self, file_path, *, priority_current=True, force=False, urgent=False) -> bool:
         """Request a full-resolution decode for file_path. Returns True."""
         try:
-            from image_load_manager import Priority as _Prio
+            from image_load_manager.helpers import Priority as _Prio
+
             self.image_manager.load_image(
                 file_path=file_path,
                 priority=_Prio.CURRENT if priority_current else _Prio.BACKGROUND,
@@ -126,12 +129,16 @@ class ImageLoadPart3:
 
     def _full_res_only_mode(self) -> bool:
         return str(os.environ.get("RAWVIEWER_FULL_RES_ONLY", "")).strip().lower() in (
-            "1", "true", "yes", "on",
+            "1",
+            "true",
+            "yes",
+            "on",
         )
 
     def _load_full_resolution_on_demand(self):
         """Load full resolution image when user zooms in (on-demand loading)"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         if not self.current_file_path:
@@ -143,9 +150,7 @@ class ImageLoadPart3:
             exif_now = None
             with contextlib.suppress(Exception):
                 exif_now = self.image_cache.get_exif(self.current_file_path)
-            if image_covers_sensor_resolution(
-                self.current_pixmap.width(), self.current_pixmap.height(), exif_now
-            ):
+            if image_covers_sensor_resolution(self.current_pixmap.width(), self.current_pixmap.height(), exif_now):
                 self._is_half_size_displayed = False
                 return
 
@@ -170,7 +175,7 @@ class ImageLoadPart3:
                 self.image_cache.full_image_cache.remove(self.current_file_path)
 
         # Check if we're already loading full resolution
-        if hasattr(self, '_full_resolution_loading') and self._full_resolution_loading:
+        if hasattr(self, "_full_resolution_loading") and self._full_resolution_loading:
             return
         norm = _norm_path(self.current_file_path)
         if getattr(self, "_sensor_full_decode_queued_norm", None) == norm:
@@ -178,14 +183,13 @@ class ImageLoadPart3:
             return
 
         logger.info("Loading full resolution image on-demand (user zoomed in)...")
-        if self._request_full_res_decode(
-            self.current_file_path, priority_current=True, urgent=True
-        ):
+        if self._request_full_res_decode(self.current_file_path, priority_current=True, urgent=True):
             self._full_resolution_loading = True
 
     def _on_full_resolution_error(self, error_msg):
         """Handle full resolution loading error"""
         import logging
+
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed to load full resolution: {error_msg}")
         self._full_resolution_loading = False
@@ -232,14 +236,11 @@ class ImageLoadPart3:
             return
         self._session_restore_full_decode_allowed = True
         logger.info(
-            "[SESSION] Starting deferred full decode for current image "
-            "(RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS)"
+            "[SESSION] Starting deferred full decode for current image (RAWVIEWER_SESSION_RESTORE_FULL_DECODE_DELAY_MS)"
         )
         self._flush_deferred_full_exif_after_first_paint()
         self._flush_deferred_sensor_full_decode(force=True)
-        preload_delay_ms = _env_int(
-            "RAWVIEWER_SESSION_RESTORE_PRELOAD_DELAY_MS", 200, minimum=0
-        )
+        preload_delay_ms = _env_int("RAWVIEWER_SESSION_RESTORE_PRELOAD_DELAY_MS", 200, minimum=0)
         QTimer.singleShot(preload_delay_ms, self._run_post_session_restore_nav_preload)
 
     def _run_post_session_restore_nav_preload(self) -> None:
@@ -257,16 +258,14 @@ class ImageLoadPart3:
         self._start_preloading()
         self._schedule_idle_display_prefetch()
         with contextlib.suppress(Exception):
-            self._queue_display_tier_prefetch_for_paths(
-                self._paths_within_nav_prefetch_radius()
-            )
+            self._queue_display_tier_prefetch_for_paths(self._paths_within_nav_prefetch_radius())
         # Full decode + neighbor preload have landed -- now it's safe to pay
         # the main-thread CuPy/torch import without starving those timers.
         self._schedule_deferred_gpu_backend_import(reason="post_session_restore")
 
     def _preload_adjacent_display_buffers(self):
         """Prefetch adjacent display buffers (embedded preview / half-res) for navigation."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         flag = os.environ.get("RAWVIEWER_NAV_PRELOAD_DISPLAY", "1").strip().lower()
         if flag not in ("1", "true", "yes", "on"):
@@ -326,7 +325,7 @@ class ImageLoadPart3:
 
     def _start_preloading(self):
         """Start preloading adjacent images for fast navigation using aggressive caching strategy."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         if not self.image_files or self.current_file_index < 0:
             return
@@ -355,15 +354,11 @@ class ImageLoadPart3:
             if _norm_path(next_file) == _norm_path(current_path):
                 continue
             if i <= near:
-                self._request_display_buffer_prefetch(
-                    next_file, priority=Priority.PRELOAD_NEXT, zoomed=zoomed
-                )
+                self._request_display_buffer_prefetch(next_file, priority=Priority.PRELOAD_NEXT, zoomed=zoomed)
                 continue
             if self.image_cache.get_thumbnail(next_file) is not None:
                 continue
-            cached_item, _cache_type = check_memory_cache_for_image(
-                next_file, use_full_resolution=False
-            )
+            cached_item, _cache_type = check_memory_cache_for_image(next_file, use_full_resolution=False)
             if cached_item is None:
                 self.image_manager.load_image(
                     file_path=next_file,
@@ -388,15 +383,11 @@ class ImageLoadPart3:
             if _norm_path(prev_file) == _norm_path(current_path):
                 continue
             if i <= near:
-                self._request_display_buffer_prefetch(
-                    prev_file, priority=Priority.PRELOAD_PREV, zoomed=zoomed
-                )
+                self._request_display_buffer_prefetch(prev_file, priority=Priority.PRELOAD_PREV, zoomed=zoomed)
                 continue
             if self.image_cache.get_thumbnail(prev_file) is not None:
                 continue
-            cached_item, _cache_type = check_memory_cache_for_image(
-                prev_file, use_full_resolution=False
-            )
+            cached_item, _cache_type = check_memory_cache_for_image(prev_file, use_full_resolution=False)
             if cached_item is None:
                 self.image_manager.load_image(
                     file_path=prev_file,
@@ -430,6 +421,7 @@ class ImageLoadPart3:
                     converter.start()
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.debug(f"Failed to start pixmap converter for {next_file}: {e}")
 
@@ -447,16 +439,19 @@ class ImageLoadPart3:
                         )
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.debug(f"Failed to queue ILM preload for {next_file}: {e}")
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.debug(f"Error in _preload_next_image_full: {e}")
 
     def _on_preload_error(self, file_path, error_msg):
         """Handle preload error (silent - preloading is background operation)"""
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug(f"Preload error for {os.path.basename(file_path)}: {error_msg}")
 
@@ -470,6 +465,7 @@ class ImageLoadPart3:
                 converter.start()
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.debug(f"Error in _on_preloaded_image_ready: {e}")
 
@@ -497,6 +493,7 @@ class ImageLoadPart3:
             return
         try:
             from common_image_loader import is_raw_file as _is_raw
+
             if not _is_raw(file_path):
                 return
         except Exception:
@@ -530,7 +527,7 @@ class ImageLoadPart3:
             try:
                 import rawpy
 
-                from enhanced_raw_processor import _rawpy_global_lock
+                from enhanced_raw_processor.extraction import _rawpy_global_lock
 
                 with _rawpy_global_lock, rawpy.imread(path) as raw:
                     ow = int(raw.sizes.width)
@@ -545,8 +542,11 @@ class ImageLoadPart3:
                             ow = int(str(tags[w_tag]))
                             break
                     for h_tag in (
-                        "EXIF ExifImageLength", "Image ImageLength", "Image Height",
-                        "Image Length", "EXIF ExifImageHeight",
+                        "EXIF ExifImageLength",
+                        "Image ImageLength",
+                        "Image Height",
+                        "Image Length",
+                        "EXIF ExifImageHeight",
                     ):
                         if h_tag in tags:
                             oh = int(str(tags[h_tag]))
@@ -568,9 +568,8 @@ class ImageLoadPart3:
 
         try:
             import threading
-            threading.Thread(
-                target=_probe, name="sensor-dim-probe", daemon=True
-            ).start()
+
+            threading.Thread(target=_probe, name="sensor-dim-probe", daemon=True).start()
         except Exception:
             attempted.discard(file_path)
 
@@ -584,13 +583,15 @@ class ImageLoadPart3:
         self._hide_all_loading_indicators()
         self.show_error(title, message)
 
-    def _on_folder_load_ready(self, token, image_files, bulk_metadata, file_stats,
-                              folder_path, start_file, start_view, scan_time, sort_time):
+    def _on_folder_load_ready(
+        self, token, image_files, bulk_metadata, file_stats, folder_path, start_file, start_view, scan_time, sort_time
+    ):
         if token != getattr(self, "_folder_load_generation", None):
             return
 
         import logging
         import time
+
         logger = logging.getLogger(__name__)
         apply_start = time.time()
         self._active_folder_load_worker = None
@@ -620,12 +621,12 @@ class ImageLoadPart3:
             if _norm_path(os.path.dirname(image_files[0])) != _norm_path(folder_path):
                 logger.info(
                     "[FOLDER] Parent fallback: %d files from subfolders of %s",
-                    len(image_files), folder_path,
+                    len(image_files),
+                    folder_path,
                 )
                 if hasattr(self, "status_bar"):
                     self.status_bar.showMessage(
-                        f"Showing {len(image_files)} photos from subfolders of "
-                        f"{os.path.basename(folder_path)}",
+                        f"Showing {len(image_files)} photos from subfolders of {os.path.basename(folder_path)}",
                         5000,
                     )
             self._reconcile_burst_rejected_paths_with_folder()
@@ -665,7 +666,7 @@ class ImageLoadPart3:
                 self._pending_zoom_restore = False
                 self._restore_zoom_center = None
                 self._restore_zoom_level = None
-                if hasattr(self, '_maintain_zoom_on_navigation'):
+                if hasattr(self, "_maintain_zoom_on_navigation"):
                     with contextlib.suppress(AttributeError):
                         delattr(self, "_maintain_zoom_on_navigation")
 
@@ -727,10 +728,10 @@ class ImageLoadPart3:
                 )
             )
 
-            if hasattr(self, 'view_mode') and self.view_mode == 'gallery' and getattr(self, 'gallery_justified', None):
+            if hasattr(self, "view_mode") and self.view_mode == "gallery" and getattr(self, "gallery_justified", None):
                 self.gallery_justified.show_loading_message("Preparing gallery...")
 
-            if hasattr(self, 'view_mode') and self.view_mode == 'gallery':
+            if hasattr(self, "view_mode") and self.view_mode == "gallery":
                 self._ensure_gallery_widget()
                 self._show_gallery_view()
                 # Force a second pass after layout settles to avoid "empty gallery"
@@ -751,9 +752,9 @@ class ImageLoadPart3:
                 self._show_single_view()
                 QTimer.singleShot(0, self._sync_filmstrip_to_folder)
                 # _show_single_view handles its own load_raw_image() call if current_file_path is set.
-                if hasattr(self, 'gallery_justified') and self.gallery_justified:
+                if hasattr(self, "gallery_justified") and self.gallery_justified:
                     self.gallery_justified._background_loading_active = False
-                    if hasattr(self.gallery_justified, '_load_timer') and self.gallery_justified._load_timer:
+                    if hasattr(self.gallery_justified, "_load_timer") and self.gallery_justified._load_timer:
                         self.gallery_justified._load_timer.stop()
 
             total_time = scan_time + sort_time + (time.time() - apply_start)

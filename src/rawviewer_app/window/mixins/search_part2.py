@@ -1,5 +1,4 @@
 """search mixin, part 2 of 4 (17 methods, 898 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -27,17 +26,15 @@ class SearchPart2:
             if full:
                 self._search_panel_target_width = self._gallery_search_status_panel_width(full)
             else:
-                self._search_panel_target_width = int(
-                    getattr(self, "_search_panel_target_width_idle", 310) or 310
-                )
+                self._search_panel_target_width = int(getattr(self, "_search_panel_target_width_idle", 310) or 310)
         target = int(self._search_panel_target_width if expanded else 0)
         was_expanded = bool(getattr(self, "_search_panel_expanded", False))
         self._search_panel_expanded = bool(expanded)
         container = self.search_expand_container
 
         if not expanded and hasattr(self, "gallery_search_input") and self.gallery_search_input is not None:
-                with contextlib.suppress(Exception):
-                    self.gallery_search_input.clearFocus()
+            with contextlib.suppress(Exception):
+                self.gallery_search_input.clearFocus()
 
         if expanded:
             # Child min-width must not fight the 0→target slide.
@@ -49,16 +46,11 @@ class SearchPart2:
         # Visible footprint is full content width; reveal amount is the mask.
         content_now = int(getattr(self, "_search_panel_anim_content_width", 0) or 0)
         if content_now <= 0:
-            content_now = int(
-                getattr(self, "_search_panel_target_width", 310) or 310
-            )
+            content_now = int(getattr(self, "_search_panel_target_width", 310) or 310)
         current_w = content_now if (container.isVisible() and was_expanded) else 0
         if (
             was_expanded == bool(expanded)
-            and (
-                (expanded and current_w == target)
-                or (not expanded and not container.isVisible())
-            )
+            and ((expanded and current_w == target) or (not expanded and not container.isVisible()))
             and not self._search_panel_animation_running()
         ):
             if not expanded:
@@ -114,9 +106,7 @@ class SearchPart2:
         panel_anim.setStartValue(int(start_w))
         panel_anim.setEndValue(int(target))
         panel_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
-        panel_anim.valueChanged.connect(
-            lambda v: self._place_search_expand_overlay(int(v))
-        )
+        panel_anim.valueChanged.connect(lambda v: self._place_search_expand_overlay(int(v)))
         self._search_panel_animation = panel_anim
 
         def _finish(exp=bool(expanded), tgt=int(target)):
@@ -131,9 +121,7 @@ class SearchPart2:
                 self._place_search_expand_overlay(final)
                 self._search_panel_anim_content_width = 0
                 self._reapply_gallery_search_panel_width_from_status()
-                final = int(
-                    getattr(self, "_search_panel_target_width", final) or final
-                )
+                final = int(getattr(self, "_search_panel_target_width", final) or final)
                 self._place_search_expand_overlay(final)
                 with contextlib.suppress(Exception):
                     self.search_expand_container.clearMask()
@@ -190,7 +178,11 @@ class SearchPart2:
         signals = SemanticIndexPrepSignals()
         self._semantic_index_prep_signals = signals
 
-        signals.done.connect(lambda coverage, pending, face_pending, extract_pending=None: self._on_semantic_index_prep_done(corpus_files, coverage, pending, face_pending))
+        signals.done.connect(
+            lambda coverage, pending, face_pending, extract_pending=None: self._on_semantic_index_prep_done(
+                corpus_files, coverage, pending, face_pending
+            )
+        )
         signals.error.connect(self._on_semantic_index_prep_error)
 
         worker = _SemanticIndexPrepWorker(corpus_files, index, signals)
@@ -201,9 +193,7 @@ class SearchPart2:
         if bool(getattr(self, "_gallery_search_user_wants_semantic", False)) or bool(
             getattr(self, "_defer_semantic_after_metadata", False)
         ):
-            self._on_user_semantic_prep_done(
-                corpus_files, coverage, pending, face_pending
-            )
+            self._on_user_semantic_prep_done(corpus_files, coverage, pending, face_pending)
             return
 
         # If there are no pending files and no face pending files, mark complete
@@ -226,8 +216,7 @@ class SearchPart2:
                 pending_files=pending,
                 run_semantic_embeddings=user_semantic and semantic_embeddings_enabled(),
                 show_search_progress=bool(
-                    user_semantic
-                    and getattr(self, "_gallery_search_show_index_progress", False)
+                    user_semantic and getattr(self, "_gallery_search_show_index_progress", False)
                 ),
             )
             return
@@ -274,9 +263,7 @@ class SearchPart2:
             return
 
         pending_extract = len(pending_files or [])
-        if self._should_defer_metadata_index_for_single_view(
-            pending_extract=pending_extract
-        ):
+        if self._should_defer_metadata_index_for_single_view(pending_extract=pending_extract):
             import logging
 
             logging.getLogger(__name__).info(
@@ -307,9 +294,7 @@ class SearchPart2:
         # Bounded by the same absolute ceiling as the hard gate above (opened_ts +
         # RAWVIEWER_GALLERY_INDEX_FORCE_AFTER_MS) so continuous scrolling cannot
         # starve embeddings -- and thus search -- forever.
-        gallery_deferral_opened = float(
-            getattr(self, "_gallery_deferral_opened_ts", 0.0) or 0.0
-        )
+        gallery_deferral_opened = float(getattr(self, "_gallery_deferral_opened_ts", 0.0) or 0.0)
         within_force_ceiling = (
             not gallery_deferral_opened
             or (time.time() - gallery_deferral_opened)
@@ -376,9 +361,7 @@ class SearchPart2:
                     len(pending_files),
                 )
             if not extract_pending:
-                _log.info(
-                    "[INDEX] Metadata-only pass: nothing to extract; skipping index worker (no ONNX probe)"
-                )
+                _log.info("[INDEX] Metadata-only pass: nothing to extract; skipping index worker (no ONNX probe)")
                 self._finish_silent_metadata_without_worker(corpus_files)
                 return
             pending_files = extract_pending
@@ -446,13 +429,13 @@ class SearchPart2:
 
             def run(self_inner):
                 try:
+
                     def _progress(done, total, message):
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
-                                self_inner.signals.progress.emit(
-                                    self_inner.token, done, total, str(message)
-                                )
+                                self_inner.signals.progress.emit(self_inner.token, done, total, str(message))
                         except Exception:
                             pass
 
@@ -466,14 +449,11 @@ class SearchPart2:
                         run_semantic_embeddings=self_inner.run_semantic_embeddings,
                     )
                     result["faces_deferred"] = bool(
-                        result.get("faces_deferred")
-                        or (
-                            defer_faces
-                            and result.get("faces_pending", 0) > 0
-                        )
+                        result.get("faces_deferred") or (defer_faces and result.get("faces_pending", 0) > 0)
                     )
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
                             self_inner.signals.done.emit(self_inner.token, result)
                     except Exception:
@@ -481,6 +461,7 @@ class SearchPart2:
                 except Exception as e:
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
                             self_inner.signals.error.emit(self_inner.token, str(e))
                     except Exception:
@@ -540,14 +521,10 @@ class SearchPart2:
         last = getattr(self, "_semantic_index_last_progress", None)
         total = int(getattr(self, "_semantic_index_progress_total", 0) or 0)
         if last and last[1] > 0:
-            self._set_gallery_search_status(
-                self._format_index_progress("Metadata", last[0], last[1])
-            )
+            self._set_gallery_search_status(self._format_index_progress("Metadata", last[0], last[1]))
         elif total > 0:
             # Pass started but extraction hasn't begun (prep/DB-scan phase).
-            self._set_gallery_search_status(
-                self._format_index_progress("Metadata", 0, total)
-            )
+            self._set_gallery_search_status(self._format_index_progress("Metadata", 0, total))
         else:
             self._set_gallery_search_status(fallback)
 
@@ -561,9 +538,7 @@ class SearchPart2:
         if lowered.startswith("downloading"):
             return True
         # Only the three search-index phases belong in the search field.
-        return lowered.startswith(
-            ("metadata:", "semantic:", "face:")
-        )
+        return lowered.startswith(("metadata:", "semantic:", "face:"))
 
     def _on_semantic_index_progress(self, token, i, n, message):
         if token != self._semantic_index_active_token:
@@ -574,6 +549,7 @@ class SearchPart2:
             gj = getattr(self, "gallery_justified", None)
             if gj is not None and hasattr(gj, "_request_load_visible_images"):
                 import time
+
                 now = time.time()
                 last_time = getattr(self, "_last_semantic_progress_reload_time", 0.0)
                 if now - last_time >= 2.0:
@@ -597,16 +573,19 @@ class SearchPart2:
                 total = max(1, int(n) if n else self._semantic_index_progress_total)
                 done = min(total, max(0, int(i)))
                 label = "Semantic" if getattr(self, "_semantic_index_run_semantic_embeddings", True) else "Metadata"
-                self._set_gallery_search_status(
-                    self._format_index_progress(label, done, total)
-                )
+                self._set_gallery_search_status(self._format_index_progress(label, done, total))
             return
 
         # Below is when show_progress is True (e.g. search UI is expanded/active)
         if pass_kind == "user_semantic" and msg.lower().startswith("metadata:"):
             return
         if msg and self._should_show_search_index_progress(msg):
-            if pass_kind == "user_semantic" and not msg.lower().startswith("semantic:") and not msg.lower().startswith("face:") and not msg.lower().startswith("preparing thumbnail"):
+            if (
+                pass_kind == "user_semantic"
+                and not msg.lower().startswith("semantic:")
+                and not msg.lower().startswith("face:")
+                and not msg.lower().startswith("preparing thumbnail")
+            ):
                 return
             self._set_gallery_search_status(msg)
             return
@@ -616,9 +595,7 @@ class SearchPart2:
             label = "Semantic"
         else:
             label = "Semantic" if getattr(self, "_semantic_index_run_semantic_embeddings", True) else "Metadata"
-        self._set_gallery_search_status(
-            self._format_index_progress(label, done, total)
-        )
+        self._set_gallery_search_status(self._format_index_progress(label, done, total))
 
     def _on_semantic_index_done(self, token, result):
         if token != self._semantic_index_active_token:
@@ -697,6 +674,7 @@ class SearchPart2:
 
         logger = logging.getLogger(__name__)
         from search import face_scan_enabled
+
         if not face_scan_enabled():
             logger.info("[INDEX][FACE] Skip start: face scan is disabled")
             self._face_indexing_in_progress = False
@@ -712,11 +690,7 @@ class SearchPart2:
         if getattr(self, "view_mode", "") == "gallery":
             defer_until = float(getattr(self, "_gallery_indexing_deferred_until", 0.0) or 0.0)
             gj = getattr(self, "gallery_justified", None)
-            warmup = (
-                gj is not None
-                and hasattr(gj, "_gallery_warmup_active")
-                and gj._gallery_warmup_active()
-            )
+            warmup = gj is not None and hasattr(gj, "_gallery_warmup_active") and gj._gallery_warmup_active()
             if warmup or time.time() < defer_until:
                 logger.info("[INDEX][FACE] Skip start: gallery warmup in progress")
                 return
@@ -765,13 +739,13 @@ class SearchPart2:
 
             def run(self_inner):
                 try:
+
                     def _progress(done, total, message):
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
-                                self_inner.signals.progress.emit(
-                                    self_inner.token, done, total, str(message)
-                                )
+                                self_inner.signals.progress.emit(self_inner.token, done, total, str(message))
                         except Exception:
                             pass
 
@@ -783,15 +757,15 @@ class SearchPart2:
                     )
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
-                            self_inner.signals.done.emit(
-                                self_inner.token, {"faces_scanned": count}
-                            )
+                            self_inner.signals.done.emit(self_inner.token, {"faces_scanned": count})
                     except Exception:
                         pass
                 except Exception as e:
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
                             self_inner.signals.error.emit(self_inner.token, str(e))
                     except Exception:
@@ -807,10 +781,7 @@ class SearchPart2:
                     4000,
                 )
         self._face_index_show_search_progress = bool(show_search_progress)
-        logger.info(
-            "[INDEX][FACE] Start worker "
-            f"(pending={int(pending or 0)}, corpus_size={len(corpus_files or [])})"
-        )
+        logger.info(f"[INDEX][FACE] Start worker (pending={int(pending or 0)}, corpus_size={len(corpus_files or [])})")
         worker = _FaceIndexWorker(token, list(corpus_files), index, signals, total_files)
         _get_bg_thread_pool().start(worker)
 
@@ -826,9 +797,7 @@ class SearchPart2:
             return
         total = max(1, int(n) if n else 1)
         done = min(total, max(0, int(i)))
-        self._set_gallery_search_status(
-            self._format_index_progress("Face", done, total)
-        )
+        self._set_gallery_search_status(self._format_index_progress("Face", done, total))
 
     def _on_face_index_done(self, token, result):
         logger = logging.getLogger(__name__)

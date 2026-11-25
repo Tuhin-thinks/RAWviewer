@@ -1,5 +1,4 @@
-'''PixmapConverter and RawEdrPixmapConverter.'''
-from __future__ import annotations
+"""PixmapConverter and RawEdrPixmapConverter."""
 
 import numpy as np
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -8,9 +7,10 @@ from PyQt6.QtGui import QImage, QPixmap
 
 class PixmapConverter(QThread):
     """Background thread to convert numpy array to QPixmap and cache it"""
+
     pixmap_ready = pyqtSignal(str, QPixmap)  # file_path, pixmap
 
-    def __init__(self, file_path, rgb_image, image_cache):
+    def __init__(self, file_path, rgb_image, image_cache) -> None:
         super().__init__()
         self.file_path = file_path
         # Not copied here: this class is a QThread, but __init__ runs
@@ -26,11 +26,11 @@ class PixmapConverter(QThread):
         self.image_cache = image_cache
         self._should_stop = False
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Request processing to stop"""
         self._should_stop = True
 
-    def run(self):
+    def run(self) -> None:
         """Convert numpy array to QPixmap in background"""
         try:
             if self._should_stop:
@@ -38,11 +38,11 @@ class PixmapConverter(QThread):
 
             # Copy here (background thread), not in __init__ (main thread).
             # See __init__ docstring comment for why this moved.
-            if hasattr(self.rgb_image, 'copy'):
+            if hasattr(self.rgb_image, "copy"):
                 self.rgb_image = self.rgb_image.copy()
 
-            if not hasattr(self.rgb_image, 'shape'):
-                if hasattr(self.rgb_image, 'width') and hasattr(self.rgb_image, 'height'):
+            if not hasattr(self.rgb_image, "shape"):
+                if hasattr(self.rgb_image, "width") and hasattr(self.rgb_image, "height"):
                     height, width = self.rgb_image.height(), self.rgb_image.width()
                     channels = 3
                 else:
@@ -55,16 +55,15 @@ class PixmapConverter(QThread):
                     self.rgb_image = (self.rgb_image / 257.0).astype(np.uint8)
                 elif np.issubdtype(self.rgb_image.dtype, np.floating):
                     from raw_adjustments.tone_recovery import _encode_srgb8
-                    self.rgb_image = _encode_srgb8(
-                        np.clip(self.rgb_image.astype(np.float32), 0.0, None)
-                    )
+
+                    self.rgb_image = _encode_srgb8(np.clip(self.rgb_image.astype(np.float32), 0.0, None))
                 elif self.rgb_image.dtype != np.uint8:
                     self.rgb_image = np.clip(self.rgb_image, 0, 255).astype(np.uint8)
 
             bytes_per_line = channels * width
 
             # Ensure the data is contiguous
-            if not self.rgb_image.flags['C_CONTIGUOUS']:
+            if not self.rgb_image.flags["C_CONTIGUOUS"]:
                 self.rgb_image = np.ascontiguousarray(self.rgb_image)
 
             if self._should_stop:
@@ -77,8 +76,7 @@ class PixmapConverter(QThread):
             elif channels == 4:
                 q_format = QImage.Format.Format_RGBA8888
 
-            q_image = QImage(self.rgb_image.data, width, height,
-                             bytes_per_line, q_format)
+            q_image = QImage(self.rgb_image.data, width, height, bytes_per_line, q_format)
             q_image.ndarr = self.rgb_image  # Keep numpy array alive
             pixmap = QPixmap.fromImage(q_image)
 
@@ -95,6 +93,7 @@ class PixmapConverter(QThread):
 
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.debug(f"Error in PixmapConverter for {self.file_path}: {e}")
 
@@ -110,17 +109,17 @@ class RawEdrPixmapConverter(QThread):
         *,
         max_edge: int = 0,
         exif_data=None,
-    ):
+    ) -> None:
         super().__init__()
         self.file_path = file_path
         self.max_edge = int(max_edge or 0)
         self.exif_data = exif_data
         self._should_stop = False
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         self._should_stop = True
 
-    def run(self):
+    def run(self) -> None:
         try:
             if self._should_stop:
                 return
@@ -147,4 +146,3 @@ class RawEdrPixmapConverter(QThread):
             )
             if not self._should_stop:
                 self.pixmap_ready.emit(self.file_path, QPixmap())
-

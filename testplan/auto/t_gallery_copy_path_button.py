@@ -19,16 +19,16 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
+    from PyQt6.QtCore import QEvent, QPoint
+    from PyQt6.QtGui import QColor, QPixmap
     from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import QPoint, QEvent
-    from PyQt6.QtGui import QPixmap, QColor
 
     app = QApplication.instance() or QApplication([])  # noqa: F841 (keeps the app alive)
     assert app is not None
@@ -41,10 +41,7 @@ def main() -> int:
     rect = w.copy_path_rect()
     check(
         "copy button sits in the bottom-right corner",
-        rect.right() <= 200
-        and rect.bottom() <= 140
-        and rect.left() > 200 // 2
-        and rect.top() > 140 // 2,
+        rect.right() <= 200 and rect.bottom() <= 140 and rect.left() > 200 // 2 and rect.top() > 140 // 2,
         str(rect),
     )
     check(
@@ -65,7 +62,7 @@ def main() -> int:
     class _StyleCountLabel(ThumbnailLabel):
         setstyle_calls = 0
 
-        def setStyleSheet(self, style):  # noqa: N802
+        def setStyleSheet(self, style) -> None:  # noqa: N802
             _StyleCountLabel.setstyle_calls += 1
             super().setStyleSheet(style)
 
@@ -106,10 +103,7 @@ def main() -> int:
     icon = w._copy_icon(16)
     check(
         "cached copy glyph is a real pixmap",
-        icon is not None
-        and not icon.isNull()
-        and icon.width() == 16
-        and icon.height() == 16,
+        icon is not None and not icon.isNull() and icon.width() == 16 and icon.height() == 16,
         f"{icon.width()}x{icon.height()}" if icon is not None else "None",
     )
     check(

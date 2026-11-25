@@ -1,7 +1,5 @@
 """Compare the running app version against the latest GitHub release."""
 
-from __future__ import annotations
-
 import json
 import logging
 import os

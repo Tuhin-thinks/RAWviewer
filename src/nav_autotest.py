@@ -59,8 +59,6 @@ Env vars:
                              the end.
 """
 
-from __future__ import annotations
-
 import contextlib
 import os
 import time
@@ -69,7 +67,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 
 
-def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
+def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution) -> None:
     """Install and start the harness on ``viewer`` (a RAWImageViewer).
 
     ``safe_print`` and ``image_covers_sensor_resolution`` are injected by
@@ -100,9 +98,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             restore_settings["use_embedded_jpeg_workflow"] = settings.value(
                 "use_embedded_jpeg_workflow", True, type=bool
             )
-            restore_settings["raw_edr_display_enabled"] = settings.value(
-                "raw_edr_display_enabled", False, type=bool
-            )
+            restore_settings["raw_edr_display_enabled"] = settings.value("raw_edr_display_enabled", False, type=bool)
         except Exception as e:
             safe_print(f"[AUTOTEST] RAW mode setup failed: {e}", flush=True, force=True)
             raw_mode = False
@@ -140,7 +136,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             safe_print(f"[AUTOTEST] RAW mode toggle failed: {e}", flush=True, force=True)
             return False
 
-    def _restore_workflow_settings():
+    def _restore_workflow_settings() -> None:
         if not restore_settings:
             return
         try:
@@ -149,14 +145,13 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
                 settings.setValue(k, v)
         except Exception:
             pass
+
     # Background folder load (full scan + EXIF sort) can take several
     # seconds after the window shows a fast single-file open -- image_files
     # has length 1 until it lands. Wait for it to stabilize (unchanged
     # across two 300ms polls) instead of a fixed delay, or this undercounts
     # "the whole folder" down to whatever was open at settle time.
-    folder_wait_deadline = time.time() + float(
-        os.environ.get("RAWVIEWER_AUTOTEST_FOLDER_WAIT", "30.0")
-    )
+    folder_wait_deadline = time.time() + float(os.environ.get("RAWVIEWER_AUTOTEST_FOLDER_WAIT", "30.0"))
 
     state = {
         "nav_start": 0.0,
@@ -185,7 +180,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         # different root causes for the warm-tail slowdown investigation.
         hb_state = {"last": time.time(), "gaps": []}
 
-        def _heartbeat_tick():
+        def _heartbeat_tick() -> None:
             now = time.time()
             gap = now - hb_state["last"]
             hb_state["last"] = now
@@ -263,10 +258,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
                 )
             else:
                 deltas = sorted(
-                    (
-                        (name, counts.get(name, 0) - baseline.get(name, 0))
-                        for name in set(counts) | set(baseline)
-                    ),
+                    ((name, counts.get(name, 0) - baseline.get(name, 0)) for name in set(counts) | set(baseline)),
                     key=lambda kv: -kv[1],
                 )
                 top = [f"{n}:+{d}" for n, d in deltas[:12] if d > 0]
@@ -282,7 +274,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             if prev is not None:
                 diffs = snap.compare_to(prev, "lineno")
                 lines = [
-                    f"{str(d.traceback[-1]).split(os.sep)[-1]} +{d.size_diff/1e6:.2f}MB (+{d.count_diff})"
+                    f"{str(d.traceback[-1]).split(os.sep)[-1]} +{d.size_diff / 1e6:.2f}MB (+{d.count_diff})"
                     for d in diffs[:8]
                     if d.size_diff > 0
                 ]
@@ -317,7 +309,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
             pass
         return False
 
-    def _on_settle_idle():
+    def _on_settle_idle() -> None:
         """No new paint for settle_idle_s: the file may be DONE below sensor
         resolution (embedded-preview-only formats -- some 3FR/RAF never
         produce a sensor-covering buffer). If nothing is still in flight,
@@ -346,9 +338,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         timeout_timer.stop()
         n_paints = len(state["paints_this_nav"])
         state["settled_below_sensor"] += 1
-        state["results"].append(
-            (os.path.basename(cur_path), w, h, paint_elapsed, n_paints)
-        )
+        state["results"].append((os.path.basename(cur_path), w, h, paint_elapsed, n_paints))
         safe_print(
             f"[AUTOTEST] SETTLED below sensor-res: {os.path.basename(cur_path)} "
             f"final paint {w}x{h} at {paint_elapsed:.3f}s ({n_paints} paint(s)); "
@@ -360,7 +350,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
 
     settle_timer.timeout.connect(_on_settle_idle)
 
-    def _navigate_after_full_res():
+    def _navigate_after_full_res() -> None:
         """RAW mode: only leave the current image after full-res was recorded."""
         if len(state["results"]) >= state["count"]:
             _finish()
@@ -373,15 +363,14 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         state["nav_start"] = time.time()
         settle_timer.stop()
         safe_print(
-            f"[AUTOTEST] full-res ready — navigating to next "
-            f"({len(state['results'])}/{state['count']})",
+            f"[AUTOTEST] full-res ready — navigating to next ({len(state['results'])}/{state['count']})",
             flush=True,
             force=True,
         )
         viewer.navigate_to_next_image()
         timeout_timer.start(int(timeout_s * 1000))
 
-    def _arm_wait_current():
+    def _arm_wait_current() -> None:
         """Start timing the image already on screen (no navigate yet)."""
         state["paints_this_nav"] = []
         state["waiting"] = True
@@ -390,15 +379,14 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         timeout_timer.start(int(timeout_s * 1000))
         cur = getattr(viewer, "current_file_path", None)
         safe_print(
-            "[AUTOTEST] waiting for full-res render before navigate: "
-            f"{os.path.basename(cur) if cur else '?'}",
+            f"[AUTOTEST] waiting for full-res render before navigate: {os.path.basename(cur) if cur else '?'}",
             flush=True,
             force=True,
         )
 
     orig_display_pixmap = viewer.display_pixmap
 
-    def _wrapped_display_pixmap(pixmap):
+    def _wrapped_display_pixmap(pixmap) -> None:
         orig_display_pixmap(pixmap)
         if not state["waiting"] or pixmap is None or pixmap.isNull():
             return
@@ -441,7 +429,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
 
     viewer.display_pixmap = _wrapped_display_pixmap
 
-    def _on_timeout():
+    def _on_timeout() -> None:
         if state["waiting"]:
             elapsed = time.time() - state["nav_start"]
             n_paints = len(state["paints_this_nav"])
@@ -462,7 +450,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
 
     timeout_timer.timeout.connect(_on_timeout)
 
-    def advance():
+    def advance() -> None:
         if state["index"] >= state["total_steps"]:
             _finish()
             return
@@ -483,7 +471,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         viewer.navigate_to_next_image()
         timeout_timer.start(int(timeout_s * 1000))
 
-    def _wait_for_folder_then_start():
+    def _wait_for_folder_then_start() -> None:
         files = getattr(viewer, "image_files", None) or []
         n = len(files)
         prev_n = getattr(_wait_for_folder_then_start, "_prev_n", None)
@@ -519,7 +507,7 @@ def run_nav_autotest(viewer, *, safe_print, image_covers_sensor_resolution):
         else:
             QTimer.singleShot(300, _wait_for_folder_then_start)
 
-    def _finish():
+    def _finish() -> None:
         if memprof:
             _mem_snapshot("final")
         safe_print("[AUTOTEST] ===== SUMMARY =====", flush=True, force=True)

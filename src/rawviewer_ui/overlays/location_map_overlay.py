@@ -1,7 +1,5 @@
 """Draggable GPS map overlay for single-image view."""
 
-from __future__ import annotations
-
 import logging
 import os
 from collections.abc import Callable
@@ -21,7 +19,6 @@ from core.location_map import (
 from metadata import backend as metadata_backend
 
 logger = logging.getLogger(__name__)
-
 
 
 def _tag_text(tags: dict, *keys: str) -> str:
@@ -57,6 +54,7 @@ def gps_to_decimal(gps_vals: any, ref: str) -> float | None:
         vals = getattr(gps_vals, "values", gps_vals)
         if isinstance(vals, str):
             import re
+
             parts = re.split(r"[\s,]+", vals.strip())
             if len(parts) >= 3:
                 parsed = []
@@ -120,7 +118,7 @@ class _MapLoadWorker(QRunnable):
         current_path: str,
         cache_dir: Path,
         signals: MapLoadSignals,
-    ):
+    ) -> None:
         super().__init__()
         self._current_path = current_path
         self._cache_dir = cache_dir
@@ -178,7 +176,7 @@ class ProbeSignals(QObject):
 class _Probe(QRunnable):
     """Background loader/probe to check if OpenStreetMap tiles are online."""
 
-    def __init__(self, signals: ProbeSignals):
+    def __init__(self, signals: ProbeSignals) -> None:
         super().__init__()
         self.signals = signals
         self._cancelled = False
@@ -197,7 +195,7 @@ class _Probe(QRunnable):
 class _MapCanvas(QWidget):
     """Inner QWidget that draws the stitched map tiles and location pins."""
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model: LocationMapModel | None = None
         self._loading: bool = False
@@ -257,7 +255,7 @@ class _MapCanvas(QWidget):
 class MapCoordinateBadge(QWidget):
     """Clickable GPS coordinate badge overlay that opens Google Maps."""
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.lat = 0.0
         self.lon = 0.0
@@ -324,7 +322,7 @@ class ImageLocationMapWidget(QWidget):
     _CARD_W = WIDGET_W + 8
     _CARD_H = WIDGET_H + 8
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model: LocationMapModel | None = None
         self._worker: _MapLoadWorker | None = None
@@ -518,10 +516,7 @@ class ImageLocationMapWidget(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if (
-            self._drag_press_global is not None
-            and event.buttons() & Qt.MouseButton.LeftButton
-        ):
+        if self._drag_press_global is not None and event.buttons() & Qt.MouseButton.LeftButton:
             parent = self.parentWidget()
             if parent:
                 d = event.globalPosition().toPoint() - self._drag_press_global

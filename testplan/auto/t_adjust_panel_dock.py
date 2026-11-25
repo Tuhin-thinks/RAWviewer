@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Adjust panel left/right dock (QSplitter), without a full viewer window."""
+
 import os
 import sys
 
@@ -22,13 +23,13 @@ from rawviewer_ui.widgets.adjust import (  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
-def test_normalize_dock():
+def test_normalize_dock() -> None:
     check("default dock is right", normalize_adjust_dock(None) == ADJUST_DOCK_DEFAULT)
     check("left is accepted", normalize_adjust_dock("left") == "left")
     check("LEFT is accepted", normalize_adjust_dock("LEFT") == "left")
@@ -36,7 +37,7 @@ def test_normalize_dock():
     check("settings key is adjust/dock", ADJUST_DOCK_SETTINGS_KEY == "adjust/dock")
 
 
-def _shown_splitter(side_first="right"):
+def _shown_splitter(side_first: str = "right"):
     splitter = QSplitter(Qt.Orientation.Horizontal)
     image = QWidget()
     panel = QWidget()
@@ -53,7 +54,7 @@ def _shown_splitter(side_first="right"):
     return splitter, image, panel
 
 
-def test_splitter_left_flips_x():
+def test_splitter_left_flips_x() -> None:
     splitter, image, panel = _shown_splitter("right")
     apply_adjust_splitter_dock(splitter, image, panel, "right")
     _app.processEvents()
@@ -69,7 +70,7 @@ def test_splitter_left_flips_x():
     check("left dock moved panel x left of the right-dock x", panel.x() < right_panel_x)
 
 
-def test_header_button_emits_opposite_side():
+def test_header_button_emits_opposite_side() -> None:
     p = ImageAdjustPanelWidget()
     p.set_dock_side("right")
     received = []

@@ -1,5 +1,4 @@
 """SemanticImageIndex: SQLite-backed CLIP embedding index, assembled from mixin parts."""
-from __future__ import annotations
 
 from .engine_part1 import EnginePart1
 from .engine_part2 import EnginePart2

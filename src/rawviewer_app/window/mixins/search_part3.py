@@ -1,5 +1,4 @@
 """search mixin, part 3 of 4 (24 methods, 873 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -45,6 +44,7 @@ class SearchPart3:
 
             def run(self_inner):
                 try:
+
                     def _progress(pct, message=None):
                         from core.download_progress import download_status_text
 
@@ -52,16 +52,16 @@ class SearchPart3:
                         text = (message or download_status_text(pct_val)).strip()
                         try:
                             from PyQt6 import sip
+
                             if not sip.isdeleted(self_inner.signals):
                                 self_inner.signals.progress.emit(self_inner.token, pct_val, text)
                         except Exception:
                             pass
 
-                    path = self_inner.index.download_semantic_backend_assets(
-                        progress_callback=_progress
-                    )
+                    path = self_inner.index.download_semantic_backend_assets(progress_callback=_progress)
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
                             self_inner.signals.done.emit(self_inner.token, path, list(self_inner.files))
                     except Exception:
@@ -69,6 +69,7 @@ class SearchPart3:
                 except Exception as e:
                     try:
                         from PyQt6 import sip
+
                         if not sip.isdeleted(self_inner.signals):
                             self_inner.signals.error.emit(self_inner.token, str(e))
                     except Exception:
@@ -125,8 +126,7 @@ class SearchPart3:
         if lite:
             return (
                 "Standard: EXIF, filename & place search -- no AI",
-                "Standard searches EXIF metadata, filenames, and GPS places.\n"
-                "Install Plus for AI semantic search.",
+                "Standard searches EXIF metadata, filenames, and GPS places.\nInstall Plus for AI semantic search.",
             )
         return (
             "EXIF, filename & place search -- AI off",
@@ -178,16 +178,16 @@ class SearchPart3:
 
         from search import semantic_embeddings_enabled
 
-        if not getattr(self, "_defer_semantic_after_metadata", False) and self._is_gallery_semantic_search_ready(corpus_files):
-                logger.info("[INDEX][USER] Skip semantic start: already ready")
-                self._finish_gallery_search_unlock(corpus_files)
-                return
+        if not getattr(self, "_defer_semantic_after_metadata", False) and self._is_gallery_semantic_search_ready(
+            corpus_files
+        ):
+            logger.info("[INDEX][USER] Skip semantic start: already ready")
+            self._finish_gallery_search_unlock(corpus_files)
+            return
 
         if getattr(self, "_semantic_indexing_in_progress", False):
             if getattr(self, "_semantic_index_pass_kind", None) == "silent_metadata":
-                self._show_live_metadata_progress_in_search(
-                    "Preparing metadata in background…"
-                )
+                self._show_live_metadata_progress_in_search("Preparing metadata in background…")
             logger.info("[INDEX][USER] Skip semantic start: semantic indexing already in progress")
             self._sync_gallery_search_input_editable()
             return
@@ -225,9 +225,7 @@ class SearchPart3:
                     face_pending = 0
                 if face_pending > 0:
                     self._gallery_search_show_index_progress = True
-                    self._set_gallery_search_status(
-                        self._format_index_progress("Face", 0, face_pending)
-                    )
+                    self._set_gallery_search_status(self._format_index_progress("Face", 0, face_pending))
                     self._start_face_index_background(corpus_files)
                 else:
                     self._finish_gallery_search_unlock(corpus_files)
@@ -270,9 +268,7 @@ class SearchPart3:
             )
         )
         signals.error.connect(self._on_semantic_index_prep_error)
-        _get_bg_thread_pool().start(
-            _SemanticIndexPrepWorker(corpus_files, index, signals)
-        )
+        _get_bg_thread_pool().start(_SemanticIndexPrepWorker(corpus_files, index, signals))
 
     def _on_user_semantic_prep_done(self, corpus_files, coverage, pending, face_pending):
         logger = logging.getLogger(__name__)
@@ -305,9 +301,7 @@ class SearchPart3:
                 self._finish_gallery_search_unlock(corpus_files)
                 return
             if int(face_pending or 0) > 0:
-                self._chain_face_index_after_semantic(
-                    corpus_files, face_pending=int(face_pending)
-                )
+                self._chain_face_index_after_semantic(corpus_files, face_pending=int(face_pending))
                 return
             self._set_gallery_search_status("Indexing metadata…")
             self._sync_gallery_search_input_editable()
@@ -315,9 +309,7 @@ class SearchPart3:
 
         if not pending:
             if int(face_pending or 0) > 0:
-                self._chain_face_index_after_semantic(
-                    corpus_files, face_pending=int(face_pending)
-                )
+                self._chain_face_index_after_semantic(corpus_files, face_pending=int(face_pending))
                 return
             self._finish_gallery_search_unlock(corpus_files)
             return
@@ -479,9 +471,7 @@ class SearchPart3:
                 else getattr(self, "image_files", []) or []
             )
         if getattr(self, "_semantic_indexing_in_progress", False):
-            progress = (
-                getattr(self, "_gallery_search_status_full", "") or ""
-            ).strip()
+            progress = (getattr(self, "_gallery_search_status_full", "") or "").strip()
             if progress:
                 self.status_bar.showMessage(
                     f"Searching while indexing -- {progress}",
@@ -534,9 +524,7 @@ class SearchPart3:
                             )
                     elif not index.semantic_backend_available():
                         hits = []
-                        status_message = (
-                            f"Semantic backend unavailable: {index.semantic_backend_error()}"
-                        )
+                        status_message = f"Semantic backend unavailable: {index.semantic_backend_error()}"
                     else:
                         metadata_candidate_paths = [h.file_path for h in metadata_hits]
                         if semantic_query and not metadata_candidate_paths:
@@ -555,8 +543,7 @@ class SearchPart3:
                         "used_semantic_backend": used_semantic_backend,
                         "sort_newest": sort_newest,
                         "status_message": status_message,
-                        "backend_missing": bool(semantic_query)
-                        and not index.semantic_backend_available(),
+                        "backend_missing": bool(semantic_query) and not index.semantic_backend_available(),
                     }
                     try:
                         from PyQt6 import sip
@@ -820,7 +807,11 @@ class SearchPart3:
     def _clear_semantic_search_results(self, silent=False, exit_to_gallery=False):
         # Capture current gallery scroll anchor before clearing filter
         anchor_path = None
-        if getattr(self, "view_mode", "single") == "gallery" and hasattr(self, "gallery_justified") and self.gallery_justified:
+        if (
+            getattr(self, "view_mode", "single") == "gallery"
+            and hasattr(self, "gallery_justified")
+            and self.gallery_justified
+        ):
             anchor_path = self.gallery_justified.get_scroll_anchor_path()
             self._gallery_scroll_anchor_path = anchor_path
 
@@ -854,9 +845,7 @@ class SearchPart3:
                 pass
             gj.hide_empty_message()
         if self.current_file_path in self.image_files:
-            self.current_file_index = self.image_files.index(
-                _require_str_path(self.current_file_path)
-            )
+            self.current_file_index = self.image_files.index(_require_str_path(self.current_file_path))
         else:
             self.current_file_index = 0
             self.current_file_path = self.image_files[0]
@@ -903,9 +892,7 @@ class SearchPart3:
     def _is_semantic_index_incomplete(self, folder: str) -> bool:
         if not folder:
             return False
-        return bool(
-            self.get_settings().value(self._semantic_folder_settings_key(folder), False)
-        )
+        return bool(self.get_settings().value(self._semantic_folder_settings_key(folder), False))
 
     def _user_wants_semantic_embeddings_now(self) -> bool:
         """True only after the user opens gallery search (not on folder load alone)."""

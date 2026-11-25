@@ -19,6 +19,7 @@ Run:  pixi run python testplan/auto/t_macos_open_dialog.py
 Live NSOpenPanel probe (hangs by design on an affected OS, so opt-in):
       RAWVIEWER_TEST_NSPANEL_PROBE=1 pixi run python testplan/auto/t_macos_open_dialog.py
 """
+
 import os
 import subprocess
 import sys
@@ -29,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -43,7 +44,7 @@ class StubViewer:
     class below, so this exercises shipping code rather than a copy of it.
     """
 
-    def __init__(self, mainmod, extensions=(".arw", ".jpg")):
+    def __init__(self, mainmod, extensions=(".arw", ".jpg")) -> None:
         self._mainmod = mainmod
         self._extensions = list(extensions)
 
@@ -95,7 +96,7 @@ def main() -> int:
     # --- 2. AppleScript fallback shape --------------------------------------
     captured = []
     orig_run = mainmod._run_applescript
-    mainmod._run_applescript = lambda script: (captured.append(script) or "")
+    mainmod._run_applescript = lambda script: captured.append(script) or ""
     try:
         for label, method, picker in (
             ("open-file", "_open_file_dialog_macos_applescript", "choose file"),
@@ -112,7 +113,7 @@ def main() -> int:
                 and script.index("activate") < script.index(picker)
             )
             check(
-                f"{label}: picker runs inside `tell application \"Finder\"` with activate first",
+                f'{label}: picker runs inside `tell application "Finder"` with activate first',
                 ok,
                 "(bare top-level activate leaves the dialog invisible)",
             )

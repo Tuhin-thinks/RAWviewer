@@ -1,7 +1,5 @@
 """Minimal Windows launcher stub — starts the installed Pixi app environment."""
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys
@@ -94,10 +92,7 @@ def main() -> int:
     # VISIBLE console for them, which was the "unbranded window flashes
     # before the splash" bug. With CREATE_NO_WINDOW alone, pixi owns an
     # invisible console that every child inherits silently.
-    creationflags = (
-        getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-        | getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    )
+    creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
     startupinfo = None
     try:
         startupinfo = subprocess.STARTUPINFO()

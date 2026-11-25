@@ -1,7 +1,5 @@
 """XMP sidecar write: star ratings and adjustment sliders."""
 
-from __future__ import annotations
-
 import contextlib
 import os
 import tempfile
@@ -133,9 +131,7 @@ def _write_xmp_rating_locked(xmp_path: str, rating: int) -> None:
     # elements like tone curve / dodge-burn mask) -- remove the sidecar
     # instead of littering the folder with an empty .xmp per photo.
     has_rating = rating_attr in desc.attrib
-    has_crs = any(
-        key.startswith(f"{{{CRS_NS}}}") for key in desc.attrib
-    )
+    has_crs = any(key.startswith(f"{{{CRS_NS}}}") for key in desc.attrib)
     has_children = len(list(desc)) > 0
     if not has_rating and not has_crs and not has_children:
         if os.path.isfile(xmp_path):
@@ -148,9 +144,7 @@ def _write_xmp_rating_locked(xmp_path: str, rating: int) -> None:
         os.makedirs(parent, exist_ok=True)
 
     # Atomic write -- see write_xmp_adjustments for why (crash/race safety).
-    fd, tmp_path = tempfile.mkstemp(
-        dir=parent or None, prefix=os.path.basename(xmp_path) + ".", suffix=".tmp"
-    )
+    fd, tmp_path = tempfile.mkstemp(dir=parent or None, prefix=os.path.basename(xmp_path) + ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as f:
             tree.write(f, encoding="utf-8", xml_declaration=True)
@@ -167,6 +161,7 @@ def write_rating_for_file(image_path: str, rating: int) -> None:
     if not xmp_path:
         raise ValueError("Invalid image path")
     write_xmp_rating(xmp_path, rating)
+
 
 def write_xmp_adjustments(xmp_path: str, adj: dict[str, float]) -> None:
     """Merge Lightroom-compatible crs sliders into an XMP sidecar.
@@ -258,9 +253,7 @@ def _strip_our_crs_fields(desc: ET.Element) -> None:
         local = _crs_local_name(child.tag)
         if local not in _OUR_CRS_CHILD_LOCALS:
             continue
-        if child.tag.startswith(f"{{{CRS_NS}}}") or (
-            not child.tag.startswith("{") and local in _OUR_CRS_CHILD_LOCALS
-        ):
+        if child.tag.startswith(f"{{{CRS_NS}}}") or (not child.tag.startswith("{") and local in _OUR_CRS_CHILD_LOCALS):
             desc.remove(child)
 
 
@@ -303,9 +296,7 @@ def _write_xmp_tree_atomic(root: ET.Element, xmp_path: str) -> None:
     parent = os.path.dirname(os.path.abspath(xmp_path))
     if parent:
         os.makedirs(parent, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        dir=parent or None, prefix=os.path.basename(xmp_path) + ".", suffix=".tmp"
-    )
+    fd, tmp_path = tempfile.mkstemp(dir=parent or None, prefix=os.path.basename(xmp_path) + ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as f:
             tree.write(f, encoding="utf-8", xml_declaration=True)

@@ -1,5 +1,4 @@
 """Overlays built on the shared Qt widget layer."""
-from __future__ import annotations
 
 import contextlib
 
@@ -22,15 +21,19 @@ class SingleImageViewOverlay(QWidget):
     _BOTTOM_HOTZONE = _FILMSTRIP_HEIGHT + _FILMSTRIP_HOTZONE_EXTRA
     _FILMSTRIP_FADE_MS = 200
     _FILMSTRIP_HIDE_DELAY_MS = 90
-    _FILMSTRIP_SHOW_DELAY_MS = _filmstrip_ui_env_int(
-        "RAWVIEWER_FILMSTRIP_SHOW_DELAY_MS", 500
-    )
-    _FILMSTRIP_SHOW_DELAY_DIRECT_MS = _filmstrip_ui_env_int(
-        "RAWVIEWER_FILMSTRIP_SHOW_DELAY_DIRECT_MS", 70
-    )
+    _FILMSTRIP_SHOW_DELAY_MS = _filmstrip_ui_env_int("RAWVIEWER_FILMSTRIP_SHOW_DELAY_MS", 500)
+    _FILMSTRIP_SHOW_DELAY_DIRECT_MS = _filmstrip_ui_env_int("RAWVIEWER_FILMSTRIP_SHOW_DELAY_DIRECT_MS", 70)
 
-    def __init__(self, scroll_area, histogram_widget, viewer=None, parent=None,
-                 gpu_view=None, map_widget=None, adjust_widget=None):
+    def __init__(
+        self,
+        scroll_area,
+        histogram_widget,
+        viewer=None,
+        parent=None,
+        gpu_view=None,
+        map_widget=None,
+        adjust_widget=None,
+    ) -> None:
         super().__init__(parent)
         self._viewer = viewer
         self._scroll = scroll_area
@@ -60,12 +63,12 @@ class SingleImageViewOverlay(QWidget):
             adjust_widget.hide()
         self.setObjectName("single_view_container")
         self.setStyleSheet(f"#single_view_container {{ background-color: {theme.VOID}; }}")
-        self.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setMouseTracking(True)
 
         from rawviewer_ui.widgets.filmstrip import FilmStripBar
+
         # Host on the main window (not beside QOpenGLWidget) so the strip overlays the image.
         film_host = viewer if viewer is not None else self
         self._filmstrip_layer = QWidget(film_host)
@@ -188,21 +191,14 @@ class SingleImageViewOverlay(QWidget):
             return 0.0
 
     def _filmstrip_accepts_pointer(self) -> bool:
-        return (
-            self._filmstrip_layer_visible()
-            and self._filmstrip_opacity_value() > 0.35
-        )
+        return self._filmstrip_layer_visible() and self._filmstrip_opacity_value() > 0.35
 
     def _update_filmstrip_hit_testing(self) -> None:
         accept = self._filmstrip_accepts_pointer()
-        self._filmstrip.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, not accept
-        )
+        self._filmstrip.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, not accept)
         layer = getattr(self, "_filmstrip_layer", None)
         if layer is not None:
-            layer.setAttribute(
-                Qt.WidgetAttribute.WA_TransparentForMouseEvents, not accept
-            )
+            layer.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, not accept)
 
     def _animate_filmstrip_opacity(self, target: float, on_finished=None) -> None:
         target = max(0.0, min(1.0, float(target)))
@@ -227,10 +223,7 @@ class SingleImageViewOverlay(QWidget):
         if self._filmstrip_opacity_value() >= 0.99:
             return
 
-        needs_setup = (
-            not self._filmstrip_layer_visible()
-            or self._filmstrip_opacity_value() <= 0.01
-        )
+        needs_setup = not self._filmstrip_layer_visible() or self._filmstrip_opacity_value() <= 0.01
         if needs_setup:
             self._filmstrip_opacity.setOpacity(0.0)
             self._show_filmstrip_layer()
@@ -238,9 +231,7 @@ class SingleImageViewOverlay(QWidget):
             if hasattr(self._filmstrip, "center_on_current"):
                 QTimer.singleShot(0, lambda: self._filmstrip.center_on_current())
             if hasattr(self._filmstrip, "refresh_visible_thumbnails"):
-                QTimer.singleShot(0, lambda: self._filmstrip.refresh_visible_thumbnails(
-                    refresh_cache=True
-                ))
+                QTimer.singleShot(0, lambda: self._filmstrip.refresh_visible_thumbnails(refresh_cache=True))
         self._raise_filmstrip_chrome()
         self._animate_filmstrip_opacity(1.0)
 
@@ -248,7 +239,7 @@ class SingleImageViewOverlay(QWidget):
         if not self._filmstrip_layer_visible():
             return
 
-        def _finish_hide():
+        def _finish_hide() -> None:
             self._hide_filmstrip_layer()
             self._filmstrip_opacity.setOpacity(0.0)
             self._filmstrip_reveal = False
@@ -312,11 +303,7 @@ class SingleImageViewOverlay(QWidget):
     def _schedule_show_filmstrip(self, delay_ms: int | None = None) -> None:
         if self._filmstrip_opacity_value() >= 0.99:
             return
-        delay = (
-            int(self._FILMSTRIP_SHOW_DELAY_MS)
-            if delay_ms is None
-            else max(0, int(delay_ms))
-        )
+        delay = int(self._FILMSTRIP_SHOW_DELAY_MS) if delay_ms is None else max(0, int(delay_ms))
         if self._show_filmstrip_timer.isActive():
             remaining = self._show_filmstrip_timer.remainingTime()
             if remaining >= 0 and remaining <= delay:
@@ -343,15 +330,11 @@ class SingleImageViewOverlay(QWidget):
         return self._pointer_in_bottom_hotzone_at(pos)
 
     def _pointer_in_bottom_hotzone_at(self, pos: QPoint) -> bool:
-        return self.rect().contains(pos) and (
-            pos.y() >= self.height() - self._BOTTOM_HOTZONE
-        )
+        return self.rect().contains(pos) and (pos.y() >= self.height() - self._BOTTOM_HOTZONE)
 
     def _pointer_in_filmstrip_band_at(self, pos: QPoint) -> bool:
         """Bottom strip band (where thumbnails appear), not the wider approach zone."""
-        return self.rect().contains(pos) and (
-            pos.y() >= self.height() - self._FILMSTRIP_HEIGHT
-        )
+        return self.rect().contains(pos) and (pos.y() >= self.height() - self._FILMSTRIP_HEIGHT)
 
     def _local_pos_from_global(self, global_pos) -> QPoint:
         if hasattr(global_pos, "toPoint"):
@@ -363,11 +346,7 @@ class SingleImageViewOverlay(QWidget):
         layer = getattr(self, "_filmstrip_layer", None)
         if layer is None:
             return QRect()
-        if (
-            not layer.isVisible()
-            and self._filmstrip_opacity_value() <= 0.0
-            and not self._filmstrip_reveal
-        ):
+        if not layer.isVisible() and self._filmstrip_opacity_value() <= 0.0 and not self._filmstrip_reveal:
             return QRect()
         if layer.parentWidget() is self:
             return layer.geometry()
@@ -390,19 +369,14 @@ class SingleImageViewOverlay(QWidget):
         in_hot = self._pointer_in_bottom_hotzone_at(pos)
         self._pointer_in_filmstrip_band_at(pos)
         strip_rect = self._filmstrip_rect_in_container()
-        over_strip = (
-            self._filmstrip_accepts_pointer()
-            and strip_rect.isValid()
-            and strip_rect.contains(pos)
-        )
+        over_strip = self._filmstrip_accepts_pointer() and strip_rect.isValid() and strip_rect.contains(pos)
         strip_visible = self._filmstrip_opacity_value() > 0.35
 
         # If the filmstrip is already visible and we are hovering over it, keep it visible instantly.
         is_hovering_visible_strip = strip_visible and (
-            over_strip or self._filmstrip.underMouse() or (
-                getattr(self, "_filmstrip_layer", None) is not None
-                and self._filmstrip_layer.underMouse()
-            )
+            over_strip
+            or self._filmstrip.underMouse()
+            or (getattr(self, "_filmstrip_layer", None) is not None and self._filmstrip_layer.underMouse())
         )
 
         if is_hovering_visible_strip:
@@ -424,14 +398,19 @@ class SingleImageViewOverlay(QWidget):
             if not self._filmstrip_pointer_active:
                 self._schedule_hide_filmstrip()
 
-    def eventFilter(self, watched, event):
+    def eventFilter(self, watched, event) -> bool:
         from PyQt6.QtCore import QEvent
 
         gpu = self._gpu_view
-        if gpu is not None and watched in (gpu, gpu.viewport()) and event.type() in (
-            QEvent.Type.MouseMove,
-            QEvent.Type.HoverMove,
-            QEvent.Type.Enter,
+        if (
+            gpu is not None
+            and watched in (gpu, gpu.viewport())
+            and event.type()
+            in (
+                QEvent.Type.MouseMove,
+                QEvent.Type.HoverMove,
+                QEvent.Type.Enter,
+            )
         ):
             self.handle_pointer_for_filmstrip(event.globalPosition())
         return False
@@ -440,7 +419,7 @@ class SingleImageViewOverlay(QWidget):
         """Backward-compatible alias for fade-in."""
         self._fade_in_filmstrip()
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         # Scroll area stays full size; film strip overlays the bottom (no image reflow).
         self._scroll.setGeometry(0, 0, self.width(), self.height())
@@ -487,7 +466,7 @@ class SingleImageViewOverlay(QWidget):
         if viewer is not None and hasattr(viewer, "_restore_keyboard_focus"):
             QTimer.singleShot(0, viewer._restore_keyboard_focus)
 
-    def _layout_adjust(self):
+    def _layout_adjust(self) -> None:
         panel = self._adj
         if panel is None or not panel.isVisible():
             return
@@ -507,16 +486,16 @@ class SingleImageViewOverlay(QWidget):
             panel.move(x, y)
         panel.raise_()
 
-    def mark_adjust_user_moved(self):
+    def mark_adjust_user_moved(self) -> None:
         self._adj_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
             viewer.schedule_save_session_state()
 
-    def relayout_adjust(self):
+    def relayout_adjust(self) -> None:
         self._layout_adjust()
 
-    def _layout_map(self):
+    def _layout_map(self) -> None:
         m = self._map
         if m is None or not m.isVisible():
             return
@@ -536,10 +515,10 @@ class SingleImageViewOverlay(QWidget):
             m.move(x, y)
         m.raise_()
 
-    def relayout_map(self):
+    def relayout_map(self) -> None:
         self._layout_map()
 
-    def mark_map_user_moved(self):
+    def mark_map_user_moved(self) -> None:
         self._map_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
@@ -601,15 +580,11 @@ class SingleImageViewOverlay(QWidget):
             except (KeyError, TypeError, ValueError):
                 pass
 
-    def _layout_filmstrip(self):
+    def _layout_filmstrip(self) -> None:
         layer = getattr(self, "_filmstrip_layer", None)
         if layer is None:
             return
-        if (
-            not layer.isVisible()
-            and self._filmstrip_opacity_value() <= 0.0
-            and not self._filmstrip_reveal
-        ):
+        if not layer.isVisible() and self._filmstrip_opacity_value() <= 0.0 and not self._filmstrip_reveal:
             return
         fh = self._FILMSTRIP_HEIGHT
         w = max(1, self.width())
@@ -619,24 +594,22 @@ class SingleImageViewOverlay(QWidget):
             bottom_right = self.mapToGlobal(QPoint(w, self.height()))
             origin = host.mapFromGlobal(top_left)
             corner = host.mapFromGlobal(bottom_right)
-            layer.setGeometry(
-                QRect(origin, corner).normalized().intersected(host.rect())
-            )
+            layer.setGeometry(QRect(origin, corner).normalized().intersected(host.rect()))
         else:
             layer.setGeometry(0, self.height() - fh, w, fh)
         self._layout_filmstrip_inner()
         self._raise_filmstrip_chrome()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         self.handle_pointer_for_filmstrip(event.globalPosition())
         super().mouseMoveEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event) -> None:
         self._cancel_show_filmstrip()
         self._schedule_hide_filmstrip()
         super().leaveEvent(event)
 
-    def _layout_histogram(self):
+    def _layout_histogram(self) -> None:
         h = self._hist
         if not h.isVisible():
             return
@@ -656,40 +629,41 @@ class SingleImageViewOverlay(QWidget):
             h.move(x, y)
         h.raise_()
 
-    def mark_histogram_user_moved(self):
+    def mark_histogram_user_moved(self) -> None:
         self._hist_user_placed = True
         viewer = getattr(self, "_viewer", None)
         if viewer is not None and hasattr(viewer, "schedule_save_session_state"):
             viewer.schedule_save_session_state()
 
-    def relayout_histogram(self):
+    def relayout_histogram(self) -> None:
         self._layout_histogram()
 
 
 class LoadingOverlay(QWidget):
     """Semi-transparent loading overlay with spinner-like message"""
-    def __init__(self, parent=None):
+
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setVisible(False)
         self._message = "Loading Image..."
 
-    def set_message(self, message):
+    def set_message(self, message) -> None:
         self._message = message
         self.update()
 
-    def show_loading(self, message=None):
+    def show_loading(self, message=None) -> None:
         if message:
             self._message = message
         self.setVisible(True)
         self.raise_()
         self.update()
 
-    def hide_loading(self):
+    def hide_loading(self) -> None:
         self.setVisible(False)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -716,6 +690,6 @@ class LoadingOverlay(QWidget):
         painter.setFont(font)
         painter.drawText(x, y, box_width, box_height, Qt.AlignmentFlag.AlignCenter, self._message)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         # Already covers parent because we resize it in parent's resizeEvent
         super().resizeEvent(event)

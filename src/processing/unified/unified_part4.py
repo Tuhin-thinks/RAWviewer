@@ -1,5 +1,4 @@
 """Unified mixin part 4 of 7 for UnifiedImageProcessor."""
-from __future__ import annotations
 
 import os
 from typing import Any
@@ -80,9 +79,7 @@ class UnifiedPart4:
         if thumbnail is None:
             return
         try:
-            if self._cached_preview_meets_display_tier(
-                self.cache.get_preview(file_path)
-            ):
+            if self._cached_preview_meets_display_tier(self.cache.get_preview(file_path)):
                 return
             self.cache.put_preview(file_path, thumbnail)
         except Exception:
@@ -135,11 +132,10 @@ class UnifiedPart4:
             return cached_exif, cached_thumb
 
         try:
-            from enhanced_raw_processor import _rawpy_global_lock
+            from enhanced_raw_processor.extraction import _rawpy_global_lock
+
             with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
-                max_size_val = self._raw_thumbnail_extract_max_size(
-                    None, allow_heavy_fallback=True
-                )
+                max_size_val = self._raw_thumbnail_extract_max_size(None, allow_heavy_fallback=True)
                 thumb = cached_thumb
                 if not self._cached_preview_meets_display_tier(thumb):
                     thumb = self.thumbnail_extractor.extract_thumbnail_from_raw(
@@ -154,20 +150,17 @@ class UnifiedPart4:
                 if exif is None or exif.get("minimal_preview_exif"):
                     exif = self.exif_extractor.build_minimal_raw_exif(file_path, raw)
                 if exif and exif.get("orientation", 1) != 1:
-                    thumb = self._apply_orientation_correction(
-                        thumb, exif["orientation"], exif
-                    )
+                    thumb = self._apply_orientation_correction(thumb, exif["orientation"], exif)
                 return exif, thumb
         except Exception:
             return None
 
-    def ensure_display_tier_preview(
-        self, file_path: str, thumbnail: np.ndarray | None
-    ) -> np.ndarray | None:
+    def ensure_display_tier_preview(self, file_path: str, thumbnail: np.ndarray | None) -> np.ndarray | None:
         """Upgrade sub-1400px worker thumbs to ~1920 embedded preview when possible."""
         if thumbnail is None or not self._is_raw_file(file_path):
             return thumbnail
         from common_image_loader import dng_prefers_embedded_preview_first
+
         is_pano_dng = dng_prefers_embedded_preview_first(file_path)
         try:
             min_px = 1024 if is_pano_dng else int(memory_preview_max_edge() * 0.85)
@@ -186,7 +179,7 @@ class UnifiedPart4:
         logger = logging.getLogger(__name__)
         target = memory_preview_max_edge()
         try:
-            from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+            from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
             scanned = extract_embedded_jpeg_by_scan(file_path, target)
             if scanned is not None:
@@ -203,9 +196,7 @@ class UnifiedPart4:
                             exif_data = self.exif_extractor.extract_exif_data(file_path)
                         orientation = (exif_data or {}).get("orientation", 1)
                         if orientation != 1:
-                            scanned = self._apply_orientation_correction(
-                                scanned, orientation, exif_data
-                            )
+                            scanned = self._apply_orientation_correction(scanned, orientation, exif_data)
                     except Exception:
                         pass
                     logger.info(
@@ -251,6 +242,7 @@ class UnifiedPart4:
 
     def is_libraw_unsupported(self, file_path: str) -> bool:
         from common_image_loader import dng_prefers_embedded_preview_first
+
         if dng_prefers_embedded_preview_first(file_path):
             return True
         skip_key = os.path.normcase(os.path.abspath(file_path))
@@ -275,7 +267,7 @@ class UnifiedPart4:
         logger = logging.getLogger(__name__)
         target = memory_preview_max_edge()
         try:
-            from enhanced_raw_processor import _rawpy_global_lock
+            from enhanced_raw_processor.extraction import _rawpy_global_lock
             from processing.raw_decode.fast import (
                 decode_half_from_unpacked,
                 params_supported_half,
@@ -302,7 +294,6 @@ class UnifiedPart4:
                     if rgb is not None:
                         self._stash_unpacked_raw(file_path, unpacked)
             if rgb is None:
-
                 with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
                     rgb = raw.postprocess(
                         half_size=True,

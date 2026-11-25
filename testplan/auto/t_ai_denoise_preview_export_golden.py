@@ -4,6 +4,7 @@
 The SCUNet model is stubbed with a deterministic function, so no ONNX runtime
 or model file is needed. The image is tall enough to take the banded executor.
 """
+
 import os
 import sys
 
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -56,7 +57,7 @@ def main() -> int:
     calls = []
 
     class StubSCUNet:
-        def __init__(self, _path):
+        def __init__(self, _path) -> None:
             pass
 
         def process(self, img, **kwargs):
@@ -103,9 +104,7 @@ def main() -> int:
         )
 
         calls.clear()
-        amount_zero = rep.run_edit_pipeline(
-            img, {**adj, "AIDenoiseAmount": 0.0}, target="export", use_ai_denoise=True
-        )
+        amount_zero = rep.run_edit_pipeline(img, {**adj, "AIDenoiseAmount": 0.0}, target="export", use_ai_denoise=True)
         check(
             "amount 0 with AI on skips the model",
             calls == [],

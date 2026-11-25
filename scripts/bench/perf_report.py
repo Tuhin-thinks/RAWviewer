@@ -16,8 +16,6 @@ Capture a run with:
     RAWVIEWER_PERF=1 pixi run python src/main.py 2>&1 | tee /tmp/run.log
 """
 
-from __future__ import annotations
-
 import argparse
 import re
 import statistics

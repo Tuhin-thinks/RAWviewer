@@ -5,7 +5,6 @@ Shared defaults set idle-preload 120 / 12 preload threads for snappy Plus
 gallery fill. Those used to be applied with setdefault *before* the RAM tier,
 so an 8 GB Air inherited the 24 GB numbers and the tier caps never stuck.
 """
-from __future__ import annotations
 
 import os
 import sys
@@ -15,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -35,7 +34,7 @@ _KEYS = (
 )
 
 
-def _clear():
+def _clear() -> None:
     import rawviewer_profile as rp
 
     rp._USER_RAWVIEWER_ENV = None

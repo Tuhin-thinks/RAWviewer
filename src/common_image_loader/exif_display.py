@@ -1,7 +1,5 @@
 """EXIF display-orientation helpers for image loading and thumbnails."""
 
-from __future__ import annotations
-
 import os
 from typing import Any
 
@@ -18,8 +16,8 @@ def exif_display_dimensions(
 ) -> tuple[int, int]:
     """Pixel width/height after EXIF orientation is applied (display size).
 
-    Sensor dimensions are often stored landscape (w > h) while orientation 6/8
-  means the image should display portrait ΓÇö swap only when w > h.
+      Sensor dimensions are often stored landscape (w > h) while orientation 6/8
+    means the image should display portrait ΓÇö swap only when w > h.
     """
     w, h = int(width or 0), int(height or 0)
     if w <= 0 or h <= 0:
@@ -28,6 +26,8 @@ def exif_display_dimensions(
     if o in (5, 6, 7, 8) and w > h:
         return h, w
     return w, h
+
+
 def exif_display_aspect_ratio(
     width: int,
     height: int,
@@ -38,15 +38,21 @@ def exif_display_aspect_ratio(
     if dh <= 0:
         return 1.5
     return dw / dh
+
+
 def exif_pixels_display_oriented(exif_data: dict[str, Any] | None) -> bool:
     """True when decode already baked EXIF orientation into pixel data."""
     return bool((exif_data or {}).get("pixels_display_oriented"))
+
+
 def mark_exif_pixels_display_oriented(exif_data: dict[str, Any] | None) -> dict[str, Any]:
     """Record that container orientation is already applied to cached pixels."""
     data = dict(exif_data or {})
     data["orientation"] = 1
     data["pixels_display_oriented"] = True
     return data
+
+
 def pixmap_matches_exif_display(
     pixmap_width: int,
     pixmap_height: int,
@@ -78,6 +84,8 @@ def pixmap_matches_exif_display(
         return False
     ratio = exp_ar / act_ar if exp_ar >= act_ar else act_ar / exp_ar
     return ratio <= (1.0 + tolerance)
+
+
 def array_matches_exif_display(
     pixel_width: int,
     pixel_height: int,
@@ -105,6 +113,8 @@ def array_matches_exif_display(
         o,
         tolerance=tolerance,
     )
+
+
 def pixels_already_display_oriented(
     width: int,
     height: int,
@@ -125,9 +135,9 @@ def pixels_already_display_oriented(
     if ow <= 0 or oh <= 0:
         ow, oh = 3, 2  # Default to landscape sensor aspect ratio (matches most cameras)
     dw, dh = exif_display_dimensions(ow, oh, o)
-    return (dh > dw) == (int(height) > int(width)) and (
-        o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data)
-    )
+    return (dh > dw) == (int(height) > int(width)) and (o not in (2, 3, 4) or exif_pixels_display_oriented(exif_data))
+
+
 def apply_container_orientation_to_array(
     image_array: np.ndarray,
     orientation: int,
@@ -153,6 +163,7 @@ def apply_container_orientation_to_array(
     # whether original_width/height were stored as sensor dims or already-display dims.
     if pixels_already_display_oriented(w, h, o, exif_data):
         import logging
+
         logging.getLogger(__name__).debug(
             f"apply_container_orientation_to_array: skipping orientation {o} "
             f"because array shape {w}x{h} already matches expected display orientation."
@@ -174,6 +185,8 @@ def apply_container_orientation_to_array(
     if o == 8:
         return np.rot90(image_array, 1)
     return image_array
+
+
 def rgb_array_to_qpixmap(rgb_image: np.ndarray) -> QPixmap:
     """Convert oriented uint8 RGB/grayscale ndarray to QPixmap.
 
@@ -192,24 +205,18 @@ def rgb_array_to_qpixmap(rgb_image: np.ndarray) -> QPixmap:
         rgb_image = np.ascontiguousarray(rgb_image)
     h, w = rgb_image.shape[:2]
     if len(rgb_image.shape) == 2:
-        qimg = QImage(
-            rgb_image.data, w, h, w, QImage.Format.Format_Grayscale8
-        )
+        qimg = QImage(rgb_image.data, w, h, w, QImage.Format.Format_Grayscale8)
     elif rgb_image.shape[2] >= 3:
         channels = int(rgb_image.shape[2])
-        q_format = (
-            QImage.Format.Format_RGB888
-            if channels == 3
-            else QImage.Format.Format_RGBA8888
-        )
-        qimg = QImage(
-            rgb_image.data, w, h, channels * w, q_format
-        )
+        q_format = QImage.Format.Format_RGB888 if channels == 3 else QImage.Format.Format_RGBA8888
+        qimg = QImage(rgb_image.data, w, h, channels * w, q_format)
     else:
         return QPixmap()
 
     qimg.ndarr = rgb_image  # Keep array alive explicitly
     return QPixmap.fromImage(qimg) if not qimg.isNull() else QPixmap()
+
+
 def apply_container_orientation_to_pixmap(
     pixmap: QPixmap,
     exif_data: dict[str, Any] | None,
@@ -251,6 +258,8 @@ def apply_container_orientation_to_pixmap(
     else:
         return pixmap
     return pixmap.transformed(transform)
+
+
 def resolve_container_exif_for_file(
     file_path: str,
     *,
@@ -268,13 +277,15 @@ def resolve_container_exif_for_file(
     exif_data = cache.get_exif(file_path, verify=True)
     if not exif_data:
         try:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             exif_data = EXIFExtractor().extract_exif_data(file_path)
         except Exception:
             exif_data = None
     orientation = int((exif_data or {}).get("orientation", 1) or 1)
     return exif_data, orientation
+
+
 def index_thumbnail_needs_orient_fix(
     file_path: str,
     arr: np.ndarray,
@@ -289,6 +300,8 @@ def index_thumbnail_needs_orient_fix(
         return False
     h, w = arr.shape[:2]
     return not array_matches_exif_display(w, h, exif_data)
+
+
 def finalize_index_thumbnail_array(
     file_path: str,
     arr: np.ndarray,
@@ -302,14 +315,21 @@ def finalize_index_thumbnail_array(
     if os.environ.get("RAWVIEWER_ORIENT_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}:
         try:
             import logging as _lg
+
             _h, _w = arr.shape[:2]
             _ow = int((exif_data or {}).get("original_width") or 0)
             _oh = int((exif_data or {}).get("original_height") or 0)
             _src = "cache" if (cache is not None and cache.get_exif(file_path)) else "file"
             _lg.getLogger(__name__).info(
                 "[ORIENT] finalize file=%s in=%dx%d(%s) resolved(o=%s ow=%d oh=%d src=%s)",
-                os.path.basename(file_path), _w, _h,
-                "P" if _h > _w else "L", orientation, _ow, _oh, _src,
+                os.path.basename(file_path),
+                _w,
+                _h,
+                "P" if _h > _w else "L",
+                orientation,
+                _ow,
+                _oh,
+                _src,
             )
         except Exception:
             pass
@@ -318,6 +338,8 @@ def finalize_index_thumbnail_array(
         if oriented is not None:
             return oriented
     return arr
+
+
 def exif_rotation_degrees_for_pixmap(
     pixmap_width: int,
     pixmap_height: int,
@@ -367,4 +389,3 @@ def exif_rotation_degrees_for_pixmap(
     if o == 8:
         return 270
     return 0
-

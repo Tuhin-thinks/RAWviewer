@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Progressive sidecar: interim preview-sized apply before full apply."""
+
 import os
 import shutil
 import sys
@@ -12,7 +13,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -23,12 +24,12 @@ def main() -> int:
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
     from image_cache import memory_preview_max_edge
+    from processing.unified import UnifiedImageProcessor
     from raw_adjustments import (
         AS_SHOT_TEMP_KEY,
         DEFAULT_ADJUSTMENTS,
         write_xmp_adjustments_for_file,
     )
-    from processing.unified import UnifiedImageProcessor
 
     os.environ["RAWVIEWER_ENABLE_EDITING"] = "1"
     os.environ["RAWVIEWER_SIDECAR_ADJUST"] = "1"
@@ -37,7 +38,8 @@ def main() -> int:
     tmpd = tempfile.mkdtemp()
     try:
         img_path = os.path.join(tmpd, "prog.CR3")
-        open(img_path, "wb").write(b"stub")
+        with open(img_path, "wb") as fh:
+            fh.write(b"stub")
         adj = dict(DEFAULT_ADJUSTMENTS)
         adj[AS_SHOT_TEMP_KEY] = 5500.0
         adj["Exposure2012"] = 0.75
@@ -51,12 +53,10 @@ def main() -> int:
 
         interim_shapes = []
 
-        def on_interim(buf):
+        def on_interim(buf) -> None:
             interim_shapes.append(getattr(buf, "shape", None))
 
-        out = proc.apply_sidecar_progressive(
-            img_path, base, on_interim=on_interim
-        )
+        out = proc.apply_sidecar_progressive(img_path, base, on_interim=on_interim)
         check("full apply returns buffer", out is not None)
         check("full apply keeps sensor shape", out is not None and out.shape == base.shape)
         check("interim callback fired", len(interim_shapes) == 1)
@@ -95,9 +95,7 @@ def main() -> int:
 
         _w(img_path, dict(DEFAULT_ADJUSTMENTS))
         interims2 = []
-        out_def = proc.apply_sidecar_progressive(
-            img_path, base, on_interim=lambda b: interims2.append(b.shape)
-        )
+        out_def = proc.apply_sidecar_progressive(img_path, base, on_interim=lambda b: interims2.append(b.shape))
         check("default adj returns base", out_def is base)
         check("default adj no interim", len(interims2) == 0)
 

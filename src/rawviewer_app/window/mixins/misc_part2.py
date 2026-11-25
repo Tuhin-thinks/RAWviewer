@@ -1,6 +1,4 @@
-
 """misc mixin, part 2 of 4 (31 methods, 880 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -67,7 +65,9 @@ class MiscPart2:
             self.raw_toggle_button.setToolTip(
                 "Embedded JPEG workflow (Fast)\nClick to toggle to RAW image workflow (High Quality)"
             )
-            self.raw_toggle_button.setStyleSheet(raw_btn_base + f"""
+            self.raw_toggle_button.setStyleSheet(
+                raw_btn_base
+                + f"""
                 QPushButton {{
                     color: {theme.INK_MUTED};
                     font-size: 13px;
@@ -76,12 +76,15 @@ class MiscPart2:
                 QPushButton:hover {{
                     color: {theme.INK};
                 }}
-            """)
+            """
+            )
         else:
             self.raw_toggle_button.setToolTip(
                 "RAW workflow (High Quality)\nClick to toggle to Embedded JPEG workflow (Fast)"
             )
-            self.raw_toggle_button.setStyleSheet(raw_btn_base + f"""
+            self.raw_toggle_button.setStyleSheet(
+                raw_btn_base
+                + f"""
                 QPushButton {{
                     color: {theme.INK};
                     background-color: {theme.EMBER};
@@ -97,7 +100,8 @@ class MiscPart2:
                     color: {theme.INK};
                     background-color: {theme.EMBER};
                 }}
-            """)
+            """
+            )
 
     def _update_edr_toggle_button_state(self):
         """Update text/tooltip/styling of the EDR display toggle button."""
@@ -132,7 +136,9 @@ class MiscPart2:
                 "EDR display on (High Quality highlights, slower RAW browsing)\n"
                 "Click to switch to standard display (Fast)"
             )
-            btn.setStyleSheet(base + f"""
+            btn.setStyleSheet(
+                base
+                + f"""
                 QPushButton {{
                     color: {theme.INK_MUTED};
                     font-size: 13px;
@@ -142,13 +148,16 @@ class MiscPart2:
                     color: {theme.INK};
                     background-color: rgba(255, 255, 255, 0.08);
                 }}
-            """)
+            """
+            )
         else:
             btn.setToolTip(
                 "EDR display off (Fast, standard dynamic range)\n"
                 "Click to enable EDR highlight headroom (slower RAW browsing)"
             )
-            btn.setStyleSheet(base + f"""
+            btn.setStyleSheet(
+                base
+                + f"""
                 QPushButton {{
                     color: {theme.INK_FAINT};
                     font-size: 13px;
@@ -157,17 +166,19 @@ class MiscPart2:
                 QPushButton:hover {{
                     color: {theme.INK_MUTED};
                 }}
-            """)
+            """
+            )
 
     def is_animated_image(self, file_path: str) -> bool:
         if not file_path:
             return False
         ext = os.path.splitext(file_path)[1].lower()
-        if ext == '.gif':
+        if ext == ".gif":
             return True
-        if ext == '.webp':
+        if ext == ".webp":
             try:
                 from PIL import Image
+
                 with Image.open(file_path) as img:
                     return getattr(img, "is_animated", False) and int(getattr(img, "n_frames", 1)) > 1
             except Exception:
@@ -214,7 +225,9 @@ class MiscPart2:
             display_pixmap = pixmap
             if self.fit_to_window:
                 v_size = self.scroll_area.viewport().size()
-                display_pixmap = pixmap.scaled(v_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                display_pixmap = pixmap.scaled(
+                    v_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+                )
             self.image_label.setPixmap(display_pixmap)
             self.image_label.resize(display_pixmap.size())
 
@@ -253,12 +266,13 @@ class MiscPart2:
 
     def toggle_view_mode(self):
         """Toggle between single image view and gallery view"""
-        if getattr(self, '_is_delete_dialog_open', False):
+        if getattr(self, "_is_delete_dialog_open", False):
             return
         # Do not block gallery entry on EXIF sort. Large cold folders can take
         # minutes to probe; _apply_folder_sort_refinement still reorders later.
         if not self._is_exif_sort_ready():
             import logging
+
             logging.getLogger(__name__).info(
                 "[VIEW_MODE] EXIF sort still running; entering gallery on provisional order"
             )
@@ -267,15 +281,16 @@ class MiscPart2:
             return
         self._last_view_mode_switch_ts = time.monotonic()
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug("[MODESWITCH] toggle_view_mode called; current=%s", self.view_mode)
         logger.info("[VIEW_MODE] ========== toggle_view_mode() STARTED ==========")
 
-        if self.view_mode == 'single':
+        if self.view_mode == "single":
             logger.info("[VIEW_MODE] Switching from single to gallery mode")
             self._disable_raw_recovery()
             self._gallery_entry_accept_embedded = False
-            self.view_mode = 'gallery'
+            self.view_mode = "gallery"
             try:
                 if hasattr(self, "_resume_indexing_timer") and self._resume_indexing_timer:
                     self._resume_indexing_timer.stop()
@@ -288,13 +303,13 @@ class MiscPart2:
                 self._focus_rect_source = None
         else:
             logger.info("[VIEW_MODE] Switching from gallery to single mode")
-            self.view_mode = 'single'
+            self.view_mode = "single"
             self._adopt_gallery_navigation_path()
             self._loading_from_gallery = True
             self._gallery_entry_accept_embedded = True
 
         logger.info("[VIEW_MODE] Mode changed, calling view method (elapsed: 0.000s)")
-        if self.view_mode == 'gallery':
+        if self.view_mode == "gallery":
             self._stop_slideshow()
             self._show_gallery_view()
         else:
@@ -354,9 +369,7 @@ class MiscPart2:
         except Exception:
             import logging
 
-            logging.getLogger(__name__).warning(
-                "[GALLERY] could not register new file %s", path, exc_info=True
-            )
+            logging.getLogger(__name__).warning("[GALLERY] could not register new file %s", path, exc_info=True)
             return False
 
     def _should_show_slideshow_button(self) -> bool:
@@ -417,9 +430,7 @@ class MiscPart2:
         remove_keys = {_norm_path(p) for p in file_paths if p}
         if not remove_keys:
             return
-        self.image_files = [
-            p for p in self.image_files if _norm_path(p) not in remove_keys
-        ]
+        self.image_files = [p for p in self.image_files if _norm_path(p) not in remove_keys]
         bookmarked = getattr(self, "_gallery_bookmarked_paths", None)
         if bookmarked:
             bookmarked -= remove_keys
@@ -429,9 +440,7 @@ class MiscPart2:
             selected -= remove_keys
         if self.current_file_path and _norm_path(self.current_file_path) in remove_keys:
             if self.image_files:
-                self.current_file_index = min(
-                    self.current_file_index, len(self.image_files) - 1
-                )
+                self.current_file_index = min(self.current_file_index, len(self.image_files) - 1)
                 if self.current_file_index < 0:
                     self.current_file_index = 0
                 self.current_file_path = self.image_files[self.current_file_index]
@@ -543,9 +552,7 @@ class MiscPart2:
                 file_path = self._open_file_dialog_macos_native(last_dir)
             else:
                 self._prepare_for_modal_dialog()
-                file_path, _ = QFileDialog.getOpenFileName(
-                    self, "Open File", last_dir, filter_str
-                )
+                file_path, _ = QFileDialog.getOpenFileName(self, "Open File", last_dir, filter_str)
         except Exception as e:
             logger.error("Open image dialog failed: %s", e, exc_info=True)
             self.show_error("Open Image", f"Could not open file chooser:\n{e}")
@@ -567,9 +574,7 @@ class MiscPart2:
         if file_path:
             folder_path = os.path.dirname(file_path)
             base = os.path.basename(file_path)
-            self.load_folder_images(
-                folder_path, start_file=base, start_view="single"
-            )
+            self.load_folder_images(folder_path, start_file=base, start_view="single")
             settings.setValue("last_opened_dir", folder_path)
 
     def _no_image_loaded_help_text(self) -> str:
@@ -593,11 +598,12 @@ class MiscPart2:
             ):
                 return
             if not self.current_pixmap:
-                if hasattr(self, 'current_file_path') and self.current_file_path:
+                if hasattr(self, "current_file_path") and self.current_file_path:
                     self._pending_zoom_toggle = True
                     self._pending_zoom_target_path = self.current_file_path
                     self._pending_zoom_pos = ev.pos()
                     import logging
+
                     logging.getLogger(__name__).info(
                         "Double-click recorded while image is loading; will zoom once ready."
                     )
@@ -605,21 +611,19 @@ class MiscPart2:
             if ev.button() == Qt.MouseButton.LeftButton:
                 self._stop_slideshow()
                 import logging
+
                 logger = logging.getLogger(__name__)
-                logger.info(f"[TRACK] User double-clicked to zoom - file: {os.path.basename(_require_str_path(self.current_file_path)) if hasattr(self, 'current_file_path') and self.current_file_path else 'Unknown'}")
+                logger.info(
+                    f"[TRACK] User double-clicked to zoom - file: {os.path.basename(_require_str_path(self.current_file_path)) if hasattr(self, 'current_file_path') and self.current_file_path else 'Unknown'}"
+                )
                 # Spacebar still jumps to EXIF focus box when outline is on; double-click
                 # always zooms toward the clicked point (same as outline off).
-                if (
-                    getattr(self, "_focus_subject_outline_active", False)
-                    and not self._single_view_is_fit_mode()
-                ):
+                if getattr(self, "_focus_subject_outline_active", False) and not self._single_view_is_fit_mode():
                     self.fit_to_window = True
                     self.current_zoom_level = 1.0
                     self.zoom_center_point = None
                     self.scale_image_to_fit()
-                    self.image_label.setCursor(
-                        QCursor(Qt.CursorShape.ArrowCursor)
-                    )
+                    self.image_label.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
                 elif self._single_view_is_fit_mode():
                     # Zooming in from fit-to-window mode
                     self._recenter_on_focus_after_nav = False
@@ -632,19 +636,18 @@ class MiscPart2:
                         displayed_size = displayed_pixmap.size()
 
                         # Calculate image offset within the label (image is centered in label)
-                        image_x_offset = (label_size.width() -
-                                          displayed_size.width()) / 2
-                        image_y_offset = (label_size.height() -
-                                          displayed_size.height()) / 2
+                        image_x_offset = (label_size.width() - displayed_size.width()) / 2
+                        image_y_offset = (label_size.height() - displayed_size.height()) / 2
 
                         # Adjust click position relative to the displayed image
                         adjusted_click_x = click_pos.x() - image_x_offset
                         adjusted_click_y = click_pos.y() - image_y_offset
 
                         # Check if click is within the displayed image bounds
-                        if (0 <= adjusted_click_x < displayed_size.width() and
-                                0 <= adjusted_click_y < displayed_size.height()):
-
+                        if (
+                            0 <= adjusted_click_x < displayed_size.width()
+                            and 0 <= adjusted_click_y < displayed_size.height()
+                        ):
                             # Calculate the ratio of the click position within the displayed image
                             click_ratio_x = adjusted_click_x / displayed_size.width()
                             click_ratio_y = adjusted_click_y / displayed_size.height()
@@ -655,23 +658,20 @@ class MiscPart2:
                             image_click_y = int(click_ratio_y * full_size.height())
 
                             # Clamp to valid coordinates
-                            image_click_x = max(
-                                0, min(image_click_x, full_size.width() - 1))
-                            image_click_y = max(
-                                0, min(image_click_y, full_size.height() - 1))
+                            image_click_x = max(0, min(image_click_x, full_size.width() - 1))
+                            image_click_y = max(0, min(image_click_y, full_size.height() - 1))
 
-                            self.zoom_center_point = QPoint(
-                                image_click_x, image_click_y)
+                            self.zoom_center_point = QPoint(image_click_x, image_click_y)
                         else:
                             # Click outside image, center on image center
                             self.zoom_center_point = QPoint(
-                                self.current_pixmap.width() // 2,
-                                self.current_pixmap.height() // 2)
+                                self.current_pixmap.width() // 2, self.current_pixmap.height() // 2
+                            )
                     else:
                         # No displayed pixmap, center on image center
                         self.zoom_center_point = QPoint(
-                            self.current_pixmap.width() // 2,
-                            self.current_pixmap.height() // 2)
+                            self.current_pixmap.width() // 2, self.current_pixmap.height() // 2
+                        )
 
                     self._zoom_in_to_image_point_finish()
                 else:
@@ -688,6 +688,7 @@ class MiscPart2:
             ev.accept()
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"Error in image_double_click_event: {e}", exc_info=True)
 
     def _schedule_interim_quality_upgrade(self, file_path: str) -> None:
@@ -700,9 +701,7 @@ class MiscPart2:
         """
 
         def _upgrade() -> None:
-            if _norm_path(file_path) != _norm_path(
-                getattr(self, "current_file_path", "") or ""
-            ):
+            if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", "") or ""):
                 return
             if not getattr(self, "_nav_zoom_interim_active", False):
                 return
@@ -742,11 +741,7 @@ class MiscPart2:
                 raw_workflow = bool(use_libraw_consistent_preview_first(file_path))
             except Exception:
                 raw_workflow = False
-            if (
-                cached_full is None
-                and raw_workflow
-                and self.image_cache.full_image_is_embedded_jpeg(file_path)
-            ):
+            if cached_full is None and raw_workflow and self.image_cache.full_image_is_embedded_jpeg(file_path):
                 return False
             buf = cached_full if cached_full is not None else self.image_cache.get_full_image(file_path)
             if buf is None:
@@ -764,9 +759,29 @@ class MiscPart2:
 
     def _is_raw_file(self, file_path):
         """Check if file is RAW format"""
-        raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                         '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                         '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+        raw_extensions = {
+            ".cr2",
+            ".cr3",
+            ".nef",
+            ".arw",
+            ".dng",
+            ".orf",
+            ".rw2",
+            ".pef",
+            ".srw",
+            ".x3f",
+            ".raf",
+            ".3fr",
+            ".fff",
+            ".iiq",
+            ".cap",
+            ".erf",
+            ".mef",
+            ".mos",
+            ".nrw",
+            ".rwl",
+            ".srf",
+        }
         file_ext = os.path.splitext(file_path)[1].lower()
         return file_ext in raw_extensions
 
@@ -797,8 +812,7 @@ class MiscPart2:
                 # Non-RAW file - load with QPixmap and cache it
                 pixmap = self._load_pixmap_safe(self.current_file_path)
                 if pixmap.isNull():
-                    self.show_error("Display Error",
-                                    "Could not load image file.")
+                    self.show_error("Display Error", "Could not load image file.")
                     return
 
                 # _load_pixmap_safe now uses QImageReader with setAutoTransform(True) for regular images
@@ -869,9 +883,7 @@ class MiscPart2:
         that transition). ``_gallery_entry_accept_embedded`` outlives the brief
         ``_loading_from_gallery`` flag cleared mid-load.
         """
-        if getattr(self, "_loading_from_gallery", False) or getattr(
-            self, "_gallery_entry_accept_embedded", False
-        ):
+        if getattr(self, "_loading_from_gallery", False) or getattr(self, "_gallery_entry_accept_embedded", False):
             return False
         path = file_path or getattr(self, "current_file_path", None)
         if not path:
@@ -893,7 +905,7 @@ class MiscPart2:
         if not use_libraw_consistent_preview_first(path):
             return False
         try:
-            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
             if os.path.normcase(os.path.abspath(path)) in _LIBRAW_UNSUPPORTED_PATHS:
                 return False

@@ -1,5 +1,4 @@
 """Gallery mixin part 6 of 7 for JustifiedGallery."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -25,8 +24,8 @@ from .helpers import (
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart6:
 
+class GalleryPart6:
     def pause_idle_preload(self):
         """Immediately pause idle background thumbnail generation."""
         if hasattr(self, "_idle_preload_timer") and self._idle_preload_timer.isActive():
@@ -112,6 +111,7 @@ class GalleryPart6:
                 outwards_indices.append(prev)
 
         from image_cache import get_image_cache
+
         global_cache = get_image_cache()
 
         preload_batch = []
@@ -185,9 +185,7 @@ class GalleryPart6:
             self._reconcile_tile_aspect(path, pixmap)
             warmed += 1
         if warmed and _focus_gallery_switch_logs():
-            logger.debug(
-                "[GALLERY] Warmed %d tile(s) from global thumbnail cache", warmed
-            )
+            logger.debug("[GALLERY] Warmed %d tile(s) from global thumbnail cache", warmed)
         return warmed
 
     def on_thumbnail_ready(self, file_path, thumbnail_data):
@@ -201,9 +199,7 @@ class GalleryPart6:
             del self._active_tasks[file_path]
         # Single-image view uses RAWImageViewer.on_manager_thumbnail_ready; skip gallery
         # work to avoid duplicate handling and any re-entrant UI paths on the same signal.
-        if self.parent_viewer is not None and getattr(
-            self.parent_viewer, "view_mode", "gallery"
-        ) != "gallery":
+        if self.parent_viewer is not None and getattr(self.parent_viewer, "view_mode", "gallery") != "gallery":
             return
         if file_path not in self._path_to_indices:
             return
@@ -331,9 +327,7 @@ class GalleryPart6:
                 logical_size = w.size()
                 physical_size = QSize(int(logical_size.width() * dpr), int(logical_size.height() * dpr))
                 if not self._frame_matches_pixmap_orientation(
-                    self._gallery_layout_items[idx].get("rect")
-                    if idx < len(self._gallery_layout_items)
-                    else None,
+                    self._gallery_layout_items[idx].get("rect") if idx < len(self._gallery_layout_items) else None,
                     base,
                 ):
                     if _orient_debug_enabled():
@@ -355,9 +349,16 @@ class GalleryPart6:
                         flag = " FRAME_MISMATCH" if (rect is not None and r_o != b_o) else ""
                         logger.info(
                             "[ORIENT] paint file=%s base=%dx%d(%s) rect=%s(%s) fitted=%dx%d(%s)%s",
-                            os.path.basename(file_path), base.width(), base.height(), b_o,
-                            "None" if rect is None else f"{rect.width()}x{rect.height()}", r_o,
-                            fitted.width(), fitted.height(), f_o, flag,
+                            os.path.basename(file_path),
+                            base.width(),
+                            base.height(),
+                            b_o,
+                            "None" if rect is None else f"{rect.width()}x{rect.height()}",
+                            r_o,
+                            fitted.width(),
+                            fitted.height(),
+                            f_o,
+                            flag,
                         )
                     except Exception:
                         pass
@@ -431,8 +432,7 @@ class GalleryPart6:
                 try:
                     with cache.lock:
                         for key in [
-                            k for k in list(cache.cache.keys())
-                            if (k[0] if isinstance(k, tuple) and k else k) == path
+                            k for k in list(cache.cache.keys()) if (k[0] if isinstance(k, tuple) and k else k) == path
                         ]:
                             cache.cache.pop(key, None)
                 except Exception:
@@ -565,9 +565,11 @@ class GalleryPart6:
             )
             self.build_gallery(force=True)
 
-        if self.parent_viewer is not None and getattr(
-            self.parent_viewer, "view_mode", "gallery"
-        ) == "gallery" and not self._retry_timer.isActive():
+        if (
+            self.parent_viewer is not None
+            and getattr(self.parent_viewer, "view_mode", "gallery") == "gallery"
+            and not self._retry_timer.isActive()
+        ):
             self._retry_timer.start(100)
 
     def on_exif_ready(self, file_path, exif_data):
@@ -611,8 +613,7 @@ class GalleryPart6:
         if stored_raw is None or (
             self._aspect_orientation_flag(stored_raw) != 0
             and self._aspect_orientation_flag(raw_meta) != 0
-            and self._aspect_orientation_flag(stored_raw)
-            != self._aspect_orientation_flag(raw_meta)
+            and self._aspect_orientation_flag(stored_raw) != self._aspect_orientation_flag(raw_meta)
         ):
             self._measured_raw_aspects[resolved] = raw_meta
             base = self._thumbnail_cache.get((resolved, self._thumb_base_key))
@@ -676,9 +677,7 @@ class GalleryPart6:
         elif n >= 200:
             delay_ms = max(delay_ms, 5000)
         if self._gallery_warmup_active():
-            warmup_left_ms = int(
-                max(0.0, float(self._gallery_warmup_until) - time.time()) * 1000
-            )
+            warmup_left_ms = int(max(0.0, float(self._gallery_warmup_until) - time.time()) * 1000)
             delay_ms = max(delay_ms, warmup_left_ms + 2000)
         if self._aspects_settle_timer.isActive():
             return

@@ -1,5 +1,4 @@
 """Adjust mixin part 4 of 5 for ImageAdjustPanelWidget."""
-from __future__ import annotations
 
 from collections.abc import Callable
 
@@ -8,14 +7,13 @@ from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from core import theme
-from raw_adjustments import (
+from raw_adjustments.checks import is_pv2012_tone_slider, recovery_baseline_slider_hints
+from raw_adjustments.defaults import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,
     DEFAULT_ADJUSTMENTS,
     RECOVERY_BASELINE_KEY,
     SLIDER_SPECS,
-    is_pv2012_tone_slider,
-    recovery_baseline_slider_hints,
 )
 from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
 from raw_adjustments.dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
@@ -25,12 +23,9 @@ from .helpers import _CHANNEL_CURVE_KEYS_BY_NAME, CollapsibleSection, _qta_icon_
 
 
 class AdjustPart4:
-
     def get_adjustments(self) -> dict[str, float]:
         out = dict(DEFAULT_ADJUSTMENTS)
-        out[AS_SHOT_TEMP_KEY] = float(
-            getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"])
-        )
+        out[AS_SHOT_TEMP_KEY] = float(getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"]))
         for spec in SLIDER_SPECS:
             slider = self._sliders.get(spec.key)
             if slider is None:
@@ -56,26 +51,20 @@ class AdjustPart4:
             if self.dodge_burn_mode() == "heal" and saved is not None:
                 out[DB_STRENGTH_KEY] = float(saved) / 20.0
             else:
-                out[DB_STRENGTH_KEY] = (
-                    float(self._db_mask_strength_slider.value()) / 20.0
-                )
+                out[DB_STRENGTH_KEY] = float(self._db_mask_strength_slider.value()) / 20.0
         else:
             out[DB_STRENGTH_KEY] = float(DB_DEFAULT_STRENGTH)
         lens_btn = getattr(self, "_lens_correction_btn", None)
-        out["LensCorrectionEnabled"] = (
-            1.0 if lens_btn is not None and lens_btn.isChecked() else 0.0
-        )
+        out["LensCorrectionEnabled"] = 1.0 if lens_btn is not None and lens_btn.isChecked() else 0.0
         if self._tone_curve_row is not None:
-            self._channel_curve_cache[self._current_curve_channel] = (
-                self._tone_curve_row.serialized_points()
-            )
+            self._channel_curve_cache[self._current_curve_channel] = self._tone_curve_row.serialized_points()
             for name, key in _CHANNEL_CURVE_KEYS_BY_NAME.items():
                 serial = str(self._channel_curve_cache.get(name, "") or "").strip()
                 # serialize_tone_curve_points already returns "" for identity;
                 # still skip any leftover "0,0;255,255" so Reset clears XMP.
                 if not serial:
                     continue
-                from raw_adjustments import tone_curve_serial_is_active
+                from raw_adjustments.checks import tone_curve_serial_is_active
 
                 if tone_curve_serial_is_active(serial):
                     out[key] = serial
@@ -151,10 +140,7 @@ class AdjustPart4:
         btn = getattr(self, "_db_show_mask_btn", None)
         if btn is None:
             return
-        has_data = bool(
-            getattr(self, "_db_mask_has_data", False)
-            or getattr(self, "_heal_mask_has_data", False)
-        )
+        has_data = bool(getattr(self, "_db_mask_has_data", False) or getattr(self, "_heal_mask_has_data", False))
         available = bool(armed or has_data)
         btn.setEnabled(available)
         # setChecked below fires the button's own `toggled` signal, which
@@ -255,7 +241,7 @@ class AdjustPart4:
         cur_heal = bool(heal_btn is not None and heal_btn.isChecked())
         # Same mode again → toggle off.
         if want and cur_dodge == dodge_on and cur_burn == burn_on and cur_erase == erase_on and cur_heal == heal_on:
-                dodge_on = burn_on = erase_on = heal_on = False
+            dodge_on = burn_on = erase_on = heal_on = False
         self._block_emit = True
         try:
             self._dodge_btn.setChecked(dodge_on)
@@ -313,9 +299,7 @@ class AdjustPart4:
         amount = (dy // 120) * 8 if abs(dy) >= 120 else int(round(dy / 4.0))
         if amount == 0:
             amount = 1 if dy > 0 else -1
-        slider.setValue(
-            max(slider.minimum(), min(slider.maximum(), slider.value() + amount))
-        )
+        slider.setValue(max(slider.minimum(), min(slider.maximum(), slider.value() + amount)))
 
     def dodge_burn_brush_strength(self) -> float:
         """0..1: per-stamp delta at the brush center before pressure scaling."""
@@ -394,9 +378,7 @@ class AdjustPart4:
             for chan, btn in self._channel_btns.items():
                 btn.setChecked(chan == name)
             return
-        self._channel_curve_cache[self._current_curve_channel] = (
-            self._tone_curve_row.serialized_points()
-        )
+        self._channel_curve_cache[self._current_curve_channel] = self._tone_curve_row.serialized_points()
         self._current_curve_channel = name
         for chan, btn in self._channel_btns.items():
             btn.setChecked(chan == name)
@@ -504,9 +486,7 @@ class AdjustPart4:
         self._emit_preview_and_save()
 
     def _request_export(self, export_format: str) -> None:
-        self.export_requested.emit(
-            export_format, self.get_adjustments(), self.ai_denoise_enabled()
-        )
+        self.export_requested.emit(export_format, self.get_adjustments(), self.ai_denoise_enabled())
 
     def _on_slider_value_changed(self, key: str, fmt: Callable[[float], str]) -> None:
         if self._block_emit:
@@ -535,7 +515,7 @@ class AdjustPart4:
         # Turning on from Off: seed amount to the historical default (50) if
         # the slider was never touched for this file.
         if index > 0 and hasattr(self, "_chroma_nr_amount_slider") and self._chroma_nr_amount_slider.value() < 1:
-                self._chroma_nr_amount_slider.setValue(int(CHROMA_NR_ON_VALUE))
+            self._chroma_nr_amount_slider.setValue(int(CHROMA_NR_ON_VALUE))
         self._emit_preview_and_save()
 
     def _sync_chroma_nr_amount_row_visible(self) -> None:
@@ -569,9 +549,7 @@ class AdjustPart4:
             slider = self._sliders.get(key)
             val_lbl = self._value_labels.get(key)
             if key == "Temperature":
-                default = float(
-                    getattr(self, "_as_shot_temperature", spec.default_value)
-                )
+                default = float(getattr(self, "_as_shot_temperature", spec.default_value))
             else:
                 default = float(DEFAULT_ADJUSTMENTS.get(key, spec.default_value))
             if slider is not None:
@@ -584,9 +562,7 @@ class AdjustPart4:
 
     def _on_reset_clicked(self) -> None:
         reset = dict(DEFAULT_ADJUSTMENTS)
-        reset[AS_SHOT_TEMP_KEY] = float(
-            getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"])
-        )
+        reset[AS_SHOT_TEMP_KEY] = float(getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"]))
         reset["Temperature"] = reset[AS_SHOT_TEMP_KEY]
         self.set_adjustments(reset)
         self._hsl_cache = {
@@ -732,10 +708,7 @@ class AdjustPart4:
             return
         from PyQt6.QtWidgets import QDialog
 
-        try:
-            from rawviewer_app.core.widgets import CustomConfirmDialog
-        except ModuleNotFoundError:
-            from widgets import CustomConfirmDialog
+        from rawviewer_app.core.widgets import CustomConfirmDialog
 
         iso_bit = f" (ISO {iso})" if iso else ""
         dlg = CustomConfirmDialog(

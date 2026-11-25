@@ -1,5 +1,4 @@
 """Module-level helper functions for the bootstrap installer."""
-from __future__ import annotations
 
 import errno
 import os
@@ -91,9 +90,7 @@ def _prune_torch_link_libs(target_dir: str, log) -> None:
     ``torch/lib`` (e.g. ``dnnl.lib``). RAWviewer never links against them at
     runtime; deleting them shrinks CUDA Full installs without changing demosaic.
     """
-    site = os.path.join(
-        target_dir, ".pixi", "envs", "default", "Lib", "site-packages", "torch", "lib"
-    )
+    site = os.path.join(target_dir, ".pixi", "envs", "default", "Lib", "site-packages", "torch", "lib")
     if not os.path.isdir(site):
         return
     removed = 0
@@ -113,10 +110,7 @@ def _prune_torch_link_libs(target_dir: str, log) -> None:
         log(f"Torch lib prune skipped: {exc}")
         return
     if removed:
-        log(
-            f"Pruned {removed} torch link libraries ({_human_bytes(freed)}) "
-            "— not required at runtime."
-        )
+        log(f"Pruned {removed} torch link libraries ({_human_bytes(freed)}) — not required at runtime.")
 
 
 def _patch_python_exe_branding(target_dir: str, log) -> None:
@@ -145,11 +139,20 @@ def _patch_python_exe_branding(target_dir: str, log) -> None:
         if not os.path.isfile(exe_path):
             continue
         cmd = [
-            rcedit, exe_path,
-            "--set-version-string", "FileDescription", "RAWviewer",
-            "--set-version-string", "ProductName", "RAWviewer",
-            "--set-version-string", "InternalName", "RAWviewer",
-            "--set-version-string", "OriginalFilename", exe_name,
+            rcedit,
+            exe_path,
+            "--set-version-string",
+            "FileDescription",
+            "RAWviewer",
+            "--set-version-string",
+            "ProductName",
+            "RAWviewer",
+            "--set-version-string",
+            "InternalName",
+            "RAWviewer",
+            "--set-version-string",
+            "OriginalFilename",
+            exe_name,
         ]
         if os.path.isfile(icon_path):
             cmd.extend(["--set-icon", icon_path])
@@ -232,10 +235,7 @@ def _download_file_with_retry(url: str, dest_path: str, log) -> bool:
                 log(f"Retrying in {RETRY_DELAY_SEC}s...")
                 time.sleep(RETRY_DELAY_SEC)
             else:
-                log(
-                    "Tip: check firewall, VPN, or corporate proxy settings "
-                    "and ensure GitHub is reachable."
-                )
+                log("Tip: check firewall, VPN, or corporate proxy settings and ensure GitHub is reachable.")
     return False
 
 
@@ -283,7 +283,7 @@ def _run_logged_subprocess(cmd, cwd, log, cancelled, progress_hook=None) -> int 
             process.stdout.close()
 
 
-def _run_subprocess_with_retry(cmd, cwd, log, label, cancelled, progress_hook=None) -> int | None:
+def _run_subprocess_with_retry(cmd, cwd, log, label: str, cancelled, progress_hook=None) -> int | None:
     last_code = 1
     for attempt in range(1, DOWNLOAD_RETRIES + 1):
         if cancelled():
@@ -370,9 +370,7 @@ def _register_file_associations(target_exe: str, log) -> None:
         progid_key = f"Software\\Classes\\{FILE_ASSOC_PROGID}"
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, progid_key) as key:
             winreg.SetValueEx(key, "", 0, winreg.REG_SZ, "RAWviewer Image")
-        with winreg.CreateKey(
-            winreg.HKEY_CURRENT_USER, f"{progid_key}\\shell\\open\\command"
-        ) as key:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, f"{progid_key}\\shell\\open\\command") as key:
             winreg.SetValueEx(key, "", 0, winreg.REG_SZ, open_cmd)
 
         for ext in extensions:
@@ -386,9 +384,7 @@ def _register_file_associations(target_exe: str, log) -> None:
         caps_key = r"Software\RAWviewer\Capabilities"
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, caps_key) as key:
             winreg.SetValueEx(key, "ApplicationName", 0, winreg.REG_SZ, "RAWviewer")
-            winreg.SetValueEx(
-                key, "ApplicationDescription", 0, winreg.REG_SZ, "RAW and photo viewer"
-            )
+            winreg.SetValueEx(key, "ApplicationDescription", 0, winreg.REG_SZ, "RAW and photo viewer")
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, f"{caps_key}\\FileAssociations") as key:
             for ext in extensions:
                 ext_key = ext.lower()
@@ -440,6 +436,7 @@ def _installed_app_icon_path(install_dir: str) -> str | None:
         return ico
     return _installer_icon_path()
 
+
 import contextlib
 
 from PyQt6.QtGui import QIcon
@@ -452,9 +449,7 @@ def _apply_installer_process_icon() -> None:
         try:
             import ctypes
 
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "com.markyip.rawviewer.setup"
-            )
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("com.markyip.rawviewer.setup")
         except Exception:
             pass
     path = _installer_icon_path()
@@ -466,6 +461,7 @@ def _apply_installer_process_icon() -> None:
     app = QApplication.instance()
     if app is not None:
         app.setWindowIcon(icon)
+
 
 def _user_cache_dir() -> str:
     return os.path.join(os.path.expanduser("~"), ".rawviewer_cache")
@@ -577,5 +573,3 @@ def _delete_reg_tree(root, path: str) -> None:
         winreg.DeleteKey(root, path)
     except FileNotFoundError:
         pass
-
-

@@ -1,7 +1,6 @@
 """
 Enhanced RAW processor with progressive loading and caching.
 """
-from __future__ import annotations
 
 import contextlib
 import os
@@ -74,8 +73,7 @@ class EnhancedRAWProcessor(QThread):
             exif_data = None
             if not self._should_stop:
                 self.processing_progress.emit("Reading metadata...")
-                exif_data = self.exif_extractor.extract_exif_data(
-                    self.file_path)
+                exif_data = self.exif_extractor.extract_exif_data(self.file_path)
 
                 # Emit EXIF data ready signal for immediate status bar update
                 if exif_data:
@@ -102,11 +100,9 @@ class EnhancedRAWProcessor(QThread):
         # Extract thumbnail
         thumbnail = None
         if self.is_raw_file:
-            thumbnail = self.thumbnail_extractor.extract_thumbnail_from_raw(
-                self.file_path)
+            thumbnail = self.thumbnail_extractor.extract_thumbnail_from_raw(self.file_path)
         else:
-            thumbnail = self.thumbnail_extractor.extract_thumbnail_from_image(
-                self.file_path)
+            thumbnail = self.thumbnail_extractor.extract_thumbnail_from_image(self.file_path)
 
         if thumbnail is not None:
             # Cache the thumbnail
@@ -132,25 +128,20 @@ class EnhancedRAWProcessor(QThread):
         # Try to extract thumbnail as fallback first
         thumbnail_fallback = None
         with contextlib.suppress(Exception):
-            thumbnail_fallback = self.thumbnail_extractor.extract_thumbnail_from_raw(
-                self.file_path)
+            thumbnail_fallback = self.thumbnail_extractor.extract_thumbnail_from_raw(self.file_path)
 
         # Choose processing method based on quality setting
         try:
             if self.use_quality_processing:
-                rgb_image = self.raw_processor.process_raw_quality(
-                    self.file_path, exif_data)
+                rgb_image = self.raw_processor.process_raw_quality(self.file_path, exif_data)
             else:
-                rgb_image = self.raw_processor.process_raw_fast(
-                    self.file_path, exif_data)
+                rgb_image = self.raw_processor.process_raw_fast(self.file_path, exif_data)
 
             if rgb_image is not None:
                 # Apply orientation correction
-                orientation = exif_data.get(
-                    'orientation', 1) if exif_data else 1
+                orientation = exif_data.get("orientation", 1) if exif_data else 1
                 if rgb_image is not None:
-                    rgb_image = self._apply_orientation_correction(
-                        rgb_image, orientation, exif_data)
+                    rgb_image = self._apply_orientation_correction(rgb_image, orientation, exif_data)
 
                 # Cache the processed image
                 self.cache.put_full_image(self.file_path, rgb_image)
@@ -162,13 +153,10 @@ class EnhancedRAWProcessor(QThread):
                 # RAW processing failed, try fallback
                 if thumbnail_fallback is not None:
                     # Use thumbnail as fallback
-                    orientation = exif_data.get(
-                        'orientation', 1) if exif_data else 1
-                    thumbnail_fallback = self._apply_orientation_correction(
-                        thumbnail_fallback, orientation, exif_data)
+                    orientation = exif_data.get("orientation", 1) if exif_data else 1
+                    thumbnail_fallback = self._apply_orientation_correction(thumbnail_fallback, orientation, exif_data)
 
-                    self.processing_progress.emit(
-                        "Using embedded thumbnail (RAW processing failed)")
+                    self.processing_progress.emit("Using embedded thumbnail (RAW processing failed)")
                     self.image_processed.emit(thumbnail_fallback)
                 else:
                     self.error_occurred.emit("Failed to process RAW file")
@@ -179,7 +167,9 @@ class EnhancedRAWProcessor(QThread):
             if "data corrupted" in error_msg.lower():
                 error_msg = f"RAW processing failed due to LibRaw compatibility issue.\n\nThis is a known issue with LibRaw and certain RAW files.\nTry using a different RAW processor or contact the developer for updates.\n\nOriginal error: {error_msg}"
             elif "unsupported file format" in error_msg.lower():
-                error_msg = f"This RAW file format may not be supported by your LibRaw version.\n\nOriginal error: {error_msg}"
+                error_msg = (
+                    f"This RAW file format may not be supported by your LibRaw version.\n\nOriginal error: {error_msg}"
+                )
             elif "input/output error" in error_msg.lower():
                 error_msg = f"Cannot read the file. It may be corrupted or in use by another program.\n\nOriginal error: {error_msg}"
             elif "cannot allocate memory" in error_msg.lower():
@@ -187,17 +177,13 @@ class EnhancedRAWProcessor(QThread):
 
             # Try fallback if available
             if thumbnail_fallback is not None:
-                orientation = exif_data.get(
-                    'orientation', 1) if exif_data else 1
-                thumbnail_fallback = self._apply_orientation_correction(
-                    thumbnail_fallback, orientation, exif_data)
+                orientation = exif_data.get("orientation", 1) if exif_data else 1
+                thumbnail_fallback = self._apply_orientation_correction(thumbnail_fallback, orientation, exif_data)
 
-                self.processing_progress.emit(
-                    "Using embedded thumbnail (RAW processing failed)")
+                self.processing_progress.emit("Using embedded thumbnail (RAW processing failed)")
                 self.image_processed.emit(thumbnail_fallback)
             else:
-                self.error_occurred.emit(
-                    f"Error processing RAW file:\n{error_msg}")
+                self.error_occurred.emit(f"Error processing RAW file:\n{error_msg}")
 
     def _process_regular_image(self, exif_data: dict[str, Any]):
         """Process regular image file (JPEG, TIFF, etc.)."""
@@ -207,7 +193,9 @@ class EnhancedRAWProcessor(QThread):
         # This is more efficient for regular image formats
         self.image_processed.emit(None)
 
-    def _apply_orientation_correction(self, image_array: np.ndarray, orientation: int, exif_data: dict[str, Any] = None) -> np.ndarray:
+    def _apply_orientation_correction(
+        self, image_array: np.ndarray, orientation: int, exif_data: dict[str, Any] = None
+    ) -> np.ndarray:
         """Apply orientation correction to image array."""
         if image_array is None:
             return None
@@ -216,15 +204,13 @@ class EnhancedRAWProcessor(QThread):
         # Make-independent: apply_container_orientation_to_array measures the pixels
         # against the expected display orientation and no-ops when they already match,
         # so pre-rotated cameras (Sony/Leica/etc.) need no special-case skip here.
-        return apply_container_orientation_to_array(
-            image_array, orientation, exif_data
-        )
+        return apply_container_orientation_to_array(image_array, orientation, exif_data)
 
     def _is_camera_pre_rotated(self, exif_data: dict[str, Any] = None) -> bool:
         """Check if camera stores data pre-rotated."""
-        if not exif_data or not exif_data.get('camera_make'):
+        if not exif_data or not exif_data.get("camera_make"):
             return False
 
-        make = exif_data['camera_make'].upper()
+        make = exif_data["camera_make"].upper()
         # Sony, Leica, and Hasselblad often store RAW data pre-rotated
-        return any(brand in make for brand in ['SONY', 'LEICA', 'HASSELBLAD'])
+        return any(brand in make for brand in ["SONY", "LEICA", "HASSELBLAD"])

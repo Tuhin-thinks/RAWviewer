@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Regression guard: Ctrl/Cmd+C and Ctrl/Cmd+V to copy/paste settings in Adjust panel.
-"""
+"""Regression guard: Ctrl/Cmd+C and Ctrl/Cmd+V to copy/paste settings in Adjust panel."""
+
 import os
 import sys
 
@@ -9,21 +9,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
+    from PyQt6.QtCore import QObject, Qt
     from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import Qt, QObject
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
     import main as mainmod
 
     class MockEvent:
-        def __init__(self, key, modifiers, auto_repeat=False):
+        def __init__(self, key, modifiers, auto_repeat: bool = False) -> None:
             self._key = key
             self._modifiers = modifiers
             self._auto_repeat = auto_repeat
@@ -38,25 +38,25 @@ def main() -> int:
             return self._auto_repeat
 
     class MockPanel:
-        def __init__(self):
+        def __init__(self) -> None:
             self.copy_called = False
             self.paste_called = False
 
-        def _on_copy_settings_clicked(self):
+        def _on_copy_settings_clicked(self) -> None:
             self.copy_called = True
 
-        def _on_paste_settings_clicked(self):
+        def _on_paste_settings_clicked(self) -> None:
             self.paste_called = True
 
     class MockStatusBar:
-        def __init__(self):
+        def __init__(self) -> None:
             self.messages = []
 
-        def showMessage(self, msg, timeout):
+        def showMessage(self, msg, timeout) -> None:
             self.messages.append(msg)
 
     class MockViewer(QObject):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self._focus_widget = None
             self.view_mode = "single"
@@ -67,7 +67,7 @@ def main() -> int:
         def focusWidget(self):
             return self._focus_widget
 
-        def __getattr__(self, name):
+        def __getattr__(self, name: str):
             return lambda *args, **kwargs: None
 
     m = MockViewer()
@@ -84,8 +84,8 @@ def main() -> int:
 
     # Test 2: Paste settings via Ctrl+V
     # We must seed the clipboard so Paste is executed
-    from rawviewer_ui.widgets.adjust import _EDIT_SETTINGS_CLIPBOARD
     import rawviewer_ui.widgets.adjust as ap
+
     ap._EDIT_SETTINGS_CLIPBOARD = {"Exposure2012": 1.0}
 
     evt_paste_ctrl = MockEvent(Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
@@ -103,6 +103,7 @@ def main() -> int:
 
     # Test 4: Shortcut blocked by text input focus
     from PyQt6.QtWidgets import QLineEdit
+
     mock_line_edit = QLineEdit()
     m._focus_widget = mock_line_edit
     m.single_image_adjust_panel.copy_called = False

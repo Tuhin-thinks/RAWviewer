@@ -1,7 +1,5 @@
 """Domain-specific exceptions raised across RAWviewer."""
 
-from __future__ import annotations
-
 
 class RAWViewerError(Exception):
     """Base class for all RAWviewer domain errors."""

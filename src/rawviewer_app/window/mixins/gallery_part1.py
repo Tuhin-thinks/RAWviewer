@@ -1,5 +1,4 @@
 """gallery mixin, part 1 of 5 (35 methods, 895 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -135,9 +134,7 @@ class GalleryPart1:
                 if folder:
                     raw = self.image_cache.get_capture_times_for_folder_sort(folder) or {}
                 if not raw:
-                    raw = self._capture_times_for_paths(
-                        list(getattr(self, "image_files", []) or [])[:4096]
-                    )
+                    raw = self._capture_times_for_paths(list(getattr(self, "image_files", []) or [])[:4096])
             except Exception:
                 raw = {}
             parsed = {}
@@ -151,9 +148,7 @@ class GalleryPart1:
                         try:
                             when = datetime.datetime.fromisoformat(value)
                         except ValueError:
-                            when = datetime.datetime.strptime(
-                                value, "%Y:%m:%d %H:%M:%S"
-                            )
+                            when = datetime.datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
                 except Exception:
                     when = None
                 if when is not None:
@@ -202,9 +197,7 @@ class GalleryPart1:
 
     def _gallery_norm_path_map(self) -> dict:
         """One norm-key → path dict for the current folder list (O(1) lookups)."""
-        return {
-            _norm_path(p): p for p in (getattr(self, "image_files", None) or [])
-        }
+        return {_norm_path(p): p for p in (getattr(self, "image_files", None) or [])}
 
     def _gallery_path_for_norm_key(self, key: str) -> str | None:
         m = getattr(self, "_gallery_norm_map_cache", None)
@@ -265,14 +258,10 @@ class GalleryPart1:
         files = list(getattr(self, "image_files", []) or [])
         if getattr(self, "_gallery_bookmark_filter_active", False):
             files = self._filter_paths_to_bookmarked(files)
-        files = self._filter_paths_to_min_rating(
-            files, int(getattr(self, "_gallery_rating_filter_min", 0) or 0)
-        )
+        files = self._filter_paths_to_min_rating(files, int(getattr(self, "_gallery_rating_filter_min", 0) or 0))
         files = self._filter_burst_rejected_paths(files)
         if getattr(self, "_burst_group_view_active", False):
-            return self._filter_burst_rejected_paths(
-                list(getattr(self, "_burst_group_view_members", []) or [])
-            )
+            return self._filter_burst_rejected_paths(list(getattr(self, "_burst_group_view_members", []) or []))
         if getattr(self, "view_mode", "") == "gallery":
             return self._burst_collapsed_gallery_paths(files)
         return files
@@ -386,9 +375,7 @@ class GalleryPart1:
                 bar.setEnabled(False)
                 return
             files = self._navigation_files()
-            if self._is_semantic_search_filter_active() and files != list(
-                getattr(self, "image_files", []) or []
-            ):
+            if self._is_semantic_search_filter_active() and files != list(getattr(self, "image_files", []) or []):
                 self.image_files = list(files)
                 path = getattr(self, "current_file_path", None)
                 if path and path in self.image_files:
@@ -545,9 +532,7 @@ class GalleryPart1:
             self._filmstrip_prefetch_draining = True
             self._drain_filmstrip_prefetch_chunk()
 
-    def _display_low_res_thumbnail_fallback(
-        self, file_path: str, thumbnail, max_dim: int
-    ) -> None:
+    def _display_low_res_thumbnail_fallback(self, file_path: str, thumbnail, max_dim: int) -> None:
         """Paint a small embedded thumb once so TTFR does not stall on upgrade loops."""
         if getattr(self, "view_mode", "single") != "single":
             return
@@ -568,14 +553,10 @@ class GalleryPart1:
             else:
                 self.display_numpy_image(thumbnail)
             self._on_single_view_content_displayed()
-            self._manager_displayed_max_dim = max(
-                getattr(self, "_manager_displayed_max_dim", 0), max_dim
-            )
+            self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), max_dim)
             if hasattr(self, "loading_overlay"):
                 self.loading_overlay.hide_loading()
-            self.status_bar.showMessage(
-                f"Low-res preview ({max_dim}px) -- loading higher quality…"
-            )
+            self.status_bar.showMessage(f"Low-res preview ({max_dim}px) -- loading higher quality…")
             logger.info(
                 "[MANAGER] Showing interim low-res preview (%dpx) for %s",
                 max_dim,
@@ -600,9 +581,7 @@ class GalleryPart1:
 
                 QTimer.singleShot(
                     0,
-                    lambda fp=file_path, th=thumbnail: self.on_manager_thumbnail_ready(
-                        fp, th
-                    ),
+                    lambda fp=file_path, th=thumbnail: self.on_manager_thumbnail_ready(fp, th),
                 )
             except Exception:
                 pass
@@ -616,6 +595,7 @@ class GalleryPart1:
     def _on_manager_thumbnail_ready_impl(self, file_path: str, thumbnail):
         """處理 ImageLoadManager 的縮圖就緒信號"""
         import logging
+
         logger = logging.getLogger(__name__)
         from PyQt6.QtGui import QImage, QPixmap
 
@@ -646,9 +626,7 @@ class GalleryPart1:
             return
 
         norm_fp = _norm_path(file_path)
-        raw_recovery = (
-            getattr(self, "_raw_recovery_active", False) and is_raw_file(file_path)
-        )
+        raw_recovery = getattr(self, "_raw_recovery_active", False) and is_raw_file(file_path)
         if raw_recovery:
             cached = self._raw_recovery_cache.get(norm_fp)
             if cached is not None:
@@ -704,8 +682,7 @@ class GalleryPart1:
             and self._single_view_pixels_on_screen(file_path)
         ):
             logger.debug(
-                f"[MANAGER] Skipping stale thumbnail ({max_dim}px max); "
-                f"already displayed {shown_max}px for this file"
+                f"[MANAGER] Skipping stale thumbnail ({max_dim}px max); already displayed {shown_max}px for this file"
             )
             if hasattr(self, "loading_overlay"):
                 self.loading_overlay.hide_loading()
@@ -714,11 +691,9 @@ class GalleryPart1:
         min_display = _env_int("RAWVIEWER_GALLERY_INSTANT_MIN_DIM", 1400, minimum=400)
         if 0 < max_dim < min_display:
             norm_fp = _norm_path(file_path)
-            upgrade_attempted = norm_fp in getattr(
-                self, "_preview_upgrade_attempted_paths", set()
-            )
+            upgrade_attempted = norm_fp in getattr(self, "_preview_upgrade_attempted_paths", set())
             try:
-                from processing.unified import UnifiedImageProcessor
+                from processing.unified.processor import UnifiedImageProcessor
 
                 up = UnifiedImageProcessor()
                 upgraded = up.ensure_display_tier_preview(file_path, cast(Any, thumbnail))
@@ -733,27 +708,23 @@ class GalleryPart1:
                     max_dim = udim
                 elif upgrade_attempted:
                     logger.debug(
-                        "[MANAGER] Low-res thumbnail (%dpx) for %s; upgrade already "
-                        "queued -- waiting for preview/full",
+                        "[MANAGER] Low-res thumbnail (%dpx) for %s; upgrade already queued -- waiting for preview/full",
                         max_dim,
                         os.path.basename(file_path),
                     )
                     self._pending_thumbnail = thumbnail
                     if not self._single_view_pixels_on_screen(file_path):
-                        self._display_low_res_thumbnail_fallback(
-                            file_path, thumbnail, max_dim
-                        )
+                        self._display_low_res_thumbnail_fallback(file_path, thumbnail, max_dim)
                     return
                 else:
                     self._preview_upgrade_attempted_paths.add(norm_fp)
                     logger.info(
-                        "[MANAGER] Skipping low-res thumbnail (%dpx) for %s; "
-                        "requesting preview/full decode",
+                        "[MANAGER] Skipping low-res thumbnail (%dpx) for %s; requesting preview/full decode",
                         max_dim,
                         os.path.basename(file_path),
                     )
                     self._pending_thumbnail = thumbnail
-                    from image_load_manager import Priority as _Prio
+                    from image_load_manager.helpers import Priority as _Prio
 
                     self.image_manager.load_image(
                         file_path,
@@ -773,19 +744,16 @@ class GalleryPart1:
                     )
                     self._pending_thumbnail = thumbnail
                     if not self._single_view_pixels_on_screen(file_path):
-                        self._display_low_res_thumbnail_fallback(
-                            file_path, thumbnail, max_dim
-                        )
+                        self._display_low_res_thumbnail_fallback(file_path, thumbnail, max_dim)
                     return
                 self._preview_upgrade_attempted_paths.add(norm_fp)
                 logger.info(
-                    "[MANAGER] Skipping low-res thumbnail (%dpx) for %s; waiting for "
-                    "embedded preview/full",
+                    "[MANAGER] Skipping low-res thumbnail (%dpx) for %s; waiting for embedded preview/full",
                     max_dim,
                     os.path.basename(file_path),
                 )
                 self._pending_thumbnail = thumbnail
-                from image_load_manager import Priority as _Prio
+                from image_load_manager.helpers import Priority as _Prio
 
                 with contextlib.suppress(Exception):
                     self.image_manager.load_image(
@@ -802,9 +770,13 @@ class GalleryPart1:
         # 3840: show normal ~2K/3K embeds immediately; only skip huge thumbs to limit double-render cost.
         if max_dim >= 3840:
             try:
-                logger.info(f"[MANAGER] Skipping thumbnail display (size {w}x{h}) to avoid double-render; waiting for preview/full.")
+                logger.info(
+                    f"[MANAGER] Skipping thumbnail display (size {w}x{h}) to avoid double-render; waiting for preview/full."
+                )
             except Exception:
-                logger.info(f"[MANAGER] Skipping thumbnail display (max_dim={max_dim}) to avoid double-render; waiting for preview/full.")
+                logger.info(
+                    f"[MANAGER] Skipping thumbnail display (max_dim={max_dim}) to avoid double-render; waiting for preview/full."
+                )
             self._pending_thumbnail = None
             self.status_bar.showMessage("Processing image...")
             return
@@ -846,9 +818,7 @@ class GalleryPart1:
                 # already visible avoids that extra flash without touching the
                 # cold-open path (nothing on screen yet), which still needs
                 # this thumbnail to avoid a multi-second blank view.
-                if getattr(self, "_navigation_in_progress", False) and self._single_view_pixels_on_screen(
-                    file_path
-                ):
+                if getattr(self, "_navigation_in_progress", False) and self._single_view_pixels_on_screen(file_path):
                     logger.debug(
                         "[MANAGER] Navigation in progress with content already on screen; "
                         "skipping intermediate %dpx thumbnail repaint for %s (full decode "
@@ -872,7 +842,7 @@ class GalleryPart1:
                     return
 
                 # Only hide overlay if we're actually showing the thumbnail
-                if hasattr(self, 'loading_overlay'):
+                if hasattr(self, "loading_overlay"):
                     self.loading_overlay.hide_loading()
 
                 # Full-res-only testing mode: never paint interim thumbnails/previews.
@@ -898,22 +868,20 @@ class GalleryPart1:
                 self._on_single_view_content_displayed()
                 self._skip_resolution_downgrade_check = False
 
-                self._manager_displayed_max_dim = max(
-                    getattr(self, "_manager_displayed_max_dim", 0), max_dim
-                )
+                self._manager_displayed_max_dim = max(getattr(self, "_manager_displayed_max_dim", 0), max_dim)
                 self.status_bar.showMessage("Preview loaded - processing full image...")
             else:
                 # Keep overlay visible if we're storing thumbnail as pending (waiting for full image)
                 self._pending_thumbnail = thumbnail
                 self.status_bar.showMessage("Processing full image for quality evaluation...")
-                if self._suppress_jpeg_interim(file_path) and _norm_path(
-                    file_path
-                ) == _norm_path(getattr(self, "current_file_path", "") or ""):
+                if self._suppress_jpeg_interim(file_path) and _norm_path(file_path) == _norm_path(
+                    getattr(self, "current_file_path", "") or ""
+                ):
                     # No interim will ever be painted for this file; without an
                     # explicit request some loads end at the thumbnail stage and
                     # the viewport stays empty until the 5s watchdog fires.
                     try:
-                        from image_load_manager import Priority as _Priority
+                        from image_load_manager.helpers import Priority as _Priority
 
                         # Fit view: half-size LibRaw decode (~0.2-0.6s), not
                         # the sensor-res decode (1.5-4s) -- same tier the

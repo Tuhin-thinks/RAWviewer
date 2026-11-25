@@ -3,6 +3,7 @@
 Package split from the original ``search/indexer.py`` module.
 Re-exports the full public surface for backward compatibility.
 """
+
 from ._config import (
     SEMANTIC_BATCH_TUNE_CACHE_VERSION,
     _coerce_float,

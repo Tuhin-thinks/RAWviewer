@@ -1,7 +1,5 @@
 """GPU view part 1: scene item hosting, GL enable, overlays, fit/zoom state."""
 
-from __future__ import annotations
-
 import contextlib
 import sys
 
@@ -15,9 +13,9 @@ from rawviewer_ui.widgets.gpu.gpu_state import _env_true, gpu_cuda_gl_enabled
 
 
 class GpuImageViewPart1:
-
     def set_file_path(self, file_path: str) -> None:
         self.file_path = file_path
+
     def _maybe_enable_opengl(self) -> None:
         if _env_true("RAWVIEWER_GPU_VIEW_NO_GL"):
             return
@@ -33,9 +31,7 @@ class GpuImageViewPart1:
                 fmt = QSurfaceFormat()
                 fmt.setRenderableType(QSurfaceFormat.RenderableType.OpenGL)
                 fmt.setVersion(3, 3)
-                fmt.setProfile(
-                    QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile
-                )
+                fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
                 fmt.setDepthBufferSize(24)
                 fmt.setStencilBufferSize(8)
                 fmt.setSwapBehavior(QSurfaceFormat.SwapBehavior.DoubleBuffer)
@@ -50,17 +46,21 @@ class GpuImageViewPart1:
         except Exception:
             # Raster fallback keeps the feature working without a GL context.
             pass
+
     def _enable_macos_edr(self) -> None:
         """Enable macOS EDR (Extended Dynamic Range) support on the viewport's CALayer."""
         if getattr(self, "_edr_initialized", False):
             return
         import platform
+
         if platform.system() == "Darwin":
             from common_image_loader import is_macos_edr_enabled
+
             if not is_macos_edr_enabled():
                 return
             try:
                 import objc
+
                 vp = self.viewport()
                 if vp is None:
                     return
@@ -75,20 +75,26 @@ class GpuImageViewPart1:
                     self._edr_initialized = True
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).debug(f"Failed to enable EDR on CALayer: {e}")
+
     def has_pixmap(self) -> bool:
         return self._has_pixmap
+
     def is_fit_mode(self) -> bool:
         return self._fit_mode
+
     def is_at_fit_scale(self) -> bool:
         """True when the view transform matches fit-to-window (within tolerance)."""
         if not self._has_pixmap:
             return True
         return self.current_scale() <= self.fit_scale() * self._FIT_SCALE_EPS
+
     def _zoom_in_blocked(self) -> bool:
         if not self._has_pixmap or self._item.pixmap() is None:
             return False
         return self.current_scale() >= self.MAX_SCALE - 1e-9
+
     def set_dodge_burn_mask_overlay(self, mask, show: bool) -> None:
         self._mask_overlay_wanted = bool(show)
         self._mask_overlay_mask = mask if show else None
@@ -98,6 +104,7 @@ class GpuImageViewPart1:
             return
         self.update_dodge_burn_mask(mask)
         self._mask_item.show()
+
     def _dodge_burn_overlay_rgba(self, data, is_heal: bool):
         """uint8 RGBA overlay for a (sub-)region of mask.data (float32)."""
         import numpy as np
@@ -113,16 +120,13 @@ class GpuImageViewPart1:
             # Red for Dodge (positive), Blue for Burn (negative)
             pos_mask = data > 0
             overlay[pos_mask, 0] = 255  # R
-            overlay[pos_mask, 3] = np.clip(
-                data[pos_mask] / 1.5 * 180.0 + 40.0, 0, 255
-            ).astype(np.uint8)
+            overlay[pos_mask, 3] = np.clip(data[pos_mask] / 1.5 * 180.0 + 40.0, 0, 255).astype(np.uint8)
 
             neg_mask = data < 0
             overlay[neg_mask, 2] = 255  # B
-            overlay[neg_mask, 3] = np.clip(
-                -data[neg_mask] / 1.5 * 180.0 + 40.0, 0, 255
-            ).astype(np.uint8)
+            overlay[neg_mask, 3] = np.clip(-data[neg_mask] / 1.5 * 180.0 + 40.0, 0, 255).astype(np.uint8)
         return overlay
+
     def update_dodge_burn_mask(self, mask, dirty_bbox=None) -> None:
         """Refresh the red/blue mask overlay when Show Mask is on.
 
@@ -212,13 +216,12 @@ class GpuImageViewPart1:
 
         self._mask_item.setOffset(0, 0)
         if self._img_w > 0 and self._img_h > 0 and (w != self._img_w or h != self._img_h):
-            self._mask_item.setTransform(
-                QTransform().scale(self._img_w / w, self._img_h / h)
-            )
+            self._mask_item.setTransform(QTransform().scale(self._img_w / w, self._img_h / h))
         else:
             self._mask_item.setTransform(QTransform())
         if not self._mask_item.isVisible():
             self._mask_item.show()
+
     def _refresh_dodge_burn_mask_overlay_size(self) -> None:
         """Re-fit the mask overlay after the displayed pixmap size changes."""
         if not getattr(self, "_mask_overlay_wanted", False):
@@ -226,6 +229,7 @@ class GpuImageViewPart1:
         mask = getattr(self, "_mask_overlay_mask", None)
         if mask is not None:
             self.update_dodge_burn_mask(mask)
+
     def _mouse_stroke_pressure(self, event) -> float:
         """Pressure for mouse/trackpad dodge-burn stamps (0.05..1).
 
@@ -253,9 +257,11 @@ class GpuImageViewPart1:
             except Exception:
                 pass
         return 1.0
+
     def wants_zoom_in_toggle(self) -> bool:
         """Whether Space / double-click should enter 100% zoom (not zoom out to fit)."""
         return self._fit_mode or self.is_at_fit_scale()
+
     def _sync_fit_mode_flag(self) -> None:
         """Align ``_fit_mode`` with the live transform (fixes stale-flag toggle bugs)."""
         if not self._has_pixmap:
@@ -264,8 +270,10 @@ class GpuImageViewPart1:
             self._fit_mode = True
         elif self.current_scale() >= 1.0 - 1e-4:
             self._fit_mode = False
+
     def current_scale(self) -> float:
         return float(self.transform().m11())
+
     def fit_scale(self) -> float:
         """View pixels per image pixel when the image is scaled to fit the viewport."""
         if not self._has_pixmap or self._img_w <= 0 or self._img_h <= 0:
@@ -273,22 +281,24 @@ class GpuImageViewPart1:
         vw = max(1, self.viewport().width())
         vh = max(1, self.viewport().height())
         return min(vw / self._img_w, vh / self._img_h)
+
     def image_size(self):
         return (self._img_w, self._img_h)
+
     def set_placeholder_text(self, text: str) -> None:
         self._placeholder.setText(text or "")
         self._update_placeholder()
+
     def _update_placeholder(self) -> None:
         if self._has_pixmap or not self._placeholder.text():
             self._placeholder.hide()
             return
         vp = self.viewport().rect()
         margin = 24
-        self._placeholder.setGeometry(
-            margin, margin, max(1, vp.width() - 2 * margin), max(1, vp.height() - 2 * margin)
-        )
+        self._placeholder.setGeometry(margin, margin, max(1, vp.width() - 2 * margin), max(1, vp.height() - 2 * margin))
         self._placeholder.show()
         self._placeholder.raise_()
+
     def set_overlay_rect(self, rect, color: QColor, line_width: int = 2) -> None:
         """Draw a dashed rectangle in image (scene) coordinates."""
         if rect is None:
@@ -309,9 +319,11 @@ class GpuImageViewPart1:
         self._overlay_item.setPen(pen)
         self._overlay_item.setRect(rectf)
         self._overlay_item.show()
+
     def clear_overlay(self) -> None:
         if self._overlay_item is not None:
             self._overlay_item.hide()
+
     def set_clipping_overlay(self, pixmap: QPixmap | None) -> None:
         item = self._clipping_item
         if item is None:
@@ -322,9 +334,11 @@ class GpuImageViewPart1:
         item.setPixmap(pixmap)
         item.setOffset(0, 0)
         item.show()
+
     def clear_clipping_overlay(self) -> None:
         if self._clipping_item is not None:
             self._clipping_item.hide()
+
     def pixmap(self) -> QPixmap:
         if getattr(self, "_use_rgb_gl", False):
             img = self._rgb_item.to_qimage()
@@ -332,13 +346,16 @@ class GpuImageViewPart1:
                 return QPixmap.fromImage(img)
             return QPixmap()
         return self._item.pixmap() if getattr(self, "_has_pixmap", False) else QPixmap()
+
     def set_composition_grid_mode(self, mode: str) -> None:
         """Show composition guide lines in image (scene) coordinates."""
         self._grid_mode = mode if mode else "off"
         self._grid_item.set_grid(self._img_w, self._img_h, self._grid_mode)
+
     def clear_pixmap_keep_placeholder_hidden(self) -> None:
         """Clear the displayed pixmap image but keep placeholder text hidden (e.g. during reload)."""
         self._item.setPixmap(QPixmap())
+
     def set_pixmap(self, pixmap: QPixmap, preserve_view=None, *, exact_framing: bool = False) -> None:
         """Set the displayed image.
 
@@ -425,10 +442,10 @@ class GpuImageViewPart1:
             if self._fit_mode and not getattr(self, "_zoom_intent_100", False):
                 self.fit_to_window()
             elif not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
-                    # Stale state: _fit_mode False but transform still at fit scale (e.g. zoom
-                    # requested before the first pixmap arrived). Refit so Space/double-click
-                    # toggles predictably instead of staying stuck at ~fit%.
-                    self.fit_to_window()
+                # Stale state: _fit_mode False but transform still at fit scale (e.g. zoom
+                # requested before the first pixmap arrived). Refit so Space/double-click
+                # toggles predictably instead of staying stuck at ~fit%.
+                self.fit_to_window()
             self._sync_fit_mode_flag()
             return
 
@@ -467,13 +484,16 @@ class GpuImageViewPart1:
         self.scale(s_new, s_new)
         # The anchor's screen offset from the viewport centre is kept fixed, so the
         # point under the pointer does not move when the sharper buffer swaps in.
-        self.centerOn(QPointF(
-            fx * new_w - anchor_dx / s_new,
-            fy * new_h - anchor_dy / s_new,
-        ))
+        self.centerOn(
+            QPointF(
+                fx * new_w - anchor_dx / s_new,
+                fy * new_h - anchor_dy / s_new,
+            )
+        )
         self._log_framing("preserve/pixmap")
         self._sync_fit_mode_flag()
         self.zoomChanged.emit(self.current_scale())
+
     def set_rgb_numpy(self, rgb, preserve_view=None, *, exact_framing: bool = False) -> bool:
         """Display HxWx3 uint8 RGB via OpenGL ``drawImage`` (no ``QPixmap``).
 
@@ -524,7 +544,13 @@ class GpuImageViewPart1:
                 self._update_compare_overlay()
 
             if self._fit_mode or not capture:
-                if self._fit_mode and not getattr(self, "_zoom_intent_100", False) or not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
+                if (
+                    self._fit_mode
+                    and not getattr(self, "_zoom_intent_100", False)
+                    or not capture
+                    and self.is_at_fit_scale()
+                    and not getattr(self, "_zoom_intent_100", False)
+                ):
                     self.fit_to_window()
                 self._sync_fit_mode_flag()
                 return True
@@ -554,6 +580,7 @@ class GpuImageViewPart1:
             return True
         except Exception:
             return False
+
     def set_device_rgb(self, device_rgb, preserve_view=None, *, exact_framing: bool = False) -> bool:
         """Display a CUDA ``DeviceRgb`` via CUDA↔GL (no host download for paint).
 
@@ -607,7 +634,13 @@ class GpuImageViewPart1:
                 self._update_compare_overlay()
 
             if self._fit_mode or not capture:
-                if self._fit_mode and not getattr(self, "_zoom_intent_100", False) or not capture and self.is_at_fit_scale() and not getattr(self, "_zoom_intent_100", False):
+                if (
+                    self._fit_mode
+                    and not getattr(self, "_zoom_intent_100", False)
+                    or not capture
+                    and self.is_at_fit_scale()
+                    and not getattr(self, "_zoom_intent_100", False)
+                ):
                     self.fit_to_window()
                 self._sync_fit_mode_flag()
                 return True
@@ -637,8 +670,10 @@ class GpuImageViewPart1:
             return True
         except Exception:
             return False
+
     def clear(self) -> None:
         self.clear_image(show_placeholder=True)
+
     def clear_image(self, *, show_placeholder: bool = True) -> None:
         """Drop the current image; optionally show the empty-state placeholder."""
         self._use_rgb_gl = False
@@ -659,11 +694,17 @@ class GpuImageViewPart1:
             self._update_placeholder()
         else:
             self._placeholder.hide()
+
     def has_heavy_pixmap(self) -> bool:
-        return bool(getattr(self, "_has_pixmap", False)) and max(
-            int(getattr(self, "_img_w", 0) or 0),
-            int(getattr(self, "_img_h", 0) or 0),
-        ) >= 2048
+        return (
+            bool(getattr(self, "_has_pixmap", False))
+            and max(
+                int(getattr(self, "_img_w", 0) or 0),
+                int(getattr(self, "_img_h", 0) or 0),
+            )
+            >= 2048
+        )
+
     def is_opengl_viewport(self) -> bool:
         try:
             from PyQt6.QtOpenGLWidgets import QOpenGLWidget
@@ -671,6 +712,7 @@ class GpuImageViewPart1:
             return isinstance(self.viewport(), QOpenGLWidget)
         except Exception:
             return False
+
     def release_for_gallery_entry(self) -> None:
         """Drop single-view image resources when switching to gallery.
 
@@ -699,6 +741,7 @@ class GpuImageViewPart1:
                 QTimer.singleShot(150, self._clear_for_gallery_if_hidden)
             return
         self.clear()
+
     def _viewport_hidden_for_teardown(self) -> bool:
         """True when this view (or an ancestor) is hidden — safe for GL pixmap drop."""
         w = self
@@ -710,6 +753,7 @@ class GpuImageViewPart1:
                 return True
             w = w.parentWidget()
         return False
+
     def _safe_clear_opengl_pixmap(self) -> None:
         """Release GL texture backing the pixmap item (Windows gallery entry)."""
         vp = self.viewport()
@@ -730,6 +774,7 @@ class GpuImageViewPart1:
             if gl_widget is not None:
                 with contextlib.suppress(Exception):
                     gl_widget.doneCurrent()
+
     def _clear_for_gallery_if_hidden(self) -> None:
         if not self.has_heavy_pixmap():
             return
@@ -743,6 +788,7 @@ class GpuImageViewPart1:
             int(getattr(self, "_img_h", 0) or 0),
         )
         self._safe_clear_opengl_pixmap()
+
     def capture_viewport_pixmap(self) -> QPixmap | None:
         """Capture the visible view for resolution cross-fade (OpenGL-safe).
 

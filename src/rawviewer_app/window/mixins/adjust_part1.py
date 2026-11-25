@@ -1,5 +1,4 @@
 """adjust mixin, part 1 of 5 (42 methods, 892 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -36,10 +35,7 @@ class AdjustPart1:
         else:
             min_dim = self._single_view_cache_min_dim(for_navigation=for_navigation)
         allow_sensor = bool(
-            for_navigation
-            and file_path
-            and use_libraw_consistent_preview_first(file_path)
-            and is_raw_file(file_path)
+            for_navigation and file_path and use_libraw_consistent_preview_first(file_path) and is_raw_file(file_path)
         )
         return self._cache_buffer_suitable_for_single_view(
             image,
@@ -52,7 +48,7 @@ class AdjustPart1:
         return bool(getattr(self, "_raw_recovery_active", False))
 
     def _adjust_panel_active(self) -> bool:
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         if not editing_features_enabled():
             return False
@@ -88,9 +84,7 @@ class AdjustPart1:
             else:
                 panel = getattr(self, "single_image_adjust_panel", None)
                 adj = panel.get_adjustments() if panel is not None else {}
-                if not self._adj_has_warp(adj) and not (
-                    panel is not None and panel.is_crop_mode()
-                ):
+                if not self._adj_has_warp(adj) and not (panel is not None and panel.is_crop_mode()):
                     self._exit_geometry_overlay_preview(refresh=True)
                 elif panel is not None and not panel.is_crop_mode():
                     # Keep overlay while straighten/perspective remain non-zero;
@@ -103,16 +97,13 @@ class AdjustPart1:
             return
         try:
             if active:
-                self._transform_grid_saved_mode = getattr(
-                    self, "_composition_grid_mode", "off"
-                )
+                self._transform_grid_saved_mode = getattr(self, "_composition_grid_mode", "off")
                 # Fine 9x9 mesh: a 3x3 is too coarse to judge straightening /
                 # keystone convergence against.
                 gv.set_composition_grid_mode("fine")
             else:
                 gv.set_composition_grid_mode(
-                    getattr(self, "_transform_grid_saved_mode", None)
-                    or getattr(self, "_composition_grid_mode", "off")
+                    getattr(self, "_transform_grid_saved_mode", None) or getattr(self, "_composition_grid_mode", "off")
                 )
             gv.viewport().update()
         except Exception:
@@ -136,18 +127,10 @@ class AdjustPart1:
             view._shortcut_handler = self._handle_app_shortcut
             view._wheel_navigate_in_fit = False
             view.wheelNavigate.connect(lambda _d, v=view: None)
-            view.doubleClickedAt.connect(
-                lambda pt, v=view: self._on_compare_double_clicked(v, pt)
-            )
-            view.zoomChanged.connect(
-                lambda _s, v=view: self._on_compare_zoom_changed(v)
-            )
-            view.horizontalScrollBar().valueChanged.connect(
-                lambda _v, src=view: self._on_compare_scroll_changed(src)
-            )
-            view.verticalScrollBar().valueChanged.connect(
-                lambda _v, src=view: self._on_compare_scroll_changed(src)
-            )
+            view.doubleClickedAt.connect(lambda pt, v=view: self._on_compare_double_clicked(v, pt))
+            view.zoomChanged.connect(lambda _s, v=view: self._on_compare_zoom_changed(v))
+            view.horizontalScrollBar().valueChanged.connect(lambda _v, src=view: self._on_compare_scroll_changed(src))
+            view.verticalScrollBar().valueChanged.connect(lambda _v, src=view: self._on_compare_scroll_changed(src))
             row.addWidget(view, 1)
 
         self._compare_complete_banner = QLabel("", container)
@@ -200,9 +183,7 @@ class AdjustPart1:
             return None
         path_to_group = getattr(self, "_burst_path_to_group", {}) or {}
         rejected = set(getattr(self, "_burst_rejected_paths", set()) or set())
-        burst_members = selection_covers_single_burst_group(
-            keys, path_to_group, rejected
-        )
+        burst_members = selection_covers_single_burst_group(keys, path_to_group, rejected)
         if burst_members is not None:
             capture_times = self._capture_times_for_paths(burst_members)
             ordered = sort_paths_by_capture_time(burst_members, capture_times)
@@ -353,9 +334,7 @@ class AdjustPart1:
             return
         if hasattr(self, "_compare_complete_banner") and self._compare_complete_banner:
             if session.complete:
-                self._compare_complete_banner.setText(
-                    "Comparison complete. Press Esc to return."
-                )
+                self._compare_complete_banner.setText("Comparison complete. Press Esc to return.")
                 self._compare_complete_banner.show()
                 self._compare_complete_banner.raise_()
                 self._position_compare_complete_banner()
@@ -461,9 +440,7 @@ class AdjustPart1:
                 pass
         return best_pm, best_oriented
 
-    def _compare_apply_visual_rotation_for_path(
-        self, pixmap: QPixmap, file_path: str
-    ) -> QPixmap:
+    def _compare_apply_visual_rotation_for_path(self, pixmap: QPixmap, file_path: str) -> QPixmap:
         """Apply stored non-destructive visual rotation for a compare-pane pixmap."""
         if pixmap is None or pixmap.isNull() or not file_path:
             return pixmap
@@ -541,11 +518,7 @@ class AdjustPart1:
             return
         rect, src = self._compare_focus_rect_for_path(str(path), view)
         if rect is not None and not rect.isNull():
-            color = (
-                QColor(255, 185, 45)
-                if src == "makernote_af"
-                else QColor(165, 255, 95)
-            )
+            color = QColor(255, 185, 45) if src == "makernote_af" else QColor(165, 255, 95)
             view.set_overlay_rect(rect, color)
         else:
             view.clear_overlay()
@@ -569,7 +542,7 @@ class AdjustPart1:
         if not file_path:
             return
         try:
-            from image_load_manager import Priority
+            from image_load_manager.helpers import Priority
 
             self.image_manager.load_image(
                 file_path,
@@ -617,10 +590,7 @@ class AdjustPart1:
         if pm is None or pm.isNull():
             return False
         old_dim = self._compare_pane_max_dim(view)
-        size_changed = (
-            view._img_w != pm.width()
-            or view._img_h != pm.height()
-        )
+        size_changed = view._img_w != pm.width() or view._img_h != pm.height()
         if (
             old_dim > 0
             and new_dim <= int(old_dim * 1.02)
@@ -653,11 +623,7 @@ class AdjustPart1:
             correct = self._compare_display_pixmap_for_path(path)
             if correct is None or correct.isNull():
                 continue
-            if (
-                not view.has_pixmap()
-                or view._img_w != correct.width()
-                or view._img_h != correct.height()
-            ):
+            if not view.has_pixmap() or view._img_w != correct.width() or view._img_h != correct.height():
                 preserve = not view.is_fit_mode()
                 view.set_pixmap(correct, preserve_view=preserve)
                 if getattr(self, "_compare_focus_outline_active", False):
@@ -665,10 +631,10 @@ class AdjustPart1:
                 continue
             best_pm, _ = self._compare_best_pixmap_for_path(path)
             if best_pm is not None and not best_pm.isNull() and not self._compare_pixmap_matches_exif(path, best_pm):
-                    preserve = not view.is_fit_mode()
-                    view.set_pixmap(correct, preserve_view=preserve)
-                    if getattr(self, "_compare_focus_outline_active", False):
-                        self._compare_update_focus_overlay_for_view(view)
+                preserve = not view.is_fit_mode()
+                view.set_pixmap(correct, preserve_view=preserve)
+                if getattr(self, "_compare_focus_outline_active", False):
+                    self._compare_update_focus_overlay_for_view(view)
 
     def _load_compare_pane(self, path: str, view, *, force: bool = False) -> None:
         if view is None:
@@ -747,42 +713,44 @@ class AdjustPart1:
 
         if ext == ".gif":
             from PyQt6.QtGui import QMovie
+
             movie = QMovie(path)
+
             # Create a safe closure/handler that checks if this view is still displaying this path
             def handler():
                 if getattr(view, "file_path", "") == path:
                     pm = movie.currentPixmap()
                     if pm is not None and not pm.isNull():
                         view.set_pixmap(pm, preserve_view=True)
+
             movie.frameChanged.connect(handler)
             movie.start()
-            self._compare_view_animations[view] = {
-                "type": "gif",
-                "movie": movie,
-                "handler": handler
-            }
+            self._compare_view_animations[view] = {"type": "gif", "movie": movie, "handler": handler}
         elif ext == ".webp":
             from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
 
             class WebpCompareSignals(QObject):
-                ready = pyqtSignal(list, list) # frames (QImage), durations
+                ready = pyqtSignal(list, list)  # frames (QImage), durations
 
             class WebpCompareWorker(QRunnable):
                 def __init__(self_inner):
                     super().__init__()
                     self_inner.signals = WebpCompareSignals()
+
                 def run(self_inner):
                     try:
                         from PIL import Image
+
                         frames = []
                         durations = []
                         with Image.open(path) as img:
                             n_frames = getattr(img, "n_frames", 1)
                             if n_frames <= 1:
-                                return # Static webp
+                                return  # Static webp
                             for frame_idx in range(n_frames):
                                 img.seek(frame_idx)
                                 from PIL.ImageQt import ImageQt
+
                                 qim = ImageQt(img.convert("RGBA"))
                                 frames.append(qim.copy())
                                 durations.append(img.info.get("duration", 100) or 100)
@@ -791,6 +759,7 @@ class AdjustPart1:
                         pass
 
             worker = WebpCompareWorker()
+
             def on_ready(qimages, durations):
                 if getattr(view, "file_path", "") != path:
                     return
@@ -798,11 +767,7 @@ class AdjustPart1:
                 timer = QTimer(self)
                 timer.setSingleShot(True)
 
-                state = {
-                    "frames": pixmaps,
-                    "durations": durations,
-                    "idx": 0
-                }
+                state = {"frames": pixmaps, "durations": durations, "idx": 0}
 
                 def play_frame():
                     if getattr(view, "file_path", "") != path:
@@ -819,10 +784,7 @@ class AdjustPart1:
                 timer.timeout.connect(play_frame)
                 play_frame()
 
-                self._compare_view_animations[view] = {
-                    "type": "webp",
-                    "timer": timer
-                }
+                self._compare_view_animations[view] = {"type": "webp", "timer": timer}
 
             worker.signals.ready.connect(on_ready)
             _get_bg_thread_pool().start(worker)

@@ -1,5 +1,4 @@
 """Early process bootstrap: log redirection and crash diagnostics."""
-from __future__ import annotations
 
 import os
 import sys
@@ -17,15 +16,13 @@ __all__ = [
 
 def _is_multiprocessing_worker_process() -> bool:
     """Detect ProcessPool / spawn children before Qt runs (frozen .app re-exec)."""
-    if any(
-        arg == "--multiprocessing-fork" or arg.startswith("--multiprocessing-fork")
-        for arg in sys.argv[1:]
-    ):
+    if any(arg == "--multiprocessing-fork" or arg.startswith("--multiprocessing-fork") for arg in sys.argv[1:]):
         return True
     if len(sys.argv) >= 3 and sys.argv[1] == "-c" and "spawn_main" in sys.argv[2]:
         return True
     try:
         import multiprocessing as _mp
+
         if _mp.parent_process() is not None:
             return True
         # Spawn children can still report MainProcess until spawn_main renames them.
@@ -40,6 +37,7 @@ def _bootstrap_multiprocessing_gui_main() -> bool:
     """True only for the real GUI process (not ProcessPoolExecutor workers)."""
     try:
         import multiprocessing as _mp
+
         _mp.freeze_support()
     except Exception:
         pass
@@ -63,9 +61,7 @@ def _debug_log_marker_path() -> str:
     return os.path.join(app_data, "RAWviewer", "enable_debug_log")
 
 
-_FILE_LOG_ARGV_FLAGS = frozenset(
-    {"--file-log", "--debug-log", "/file-log", "/debug-log"}
-)
+_FILE_LOG_ARGV_FLAGS = frozenset({"--file-log", "--debug-log", "/file-log", "/debug-log"})
 
 
 def _consume_file_log_argv() -> bool:
@@ -152,14 +148,8 @@ def _enable_fatal_crash_dump_if_needed():
         dump_flag = os.environ.get("RAWVIEWER_FATAL_DUMP", "").strip().lower()
         if dump_flag in ("0", "false", "no", "off"):
             return
-        argv_file_log = any(
-            str(a).strip().lower() in _FILE_LOG_ARGV_FLAGS for a in sys.argv[1:]
-        )
-        enabled = (
-            dump_flag in ("1", "true", "yes", "on")
-            or _file_logging_requested()
-            or argv_file_log
-        )
+        argv_file_log = any(str(a).strip().lower() in _FILE_LOG_ARGV_FLAGS for a in sys.argv[1:])
+        enabled = dump_flag in ("1", "true", "yes", "on") or _file_logging_requested() or argv_file_log
         if not enabled:
             return
         import faulthandler

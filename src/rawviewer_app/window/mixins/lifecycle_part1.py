@@ -1,5 +1,4 @@
 """lifecycle mixin, part 1 of 2 (12 methods, 825 lines)."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -33,11 +32,13 @@ class LifecyclePart1:
         # Configure vertical scrollbars to jump directly to absolute cursor position when clicked
         try:
             from PyQt6.QtWidgets import QProxyStyle, QStyle
+
             class ScrollBarJumpStyle(QProxyStyle):
                 def styleHint(self, hint, option=None, widget=None, returnData=None):
                     if hint == QStyle.StyleHint.SH_ScrollBar_LeftClickAbsolutePosition:
                         return 1
                     return super().styleHint(hint, option, widget, returnData)
+
             app = _qt_app()
             if app:
                 # Keep a persistent Python reference on the app object to prevent garbage collection!
@@ -56,9 +57,7 @@ class LifecyclePart1:
         self._crossfade_enabled = not _env_true("RAWVIEWER_DISABLE_CROSSFADE", default=False)
         self._crossfade_duration_ms = 160
         self._gallery_crossfade_duration_ms = 240
-        self._resolution_crossfade_ms = _env_int(
-            "RAWVIEWER_RESOLUTION_CROSSFADE_MS", 280, minimum=80
-        )
+        self._resolution_crossfade_ms = _env_int("RAWVIEWER_RESOLUTION_CROSSFADE_MS", 280, minimum=80)
         self._pending_resolution_crossfade = False
         self._crossfade_use_resolution_duration = False
         self._crossfade_next_paint = False
@@ -138,7 +137,7 @@ class LifecyclePart1:
         self.thumbnail_threads = []  # Track running thumbnail threads
 
         # View mode: 'single' for single image view, 'gallery' for gallery view
-        self.view_mode = 'single'  # Default to single image view
+        self.view_mode = "single"  # Default to single image view
         self._filmstrip_pointer_active = False
         self._filmstrip_warmed_paths = set()
         # Gallery functionality enabled
@@ -379,12 +378,9 @@ class LifecyclePart1:
             memory_info = cache_stats["memory_info"]
             safe_print("✓ Enhanced image cache initialized", flush=True)
             safe_print(f"  Cache budget: {cache_stats['cache_budget_mb']}MB", flush=True)
-            safe_print(
-                f"  Max full images: {cache_stats['full_image_cache']['max_size']}", flush=True)
-            safe_print(
-                f"  Max thumbnails: {cache_stats['thumbnail_cache']['max_size']}", flush=True)
-            safe_print(
-                f"  Available memory: {memory_info['system_available_gb']:.1f}GB", flush=True)
+            safe_print(f"  Max full images: {cache_stats['full_image_cache']['max_size']}", flush=True)
+            safe_print(f"  Max thumbnails: {cache_stats['thumbnail_cache']['max_size']}", flush=True)
+            safe_print(f"  Available memory: {memory_info['system_available_gb']:.1f}GB", flush=True)
         except Exception as exc:
             safe_print(
                 f"  [RAWImageViewer] Cache stats unavailable ({exc}); continuing startup",
@@ -411,13 +407,12 @@ class LifecyclePart1:
     def _cleanup_old_image_cache(self):
         """Run persistent cache cleanup once after startup without delaying window creation."""
         try:
-            if hasattr(self, 'image_cache') and self.image_cache:
+            if hasattr(self, "image_cache") and self.image_cache:
                 self.image_cache.cleanup_old_cache()
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(
-                "Old image cache cleanup failed: %s", e, exc_info=True
-            )
+
+            logging.getLogger(__name__).debug("Old image cache cleanup failed: %s", e, exc_info=True)
         self._enforce_disk_cache_budget_background()
 
     def _schedule_deferred_filmstrip_flush(self) -> None:
@@ -501,6 +496,7 @@ class LifecyclePart1:
         import logging
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
         cleanup_start = time.time()
 
@@ -519,50 +515,60 @@ class LifecyclePart1:
             # Stop any current processing
             if self.current_processor is not None:
                 processor_type = type(self.current_processor).__name__
-                is_running = self.current_processor.isRunning() if hasattr(self.current_processor, 'isRunning') else False
-                logger.debug(f"Cleaning up processor: {processor_type}, is_running: {is_running}, file: {getattr(self.current_processor, 'file_path', 'unknown')}")
+                is_running = (
+                    self.current_processor.isRunning() if hasattr(self.current_processor, "isRunning") else False
+                )
+                logger.debug(
+                    f"Cleaning up processor: {processor_type}, is_running: {is_running}, file: {getattr(self.current_processor, 'file_path', 'unknown')}"
+                )
 
                 try:
                     # Disconnect signals first to prevent access violations
                     logger.info("[CLEANUP] Disconnecting processor signals")
                     try:
-                        if hasattr(self.current_processor, 'image_processed'):
+                        if hasattr(self.current_processor, "image_processed"):
                             self.current_processor.image_processed.disconnect()
-                        if hasattr(self.current_processor, 'error_occurred'):
+                        if hasattr(self.current_processor, "error_occurred"):
                             self.current_processor.error_occurred.disconnect()
-                        if hasattr(self.current_processor, 'thumbnail_fallback_used'):
+                        if hasattr(self.current_processor, "thumbnail_fallback_used"):
                             self.current_processor.thumbnail_fallback_used.disconnect()
-                        if hasattr(self.current_processor, 'processing_progress'):
+                        if hasattr(self.current_processor, "processing_progress"):
                             self.current_processor.processing_progress.disconnect()
-                        if hasattr(self.current_processor, 'exif_data_ready'):
+                        if hasattr(self.current_processor, "exif_data_ready"):
                             self.current_processor.exif_data_ready.disconnect()
                         logger.info("[CLEANUP] Processor signals disconnected")
                     except Exception as disconnect_error:
-                        logger.warning(f"[CLEANUP] Error disconnecting signals (may be normal if already disconnected): {disconnect_error}")
+                        logger.warning(
+                            f"[CLEANUP] Error disconnecting signals (may be normal if already disconnected): {disconnect_error}"
+                        )
 
                     # RAWProcessor uses cleanup(), EnhancedRAWProcessor uses stop_processing() and wait()
-                    if hasattr(self.current_processor, 'cleanup'):
+                    if hasattr(self.current_processor, "cleanup"):
                         logger.info(f"[CLEANUP] Calling cleanup() on {processor_type}")
                         self.current_processor.cleanup()
                         logger.info(f"[CLEANUP] cleanup() completed for {processor_type}")
                     else:
                         # For EnhancedRAWProcessor, use stop_processing and wait
                         logger.info(f"[CLEANUP] Using stop_processing() for {processor_type}")
-                        if hasattr(self.current_processor, 'stop_processing'):
+                        if hasattr(self.current_processor, "stop_processing"):
                             self.current_processor.stop_processing()
                             logger.info(f"[CLEANUP] stop_processing() called for {processor_type}")
 
-                        if hasattr(self.current_processor, 'isRunning'):
+                        if hasattr(self.current_processor, "isRunning"):
                             if self.current_processor.isRunning():
                                 logger.info("[CLEANUP] Processor still running, calling quit() and wait()")
                                 self.current_processor.quit()
                                 wait_result = self.current_processor.wait(100)  # Wait up to 100ms
-                                logger.info(f"[CLEANUP] wait() returned: {wait_result}, is_running: {self.current_processor.isRunning()}")
+                                logger.info(
+                                    f"[CLEANUP] wait() returned: {wait_result}, is_running: {self.current_processor.isRunning()}"
+                                )
                                 if not wait_result:
                                     logger.info("[CLEANUP] Processor did not stop gracefully, calling terminate()")
                                     self.current_processor.terminate()
                                     terminate_wait = self.current_processor.wait(50)  # Wait up to 50ms after terminate
-                                    logger.info(f"[CLEANUP] After terminate(), wait() returned: {terminate_wait}, is_running: {self.current_processor.isRunning()}")
+                                    logger.info(
+                                        f"[CLEANUP] After terminate(), wait() returned: {terminate_wait}, is_running: {self.current_processor.isRunning()}"
+                                    )
                             else:
                                 logger.info("[CLEANUP] Processor not running, skip quit/wait")
 
@@ -579,7 +585,7 @@ class LifecyclePart1:
                 logger.debug("No current_processor to clean up")
 
             # Cancel preload threads (non-blocking)
-            if hasattr(self, 'preload_manager'):
+            if hasattr(self, "preload_manager"):
                 logger.debug("Cancelling preload threads (non-blocking)")
                 try:
                     self.preload_manager.cancel_all_preloads()
@@ -590,11 +596,15 @@ class LifecyclePart1:
                 logger.debug("No preload_manager available")
 
             cleanup_end = time.time()
-            logger.info(f"[CLEANUP] _cleanup_current_processing completed successfully in {cleanup_end - cleanup_start:.3f}s")
+            logger.info(
+                f"[CLEANUP] _cleanup_current_processing completed successfully in {cleanup_end - cleanup_start:.3f}s"
+            )
         except Exception as e:
             cleanup_end = time.time()
-            logger.error(f"[CLEANUP] ========== CRITICAL ERROR in _cleanup_current_processing "
-                        f"(at {cleanup_end:.3f}, duration: {cleanup_end - cleanup_start:.3f}s) ==========")
+            logger.error(
+                f"[CLEANUP] ========== CRITICAL ERROR in _cleanup_current_processing "
+                f"(at {cleanup_end:.3f}, duration: {cleanup_end - cleanup_start:.3f}s) =========="
+            )
             logger.error(f"[CLEANUP] Exception type: {type(e).__name__}, message: {e}", exc_info=True)
             logger.error(f"[CLEANUP] Full traceback:\n{traceback.format_exc()}")
             raise
@@ -615,7 +625,7 @@ class LifecyclePart1:
         Keeps ``SIDECAR_ADJUST`` / ``EDITED_PREVIEWS`` off by default.
         """
         from common_image_loader import is_raw_file
-        from raw_adjustments import edited_previews_enabled
+        from raw_adjustments.xmp_read import edited_previews_enabled
 
         if not path or not is_raw_file(path):
             return
@@ -716,9 +726,7 @@ class LifecyclePart1:
                 libraw_rendered=True,
             )
         except Exception:
-            logging.getLogger(__name__).debug(
-                "editor-aligned browse cache bake failed", exc_info=True
-            )
+            logging.getLogger(__name__).debug("editor-aligned browse cache bake failed", exc_info=True)
 
     def _macos_cleanup_share_temp(self) -> None:
         temps = getattr(self, "_macos_share_temp_paths", None)
@@ -803,18 +811,12 @@ class LifecyclePart1:
             )
             return
         if reason == "post_session_restore":
-            delay_ms = _env_int(
-                "RAWVIEWER_GPU_IMPORT_AFTER_RESTORE_MS", 1500, minimum=0
-            )
+            delay_ms = _env_int("RAWVIEWER_GPU_IMPORT_AFTER_RESTORE_MS", 1500, minimum=0)
         else:
-            delay_ms = _env_int(
-                "RAWVIEWER_GPU_IMPORT_AFTER_PAINT_MS", 4000, minimum=0
-            )
+            delay_ms = _env_int("RAWVIEWER_GPU_IMPORT_AFTER_PAINT_MS", 4000, minimum=0)
         import logging
 
-        logging.getLogger(__name__).info(
-            "[GPU] Scheduling backend import in %dms (%s)", delay_ms, reason
-        )
+        logging.getLogger(__name__).info("[GPU] Scheduling backend import in %dms (%s)", delay_ms, reason)
         timer = getattr(self, "_gpu_backend_import_timer", None)
         if timer is None:
             timer = QTimer(self)

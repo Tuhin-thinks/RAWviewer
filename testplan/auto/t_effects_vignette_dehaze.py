@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Vignette / dehaze effect smoke tests."""
-from __future__ import annotations
 
 import os
 import sys
@@ -19,8 +18,9 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 def main() -> int:
-    from raw_effects import apply_dehaze, apply_vignette
     from raw_edit_pipeline import _apply_display_stage, _apply_display_stage_banded
+    from raw_effects import apply_dehaze, apply_vignette
+
     from raw_adjustments import DEFAULT_ADJUSTMENTS
 
     img = np.full((200, 300, 3), 0.45, dtype=np.float32)
@@ -36,9 +36,7 @@ def main() -> int:
         float(bright[2, 2, 0]) > float(bright[100, 150, 0]),
     )
     # Amount must be monotonic / near-linear (no direction reversals).
-    corners = [
-        float(apply_vignette(img, float(a))[2, 2, 0]) for a in range(-100, 101, 10)
-    ]
+    corners = [float(apply_vignette(img, float(a))[2, 2, 0]) for a in range(-100, 101, 10)]
     diffs = [corners[i + 1] - corners[i] for i in range(len(corners) - 1)]
     check(
         "corner brightness rises monotonically with Amount",
@@ -51,7 +49,7 @@ def main() -> int:
     check(
         "corner response near-linear in Amount",
         span < 0.08,
-        f"span={span:.4f} mid_diffs={[round(d,4) for d in mid_diffs]}",
+        f"span={span:.4f} mid_diffs={[round(d, 4) for d in mid_diffs]}",
     )
     # At Amount=-100 corners approach black; +100 approach white.
     check(

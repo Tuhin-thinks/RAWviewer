@@ -1,6 +1,4 @@
-
 """metadata mixin, part 1 of 2 (29 methods, 874 lines)."""
-from __future__ import annotations
 
 import datetime
 import os
@@ -97,9 +95,7 @@ class MetadataPart1:
     def _toggle_focus_subject_outline(self) -> bool:
         """Return True if handled."""
         if getattr(self, "view_mode", "") == "compare":
-            self._compare_focus_outline_active = not getattr(
-                self, "_compare_focus_outline_active", False
-            )
+            self._compare_focus_outline_active = not getattr(self, "_compare_focus_outline_active", False)
             if self._compare_focus_outline_active:
                 self._compare_update_focus_overlays()
                 self.status_bar.showMessage(
@@ -114,9 +110,7 @@ class MetadataPart1:
         if getattr(self, "view_mode", "single") != "single":
             return False
 
-        self._focus_subject_outline_active = not getattr(
-            self, "_focus_subject_outline_active", False
-        )
+        self._focus_subject_outline_active = not getattr(self, "_focus_subject_outline_active", False)
         if self._focus_subject_outline_active:
             self._refresh_focus_subject_rect_from_exif()
             if getattr(self, "_focus_subject_rect_image", None):
@@ -138,8 +132,7 @@ class MetadataPart1:
                     pyexiv2_ok = False
                 if pyexiv2_ok:
                     self.status_bar.showMessage(
-                        "Focus outline ON -- no AF / SubjectArea box in this file’s metadata. "
-                        "F = off.",
+                        "Focus outline ON -- no AF / SubjectArea box in this file’s metadata. F = off.",
                         6500,
                     )
                 else:
@@ -209,12 +202,8 @@ class MetadataPart1:
                 if degrees:
                     ocode = {90: 6, 180: 3, 270: 8}.get(degrees, 1)
                     ltwh = _rotate_rect(ltwh, base_w, base_h, ocode)
-                self._focus_subject_rect_image = QRect(
-                    ltwh[0], ltwh[1], ltwh[2], ltwh[3]
-                )
-                self._focus_rect_source = (
-                    "exif_subject" if src == "exif_subject" else "makernote_af"
-                )
+                self._focus_subject_rect_image = QRect(ltwh[0], ltwh[1], ltwh[2], ltwh[3])
+                self._focus_rect_source = "exif_subject" if src == "exif_subject" else "makernote_af"
                 return
         except ImportError:
             pass
@@ -231,10 +220,7 @@ class MetadataPart1:
 
         # Re-anchor to the EXIF focus box only after arrow-key navigation while zoomed.
         # Space and double-click set zoom_center_point explicitly -- do not override them here.
-        if (
-            not self._single_view_is_fit_mode()
-            and getattr(self, "_recenter_on_focus_after_nav", False)
-        ):
+        if not self._single_view_is_fit_mode() and getattr(self, "_recenter_on_focus_after_nav", False):
             self._recenter_on_focus_after_nav = False
             rect = getattr(self, "_focus_subject_rect_image", None)
             if rect is not None and not rect.isNull() and rect.width() >= 1 and rect.height() >= 1:
@@ -252,10 +238,7 @@ class MetadataPart1:
         self._redraw_single_view_pixmap_without_relayout()
 
     def _maybe_refresh_focus_subject_outline_after_display(self) -> None:
-        if (
-            getattr(self, "_focus_subject_outline_active", False)
-            and getattr(self, "view_mode", "single") == "single"
-        ):
+        if getattr(self, "_focus_subject_outline_active", False) and getattr(self, "view_mode", "single") == "single":
             QTimer.singleShot(0, self._sync_focus_subject_outline_after_display)
 
     def _filter_paths_to_min_rating(self, files: list[str], min_rating: int) -> list[str]:
@@ -305,14 +288,13 @@ class MetadataPart1:
             if orientation in (6, 8):
                 return h > w
             return True
-        return pixmap_matches_exif_display(
-            pm.width(), pm.height(), ow, oh, orientation
-        )
+        return pixmap_matches_exif_display(pm.width(), pm.height(), ow, oh, orientation)
 
     def on_manager_exif_ready(self, file_path: str, exif_data: dict):
         """處理 ImageLoadManager 的 EXIF 數據就緒信號"""
         import logging
         import time
+
         logger = logging.getLogger(__name__)
 
         if getattr(self, "_suppress_single_manager_callbacks", False):
@@ -330,26 +312,16 @@ class MetadataPart1:
         now = time.time()
         last_path = getattr(self, "_last_manager_exif_path", None)
         last_ts = float(getattr(self, "_last_manager_exif_ts", 0.0) or 0.0)
-        is_minimal = isinstance(exif_data, dict) and bool(
-            exif_data.get("minimal_preview_exif")
-        )
-        if (
-            _norm_path(last_path) == _norm_path(file_path)
-            and (now - last_ts) < 0.35
-        ):
+        is_minimal = isinstance(exif_data, dict) and bool(exif_data.get("minimal_preview_exif"))
+        if _norm_path(last_path) == _norm_path(file_path) and (now - last_ts) < 0.35:
             if is_minimal and getattr(self, "_last_manager_exif_was_minimal", False):
                 logger.debug(
                     "[MANAGER] Skipping duplicate minimal EXIF for %s",
                     os.path.basename(file_path),
                 )
                 return
-            if not is_minimal and not getattr(
-                self, "_last_manager_exif_was_minimal", False
-            ):
-                logger.debug(
-                    f"[MANAGER] Skipping duplicate EXIF-ready burst for "
-                    f"{os.path.basename(file_path)}"
-                )
+            if not is_minimal and not getattr(self, "_last_manager_exif_was_minimal", False):
+                logger.debug(f"[MANAGER] Skipping duplicate EXIF-ready burst for {os.path.basename(file_path)}")
                 return
         self._last_manager_exif_path = file_path
         self._last_manager_exif_ts = now
@@ -365,31 +337,35 @@ class MetadataPart1:
 
         # Debug: Check exif_data structure
         if isinstance(exif_data, dict) and not is_minimal:
-            has_exif_data_key = 'exif_data' in exif_data
+            has_exif_data_key = "exif_data" in exif_data
             exif_tags_count = 0
             exif_tags_sample = []
-            if has_exif_data_key and isinstance(exif_data.get('exif_data'), dict):
-                exif_tags_dict = exif_data['exif_data']
+            if has_exif_data_key and isinstance(exif_data.get("exif_data"), dict):
+                exif_tags_dict = exif_data["exif_data"]
                 exif_tags_count = len(exif_tags_dict)
                 # Log sample of EXIF tags to see what we have
                 exif_tags_sample = list(exif_tags_dict.keys())[:10]
-                logger.info(f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
-                           f"exif_tags_count: {exif_tags_count}, sample tags: {exif_tags_sample}")
-            elif any(key.startswith('EXIF ') or key.startswith('Image ') for key in exif_data):
-                exif_tags_count = len([k for k in exif_data if k.startswith('EXIF ') or k.startswith('Image ')])
-                logger.info(f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
-                           f"exif_tags_count: {exif_tags_count}, top-level keys: {list(exif_data.keys())[:10]}")
+                logger.info(
+                    f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
+                    f"exif_tags_count: {exif_tags_count}, sample tags: {exif_tags_sample}"
+                )
+            elif any(key.startswith("EXIF ") or key.startswith("Image ") for key in exif_data):
+                exif_tags_count = len([k for k in exif_data if k.startswith("EXIF ") or k.startswith("Image ")])
+                logger.info(
+                    f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
+                    f"exif_tags_count: {exif_tags_count}, top-level keys: {list(exif_data.keys())[:10]}"
+                )
             else:
-                logger.info(f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
-                           f"exif_tags_count: {exif_tags_count}, top-level keys: {list(exif_data.keys())[:10]}")
+                logger.info(
+                    f"[MANAGER] EXIF data structure - has 'exif_data' key: {has_exif_data_key}, "
+                    f"exif_tags_count: {exif_tags_count}, top-level keys: {list(exif_data.keys())[:10]}"
+                )
         elif not isinstance(exif_data, dict):
             logger.warning(f"[MANAGER] EXIF data is not a dict, type: {type(exif_data)}")
 
         self._exif_data_ready = True
         if exif_data:
-            self.image_cache.put_exif(
-                file_path, exif_data, persist_disk=not is_minimal
-            )
+            self.image_cache.put_exif(file_path, exif_data, persist_disk=not is_minimal)
             logger.debug(
                 "[MANAGER] Stored %s EXIF in cache for %s",
                 "minimal" if is_minimal else "full",
@@ -422,7 +398,7 @@ class MetadataPart1:
     def get_orientation_from_exif(self, file_path):
         """Extract orientation via EXIFExtractor (RAW fallbacks included)."""
         try:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             exif = EXIFExtractor().extract_exif_data(file_path)
             if exif:
@@ -440,9 +416,29 @@ class MetadataPart1:
         # RAW files from certain cameras may be pre-rotated, but JPEG files are not
         try:
             # Check if this is a RAW file
-            raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                             '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                             '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+            raw_extensions = {
+                ".cr2",
+                ".cr3",
+                ".nef",
+                ".arw",
+                ".dng",
+                ".orf",
+                ".rw2",
+                ".pef",
+                ".srw",
+                ".x3f",
+                ".raf",
+                ".3fr",
+                ".fff",
+                ".iiq",
+                ".cap",
+                ".erf",
+                ".mef",
+                ".mos",
+                ".nrw",
+                ".rwl",
+                ".srf",
+            }
             file_ext = os.path.splitext(_require_str_path(self.current_file_path))[1].lower()
 
             # For JPEG and other non-RAW files, always apply orientation correction
@@ -503,9 +499,7 @@ class MetadataPart1:
                 len(corpus or []),
             )
         if wants_semantic or deferred_semantic:
-            logger.info(
-                "[INDEX][CHAIN] Triggering deferred semantic start after silent metadata."
-            )
+            logger.info("[INDEX][CHAIN] Triggering deferred semantic start after silent metadata.")
             self._gallery_search_index_session_key = None
             self._invalidate_semantic_coverage_cache()
             self._gallery_search_user_wants_semantic = True
@@ -529,9 +523,10 @@ class MetadataPart1:
             if getattr(self, "view_mode", "") == "gallery":
                 self._sync_gallery_rating_filter_stars()
 
-            if hasattr(self, 'gallery_justified') and self.gallery_justified and self.image_files:
+            if hasattr(self, "gallery_justified") and self.gallery_justified and self.image_files:
                 try:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     current_file = getattr(self, "current_file_path", None)
 
@@ -540,12 +535,9 @@ class MetadataPart1:
                     # capture-time order.  This fetch used probe_uncached=False (cache only, ~3 entries)
                     # so its sort would degrade to mtime order and overwrite the correct EXIF order.
                     current_gen = getattr(self, "_folder_load_generation", None)
-                    refinement_applied = (
-                        getattr(self, "_folder_sort_refinement_applied_token", None) == current_gen
-                    )
+                    refinement_applied = getattr(self, "_folder_sort_refinement_applied_token", None) == current_gen
                     refinement_pending = (
-                        getattr(self, "_folder_sort_refinement_token", None) == current_gen
-                        and not refinement_applied
+                        getattr(self, "_folder_sort_refinement_token", None) == current_gen and not refinement_applied
                     )
                     if not refinement_applied and not refinement_pending:
                         newest_first = self.get_sort_preference()
@@ -580,10 +572,12 @@ class MetadataPart1:
                     logger.info(f"[GALLERY] Background metadata ready: {len(meta)} items, gallery refreshed")
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.error(f"[GALLERY] Error refreshing gallery with metadata: {e}")
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"[GALLERY] Critical error in _on_gallery_metadata_ready: {e}")
         finally:
@@ -658,9 +652,7 @@ class MetadataPart1:
         for i, btn in enumerate(buttons, start=1):
             btn.setIcon((filled if i <= min_rating else empty) or QIcon())
             btn.setToolTip(
-                f"Show {i}★ and above (click again to clear)"
-                if i != min_rating
-                else "Click to clear rating filter"
+                f"Show {i}★ and above (click again to clear)" if i != min_rating else "Click to clear rating filter"
             )
 
     def _sync_single_view_rating_stars(self) -> None:
@@ -696,9 +688,7 @@ class MetadataPart1:
 
     def _bump_gallery_rating_presence_epoch(self) -> None:
         """Invalidate cached 'any file rated?' answers for the star-filter row."""
-        self._gallery_rating_presence_epoch = (
-            int(getattr(self, "_gallery_rating_presence_epoch", 0) or 0) + 1
-        )
+        self._gallery_rating_presence_epoch = int(getattr(self, "_gallery_rating_presence_epoch", 0) or 0) + 1
         self._gallery_any_rated_cache = None
 
     def _gallery_path_rating(self, file_path: str) -> int:
@@ -763,12 +753,14 @@ class MetadataPart1:
         try:
             # Try to get from cache first
             from image_cache import get_image_cache
+
             cache = get_image_cache()
             cached_exif = cache.get_exif(file_path)
 
-            if cached_exif and cached_exif.get('capture_time'):
+            if cached_exif and cached_exif.get("capture_time"):
                 from common_image_loader import parse_capture_time_to_timestamp
-                ts = parse_capture_time_to_timestamp(cached_exif['capture_time'])
+
+                ts = parse_capture_time_to_timestamp(cached_exif["capture_time"])
                 if ts > 0:
                     return ts
 
@@ -777,7 +769,19 @@ class MetadataPart1:
                 # Only attempt exifread on formats likely to have compatible EXIF
                 # (JPEG, TIFF, and RAW formats)
                 ext = os.path.splitext(file_path)[1].lower()
-                exif_likely_exts = {'.jpg', '.jpeg', '.tif', '.tiff', '.arw', '.cr2', '.nef', '.raf', '.orf', '.dng', '.cr3'}
+                exif_likely_exts = {
+                    ".jpg",
+                    ".jpeg",
+                    ".tif",
+                    ".tiff",
+                    ".arw",
+                    ".cr2",
+                    ".nef",
+                    ".raf",
+                    ".orf",
+                    ".dng",
+                    ".cr3",
+                }
 
                 if ext in exif_likely_exts:
                     tags = process_file_from_path(file_path, details=False)
@@ -794,9 +798,7 @@ class MetadataPart1:
                             try:
                                 datetime_str = str(datetime_raw)
                                 # Parse datetime string (format: "YYYY:MM:DD HH:MM:SS")
-                                dt = datetime.strptime(
-                                    datetime_str, "%Y:%m:%d %H:%M:%S"
-                                )
+                                dt = datetime.strptime(datetime_str, "%Y:%m:%d %H:%M:%S")
                                 return dt.timestamp()
                             except (ValueError, AttributeError):
                                 continue
@@ -861,7 +863,8 @@ class MetadataPart1:
             try:
                 import time
 
-                from image_load_manager import Priority, get_image_load_manager
+                from image_load_manager.helpers import Priority, get_image_load_manager
+
                 manager = get_image_load_manager()
                 viewer = self
                 # Yield only while arrow-key navigation is in flight so cold
@@ -872,9 +875,7 @@ class MetadataPart1:
                 # per-file 250ms wait × thousands of files permanently delayed
                 # EXIF sort, keeping the Gallery button hidden.
                 # Cap: RAWVIEWER_SORT_PROBE_MAX_YIELD_MS (0 = never yield).
-                max_yield_ms = _env_int(
-                    "RAWVIEWER_SORT_PROBE_MAX_YIELD_MS", 250, minimum=0
-                )
+                max_yield_ms = _env_int("RAWVIEWER_SORT_PROBE_MAX_YIELD_MS", 250, minimum=0)
                 if max_yield_ms > 0:
                     yield_deadline = time.monotonic() + (max_yield_ms / 1000.0)
                     while time.monotonic() < yield_deadline:
@@ -899,7 +900,6 @@ class MetadataPart1:
                 return p, probe_capture_timestamp_from_file(p)
             except Exception:
                 return p, 0.0
-
 
         with ThreadPoolExecutor(max_workers=workers) as pool:
             for p, ts in pool.map(_probe_one, missing_paths, chunksize=chunksize):

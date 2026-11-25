@@ -1,6 +1,4 @@
-
 """misc mixin, part 3 of 4 (22 methods, 849 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -22,9 +20,7 @@ lazy.register(sys.modules[__name__])
 
 
 class MiscPart3:
-    def _maybe_arm_raw_edr_after_idle(
-        self, file_path: str, rgb_image, width: int, height: int
-    ) -> None:
+    def _maybe_arm_raw_edr_after_idle(self, file_path: str, rgb_image, width: int, height: int) -> None:
         """Schedule a delayed RAW EDR upgrade once nav settles on ``file_path``.
 
         Called from ``display_numpy_image`` when EDR would apply but hasn't
@@ -54,9 +50,7 @@ class MiscPart3:
             exif_for_edr = None
             with contextlib.suppress(Exception):
                 exif_for_edr = self.image_cache.get_exif(fp)
-            is_half_size_edr = not image_covers_sensor_resolution(
-                w, h, exif_for_edr
-            )
+            is_half_size_edr = not image_covers_sensor_resolution(w, h, exif_for_edr)
             self._start_display_numpy_pixmap_worker(
                 fp,
                 rgb,
@@ -86,7 +80,7 @@ class MiscPart3:
         if cached_exif and cached_exif.get("nef_he_compressed") is False:
             return False
         try:
-            from enhanced_raw_processor import _detect_nef_he_compression
+            from enhanced_raw_processor.extraction import _detect_nef_he_compression
 
             return _detect_nef_he_compression(file_path) is True
         except Exception:
@@ -96,7 +90,7 @@ class MiscPart3:
         if not file_path:
             return False
         try:
-            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
             return os.path.normcase(os.path.abspath(file_path)) in _LIBRAW_UNSUPPORTED_PATHS
         except Exception:
@@ -104,20 +98,18 @@ class MiscPart3:
 
     def _mark_path_libraw_unsupported(self, file_path: str) -> None:
         try:
-            from processing.unified import _mark_libraw_unsupported
+            from processing.unified.helpers import _mark_libraw_unsupported
 
             _mark_libraw_unsupported(os.path.normcase(os.path.abspath(file_path)))
         except Exception:
             try:
-                from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+                from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
                 _LIBRAW_UNSUPPORTED_PATHS.add(os.path.normcase(os.path.abspath(file_path)))
             except Exception:
                 pass
 
-    def _auto_revert_to_embedded_jpeg_workflow(
-        self, file_path: str, *, reason: str = ""
-    ) -> bool:
+    def _auto_revert_to_embedded_jpeg_workflow(self, file_path: str, *, reason: str = "") -> bool:
         """Allow embedded pixels for *this* LibRaw-unsupported file only.
 
         Returns True the first time the path is marked so callers can reload.
@@ -138,8 +130,7 @@ class MiscPart3:
             import logging
 
             logging.getLogger(__name__).info(
-                "[WORKFLOW] Embedded fallback for unsupported RAW %s (%s) "
-                "(RAW mode kept for other files)",
+                "[WORKFLOW] Embedded fallback for unsupported RAW %s (%s) (RAW mode kept for other files)",
                 os.path.basename(file_path),
                 reason,
             )
@@ -186,18 +177,14 @@ class MiscPart3:
         msg = QLabel(message)
         msg.setWordWrap(True)
         msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        msg.setStyleSheet(
-            f"color: {theme.INK}; font-size: 14px; font-weight: 600; background: transparent;"
-        )
+        msg.setStyleSheet(f"color: {theme.INK}; font-size: 14px; font-weight: 600; background: transparent;")
         layout.addWidget(msg)
 
         if detail:
             info = QLabel(detail)
             info.setWordWrap(True)
             info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            info.setStyleSheet(
-                f"color: {theme.INK_MUTED}; font-size: 12px; background: transparent;"
-            )
+            info.setStyleSheet(f"color: {theme.INK_MUTED}; font-size: 12px; background: transparent;")
             layout.addWidget(info)
 
         frame.adjustSize()
@@ -371,11 +358,7 @@ class MiscPart3:
         if not self._slideshow_is_active():
             return
         scope = getattr(self, "_slideshow_scope_paths", None)
-        files = (
-            [p for p in scope if p and os.path.isfile(p)]
-            if scope
-            else self._navigation_files()
-        )
+        files = [p for p in scope if p and os.path.isfile(p)] if scope else self._navigation_files()
         cur = getattr(self, "current_file_path", None)
         if not files or not cur:
             self._stop_slideshow()
@@ -457,12 +440,8 @@ class MiscPart3:
     def _try_import_gpu_backend(self) -> None:
         """Idle-gated main-thread torch import; retries while the user is busy."""
         retry_ms = _env_int("RAWVIEWER_GPU_IMPORT_RETRY_MS", 2000, minimum=200)
-        zoom_quiet_ms = _env_int(
-            "RAWVIEWER_GPU_IMPORT_ZOOM_QUIET_MS", 2500, minimum=0
-        )
-        nav_quiet_ms = _env_int(
-            "RAWVIEWER_GPU_IMPORT_NAV_QUIET_MS", 2500, minimum=0
-        )
+        zoom_quiet_ms = _env_int("RAWVIEWER_GPU_IMPORT_ZOOM_QUIET_MS", 2500, minimum=0)
+        nav_quiet_ms = _env_int("RAWVIEWER_GPU_IMPORT_NAV_QUIET_MS", 2500, minimum=0)
         try:
             from bootstrap_pkg import torch as torch_bootstrap
 
@@ -475,9 +454,7 @@ class MiscPart3:
         if gv is not None and not gv.is_fit_mode():
             QTimer.singleShot(retry_ms, self._try_import_gpu_backend)
             return
-        if getattr(self, "_pending_zoom", False) or getattr(
-            self, "_full_resolution_loading", False
-        ):
+        if getattr(self, "_pending_zoom", False) or getattr(self, "_full_resolution_loading", False):
             QTimer.singleShot(retry_ms, self._try_import_gpu_backend)
             return
         zoom_ts = float(getattr(self, "_user_zoom_interaction_ts", 0.0) or 0.0)
@@ -529,12 +506,13 @@ class MiscPart3:
     def on_image_processed(self, rgb_image):
         if self._adjust_panel_blocks_display_refresh():
             return
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
 
         import logging
         import time
         import traceback
+
         logger = logging.getLogger(__name__)
 
         process_start = time.time()
@@ -542,7 +520,7 @@ class MiscPart3:
         # Defensive check: ensure we're still valid
         try:
             # Check if object is still valid
-            if not hasattr(self, 'current_file_path'):
+            if not hasattr(self, "current_file_path"):
                 logger.warning("[PROCESS] on_image_processed called but object may be invalid")
                 return
         except Exception:
@@ -550,16 +528,16 @@ class MiscPart3:
             return
 
         # Get current file info for logging
-        current_file = getattr(self, 'current_file_path', None)
-        current_file_basename = os.path.basename(current_file) if current_file else 'N/A'
+        current_file = getattr(self, "current_file_path", None)
+        current_file_basename = os.path.basename(current_file) if current_file else "N/A"
 
         logger.info(f"[PROCESS] ========== on_image_processed() STARTED at {process_start:.3f} ==========")
         logger.info(f"[PROCESS] Current file: {current_file_basename}")
 
         # Log image info
         if rgb_image is not None:
-            image_shape = rgb_image.shape if hasattr(rgb_image, 'shape') else 'unknown'
-            image_dtype = rgb_image.dtype if hasattr(rgb_image, 'dtype') else 'unknown'
+            image_shape = rgb_image.shape if hasattr(rgb_image, "shape") else "unknown"
+            image_dtype = rgb_image.dtype if hasattr(rgb_image, "dtype") else "unknown"
             logger.info(f"[PROCESS] Image data - shape: {image_shape}, dtype: {image_dtype}")
         else:
             logger.info("[PROCESS] Image data is None")
@@ -568,35 +546,62 @@ class MiscPart3:
         if current_file:
             # Try to get the file path from the processor if available
             processor_file = None
-            if hasattr(self, 'current_processor') and self.current_processor is not None:
-                processor_file = getattr(self.current_processor, 'file_path', None)
-                logger.info(f"[PROCESS] Processor file: {os.path.basename(processor_file) if processor_file else 'None'}")
+            if hasattr(self, "current_processor") and self.current_processor is not None:
+                processor_file = getattr(self.current_processor, "file_path", None)
+                logger.info(
+                    f"[PROCESS] Processor file: {os.path.basename(processor_file) if processor_file else 'None'}"
+                )
 
             if processor_file and processor_file != current_file:
-                logger.warning(f"[PROCESS] Signal mismatch: processor file ({os.path.basename(processor_file)}) != current file ({current_file_basename}). Skipping processing to avoid displaying wrong image.")
-                safe_print(f"[PERF] ⚠️  SKIP PROCESSING: File changed (processor: {os.path.basename(processor_file)}, current: {current_file_basename})")
+                logger.warning(
+                    f"[PROCESS] Signal mismatch: processor file ({os.path.basename(processor_file)}) != current file ({current_file_basename}). Skipping processing to avoid displaying wrong image."
+                )
+                safe_print(
+                    f"[PERF] ⚠️  SKIP PROCESSING: File changed (processor: {os.path.basename(processor_file)}, current: {current_file_basename})"
+                )
                 # Skip processing - this image is no longer relevant
                 return
 
         try:
             if rgb_image is None:
                 # Check if this is a RAW file - QPixmap cannot load RAW files directly
-                raw_extensions = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2',
-                                 '.pef', '.srw', '.x3f', '.raf', '.3fr', '.fff', '.iiq',
-                                 '.cap', '.erf', '.mef', '.mos', '.nrw', '.rwl', '.srf'}
+                raw_extensions = {
+                    ".cr2",
+                    ".cr3",
+                    ".nef",
+                    ".arw",
+                    ".dng",
+                    ".orf",
+                    ".rw2",
+                    ".pef",
+                    ".srw",
+                    ".x3f",
+                    ".raf",
+                    ".3fr",
+                    ".fff",
+                    ".iiq",
+                    ".cap",
+                    ".erf",
+                    ".mef",
+                    ".mos",
+                    ".nrw",
+                    ".rwl",
+                    ".srf",
+                }
                 file_ext = os.path.splitext(_require_str_path(self.current_file_path))[1].lower()
                 if file_ext in raw_extensions:
                     # This is expected behavior: RAW processing returned None (possibly cancelled or failed)
                     # QPixmap cannot load RAW files directly, so we skip the fallback
                     # Error handling is done via error_occurred signal, so this is just informational
-                    logger.debug(f"RAW file processing returned None, cannot use QPixmap fallback: {os.path.basename(_require_str_path(self.current_file_path))}")
+                    logger.debug(
+                        f"RAW file processing returned None, cannot use QPixmap fallback: {os.path.basename(_require_str_path(self.current_file_path))}"
+                    )
                     return
 
                 # Non-RAW file: load with safe loader (handles TIFF properly)
                 pixmap = self._load_pixmap_safe(self.current_file_path)
                 if pixmap.isNull():
-                    self.show_error("Display Error",
-                                    "Could not load image file.")
+                    self.show_error("Display Error", "Could not load image file.")
                     return
 
                 # _load_pixmap_safe now uses QImageReader with setAutoTransform(True) for regular images
@@ -618,18 +623,22 @@ class MiscPart3:
                     or getattr(self, "_restore_zoom_center", None) is not None
                     or getattr(self, "_restore_zoom_level", None) is not None
                 )
-                has_maintain_zoom = hasattr(self, '_maintain_zoom_on_navigation')
-                logger.debug(f"on_image_processed (QPixmap): has_restore_zoom={has_restore_zoom}, has_maintain_zoom={has_maintain_zoom}, current fit_to_window={self.fit_to_window}")
+                has_maintain_zoom = hasattr(self, "_maintain_zoom_on_navigation")
+                logger.debug(
+                    f"on_image_processed (QPixmap): has_restore_zoom={has_restore_zoom}, has_maintain_zoom={has_maintain_zoom}, current fit_to_window={self.fit_to_window}"
+                )
 
                 if has_restore_zoom:
                     # Zoom restoration needed - don't reset fit_to_window
-                    logger.info(f"on_image_processed (QPixmap): Restoring zoom state - center={self._restore_zoom_center}, level={getattr(self, '_restore_zoom_level', 'N/A')}")
+                    logger.info(
+                        f"on_image_processed (QPixmap): Restoring zoom state - center={self._restore_zoom_center}, level={getattr(self, '_restore_zoom_level', 'N/A')}"
+                    )
                     self.fit_to_window = False
                     self.current_zoom_level = self._restore_zoom_level or 1.0
                     c = self._restore_zoom_center
                     self.zoom_center_point = c if c is not None else QPoint(pixmap.width() // 2, pixmap.height() // 2)
 
-                    if hasattr(self, '_restore_start_scroll_x') and hasattr(self, '_restore_start_scroll_y'):
+                    if hasattr(self, "_restore_start_scroll_x") and hasattr(self, "_restore_start_scroll_y"):
                         if self._restore_start_scroll_x is not None and self._restore_start_scroll_y is not None:
                             self.start_scroll_x = self._restore_start_scroll_x
                             self.start_scroll_y = self._restore_start_scroll_y
@@ -644,7 +653,7 @@ class MiscPart3:
                     self._restore_start_scroll_y = None
                     # Clean up _maintain_zoom_on_navigation if it exists
                     if has_maintain_zoom:
-                        delattr(self, '_maintain_zoom_on_navigation')
+                        delattr(self, "_maintain_zoom_on_navigation")
                     self._finish_nav_zoom_preserve()
                 elif not has_maintain_zoom:
                     # No zoom restoration needed and not maintaining zoom - reset to fit-to-window
@@ -655,12 +664,14 @@ class MiscPart3:
                     self.scale_image_to_fit()
                 else:
                     # Maintaining zoom state from navigation
-                    logger.debug(f"on_image_processed (QPixmap): Maintaining zoom state from navigation, fit_to_window={self.fit_to_window}")
+                    logger.debug(
+                        f"on_image_processed (QPixmap): Maintaining zoom state from navigation, fit_to_window={self.fit_to_window}"
+                    )
                     if self.fit_to_window:
                         self.scale_image_to_fit()
                     else:
                         self.apply_zoom_and_pan()
-                    delattr(self, '_maintain_zoom_on_navigation')
+                    delattr(self, "_maintain_zoom_on_navigation")
 
                 if self.current_file_path:
                     self.scan_folder_for_images(self.current_file_path)
@@ -669,11 +680,11 @@ class MiscPart3:
             else:
                 # RAW: successful processing with numpy array
                 try:
-                    if hasattr(rgb_image, 'shape'):
+                    if hasattr(rgb_image, "shape"):
                         shape = rgb_image.shape
                         height, width = shape[0], shape[1]
                         channels = shape[2] if len(shape) > 2 else 1
-                    elif hasattr(rgb_image, 'width') and hasattr(rgb_image, 'height'):
+                    elif hasattr(rgb_image, "width") and hasattr(rgb_image, "height"):
                         height, width = rgb_image.height(), rgb_image.width()
                         channels = 3
                     else:
@@ -683,7 +694,7 @@ class MiscPart3:
                     bytes_per_line = channels * width
 
                     # Ensure the data is contiguous and convert to bytes for PyQt6 compatibility
-                    if not rgb_image.flags['C_CONTIGUOUS']:
+                    if not rgb_image.flags["C_CONTIGUOUS"]:
                         rgb_image = np.ascontiguousarray(rgb_image)
 
                     # Convert to bytes if needed (PyQt6 compatibility)
@@ -692,12 +703,17 @@ class MiscPart3:
                     # Typical full resolution: 6000-8000px in largest dimension, half_size: 3000-4000px
                     # Check both width and height to handle both portrait and landscape orientations
                     max_dimension = max(width, height)
-                    is_half_size = max_dimension < 3000  # Assume full resolution is typically >=3000px in largest dimension
+                    is_half_size = (
+                        max_dimension < 3000
+                    )  # Assume full resolution is typically >=3000px in largest dimension
                     self._is_half_size_displayed = is_half_size
                     import logging
+
                     logger = logging.getLogger(__name__)
                     if is_half_size:
-                        logger.debug(f"Detected half_size image: {width}x{height} (max: {max_dimension}), will load full resolution on zoom")
+                        logger.debug(
+                            f"Detected half_size image: {width}x{height} (max: {max_dimension}), will load full resolution on zoom"
+                        )
                     else:
                         logger.info(f"Detected full resolution image: {width}x{height} (max: {max_dimension})")
 
@@ -709,39 +725,45 @@ class MiscPart3:
                         or getattr(self, "_restore_zoom_level", None) is not None
                     )
                     if navigate_zoom_restore and is_half_size:
-                            logger.debug(f"Zoom restoration needed: center={self._restore_zoom_center}, level={getattr(self, '_restore_zoom_level', 'N/A')}, skipping half_size display")
-                            if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
-                                # Check if full resolution is already cached
-                                cached_full = self.image_cache.get_full_image(self.current_file_path)
-                                if cached_full is not None:
-                                    cached_max_dim = max(cached_full.shape[1], cached_full.shape[0])
-                                    if cached_max_dim >= 3000:
-                                        logger.debug("Full resolution image already cached, loading immediately for zoom restoration...")
-                                        self._orientation_already_applied = True
-                                        self.display_numpy_image(cached_full)
-                                        self._is_half_size_displayed = False
-                                        self._full_resolution_loading = False
-                                        return
-                                else:
-                                    # Start loading full resolution in background
-                                    logger.debug("Starting full resolution load for zoom restoration - skipping half_size display")
-                                    self._load_full_resolution_on_demand()
-                                    # Store zoom restoration intent
-                                    self._pending_zoom_restore = True
-                                    self._pending_zoom_center = self._restore_zoom_center
-                                    self._pending_zoom_level = self._restore_zoom_level
-                                    self._restore_zoom_center = None
-                                    self._restore_zoom_level = None
-                                    # Don't display half_size image - wait for full resolution
+                        logger.debug(
+                            f"Zoom restoration needed: center={self._restore_zoom_center}, level={getattr(self, '_restore_zoom_level', 'N/A')}, skipping half_size display"
+                        )
+                        if not hasattr(self, "_full_resolution_loading") or not self._full_resolution_loading:
+                            # Check if full resolution is already cached
+                            cached_full = self.image_cache.get_full_image(self.current_file_path)
+                            if cached_full is not None:
+                                cached_max_dim = max(cached_full.shape[1], cached_full.shape[0])
+                                if cached_max_dim >= 3000:
+                                    logger.debug(
+                                        "Full resolution image already cached, loading immediately for zoom restoration..."
+                                    )
+                                    self._orientation_already_applied = True
+                                    self.display_numpy_image(cached_full)
+                                    self._is_half_size_displayed = False
+                                    self._full_resolution_loading = False
                                     return
+                            else:
+                                # Start loading full resolution in background
+                                logger.debug(
+                                    "Starting full resolution load for zoom restoration - skipping half_size display"
+                                )
+                                self._load_full_resolution_on_demand()
+                                # Store zoom restoration intent
+                                self._pending_zoom_restore = True
+                                self._pending_zoom_center = self._restore_zoom_center
+                                self._pending_zoom_level = self._restore_zoom_level
+                                self._restore_zoom_center = None
+                                self._restore_zoom_level = None
+                                # Don't display half_size image - wait for full resolution
+                                return
 
                     # Also check if we're already loading full resolution - if so, don't display half_size
-                    if hasattr(self, '_full_resolution_loading') and self._full_resolution_loading:
+                    if hasattr(self, "_full_resolution_loading") and self._full_resolution_loading:
                         logger.debug("Full resolution loading in progress, skipping half_size display")
                         return
 
                     # Also check if we have pending zoom restore - if so, don't display half_size
-                    if hasattr(self, '_pending_zoom_restore') and self._pending_zoom_restore:
+                    if hasattr(self, "_pending_zoom_restore") and self._pending_zoom_restore:
                         logger.debug("Pending zoom restore, skipping half_size display")
                         return
 
@@ -755,10 +777,15 @@ class MiscPart3:
                         cached_max_dim = max(cached_pixmap.width(), cached_pixmap.height())
                         current_max_dim = max(width, height)
                         if not is_half_size and cached_max_dim < current_max_dim:
-                            logger.info(f"[PROCESS] Cached pixmap is small ({cached_pixmap.width()}x{cached_pixmap.height()}, max: {cached_max_dim}) but current image is full resolution ({width}x{height}, max: {current_max_dim}), converting new pixmap")
+                            logger.info(
+                                f"[PROCESS] Cached pixmap is small ({cached_pixmap.width()}x{cached_pixmap.height()}, max: {cached_max_dim}) but current image is full resolution ({width}x{height}, max: {current_max_dim}), converting new pixmap"
+                            )
                             # Convert to QPixmap for full resolution image
-                            image_data = rgb_image.data.tobytes() if hasattr(
-                                rgb_image.data, 'tobytes') else bytes(rgb_image.data)
+                            image_data = (
+                                rgb_image.data.tobytes()
+                                if hasattr(rgb_image.data, "tobytes")
+                                else bytes(rgb_image.data)
+                            )
 
                             q_format = QImage.Format.Format_RGB888
                             if channels == 1:
@@ -766,8 +793,7 @@ class MiscPart3:
                             elif channels == 4:
                                 q_format = QImage.Format.Format_RGBA8888
 
-                            q_image = QImage(image_data, width, height,
-                                             bytes_per_line, q_format)
+                            q_image = QImage(image_data, width, height, bytes_per_line, q_format)
                             pixmap = QPixmap.fromImage(q_image)
                             self.current_pixmap = pixmap
 
@@ -780,13 +806,16 @@ class MiscPart3:
                             # Check if cached pixmap is half_size
                             pixmap_max_dim = max(pixmap.width(), pixmap.height())
                             if pixmap_max_dim < 3000:
-                                logger.debug(f"Cached pixmap is half_size: {pixmap.width()}x{pixmap.height()}, will load full resolution on zoom")
+                                logger.debug(
+                                    f"Cached pixmap is half_size: {pixmap.width()}x{pixmap.height()}, will load full resolution on zoom"
+                                )
                             self.current_pixmap = pixmap
                     else:
                         # Convert to QPixmap
                         logger.info(f"[PROCESS] Converting full resolution image to QPixmap: {width}x{height}")
-                        image_data = rgb_image.data.tobytes() if hasattr(
-                            rgb_image.data, 'tobytes') else bytes(rgb_image.data)
+                        image_data = (
+                            rgb_image.data.tobytes() if hasattr(rgb_image.data, "tobytes") else bytes(rgb_image.data)
+                        )
 
                         q_format = QImage.Format.Format_RGB888
                         if channels == 1:
@@ -794,8 +823,7 @@ class MiscPart3:
                         elif channels == 4:
                             q_format = QImage.Format.Format_RGBA8888
 
-                        q_image = QImage(image_data, width, height,
-                                         bytes_per_line, q_format)
+                        q_image = QImage(image_data, width, height, bytes_per_line, q_format)
                         pixmap = QPixmap.fromImage(q_image)
 
                         # RAWProcessor already oriented rgb_image; do not rotate again
@@ -816,31 +844,35 @@ class MiscPart3:
                         or getattr(self, "_restore_zoom_level", None) is not None
                     )
                     if navigate_zoom_restore and is_half_size:
-                            logger.debug("Zoom restoration needed: skipping half_size display (converted from numpy)")
-                            if not hasattr(self, '_full_resolution_loading') or not self._full_resolution_loading:
-                                # Check if full resolution is already cached
-                                cached_full = self.image_cache.get_full_image(self.current_file_path)
-                                if cached_full is not None:
-                                    cached_max_dim = max(cached_full.shape[1], cached_full.shape[0])
-                                    if cached_max_dim >= 3000:
-                                        logger.debug("Full resolution image already cached, loading immediately for zoom restoration...")
-                                        self._orientation_already_applied = True
-                                        self.display_numpy_image(cached_full)
-                                        self._is_half_size_displayed = False
-                                        self._full_resolution_loading = False
-                                        return
-                                else:
-                                    # Start loading full resolution in background
-                                    logger.debug("Starting full resolution load for zoom restoration - skipping half_size display")
-                                    self._load_full_resolution_on_demand()
-                                    # Store zoom restoration intent
-                                    self._pending_zoom_restore = True
-                                    self._pending_zoom_center = self._restore_zoom_center
-                                    self._pending_zoom_level = self._restore_zoom_level
-                                    self._restore_zoom_center = None
-                                    self._restore_zoom_level = None
-                                    # Don't display half_size image - wait for full resolution
+                        logger.debug("Zoom restoration needed: skipping half_size display (converted from numpy)")
+                        if not hasattr(self, "_full_resolution_loading") or not self._full_resolution_loading:
+                            # Check if full resolution is already cached
+                            cached_full = self.image_cache.get_full_image(self.current_file_path)
+                            if cached_full is not None:
+                                cached_max_dim = max(cached_full.shape[1], cached_full.shape[0])
+                                if cached_max_dim >= 3000:
+                                    logger.debug(
+                                        "Full resolution image already cached, loading immediately for zoom restoration..."
+                                    )
+                                    self._orientation_already_applied = True
+                                    self.display_numpy_image(cached_full)
+                                    self._is_half_size_displayed = False
+                                    self._full_resolution_loading = False
                                     return
+                            else:
+                                # Start loading full resolution in background
+                                logger.debug(
+                                    "Starting full resolution load for zoom restoration - skipping half_size display"
+                                )
+                                self._load_full_resolution_on_demand()
+                                # Store zoom restoration intent
+                                self._pending_zoom_restore = True
+                                self._pending_zoom_center = self._restore_zoom_center
+                                self._pending_zoom_level = self._restore_zoom_level
+                                self._restore_zoom_center = None
+                                self._restore_zoom_level = None
+                                # Don't display half_size image - wait for full resolution
+                                return
 
                     # Use display_pixmap to handle zoom restoration if needed
                     self.display_pixmap(pixmap)
@@ -852,16 +884,21 @@ class MiscPart3:
                     # Update status bar to show original dimensions from cache
                     self.update_status_bar()
 
-                    if hasattr(self, '_last_navigation_start'):
+                    if hasattr(self, "_last_navigation_start"):
                         total_time = time.time() - self._last_navigation_start
-                        logger.info(f"RAW image displayed successfully: {width}x{height} (total from navigation: {total_time:.3f}s)")
-                        safe_print(f"[PERF] 🖼️  IMAGE DISPLAYED: {width}x{height} (total navigation time: {total_time*1000:.1f}ms)")
+                        logger.info(
+                            f"RAW image displayed successfully: {width}x{height} (total from navigation: {total_time:.3f}s)"
+                        )
+                        safe_print(
+                            f"[PERF] 🖼️  IMAGE DISPLAYED: {width}x{height} (total navigation time: {total_time * 1000:.1f}ms)"
+                        )
                     else:
                         logger.info(f"RAW image displayed successfully: {width}x{height}")
                         safe_print(f"[PERF] 🖼️  IMAGE DISPLAYED: {width}x{height}")
                 except Exception as e:
                     import logging
                     import traceback
+
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error processing RAW image in on_image_processed: {e}", exc_info=True)
                     logger.debug(f"RAW image processing error traceback: {traceback.format_exc()}")
@@ -872,6 +909,7 @@ class MiscPart3:
                         logger.error(f"Error showing error message: {show_error_ex}")
         except Exception as e:
             import traceback
+
             logger.error(f"Critical error in on_image_processed: {e}", exc_info=True)
             logger.debug(f"on_image_processed error traceback: {traceback.format_exc()}")
             error_msg = f"Error displaying image: {str(e)}"

@@ -1,5 +1,4 @@
 """Gallery mixin part 4 of 7 for JustifiedGallery."""
-from __future__ import annotations
 
 import logging
 import os
@@ -13,8 +12,8 @@ from .helpers import _env_int, _focus_gallery_switch_logs, _orient_debug_enabled
 
 logger = logging.getLogger(__name__)
 
-class GalleryPart4:
 
+class GalleryPart4:
     def _get_first_visible_image_index(self) -> int:
         idx = self._get_upper_left_visible_image_index()
         if idx >= 0:
@@ -148,15 +147,19 @@ class GalleryPart4:
             self._update_scroll_date_bubble(force=False)
 
         # Pause background indexing once per scroll burst (not every valueChanged tick).
-        if self.parent_viewer is not None and not self._scroll_indexing_paused and hasattr(self.parent_viewer, "_pause_semantic_indexing_deferred"):
-                try:
-                    self.parent_viewer._pause_semantic_indexing_deferred()
-                    self._scroll_indexing_paused = True
-                    timer = getattr(self.parent_viewer, "_resume_indexing_timer", None)
-                    if timer is not None:
-                        timer.stop()
-                except Exception:
-                    pass
+        if (
+            self.parent_viewer is not None
+            and not self._scroll_indexing_paused
+            and hasattr(self.parent_viewer, "_pause_semantic_indexing_deferred")
+        ):
+            try:
+                self.parent_viewer._pause_semantic_indexing_deferred()
+                self._scroll_indexing_paused = True
+                timer = getattr(self.parent_viewer, "_resume_indexing_timer", None)
+                if timer is not None:
+                    timer.stop()
+            except Exception:
+                pass
 
         if self._last_scroll_y >= 0:
             last_time = getattr(self, "_last_scroll_time", 0)
@@ -262,9 +265,7 @@ class GalleryPart4:
         try:
             manager.reprioritise(self._viewport_row_distance)
             if self._is_scrolling_fast:
-                manager.cancel_distant_queued_tasks(
-                    self._viewport_row_distance, self._REAIM_CANCEL_DISTANCE
-                )
+                manager.cancel_distant_queued_tasks(self._viewport_row_distance, self._REAIM_CANCEL_DISTANCE)
         except Exception:
             pass
 
@@ -283,9 +284,7 @@ class GalleryPart4:
         self._last_scroll_settle_t = time.time()
         self._thumb_first_after_settle_t = self._last_scroll_settle_t
         self._last_scroll_event_t = 0.0  # Reset scroll event timestamp so we enable DB loading
-        pending_layout = bool(self._metadata_changed_paths) or bool(
-            self._orientation_flip_paths
-        )
+        pending_layout = bool(self._metadata_changed_paths) or bool(self._orientation_flip_paths)
         if pending_layout and not self._building:
             if _orient_debug_enabled() and self._orientation_flip_paths:
                 logger.info(
@@ -400,11 +399,7 @@ class GalleryPart4:
             and self._layout_matches_current_images()
             and self._total_content_height == self._last_layout_content_height
         )
-        if (
-            layout_unchanged
-            and not force
-            and (time.time() - self._last_build_ts) < 0.8
-        ):
+        if layout_unchanged and not force and (time.time() - self._last_build_ts) < 0.8:
             # Skip duplicate rebuilds caused by near-simultaneous resize/layout churn.
             self._reposition_thumbnail_widgets()
             self._request_load_visible_images(20)
@@ -421,9 +416,7 @@ class GalleryPart4:
                 QTimer.singleShot(50, lambda m=bulk_metadata: self.build_gallery(bulk_metadata=m))
             else:
                 self._gallery_width_defer_count = 0
-                logger.warning(
-                    "[GALLERY] Viewport width stayed <= 0 after retries; layout may be broken"
-                )
+                logger.warning("[GALLERY] Viewport width stayed <= 0 after retries; layout may be broken")
             return
         self._gallery_width_defer_count = 0
 
@@ -439,8 +432,6 @@ class GalleryPart4:
         self._last_layout_viewport_width = viewport_width
         should_load_visible = False
         try:
-
-
             self._gallery_layout_items.clear()
             self._path_to_indices.clear()
 
@@ -456,19 +447,12 @@ class GalleryPart4:
                 # gallery stalls with idle workers). Paths that were missing stay missing
                 # until the metadata-ready event injects fresh rows via bulk_metadata.
                 missing_paths = [
-                    p
-                    for p in paths
-                    if p not in self._metadata_cache
-                    and p not in self._metadata_fetch_attempted
+                    p for p in paths if p not in self._metadata_cache and p not in self._metadata_fetch_attempted
                 ]
-                if missing_paths and self.parent_viewer and hasattr(
-                    self.parent_viewer, "image_cache"
-                ):
+                if missing_paths and self.parent_viewer and hasattr(self.parent_viewer, "image_cache"):
                     cap = 100000
                     fetch_paths = self._prioritize_entry_paths(missing_paths, cap=cap)
-                    bulk_fetched = self.parent_viewer.image_cache.get_multiple_exif(
-                        fetch_paths
-                    )
+                    bulk_fetched = self.parent_viewer.image_cache.get_multiple_exif(fetch_paths)
                     self._metadata_fetch_attempted.update(fetch_paths)
                     if bulk_fetched:
                         self._metadata_cache.update(bulk_fetched)
@@ -550,11 +534,12 @@ class GalleryPart4:
                     self._total_content_height,
                 )
             should_load_visible = True
-            if len(self.images) > 100 and not (
-                getattr(self, "_is_zooming", False)
-                or getattr(self, "_gallery_zoom_rebuild", False)
-            ) and self._metadata_changed_paths:
-                    self._schedule_aspects_settle_rebuild()
+            if (
+                len(self.images) > 100
+                and not (getattr(self, "_is_zooming", False) or getattr(self, "_gallery_zoom_rebuild", False))
+                and self._metadata_changed_paths
+            ):
+                self._schedule_aspects_settle_rebuild()
             if len(self.images) > 1000:
                 self.hide_loading_message()
         finally:
@@ -573,9 +558,7 @@ class GalleryPart4:
                 else:
                     QTimer.singleShot(
                         0,
-                        lambda m=pending_meta, f=pending_force: self.build_gallery(
-                            bulk_metadata=m, force=f
-                        ),
+                        lambda m=pending_meta, f=pending_force: self.build_gallery(bulk_metadata=m, force=f),
                     )
             elif should_load_visible and not self._gallery_folder_superseded():
                 # Apply persisted visual rotations once layout indices exist (set_images()
@@ -642,7 +625,9 @@ class GalleryPart4:
                 if dt_ms > 4.0:
                     logger.info(
                         "[SCROLL_PERF] load_visible_images took %.1fms (widgets=%d layout_items=%d)",
-                        dt_ms, len(self._visible_widgets), len(getattr(self, "_gallery_layout_items", []) or []),
+                        dt_ms,
+                        len(self._visible_widgets),
+                        len(getattr(self, "_gallery_layout_items", []) or []),
                     )
         if os.environ.get("RAWVIEWER_SCROLL_CPROFILE", "").strip() == "1":
             target_calls = _env_int("RAWVIEWER_SCROLL_CPROFILE_CALLS", 40, minimum=1)
@@ -651,6 +636,7 @@ class GalleryPart4:
                 import cProfile
                 import io as _io
                 import pstats
+
                 pr = cProfile.Profile()
                 pr.enable()
                 result = self._load_visible_images_impl()

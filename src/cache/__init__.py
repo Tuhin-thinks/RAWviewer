@@ -50,10 +50,15 @@ from cache.keys import (
     disk_preview_max_edge,
     libraw_runtime_stamp,
     memory_preview_max_edge,
-    recommended_preview_cache_items,
     system_memory_total_bytes,
 )
-from cache.memory import FullImageCache, LRUCache, MemoryMonitor, MemoryOnlyPersistentCache
+from cache.memory import (
+    FullImageCache,
+    LRUCache,
+    MemoryMonitor,
+    MemoryOnlyPersistentCache,
+    recommended_preview_cache_items,
+)
 from cache.metadata import PersistentEXIFCache
 
 __all__ = [

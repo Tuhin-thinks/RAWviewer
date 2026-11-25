@@ -1,8 +1,8 @@
 """ImageLoadManager part 1: init, watchdog, throttling, GPU profile, probe."""
-from __future__ import annotations
 
 import concurrent.futures
 import contextlib
+import logging
 import os
 import queue
 import threading
@@ -38,35 +38,37 @@ class ImageLoadManagerPart1(QObject):
         """初始化管理器"""
         # CRITICAL: 對於 QObject 子類，必須在最開始就調用 super().__init__()
         # 不能在調用 super().__init__() 之前訪問任何實例屬性（包括 hasattr）
-        import sys
+
         verbose_init = _env_true("RAWVIEWER_VERBOSE_MANAGER_INIT", default=False)
         if verbose_init:
-            print("[ImageLoadManager.__init__] Starting initialization...", flush=True)
+            logging.getLogger(__name__).info("[MANAGER] __init__: starting initialization...")
 
         # Ensure QApplication exists before initializing QObject
         from PyQt6.QtWidgets import QApplication
+
         app = QApplication.instance()
         if app is None:
-            print("[ImageLoadManager.__init__] ERROR: QApplication instance not found!", file=sys.stderr, flush=True)
+            logging.getLogger(__name__).error("[MANAGER] __init__: QApplication instance not found")
             raise RuntimeError("QApplication must be created before ImageLoadManager")
 
         if verbose_init:
-            print("[ImageLoadManager.__init__] Calling super().__init__(app)...", flush=True)
+            logging.getLogger(__name__).info("[MANAGER] __init__: calling super().__init__(app)...")
         try:
             # Root the manager in the application's lifecycle to prevent premature deletion.
             super().__init__(app)
             if verbose_init:
-                print("[ImageLoadManager.__init__] super().__init__(app) completed", flush=True)
+                logging.getLogger(__name__).info("[MANAGER] __init__: super().__init__(app) completed")
         except Exception as e:
-            print(f"[ImageLoadManager.__init__] ERROR in super().__init__(): {e}", file=sys.stderr, flush=True)
+            logging.getLogger(__name__).error("[MANAGER] __init__: error in super().__init__(): %s", e)
             import traceback
-            print(traceback.format_exc(), file=sys.stderr, flush=True)
+
+            logging.getLogger(__name__).error(traceback.format_exc())
             raise
 
         # 避免重複初始化實例變量
-        if hasattr(self, '_initialized') and self._initialized:
+        if hasattr(self, "_initialized") and self._initialized:
             if verbose_init:
-                print("[ImageLoadManager.__init__] Already initialized, skipping instance variables", flush=True)
+                logging.getLogger(__name__).info("[MANAGER] __init__: already initialized, skipping instance variables")
             return
 
         self._work_queue = queue.PriorityQueue()
@@ -141,6 +143,7 @@ class ImageLoadManagerPart1(QObject):
             atexit.register(self._process_pool_shutdown_hook)
         else:
             import logging
+
             logging.getLogger(__name__).info("[LOAD] LibRaw process pool disabled")
 
         self._active_tasks: dict[tuple, ImageLoadTask] = {}
@@ -159,9 +162,7 @@ class ImageLoadManagerPart1(QObject):
         # within one tick regardless of the trigger. It is a cheap no-op when the
         # queue is empty.
         self._dispatch_watchdog = QTimer(self)
-        self._dispatch_watchdog.setInterval(
-            _env_int("RAWVIEWER_DISPATCH_WATCHDOG_MS", 750, minimum=100)
-        )
+        self._dispatch_watchdog.setInterval(_env_int("RAWVIEWER_DISPATCH_WATCHDOG_MS", 750, minimum=100))
         self._dispatch_watchdog.timeout.connect(self._watchdog_pump)
         self._dispatch_watchdog.start()
 
@@ -183,6 +184,7 @@ class ImageLoadManagerPart1(QObject):
             raw_concurrent_load_limit,
             volume_speed_tier,
         )
+
         core_count = os.cpu_count() or 4
         default_workers = max(16, core_count * 2)
 
@@ -211,9 +213,7 @@ class ImageLoadManagerPart1(QObject):
         # CURRENT pool: small default keeps nav from saturating host; raise via
         # RAWVIEWER_CURRENT_MAX_WORKERS or gallery warmup throttle (still ≤ bg).
         current_default = max(2, min(4, default_workers // 4 if default_workers >= 8 else 2))
-        current_workers = _env_int(
-            "RAWVIEWER_CURRENT_MAX_WORKERS", current_default, minimum=1
-        )
+        current_workers = _env_int("RAWVIEWER_CURRENT_MAX_WORKERS", current_default, minimum=1)
         # Cap wells short of unbounded: CURRENT pool never exceeds bg baseline.
         current_workers = max(1, min(current_workers, default_workers))
 
@@ -244,9 +244,7 @@ class ImageLoadManagerPart1(QObject):
             # Inside the lock: the indexing throttle saves and restores this
             # around its own enter/exit, so an unlocked write here was lost
             # the moment indexing exited.
-            self._raw_load_limit = raw_load_limit_aligned_to_gpu(
-                raw_concurrent_load_limit(folder_path)
-            )
+            self._raw_load_limit = raw_load_limit_aligned_to_gpu(raw_concurrent_load_limit(folder_path))
 
     def apply_gpu_decode_profile(self) -> None:
         """After GPU backend import: drop process pool conflict; align RAW slots."""
@@ -281,13 +279,12 @@ class ImageLoadManagerPart1(QObject):
         # A present-but-unused GPU backend (the shipping default) must not
         # cost the LibRaw process pool's out-of-process parallelism.
         force_on = os.environ.get("RAWVIEWER_USE_PROCESS_POOL", "").strip().lower() in {
-            "1", "true", "yes", "on",
+            "1",
+            "true",
+            "yes",
+            "on",
         }
-        if (
-            _gpu_demosaic_backend_in_use()
-            and not force_on
-            and getattr(self, "_process_pool", None) is not None
-        ):
+        if _gpu_demosaic_backend_in_use() and not force_on and getattr(self, "_process_pool", None) is not None:
             import atexit
 
             pool = self._process_pool
@@ -364,9 +361,7 @@ class ImageLoadManagerPart1(QObject):
             with lock:
                 self._running_tasks.discard(task)
 
-    def prime_volume_speed_async(
-        self, folder_path: str | None, sample_path: str | None = None
-    ) -> None:
+    def prime_volume_speed_async(self, folder_path: str | None, sample_path: str | None = None) -> None:
         """Run one lightweight read-speed probe for *folder_path*'s volume off the
         main thread, then re-apply throttling from the measured speed.
 
@@ -391,9 +386,7 @@ class ImageLoadManagerPart1(QObject):
             # Let fast-open / sort probes finish so we measure disk not page cache.
             time.sleep(2.0)
 
-            candidates = self._pick_probe_samples(
-                folder_path, exclude=sample_path, limit=8
-            )
+            candidates = self._pick_probe_samples(folder_path, exclude=sample_path, limit=8)
             if not candidates and sample_path and os.path.isfile(sample_path):
                 candidates = [sample_path]
 
@@ -408,17 +401,11 @@ class ImageLoadManagerPart1(QObject):
                     best_mbps = mbps
 
             # Contended first probe on a fixed secondary SSD can read artificially low.
-            if (
-                best_mbps is not None
-                and best_mbps < 120.0
-                and _windows_drive_is_fixed_local(folder_path or probe_path)
-            ):
+            if best_mbps is not None and best_mbps < 120.0 and _windows_drive_is_fixed_local(folder_path or probe_path):
                 time.sleep(3.0)
                 invalidate_volume_speed_cache(probe_path or folder_path)
                 for cand in candidates[:3]:
-                    mbps = probe_volume_speed(
-                        cand, sample_bytes=12 * 1024 * 1024, timeout_s=4.0
-                    )
+                    mbps = probe_volume_speed(cand, sample_bytes=12 * 1024 * 1024, timeout_s=4.0)
                     if mbps is None:
                         continue
                     probe_path = cand
@@ -444,9 +431,7 @@ class ImageLoadManagerPart1(QObject):
             except Exception:
                 pass
 
-        threading.Thread(
-            target=_worker, name="VolumeSpeedProbe", daemon=True
-        ).start()
+        threading.Thread(target=_worker, name="VolumeSpeedProbe", daemon=True).start()
 
     @staticmethod
     def _pick_probe_samples(
@@ -505,21 +490,15 @@ class ImageLoadManagerPart1(QObject):
 
     def enter_io_pressure_throttle(self) -> None:
         """Cut worker/RAW concurrency after EMFILE so open fds can drain."""
-        self._io_pressure_throttle_depth = (
-            int(getattr(self, "_io_pressure_throttle_depth", 0) or 0) + 1
-        )
+        self._io_pressure_throttle_depth = int(getattr(self, "_io_pressure_throttle_depth", 0) or 0) + 1
         if self._io_pressure_throttle_depth != 1:
             return
         self._pressure_saved_max_threads = self._thread_pool.maxThreadCount()
         self._pressure_saved_current_threads = self._current_thread_pool.maxThreadCount()
         pressure_max = _env_int("RAWVIEWER_IO_PRESSURE_MAX_WORKERS", 6, minimum=2)
-        self._thread_pool.setMaxThreadCount(
-            min(pressure_max, self._pressure_saved_max_threads)
-        )
+        self._thread_pool.setMaxThreadCount(min(pressure_max, self._pressure_saved_max_threads))
         # Keep a small CURRENT lane open so UI never hard-blocks under pressure.
-        self._apply_current_pool_limit(
-            min(max(2, pressure_max // 2), self._pressure_saved_current_threads)
-        )
+        self._apply_current_pool_limit(min(max(2, pressure_max // 2), self._pressure_saved_current_threads))
         self._pressure_saved_raw_limit = self._raw_load_limit
         self._raw_load_limit = min(2, int(self._raw_load_limit or 2))
 
@@ -548,17 +527,13 @@ class ImageLoadManagerPart1(QObject):
         GPU cap during gallery entry instead of restoring volume parallelism —
         a regression when switching single→gallery with CUDA demosaic on.
         """
-        self._gallery_warmup_throttle_depth = (
-            int(getattr(self, "_gallery_warmup_throttle_depth", 0) or 0) + 1
-        )
+        self._gallery_warmup_throttle_depth = int(getattr(self, "_gallery_warmup_throttle_depth", 0) or 0) + 1
         if self._gallery_warmup_throttle_depth != 1:
             return
         self._warmup_saved_max_threads = self._thread_pool.maxThreadCount()
         self._warmup_saved_current_threads = self._current_thread_pool.maxThreadCount()
         warmed_max = _env_int("RAWVIEWER_GALLERY_WARMUP_MAX_WORKERS", 24, minimum=2)
-        self._thread_pool.setMaxThreadCount(
-            min(warmed_max, max(self._warmup_saved_max_threads, warmed_max))
-        )
+        self._thread_pool.setMaxThreadCount(min(warmed_max, max(self._warmup_saved_max_threads, warmed_max)))
         # Warmup is CURRENT-heavy: raise CURRENT pool toward the warmup budget
         # (baseline CURRENT is intentionally small for single-view).
         bg_cap = self._thread_pool.maxThreadCount()
@@ -583,6 +558,7 @@ class ImageLoadManagerPart1(QObject):
             self._warmup_saved_raw_limit,
             pre_gpu_n or "n/a",
         )
+
     def exit_gallery_warmup_throttle(self) -> None:
         depth = int(getattr(self, "_gallery_warmup_throttle_depth", 0) or 0)
         if depth <= 0:
@@ -610,20 +586,14 @@ class ImageLoadManagerPart1(QObject):
         if lock is not None:
             lock.acquire()
         try:
-            self._indexing_throttle_depth = (
-                int(getattr(self, "_indexing_throttle_depth", 0) or 0) + 1
-            )
+            self._indexing_throttle_depth = int(getattr(self, "_indexing_throttle_depth", 0) or 0) + 1
             if self._indexing_throttle_depth != 1:
                 return
             self._indexing_saved_max_threads = self._thread_pool.maxThreadCount()
             self._indexing_saved_current_threads = self._current_thread_pool.maxThreadCount()
             indexing_max = _env_int("RAWVIEWER_INDEXING_MAX_WORKERS", 6, minimum=2)
-            self._thread_pool.setMaxThreadCount(
-                min(indexing_max, self._indexing_saved_max_threads)
-            )
-            self._apply_current_pool_limit(
-                min(indexing_max, self._indexing_saved_current_threads)
-            )
+            self._thread_pool.setMaxThreadCount(min(indexing_max, self._indexing_saved_max_threads))
+            self._apply_current_pool_limit(min(indexing_max, self._indexing_saved_current_threads))
             self._indexing_saved_raw_limit = self._raw_load_limit
             self._raw_load_limit = min(1, int(self._raw_load_limit or 1))
             import logging
@@ -689,5 +659,3 @@ class ImageLoadManagerPart1(QObject):
         finally:
             if lock is not None:
                 lock.release()
-
-

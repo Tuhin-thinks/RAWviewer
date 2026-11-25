@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Batch export dialog: AI denoise amount slider overrides per-photo values."""
+
 import os
 import sys
 
@@ -9,14 +10,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 def main() -> int:
-    from PyQt6.QtCore import Qt
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv)  # noqa: F841
@@ -73,23 +73,20 @@ def main() -> int:
     # --- export_one_file override ---
     import tempfile
     import threading
+
     from rawviewer_app.services.batch import export_one_file
 
     tmp = tempfile.mkdtemp()
+
     # A real RAW decode isn't available in the test env, so stub the pipeline.
     # Verify only the adj dict is mutated with the override amount before
     # export_adjusted_image is called.
-    calls = []
-
     class _StubWorker:
         def decode_raw_edit_base(self, *a, **kw):
             raise RuntimeError("stub")
 
     def _fake_load_adj(path):
         return {"AIDenoiseAmount": 100.0, "Exposure2012": 0.1}
-
-    import rawviewer_app.services.batch as bo
-    orig_load = bo.load_adjustments_for_file if hasattr(bo, "load_adjustments_for_file") else None
 
     err, _ = export_one_file(
         os.path.join(tmp, "fake.CR3"),

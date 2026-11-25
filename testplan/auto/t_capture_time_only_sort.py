@@ -20,6 +20,7 @@ re-sorts keep the full-metadata path.
 Stubs the module-level get_image_cache() with a fake recording which accessors
 run (mirrors the fake-object convention used by the other t_*.py suites).
 """
+
 import inspect
 import os
 import sys
@@ -29,14 +30,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
 
 
 class FakeCache:
-    def __init__(self, capture_times):
+    def __init__(self, capture_times) -> None:
         self._ct = dict(capture_times)
         self.calls = []
 
@@ -44,7 +45,7 @@ class FakeCache:
         self.calls.append("get_capture_times_for_sort")
         return {p: self._ct[p] for p in paths if p in self._ct}
 
-    def get_multiple_exif(self, paths, file_stats=None, fast_mode=True):
+    def get_multiple_exif(self, paths, file_stats=None, fast_mode: bool = True):
         self.calls.append("get_multiple_exif")
         # Full EXIF blob (what pickle.loads would have produced) -- includes
         # capture_time plus the heavy extra fields the sort does not need.
@@ -82,13 +83,10 @@ def main() -> int:
         v = make_viewer_stub(fake)
 
         # --- capture_time_only=True ---
-        sorted_files, bulk = v.sort_files_by_capture_time(
-            paths, newest_first=True, capture_time_only=True
-        )
+        sorted_files, bulk = v.sort_files_by_capture_time(paths, newest_first=True, capture_time_only=True)
         check(
             "capture_time_only reads the capture_time column, not the full EXIF blob",
-            "get_capture_times_for_sort" in fake.calls
-            and "get_multiple_exif" not in fake.calls,
+            "get_capture_times_for_sort" in fake.calls and "get_multiple_exif" not in fake.calls,
             detail=str(fake.calls),
         )
         check(
@@ -105,9 +103,7 @@ def main() -> int:
         fake2 = FakeCache(ct)
         image_cache.get_image_cache = lambda: fake2
         v2 = make_viewer_stub(fake2)
-        sorted_files2, bulk2 = v2.sort_files_by_capture_time(
-            paths, newest_first=True
-        )
+        sorted_files2, bulk2 = v2.sort_files_by_capture_time(paths, newest_first=True)
         check(
             "default path uses get_multiple_exif (full per-file EXIF)",
             "get_multiple_exif" in fake2.calls,

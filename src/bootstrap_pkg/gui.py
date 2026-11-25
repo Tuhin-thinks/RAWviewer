@@ -1,5 +1,4 @@
 """InstallerGUI — the setup wizard window."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -45,6 +44,7 @@ _EMBER_HOVER = "#e87f39"
 _HIST_R = "#e5484d"
 _HIST_G = "#3dd68c"
 
+
 class InstallerGUI(QMainWindow):
     _SUCCESS_DESC_BASE = (
         "Installation complete.\n\n"
@@ -53,7 +53,7 @@ class InstallerGUI(QMainWindow):
         "• Uninstall anytime from Windows Settings → Apps → RAWviewer"
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("RAWviewer Setup")
         self.setFixedSize(650, 560)
@@ -73,7 +73,7 @@ class InstallerGUI(QMainWindow):
         if icon_path:
             self.setWindowIcon(QIcon(icon_path))
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         self.main_container = QFrame()
         self.main_container.setObjectName("main_container")
         self.setCentralWidget(self.main_container)
@@ -147,7 +147,7 @@ class InstallerGUI(QMainWindow):
 
         layout.addWidget(self.bottom_bar)
 
-    def load_styles(self):
+    def load_styles(self) -> None:
         self.setStyleSheet(f"""
             QFrame#main_container {{
                 background-color: {_VOID};
@@ -250,7 +250,7 @@ class InstallerGUI(QMainWindow):
             }}
         """)
 
-    def init_welcome_page(self):
+    def init_welcome_page(self) -> None:
         layout = QVBoxLayout(self.page_welcome)
         layout.setContentsMargins(40, 20, 40, 20)
 
@@ -272,15 +272,9 @@ class InstallerGUI(QMainWindow):
         options_label.setStyleSheet(f"color: {_INK_MUTED}; font-weight: bold; margin-top: 15px;")
         layout.addWidget(options_label)
 
-        self.radio_lite = QRadioButton(
-            "Standard — Browse & Adjust (~0.8–1 GB; no AI search)"
-        )
-        self.radio_directml = QRadioButton(
-            "Plus — DirectML (AI search; ~1.5–2 GB + ~600 MB models; CPU demosaic)"
-        )
-        self.radio_cuda = QRadioButton(
-            "Plus — NVIDIA CUDA (AI search + CuPy GPU demosaic; ~1.5–2 GB + ~600 MB models)"
-        )
+        self.radio_lite = QRadioButton("Standard — Browse & Adjust (~0.8–1 GB; no AI search)")
+        self.radio_directml = QRadioButton("Plus — DirectML (AI search; ~1.5–2 GB + ~600 MB models; CPU demosaic)")
+        self.radio_cuda = QRadioButton("Plus — NVIDIA CUDA (AI search + CuPy GPU demosaic; ~1.5–2 GB + ~600 MB models)")
 
         # Default Standard: lean install for most users.
         self.radio_lite.setChecked(True)
@@ -292,9 +286,7 @@ class InstallerGUI(QMainWindow):
         options_layout.addWidget(self.radio_cuda)
         layout.addLayout(options_layout)
 
-        self.clear_cache_cb = QCheckBox(
-            "Clear existing cache (recommended when upgrading from an older version)"
-        )
+        self.clear_cache_cb = QCheckBox("Clear existing cache (recommended when upgrading from an older version)")
         self.clear_cache_cb.setToolTip(
             "Removes the local photo cache (~/.rawviewer_cache) and session settings "
             "so v3 can use faster search/index defaults.\n"
@@ -310,7 +302,7 @@ class InstallerGUI(QMainWindow):
 
         row = QHBoxLayout()
         self.path_edit = QLineEdit()
-        app_data = os.environ.get('LOCALAPPDATA') or os.path.expanduser('~')
+        app_data = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
         default_path = os.path.join(app_data, "RAWviewer")
         self.path_edit.setText(default_path)
 
@@ -324,12 +316,12 @@ class InstallerGUI(QMainWindow):
         layout.addLayout(row)
         layout.addStretch()
 
-    def browse_path(self):
+    def browse_path(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "Select Folder", self.path_edit.text())
         if path:
             self.path_edit.setText(os.path.normpath(path))
 
-    def init_progress_page(self):
+    def init_progress_page(self) -> None:
         layout = QVBoxLayout(self.page_progress)
         layout.setContentsMargins(40, 20, 40, 20)
 
@@ -350,7 +342,7 @@ class InstallerGUI(QMainWindow):
         self.log_box.setReadOnly(True)
         layout.addWidget(self.log_box)
 
-    def init_success_page(self):
+    def init_success_page(self) -> None:
         layout = QVBoxLayout(self.page_success)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -365,7 +357,7 @@ class InstallerGUI(QMainWindow):
         self.success_desc = desc
         layout.addWidget(desc, alignment=Qt.AlignmentFlag.AlignCenter)
 
-    def start_install(self):
+    def start_install(self) -> None:
         target_dir = self.path_edit.text().strip()
         if not target_dir:
             return
@@ -387,9 +379,7 @@ class InstallerGUI(QMainWindow):
         self.install_step_label.setText("")
 
         self.thread = QThread()
-        self.worker = InstallWorker(
-            target_dir, mode, clear_cache=self.clear_cache_cb.isChecked()
-        )
+        self.worker = InstallWorker(target_dir, mode, clear_cache=self.clear_cache_cb.isChecked())
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_finished)
@@ -398,7 +388,7 @@ class InstallerGUI(QMainWindow):
         self.worker.progress_label_signal.connect(self.install_step_label.setText)
         self.thread.start()
 
-    def request_close(self):
+    def request_close(self) -> None:
         if self._install_in_progress:
             if self._awaiting_cancel:
                 return
@@ -411,7 +401,7 @@ class InstallerGUI(QMainWindow):
             return
         self.close()
 
-    def on_finished(self, success, note=""):
+    def on_finished(self, success: bool, note: str = "") -> None:
         close_after_failure = self._close_after_failed_install
         self._install_in_progress = False
         self._awaiting_cancel = False
@@ -445,7 +435,7 @@ class InstallerGUI(QMainWindow):
         if not success and close_after_failure:
             self.close()
 
-    def retry_install(self):
+    def retry_install(self) -> None:
         self.stack.setCurrentIndex(0)
         self.btn_next.setText("INSTALL")
         self.btn_cancel.setText("CANCEL")
@@ -455,14 +445,14 @@ class InstallerGUI(QMainWindow):
         self.btn_next.clicked.connect(self.start_install)
         self.progress_bar.setValue(0)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         if self._install_in_progress:
             self.request_close()
             event.ignore()
             return
         super().closeEvent(event)
 
-    def launch_app(self):
+    def launch_app(self) -> None:
         install_dir = self.path_edit.text()
         app_exe = os.path.join(install_dir, "RAWviewer.exe")
         try:
@@ -496,9 +486,10 @@ class InstallerGUI(QMainWindow):
 
         QTimer.singleShot(400, self.close)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, 'drag_pos'):
+
+    def mouseMoveEvent(self, event) -> None:
+        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, "drag_pos"):
             self.move(event.globalPosition().toPoint() - self.drag_pos)

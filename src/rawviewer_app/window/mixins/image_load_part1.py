@@ -1,5 +1,4 @@
 """image_load mixin, part 1 of 3 (21 methods, 756 lines)."""
-from __future__ import annotations
 
 import contextlib
 import os
@@ -52,7 +51,11 @@ class ImageLoadPart1:
         return _env_int("RAWVIEWER_GALLERY_INSTANT_MIN_DIM", 1400, minimum=400)
 
     def _cache_buffer_suitable_for_single_view(
-        self, image, *, min_dim: int | None = None, file_path: str | None = None,
+        self,
+        image,
+        *,
+        min_dim: int | None = None,
+        file_path: str | None = None,
         allow_sensor_resolution: bool = False,
     ) -> bool:
         """Reject gallery grid-tier disk previews (~512px); wait for embedded thumbnail/full.
@@ -67,11 +70,7 @@ class ImageLoadPart1:
             min_dim = self._single_view_cache_min_dim(for_navigation=False)
         if self._cache_buffer_max_dim(image) < int(min_dim):
             return False
-        if (
-            not allow_sensor_resolution
-            and file_path
-            and image_covers_sensor_resolution is not None
-        ):
+        if not allow_sensor_resolution and file_path and image_covers_sensor_resolution is not None:
             try:
                 w = h = 0
                 if hasattr(image, "shape"):
@@ -135,9 +134,8 @@ class ImageLoadPart1:
             os.path.basename(file_path),
             message,
         )
-        if (
-            getattr(self, "_raw_recovery_active", False)
-            and _norm_path(file_path) == _norm_path(getattr(self, "current_file_path", None))
+        if getattr(self, "_raw_recovery_active", False) and _norm_path(file_path) == _norm_path(
+            getattr(self, "current_file_path", None)
         ):
             self.status_bar.showMessage(
                 f"RAW recovery failed -- showing standard preview ({message})",
@@ -164,9 +162,7 @@ class ImageLoadPart1:
                 except Exception as exc:
                     import logging
 
-                    logging.getLogger(__name__).debug(
-                        "Disk cache budget enforcement failed: %s", exc, exc_info=True
-                    )
+                    logging.getLogger(__name__).debug("Disk cache budget enforcement failed: %s", exc, exc_info=True)
 
         _get_bg_thread_pool().start(_DiskBudgetWorker())
 
@@ -200,9 +196,7 @@ class ImageLoadPart1:
                 raw = raw.decode("utf-8", errors="ignore")
             data = json.loads(raw)
             if isinstance(data, list):
-                self._burst_rejected_paths = {
-                    _norm_path(str(item)) for item in data if item
-                }
+                self._burst_rejected_paths = {_norm_path(str(item)) for item in data if item}
         except Exception:
             self._burst_rejected_paths = set()
 
@@ -212,25 +206,31 @@ class ImageLoadPart1:
 
         logger = logging.getLogger(__name__)
         if self._should_defer_full_decode():
-            logger.debug("[LOAD] _maybe_queue_background_full_decode deferred for %s", os.path.basename(file_path or ""))
+            logger.debug(
+                "[LOAD] _maybe_queue_background_full_decode deferred for %s", os.path.basename(file_path or "")
+            )
             return
         if not file_path:
             return
         try:
             preview = self.image_cache.get_preview_memory_only(file_path)
             exif = self.image_cache.get_exif(file_path)
-            if preview is not None and image_covers_sensor_resolution(
-                preview.shape[1], preview.shape[0], exif
-            ):
-                logger.debug("[LOAD] _maybe_queue_background_full_decode: preview covers sensor for %s", os.path.basename(file_path))
+            if preview is not None and image_covers_sensor_resolution(preview.shape[1], preview.shape[0], exif):
+                logger.debug(
+                    "[LOAD] _maybe_queue_background_full_decode: preview covers sensor for %s",
+                    os.path.basename(file_path),
+                )
                 return
             if self._cached_full_covers_sensor(file_path):
-                logger.debug("[LOAD] _maybe_queue_background_full_decode: cached full covers sensor for %s", os.path.basename(file_path))
+                logger.debug(
+                    "[LOAD] _maybe_queue_background_full_decode: cached full covers sensor for %s",
+                    os.path.basename(file_path),
+                )
                 return
         except Exception:
             pass
         logger.info("[LOAD] _maybe_queue_background_full_decode: queueing for %s", os.path.basename(file_path))
-        from image_load_manager import Priority as _Priority
+        from image_load_manager.helpers import Priority as _Priority
 
         # On-screen image: CURRENT so GPU raw_limit reservation cannot let
         # neighbor PRELOAD full starve this demosaic.
@@ -258,10 +258,11 @@ class ImageLoadPart1:
             return
         if getattr(self, "view_mode", "single") != "single":
             return
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.hide_loading()
 
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Only handle current file's image (normalize for Windows path format differences)
@@ -299,7 +300,9 @@ class ImageLoadPart1:
                 if _w > 0 and _h > 0 and not image_covers_sensor_resolution(_w, _h, _exif):
                     logger.info(
                         "[FULL_RES_ONLY] Skipping non-sensor image_ready (%dx%d) for %s",
-                        _w, _h, os.path.basename(file_path),
+                        _w,
+                        _h,
+                        os.path.basename(file_path),
                     )
                     return
             except Exception:
@@ -316,11 +319,11 @@ class ImageLoadPart1:
         # the redundancy check so full-res images are never skipped even when the on-screen
         # buffer has the same pixel dimensions (e.g. gallery-to-single transition can leave a
         # high-pixel-count but blurry embedded-JPEG preview on screen).
-        if hasattr(image, 'shape'):
+        if hasattr(image, "shape"):
             shape = image.shape
             height, width = shape[0], shape[1]
             shape[2] if len(shape) > 2 else 1
-        elif hasattr(image, 'width') and hasattr(image, 'height'):
+        elif hasattr(image, "width") and hasattr(image, "height"):
             # It's likely a QPixmap or QImage
             height, width = image.height(), image.width()
         else:
@@ -335,14 +338,10 @@ class ImageLoadPart1:
 
         # Skip redundant redraws when the same path is already on screen at the same max
         # dimension. Gallery → single may still upgrade blur→sharp via _loading_from_gallery.
-        skip_redundant = (
-            not getattr(self, "_skip_resolution_downgrade_check", False)
-            and self._already_displaying_buffer_for_path(file_path, image)
-        )
-        if skip_redundant and (
-            not is_full_resolution
-            or not getattr(self, "_loading_from_gallery", False)
-        ):
+        skip_redundant = not getattr(
+            self, "_skip_resolution_downgrade_check", False
+        ) and self._already_displaying_buffer_for_path(file_path, image)
+        if skip_redundant and (not is_full_resolution or not getattr(self, "_loading_from_gallery", False)):
             logger.info(
                 "[MANAGER] Skipping redundant image_ready for %s (already on screen%s)",
                 os.path.basename(file_path),
@@ -351,7 +350,6 @@ class ImageLoadPart1:
             self._full_resolution_loading = False
             self._finish_pending_zoom_after_full_load(file_path)
             return
-
 
         # Space/double-click deferred zoom: skip intermediate buffers (avoids a
         # one-frame fit transform on a large pixmap = upper-left flash).
@@ -388,10 +386,7 @@ class ImageLoadPart1:
         # replace a higher-resolution image we already showed for this path. When switching files,
         # ``current_pixmap`` may still hold the *previous* image -- do not compare dimensions then.
         displayed_for = getattr(self, "_displayed_content_path", None)
-        pixmap_is_for_this_file = (
-            displayed_for is not None
-            and _norm_path(displayed_for) == _norm_path(file_path)
-        )
+        pixmap_is_for_this_file = displayed_for is not None and _norm_path(displayed_for) == _norm_path(file_path)
         current_max_dim = 0
         if self.current_pixmap and pixmap_is_for_this_file:
             current_max_dim = max(self.current_pixmap.width(), self.current_pixmap.height())
@@ -403,7 +398,9 @@ class ImageLoadPart1:
             and self._single_view_pixels_on_screen(file_path)
             and _norm_path(file_path) == _norm_path(getattr(self, "current_file_path", None))
         ):
-            logger.info(f"[MANAGER] Ignoring lower-resolution preview ({width}x{height}) as higher-resolution image ({current_max_dim}px) is already displayed.")
+            logger.info(
+                f"[MANAGER] Ignoring lower-resolution preview ({width}x{height}) as higher-resolution image ({current_max_dim}px) is already displayed."
+            )
             # Still update status bar and focus if needed, but don't redisplay
             self._orientation_already_applied = False
             self._full_resolution_loading = False
@@ -419,9 +416,7 @@ class ImageLoadPart1:
             self._mark_pending_resolution_crossfade()
 
         norm_fp = _norm_path(file_path)
-        raw_recovery = (
-            getattr(self, "_raw_recovery_active", False) and is_raw_file(file_path)
-        )
+        raw_recovery = getattr(self, "_raw_recovery_active", False) and is_raw_file(file_path)
         if raw_recovery:
             cached = self._raw_recovery_cache.get(norm_fp)
             if cached is not None:
@@ -465,8 +460,8 @@ class ImageLoadPart1:
         orig_w, orig_h = None, None
         cached_exif = self.image_cache.get_exif(file_path)
         if cached_exif:
-            orig_w = cached_exif.get('original_width')
-            orig_h = cached_exif.get('original_height')
+            orig_w = cached_exif.get("original_width")
+            orig_h = cached_exif.get("original_height")
 
         self.update_status_bar(width=orig_w, height=orig_h)
 
@@ -474,9 +469,7 @@ class ImageLoadPart1:
         self.schedule_save_session_state()
         self._start_preloading()
 
-    def _retry_display_tier_with_full_decode(
-        self, file_path: str, error_message: str
-    ) -> bool:
+    def _retry_display_tier_with_full_decode(self, file_path: str, error_message: str) -> bool:
         """Backward-compatible alias for preview-tier auto full decode."""
         return self._retry_raw_preview_with_full_decode(file_path, error_message)
 
@@ -506,8 +499,9 @@ class ImageLoadPart1:
             self.loading_overlay.hide_loading()
 
         ext = os.path.splitext(file_path)[1].lower()
-        if ext == '.gif':
+        if ext == ".gif":
             from PyQt6.QtGui import QMovie
+
             self._current_movie = QMovie(file_path)
             self.image_label.setMovie(self._current_movie)
 
@@ -525,7 +519,7 @@ class ImageLoadPart1:
             self._mark_animated_content_displayed(file_path)
             self.status_bar.showMessage(f"Playing GIF: {os.path.basename(file_path)}")
             return True
-        elif ext == '.webp':
+        elif ext == ".webp":
             token = getattr(self, "_webp_decode_generation", 0) + 1
             self._webp_decode_generation = token
             self._webp_decode_in_progress_path = file_path
@@ -540,9 +534,7 @@ class ImageLoadPart1:
                 signals.failed.connect(self._on_webp_decode_failed)
                 self._webp_decode_signals = signals
 
-            self.status_bar.showMessage(
-                f"Decoding WebP: {os.path.basename(file_path)}"
-            )
+            self.status_bar.showMessage(f"Decoding WebP: {os.path.basename(file_path)}")
 
             class _WebpDecodeWorker(QRunnable):
                 def run(self_inner):
@@ -560,9 +552,7 @@ class ImageLoadPart1:
                                 frame_rgba = img.convert("RGBA")
                                 w, h = frame_rgba.size
                                 data = frame_rgba.tobytes("raw", "RGBA")
-                                qim = QImage(
-                                    data, w, h, QImage.Format.Format_RGBA8888
-                                ).copy()
+                                qim = QImage(data, w, h, QImage.Format.Format_RGBA8888).copy()
                                 frames.append(qim)
                                 duration = img.info.get("duration", 100)
                                 if duration <= 0:
@@ -590,9 +580,7 @@ class ImageLoadPart1:
             return True
         return False
 
-    def _on_webp_frames_decoded(
-        self, token: int, file_path: str, qimages: list, durations: list
-    ) -> None:
+    def _on_webp_frames_decoded(self, token: int, file_path: str, qimages: list, durations: list) -> None:
         if token != getattr(self, "_webp_decode_generation", None):
             return
         if _norm_path(file_path) != _norm_path(getattr(self, "current_file_path", None)):
@@ -617,9 +605,7 @@ class ImageLoadPart1:
         self._webp_decode_in_progress_path = None
         import logging
 
-        logging.getLogger(__name__).error(
-            "Error loading animated WebP: %s", error_message, exc_info=True
-        )
+        logging.getLogger(__name__).error("Error loading animated WebP: %s", error_message, exc_info=True)
         self.image_label.setText(f"Error loading WebP: {error_message}")
 
     def _clear_finished_worker_flags(self) -> None:
@@ -684,9 +670,7 @@ class ImageLoadPart1:
             exif = None
         return not image_covers_sensor_resolution(pm.width(), pm.height(), exif)
 
-    def _flush_deferred_sensor_full_decode(
-        self, file_path: str | None = None, *, force: bool = False
-    ) -> None:
+    def _flush_deferred_sensor_full_decode(self, file_path: str | None = None, *, force: bool = False) -> None:
         import logging
 
         logger = logging.getLogger(__name__)

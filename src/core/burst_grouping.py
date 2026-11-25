@@ -1,7 +1,5 @@
 """Burst image grouping by EXIF capture time (H1)."""
 
-from __future__ import annotations
-
 import os
 
 from common_image_loader import parse_capture_time_to_timestamp
@@ -24,9 +22,7 @@ def burst_grouping_enabled_from_settings(settings) -> bool:
 
 def burst_gap_seconds_from_settings(settings) -> float:
     try:
-        value = float(
-            settings.value("gallery/burst_gap_seconds", DEFAULT_BURST_GAP_SECONDS)
-        )
+        value = float(settings.value("gallery/burst_gap_seconds", DEFAULT_BURST_GAP_SECONDS))
         return max(0.05, value)
     except (TypeError, ValueError):
         return DEFAULT_BURST_GAP_SECONDS
@@ -42,9 +38,7 @@ def _norm(path: str) -> str:
     return os.path.normcase(os.path.normpath(os.path.abspath(path)))
 
 
-def _capture_times_lookup(
-    path: str, capture_times: dict[str, str]
-) -> str | None:
+def _capture_times_lookup(path: str, capture_times: dict[str, str]) -> str | None:
     if path in capture_times:
         return capture_times[path]
     key = _norm(path)
@@ -236,10 +230,7 @@ def burst_span_seconds(
     """Elapsed seconds between earliest and latest capture in ``members``."""
     if not members:
         return 0.0
-    stamps = [
-        timestamp_for_path(p, capture_times)
-        for p in members
-    ]
+    stamps = [timestamp_for_path(p, capture_times) for p in members]
     stamps = [t for t in stamps if t > 0]
     if len(stamps) < 2:
         return 0.0

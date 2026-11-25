@@ -1,5 +1,4 @@
 """Thumbnail, grid, and preview cache operations."""
-from __future__ import annotations
 
 import threading
 from typing import Any
@@ -29,7 +28,7 @@ class ImageCacheThumbGridPreview:
     _note_full_cache_reason: Any
     _load_libraw_preview_paths: Any
     _save_libraw_preview_paths: Any
-    _orient_verify_lock: threading.Lock
+    _orient_verify_lock: "threading.Lock"
     _orient_verify_thread: threading.Thread | None
     _orient_verify_attempted: set[str]
     _orient_verify_queue: Any
@@ -70,7 +69,7 @@ class ImageCacheThumbGridPreview:
 
     def get_thumbnail(self, file_path: str) -> np.ndarray | None:
         """Get cached thumbnail or return None if not cached."""
-        self.stats['thumbnail_requests'] += 1
+        self.stats["thumbnail_requests"] += 1
         self._check_memory_pressure()
 
         key = self._path_key(file_path)
@@ -85,7 +84,7 @@ class ImageCacheThumbGridPreview:
             if validated is not thumbnail:
                 self.thumbnail_cache.put(key, validated.copy())  # type: ignore[union-attr]
                 self.disk_thumbnail_cache.remove(file_path)
-            self.cache_hit.emit(file_path, 'thumbnail')
+            self.cache_hit.emit(file_path, "thumbnail")
             return validated
 
         # Check disk cache for JPEG thumbnails
@@ -102,7 +101,7 @@ class ImageCacheThumbGridPreview:
                     raise ValueError("thumbnail orientation validation failed")
                 # Also cache in memory for faster subsequent access
                 self.thumbnail_cache.put(key, thumbnail.copy())
-                self.cache_hit.emit(file_path, 'thumbnail')
+                self.cache_hit.emit(file_path, "thumbnail")
                 return thumbnail
             except Exception:
                 # If loading from disk cache fails, remove it
@@ -118,10 +117,11 @@ class ImageCacheThumbGridPreview:
                     import io
 
                     from PIL import Image, ImageOps
+
                     pil_image = Image.open(io.BytesIO(grid_jpeg))
                     pil_image = ImageOps.exif_transpose(pil_image)
-                    if pil_image.mode != 'RGB':
-                        pil_image = pil_image.convert('RGB')
+                    if pil_image.mode != "RGB":
+                        pil_image = pil_image.convert("RGB")
                     grid = np.array(pil_image)
                 except Exception:
                     pass
@@ -131,6 +131,7 @@ class ImageCacheThumbGridPreview:
                 import io
 
                 from PIL import Image
+
                 if grid.dtype != np.uint8:
                     grid = grid.astype(np.uint8)
                 pil_img = Image.fromarray(grid)
@@ -159,10 +160,11 @@ class ImageCacheThumbGridPreview:
                     import io
 
                     from PIL import Image, ImageOps
+
                     pil_image = Image.open(io.BytesIO(preview_jpeg))
                     pil_image = ImageOps.exif_transpose(pil_image)
-                    if pil_image.mode != 'RGB':
-                        pil_image = pil_image.convert('RGB')
+                    if pil_image.mode != "RGB":
+                        pil_image = pil_image.convert("RGB")
                     preview = np.array(pil_image)
                 except Exception:
                     pass
@@ -172,6 +174,7 @@ class ImageCacheThumbGridPreview:
                 import io
 
                 from PIL import Image
+
                 if preview.dtype != np.uint8:
                     preview = preview.astype(np.uint8)
                 pil_img = Image.fromarray(preview)
@@ -191,7 +194,7 @@ class ImageCacheThumbGridPreview:
             except Exception:
                 pass
 
-        self.cache_miss.emit(file_path, 'thumbnail')
+        self.cache_miss.emit(file_path, "thumbnail")
         return None
 
     def put_thumbnail(self, file_path: str, thumbnail: np.ndarray, jpeg_data: bytes | None = None) -> None:
@@ -242,16 +245,13 @@ class ImageCacheThumbGridPreview:
         """
         key = self._path_key(file_path)
         # peek(): a warmth CHECK must not promote never-displayed entries to MRU.
-        return (
-            self.grid_cache.peek(key) is not None
-            or self.thumbnail_cache.peek(key) is not None
-        )
+        return self.grid_cache.peek(key) is not None or self.thumbnail_cache.peek(key) is not None
 
     def get_grid(self, file_path: str) -> np.ndarray | None:
         """Get cached grid image (max 512px) or return None if not cached."""
-        if 'grid_requests' not in self.stats:
-            self.stats['grid_requests'] = 0
-        self.stats['grid_requests'] += 1
+        if "grid_requests" not in self.stats:
+            self.stats["grid_requests"] = 0
+        self.stats["grid_requests"] += 1
         self._check_memory_pressure()
 
         key = self._path_key(file_path)
@@ -262,7 +262,7 @@ class ImageCacheThumbGridPreview:
             if healed is not grid:
                 self.grid_cache.put(key, healed.copy())  # type: ignore[union-attr]
                 self.disk_grid_cache.remove(file_path)
-            self.cache_hit.emit(file_path, 'grid')
+            self.cache_hit.emit(file_path, "grid")
             return healed
 
         # 2. Check disk grid cache
@@ -272,14 +272,15 @@ class ImageCacheThumbGridPreview:
                 import io
 
                 from PIL import Image, ImageOps
+
                 pil_image = Image.open(io.BytesIO(jpeg_data))
                 pil_image = ImageOps.exif_transpose(pil_image)
-                if pil_image.mode != 'RGB':
-                    pil_image = pil_image.convert('RGB')
+                if pil_image.mode != "RGB":
+                    pil_image = pil_image.convert("RGB")
                 grid = np.array(pil_image)
                 grid = self._heal_raw_orientation(file_path, grid)
                 self.grid_cache.put(key, grid.copy())  # type: ignore[union-attr]
-                self.cache_hit.emit(file_path, 'grid')
+                self.cache_hit.emit(file_path, "grid")
                 return grid
             except Exception:
                 self.disk_grid_cache.remove(file_path)
@@ -293,10 +294,11 @@ class ImageCacheThumbGridPreview:
                     import io
 
                     from PIL import Image, ImageOps
+
                     pil_image = Image.open(io.BytesIO(preview_jpeg))
                     pil_image = ImageOps.exif_transpose(pil_image)
-                    if pil_image.mode != 'RGB':
-                        pil_image = pil_image.convert('RGB')
+                    if pil_image.mode != "RGB":
+                        pil_image = pil_image.convert("RGB")
                     preview = np.array(pil_image)
                 except Exception:
                     pass
@@ -306,6 +308,7 @@ class ImageCacheThumbGridPreview:
                 import io
 
                 from PIL import Image
+
                 if preview.dtype != np.uint8:
                     preview = preview.astype(np.uint8)
                 pil_img = Image.fromarray(preview)
@@ -334,10 +337,11 @@ class ImageCacheThumbGridPreview:
                     import io
 
                     from PIL import Image, ImageOps
+
                     pil_image = Image.open(io.BytesIO(thumb_jpeg))
                     pil_image = ImageOps.exif_transpose(pil_image)
-                    if pil_image.mode != 'RGB':
-                        pil_image = pil_image.convert('RGB')
+                    if pil_image.mode != "RGB":
+                        pil_image = pil_image.convert("RGB")
                     thumb = np.array(pil_image)
                 except Exception:
                     pass
@@ -345,6 +349,7 @@ class ImageCacheThumbGridPreview:
         if thumb is not None:
             try:
                 from PIL import Image
+
                 if thumb.dtype != np.uint8:
                     thumb = thumb.astype(np.uint8)
                 pil_img = Image.fromarray(thumb)
@@ -359,7 +364,7 @@ class ImageCacheThumbGridPreview:
             except Exception:
                 pass
 
-        self.cache_miss.emit(file_path, 'grid')
+        self.cache_miss.emit(file_path, "grid")
         return None
 
     def put_grid(self, file_path: str, grid: np.ndarray, jpeg_data: bytes | None = None) -> None:
@@ -391,14 +396,14 @@ class ImageCacheThumbGridPreview:
 
     def get_preview(self, file_path: str) -> np.ndarray | None:
         """Get cached preview (screen size) or return None."""
-        self.stats['preview_requests'] += 1
+        self.stats["preview_requests"] += 1
         self._check_memory_pressure()
 
         key = self._path_key(file_path)
         # Check in-memory cache first
         preview = self.preview_cache.get(key)
         if preview is not None:
-            self.cache_hit.emit(file_path, 'preview')
+            self.cache_hit.emit(file_path, "preview")
             return preview  # type: ignore[no-any-return]
 
         # Check disk cache for previews
@@ -406,7 +411,7 @@ class ImageCacheThumbGridPreview:
         if jpeg_data is None:
             jpeg_data = self.disk_grid_cache.get(file_path)
         if jpeg_data is not None:
-             try:
+            try:
                 # cv2.imdecode over PIL: several times faster on the
                 # 1280-1536px entries here, and this path runs on the
                 # CALLING thread -- navigation paints call get_preview()
@@ -417,20 +422,18 @@ class ImageCacheThumbGridPreview:
                 # encoded from oriented arrays.
                 import cv2
 
-                arr = cv2.imdecode(
-                    np.frombuffer(jpeg_data, np.uint8), cv2.IMREAD_COLOR
-                )
+                arr = cv2.imdecode(np.frombuffer(jpeg_data, np.uint8), cv2.IMREAD_COLOR)
                 if arr is None:
                     raise ValueError("imdecode failed")
                 preview = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
                 # Also cache in memory
                 self.preview_cache.put(key, preview)
-                self.cache_hit.emit(file_path, 'preview')
+                self.cache_hit.emit(file_path, "preview")
                 return preview  # type: ignore[no-any-return]
-             except Exception:
+            except Exception:
                 self.disk_preview_cache.remove(file_path)
 
-        self.cache_miss.emit(file_path, 'preview')
+        self.cache_miss.emit(file_path, "preview")
         return None
 
     def put_preview(
@@ -453,9 +456,7 @@ class ImageCacheThumbGridPreview:
         """
         if preview is not None:
             key = self._path_key(file_path)
-            stored = (
-                np.ascontiguousarray(preview) if not copy else preview.copy()
-            )
+            stored = np.ascontiguousarray(preview) if not copy else preview.copy()
             self.preview_cache.put(key, stored)
             if libraw_rendered:
                 self.libraw_preview_paths.add(key)

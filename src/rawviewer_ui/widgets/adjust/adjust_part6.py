@@ -1,5 +1,4 @@
 """Adjust mixin part 6 of 6 for ImageAdjustPanelWidget."""
-from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
@@ -249,9 +248,7 @@ class AdjustPart6:
         header.addWidget(reset_btn)
         layout.addLayout(header)
 
-        hint = QLabel(
-            "E / Esc — close · D/B/X/H brush tools · two-finger scroll = Brush Size"
-        )
+        hint = QLabel("E / Esc — close · D/B/X/H brush tools · two-finger scroll = Brush Size")
         hint.setStyleSheet(f"color: {theme.INK_FAINT}; font-size: 10px;")
         hint.setWordWrap(True)
         hint.setToolTip(

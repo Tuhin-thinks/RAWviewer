@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Adjust-panel slider specs: value<->slider mappings are inverses; ranges sane."""
+
 import os
 import sys
 
@@ -8,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)

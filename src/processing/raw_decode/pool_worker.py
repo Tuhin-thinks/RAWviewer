@@ -14,8 +14,6 @@ this module is the documented spawn target for frozen macOS packages and for
 explicit helper wiring in ``image_load_manager``.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 
@@ -29,7 +27,7 @@ def _ensure_src_on_path() -> None:
 def main() -> int:
     _ensure_src_on_path()
     # Import only what decode workers need — never Qt / main window.
-    from processing.unified import decode_raw_file  # noqa: F401
+    from processing.unified.helpers import decode_raw_file  # noqa: F401
 
     print("libraw_pool_worker ready", flush=True)
     return 0

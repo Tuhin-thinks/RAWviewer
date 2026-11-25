@@ -17,6 +17,7 @@ decode_raw_edit_base's own dtype check (`if rgb_image.dtype ==
 np.uint16`) already assumed the correct behavior; it just never actually
 ran because the upstream function silently returned uint8 instead.
 """
+
 import os
 import sys
 
@@ -27,7 +28,7 @@ import numpy as np  # noqa: E402
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -67,11 +68,11 @@ def main() -> int:
         check("both modes produce the same shape", same_shape)
         if same_shape:
             g = out_gamma.astype(np.float64) / 255.0
-            l = out_linear.astype(np.float64) / 65535.0
+            lin = out_linear.astype(np.float64) / 65535.0
             check(
                 "linear output is not just a rescaled copy of the gamma output "
                 "(i.e. the gamma curve was actually skipped, not reapplied then undone)",
-                not np.allclose(g, l, atol=0.01),
+                not np.allclose(g, lin, atol=0.01),
             )
 
     print(f"\n{len(FAILURES)} failure(s)")

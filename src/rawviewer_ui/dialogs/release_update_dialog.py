@@ -1,7 +1,5 @@
 """RAWviewer-styled dialog for optional GitHub release updates."""
 
-from __future__ import annotations
-
 import sys
 
 from PyQt6.QtCore import Qt
@@ -23,7 +21,7 @@ class ReleaseUpdateDialog(QDialog):
         current: str | None = None,
         latest: str | None = None,
         release_url: str | None = None,
-    ):
+    ) -> None:
         super().__init__(parent)
         self.release_url = (release_url or RELEASE_PAGE_URL).strip() or RELEASE_PAGE_URL
         current_v = (current or APP_VERSION).strip() or APP_VERSION
@@ -164,7 +162,7 @@ class ReleaseUpdateDialog(QDialog):
             dialog_y = parent_geometry.y() + (parent_geometry.height() - self.height()) // 2
             self.move(dialog_x, dialog_y)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = True
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
@@ -172,14 +170,14 @@ class ReleaseUpdateDialog(QDialog):
             return
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if getattr(self, "_dragging", False):
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
             return
         super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if hasattr(self, "_dragging"):
             self._dragging = False
             event.accept()

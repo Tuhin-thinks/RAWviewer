@@ -1,12 +1,11 @@
 """Adjust mixin part 2 of 5 for ImageAdjustPanelWidget."""
-from __future__ import annotations
 
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from core import theme
-from raw_adjustments import DEFAULT_ADJUSTMENTS, SLIDER_SPECS, WB_PRESETS
+from raw_adjustments.defaults import DEFAULT_ADJUSTMENTS, SLIDER_SPECS, WB_PRESETS
 
 from .helpers import CollapsibleSection, _adjust_combo_stylesheet, _qta_icon_safe
 
@@ -21,10 +20,7 @@ class AdjustPart2:
         btn.setIconSize(QSize(13, 13))
         btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn.setToolTip(
-            "Compare with original — split view; drag the divider."
-            " Click again to exit."
-        )
+        btn.setToolTip("Compare with original — split view; drag the divider. Click again to exit.")
         self._compare_icon_default = _qta_icon_safe("fa5s.columns", color=theme.INK_MUTED)
         self._compare_icon_active = _qta_icon_safe("fa5s.columns", color=theme.EMBER)
         btn.setIcon(self._compare_icon_default)
@@ -52,11 +48,7 @@ class AdjustPart2:
         btn = getattr(self, "_compare_btn", None)
         if btn is None:
             return
-        icon = (
-            getattr(self, "_compare_icon_active", None)
-            if active
-            else getattr(self, "_compare_icon_default", None)
-        )
+        icon = getattr(self, "_compare_icon_active", None) if active else getattr(self, "_compare_icon_default", None)
         if icon is not None:
             btn.setIcon(icon)
 
@@ -99,9 +91,7 @@ class AdjustPart2:
         if data == -1.0 or (isinstance(name, str) and name.startswith("Custom")):
             return
         if data is None:
-            kelvin = float(
-                getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"])
-            )
+            kelvin = float(getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"]))
         else:
             kelvin = float(data)
         slider = self._sliders.get("Temperature")
@@ -131,9 +121,7 @@ class AdjustPart2:
         # share 5500K — don't flip the label on every slider tick).
         cur_data = combo.currentData()
         cur_text = str(combo.currentText())
-        as_shot = float(
-            getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"])
-        )
+        as_shot = float(getattr(self, "_as_shot_temperature", DEFAULT_ADJUSTMENTS["Temperature"]))
         if cur_data is None and not cur_text.startswith("Custom"):
             if abs(temperature - as_shot) <= 25.0:
                 return
@@ -182,9 +170,7 @@ class AdjustPart2:
         self._crop_btn.setCheckable(True)
         self._crop_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._crop_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._crop_btn.setToolTip(
-            "Interactive crop on the image — drag handles; Apply writes Crop insets"
-        )
+        self._crop_btn.setToolTip("Interactive crop on the image — drag handles; Apply writes Crop insets")
         self._crop_btn.toggled.connect(self._on_crop_toggled)
         layout.addWidget(self._crop_btn)
 
@@ -295,9 +281,7 @@ class AdjustPart2:
     def get_crop_insets(self) -> tuple[float, float, float, float]:
         return tuple(getattr(self, "_crop_insets", (0.0, 0.0, 0.0, 0.0)))
 
-    def set_crop_insets(
-        self, left: float, right: float, top: float, bottom: float, *, emit: bool = True
-    ) -> None:
+    def set_crop_insets(self, left: float, right: float, top: float, bottom: float, *, emit: bool = True) -> None:
         self._crop_insets = (
             float(left),
             float(right),
@@ -316,10 +300,7 @@ class AdjustPart2:
         btn.setIconSize(QSize(12, 12))
         btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn.setToolTip(
-            "Pick white balance — click, then click a neutral gray/white area"
-            " in the image. Esc cancels."
-        )
+        btn.setToolTip("Pick white balance — click, then click a neutral gray/white area in the image. Esc cancels.")
         self._wb_picker_icon_default = _qta_icon_safe("fa5s.eye-dropper", color=theme.INK_MUTED)
         self._wb_picker_icon_active = _qta_icon_safe("fa5s.eye-dropper", color=theme.EMBER)
         btn.setIcon(self._wb_picker_icon_default)
@@ -356,9 +337,7 @@ class AdjustPart2:
         if btn is None:
             return
         icon = (
-            getattr(self, "_wb_picker_icon_active", None)
-            if active
-            else getattr(self, "_wb_picker_icon_default", None)
+            getattr(self, "_wb_picker_icon_active", None) if active else getattr(self, "_wb_picker_icon_default", None)
         )
         if icon is not None:
             btn.setIcon(icon)

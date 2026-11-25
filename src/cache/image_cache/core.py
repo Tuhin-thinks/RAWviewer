@@ -1,5 +1,4 @@
 """Core lifecycle, purge helpers, and memory management for ImageCache."""
-from __future__ import annotations
 
 import contextlib
 import logging
@@ -30,7 +29,7 @@ class ImageCacheCore(QObject):
     cache_miss = pyqtSignal(str, str)  # file_path, cache_type
     memory_warning = pyqtSignal(float)  # memory_usage_percent
 
-    def __init__(self, cache_dir: str = None, persistent_cache_enabled: bool = False):
+    def __init__(self, cache_dir: str = None, persistent_cache_enabled: bool = False) -> None:
         super().__init__()
 
         # Initialize cache directory
@@ -48,24 +47,23 @@ class ImageCacheCore(QObject):
         cache_sizes = self.memory_monitor.get_recommended_cache_sizes()
 
         # Initialize caches
-        self.thumbnail_cache = LRUCache(max_size=cache_sizes['thumbnails'])
-        self.grid_cache = LRUCache(max_size=cache_sizes['thumbnails'] // 2)
-        def _note_preview_evicted(key):
+        self.thumbnail_cache = LRUCache(max_size=cache_sizes["thumbnails"])
+        self.grid_cache = LRUCache(max_size=cache_sizes["thumbnails"] // 2)
+
+        def _note_preview_evicted(key) -> None:
             self.libraw_preview_paths.discard(key)
 
         self.preview_cache = LRUCache(
-            max_size=cache_sizes['preview_images'],
+            max_size=cache_sizes["preview_images"],
             on_evict=_note_preview_evicted,
         )
         self._full_cache_reasons: OrderedDict[str, str] = OrderedDict()
 
-        def _note_full_evicted(key):
+        def _note_full_evicted(key) -> None:
             self._note_full_cache_reason(key, "evicted (capacity 10)")
 
-        self.full_image_cache = LRUCache(
-            max_size=10, on_evict=_note_full_evicted
-        )
-        self.pixmap_cache = LRUCache(max_size=cache_sizes['full_images'])
+        self.full_image_cache = LRUCache(max_size=10, on_evict=_note_full_evicted)
+        self.pixmap_cache = LRUCache(max_size=cache_sizes["full_images"])
         self.libraw_preview_paths: set[str] = set()
         if self.cache_dir:
             self._libraw_preview_paths_file = os.path.join(self.cache_dir, "libraw_preview_paths.json")
@@ -88,20 +86,20 @@ class ImageCacheCore(QObject):
             self.disk_preview_cache = MemoryOnlyPersistentCache()
 
         # In-memory EXIF cache
-        self.exif_memory_cache = LRUCache(max_size=cache_sizes['thumbnails'])
+        self.exif_memory_cache = LRUCache(max_size=cache_sizes["thumbnails"])
 
         # Cache statistics
         self.stats = {
-            'thumbnail_requests': 0,
-            'grid_requests': 0,
-            'preview_requests': 0,
-            'full_image_requests': 0,
-            'pixmap_requests': 0,
-            'exif_requests': 0,
+            "thumbnail_requests": 0,
+            "grid_requests": 0,
+            "preview_requests": 0,
+            "full_image_requests": 0,
+            "pixmap_requests": 0,
+            "exif_requests": 0,
         }
 
         # Memory management
-        self.max_memory_mb = cache_sizes['cache_budget_mb']
+        self.max_memory_mb = cache_sizes["cache_budget_mb"]
         self._tier_max_memory_mb = int(self.max_memory_mb)
         self.memory_check_interval = 5
         self.last_memory_check = 0
@@ -110,7 +108,7 @@ class ImageCacheCore(QObject):
 
         self._mem_poll_lock = threading.Lock()
         self._mem_poll_info: dict[str, float] | None = None
-        self._mem_poll_pressure = 'ok'
+        self._mem_poll_pressure = "ok"
         self._mem_poll_thread: threading.Thread | None = None
 
         self._orient_verify_lock = threading.Lock()
@@ -124,7 +122,7 @@ class ImageCacheCore(QObject):
     def _purge_stale_oriented_pixel_caches(self, cache_dir: str) -> None:
         """One-time purge of persisted PIXEL caches when orientation logic version bumps."""
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
 
             marker = os.path.join(cache_dir, "orient_pixel_ver.txt")
             stored = None
@@ -135,9 +133,10 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == int(RAW_EXIF_SENSOR_META_VER):
                 return
-            print(
-                "[CACHE] Orientation version changed "
-                f"({stored} -> {RAW_EXIF_SENSOR_META_VER}); purging persisted pixel caches"
+            logger.info(
+                "[CACHE] Orientation version changed (%s -> %s); purging persisted pixel caches",
+                stored,
+                RAW_EXIF_SENSOR_META_VER,
             )
             for cache in (
                 self.disk_thumbnail_cache,
@@ -165,9 +164,10 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == int(self.EDIT_BAKE_PIXEL_VER):
                 return
-            print(
-                "[CACHE] Edit-bake hygiene version changed "
-                f"({stored} -> {self.EDIT_BAKE_PIXEL_VER}); purging persisted pixel caches"
+            logger.info(
+                "[CACHE] Edit-bake hygiene version changed (%s -> %s); purging persisted pixel caches",
+                stored,
+                self.EDIT_BAKE_PIXEL_VER,
             )
             for cache in (
                 self.disk_thumbnail_cache,
@@ -196,10 +196,7 @@ class ImageCacheCore(QObject):
                 stored = None
             if stored == stamp:
                 return
-            print(
-                "[CACHE] LibRaw runtime changed "
-                f"({stored!r} -> {stamp!r}); purging persisted pixel caches"
-            )
+            logger.info("[CACHE] LibRaw runtime changed (%r -> %r); purging persisted pixel caches", stored, stamp)
             for cache in (
                 self.disk_thumbnail_cache,
                 self.disk_grid_cache,
@@ -208,10 +205,7 @@ class ImageCacheCore(QObject):
                 with contextlib.suppress(Exception):
                     cache.clear()
             try:
-                from processing.unified import (
-                    prune_libraw_unsupported_paths,
-                    release_edit_base_cache,
-                )
+                from processing.unified.helpers import prune_libraw_unsupported_paths, release_edit_base_cache
             except Exception:
                 prune_libraw_unsupported_paths = None
                 release_edit_base_cache = None
@@ -278,29 +272,33 @@ class ImageCacheCore(QObject):
         if memory_info is None:
             return False
 
-        percent_used = memory_info['system_percent_used']
-        available_gb = memory_info['system_available_gb']
-        rss_mb = memory_info['process_rss_mb']
+        percent_used = memory_info["system_percent_used"]
+        available_gb = memory_info["system_available_gb"]
+        rss_mb = memory_info["process_rss_mb"]
 
-        if pressure_level == 'critical':
-            if current_time - getattr(self, 'last_aggressive_purge', 0.0) < 60.0:
+        if pressure_level == "critical":
+            if current_time - getattr(self, "last_aggressive_purge", 0.0) < 60.0:
                 return False
             self.last_aggressive_purge = current_time
             logger.warning(
                 "CRITICAL system memory pressure (system: %.1f%% used, %.1f GB free, process RSS: %.1f MB). Aggressively purging caches.",
-                percent_used, available_gb, rss_mb,
+                percent_used,
+                available_gb,
+                rss_mb,
             )
             self.memory_warning.emit(percent_used)
             self._aggressive_purge()
             return True
 
-        if pressure_level == 'elevated':
-            if current_time - getattr(self, 'last_reduce_cache', 0.0) < 20.0:
+        if pressure_level == "elevated":
+            if current_time - getattr(self, "last_reduce_cache", 0.0) < 20.0:
                 return False
             self.last_reduce_cache = current_time
             logger.warning(
                 "Elevated system memory pressure (system: %.1f%% used, %.1f GB free, process RSS: %.1f MB). Reducing cache sizes.",
-                percent_used, available_gb, rss_mb,
+                percent_used,
+                available_gb,
+                rss_mb,
             )
             self.memory_warning.emit(percent_used)
             self._reduce_cache_sizes()
@@ -316,21 +314,17 @@ class ImageCacheCore(QObject):
         self.full_image_cache.clear()
         self.pixmap_cache.clear()
         try:
-            from processing.unified import (
+            from processing.unified.helpers import (
                 release_adjusted_full_cache,
                 release_edit_base_cache,
                 release_unpacked_raw_cache,
             )
-            freed = (
-                release_edit_base_cache()
-                + release_adjusted_full_cache()
-                + release_unpacked_raw_cache()
-            )
+
+            freed = release_edit_base_cache() + release_adjusted_full_cache() + release_unpacked_raw_cache()
             if freed:
                 import logging
-                logging.getLogger(__name__).info(
-                    "[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6
-                )
+
+                logging.getLogger(__name__).info("[MEMORY] released %.0f MB of decode/edit buffers", freed / 1e6)
         except Exception:
             pass
         self.full_image_cache.shrink_to_size(3)
@@ -343,6 +337,7 @@ class ImageCacheCore(QObject):
         self.preview_cache.shrink_to_size(new_preview_size)
         self._release_gpu_memory()
         import gc
+
         gc.collect()
 
     def _reduce_cache_sizes(self) -> None:
@@ -351,12 +346,8 @@ class ImageCacheCore(QObject):
         new_pixmap_size = max(5, int(self.pixmap_cache.max_size * 0.75))
         new_thumbnail_size = max(20, int(self.thumbnail_cache.max_size * 0.75))
         new_grid_size = max(10, int(self.grid_cache.max_size * 0.75))
-        min_preview = _env_int(
-            "RAWVIEWER_PREVIEW_CACHE_ITEMS_MIN", 6, minimum=4, maximum=32
-        )
-        new_preview_size = max(
-            min_preview, int(self.preview_cache.max_size * 0.75)
-        )
+        min_preview = _env_int("RAWVIEWER_PREVIEW_CACHE_ITEMS_MIN", 6, minimum=4, maximum=32)
+        new_preview_size = max(min_preview, int(self.preview_cache.max_size * 0.75))
         self.full_image_cache.shrink_to_size(new_full_size)
         self.pixmap_cache.shrink_to_size(new_pixmap_size)
         self.thumbnail_cache.shrink_to_size(new_thumbnail_size)
@@ -368,6 +359,7 @@ class ImageCacheCore(QObject):
         """Release GPU/unified-memory caching allocator's pool."""
         try:
             from processing.raw_decode.gpu_processor import release_cached_gpu_memory
+
             release_cached_gpu_memory()
         except Exception:
             logger.debug("GPU memory release failed", exc_info=True)

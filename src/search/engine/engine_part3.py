@@ -1,5 +1,4 @@
 """Engine mixin part 3 of 7 for SemanticImageIndex."""
-from __future__ import annotations
 
 import concurrent
 import contextlib
@@ -48,10 +47,6 @@ from search.types import ProgressCallback
 
 
 class EnginePart3:
-
-
-
-
     def _auto_select_semantic_batch_size(
         self,
         pending_for_semantic: Sequence[tuple[str, os.stat_result]],
@@ -81,7 +76,12 @@ class EnginePart3:
                         coreml_forced,
                     )
                     return min(total, coreml_forced)
-                if os.environ.get("RAWVIEWER_SEMANTIC_COREML_TUNE", "").strip().lower() not in ("1", "true", "yes", "on"):
+                if os.environ.get("RAWVIEWER_SEMANTIC_COREML_TUNE", "").strip().lower() not in (
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
+                ):
                     if semantic_coreml_use_native_batch():
                         chunk = semantic_coreml_chunk_size()
                         logger.info(
@@ -119,11 +119,7 @@ class EnginePart3:
                 return min(total, chunk)
             return semantic_batch_size()
 
-        candidates = (
-            semantic_coreml_batch_candidates()
-            if is_coreml
-            else semantic_batch_candidates()
-        )
+        candidates = semantic_coreml_batch_candidates() if is_coreml else semantic_batch_candidates()
         tune_label = "Core ML encode chunk" if is_coreml else "Semantic batch"
 
         cache_key = self._semantic_batch_cache_key(accel_detail)
@@ -218,12 +214,7 @@ class EnginePart3:
                 if tput > best_tput:
                     best_tput = tput
                     best_batch = cand
-                elif (
-                    best_tput > 0
-                    and tput >= best_tput
-                    and tput >= best_tput * tie_ratio
-                    and cand > best_batch
-                ):
+                elif best_tput > 0 and tput >= best_tput and tput >= best_tput * tie_ratio and cand > best_batch:
                     # True tie only: never prefer a larger batch when it is slower.
                     best_batch = cand
                 elif (
@@ -234,8 +225,7 @@ class EnginePart3:
                     and cand > best_batch
                 ):
                     logger.info(
-                        "[INDEX][SPEED] Core ML tune early stop at size=%d "
-                        "(%.2f img/s vs best %d at %.2f img/s)",
+                        "[INDEX][SPEED] Core ML tune early stop at size=%d (%.2f img/s vs best %d at %.2f img/s)",
                         cand,
                         tput,
                         best_batch,
@@ -288,6 +278,7 @@ class EnginePart3:
                 pass
 
         from common_image_loader import is_external_or_network_volume
+
         if is_external_or_network_volume(sample_path):
             return 2
         try:
@@ -445,20 +436,14 @@ class EnginePart3:
                     index_thumbnail_needs_orient_fix,
                     is_raw_file,
                 )
-                from enhanced_raw_processor import (
-                    ThumbnailExtractor,
-                    extract_embedded_jpeg_by_scan,
-                )
+                from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
+                from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
                 arr = _cached_index_source_array(cache, path)
-                if arr is not None and not index_thumbnail_needs_orient_fix(
-                    path, arr, cache=cache
-                ):
+                if arr is not None and not index_thumbnail_needs_orient_fix(path, arr, cache=cache):
                     return True
 
-                if arr is not None and index_thumbnail_needs_orient_fix(
-                    path, arr, cache=cache
-                ):
+                if arr is not None and index_thumbnail_needs_orient_fix(path, arr, cache=cache):
                     arr = finalize_index_thumbnail_array(path, arr, cache=cache)
                 else:
                     if is_raw_file(path):
@@ -470,9 +455,7 @@ class EnginePart3:
                             if arr is not None:
                                 arr = np.asarray(arr, dtype=np.uint8)
                         if arr is not None:
-                            arr = finalize_index_thumbnail_array(
-                                path, arr, cache=cache
-                            )
+                            arr = finalize_index_thumbnail_array(path, arr, cache=cache)
                     else:
                         with Image.open(path) as im:
                             im = ImageOps.exif_transpose(im).convert("RGB")
@@ -506,9 +489,7 @@ class EnginePart3:
 
         @staticmethod
         def _thumb_progress_message(done: int) -> str:
-            return format_index_progress(
-                "Preparing thumbnails", _thumb_progress_ui_count(done), total
-            )
+            return format_index_progress("Preparing thumbnails", _thumb_progress_ui_count(done), total)
 
         @staticmethod
         def _emit_thumb_progress(done: int) -> None:
@@ -568,9 +549,7 @@ class EnginePart3:
         )
         return warmed
 
-    def _face_pending_paths(
-        self, conn: sqlite3.Connection, canonical_paths: Sequence[str]
-    ) -> list[str]:
+    def _face_pending_paths(self, conn: sqlite3.Connection, canonical_paths: Sequence[str]) -> list[str]:
         """Paths in this batch that still need face_count in the DB."""
         if not canonical_paths:
             return []
@@ -747,7 +726,7 @@ class EnginePart3:
         if not exif_batch:
             return
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
             from image_cache import get_image_cache
 
             cache = get_image_cache()

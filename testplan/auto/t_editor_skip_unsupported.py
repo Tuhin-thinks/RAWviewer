@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Editor mode: a failed/unsupported edit-base decode must silently skip
 to the next editable image, not leave the editor stuck with an error."""
+
+import contextlib
 import os
 import sys
 
@@ -9,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 FAILURES = []
 
 
-def check(name, ok, detail=""):
+def check(name: str, ok, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {name}{('  ' + detail) if detail else ''}")
     if not ok:
         FAILURES.append(name)
@@ -26,17 +28,17 @@ def main() -> int:
     key = os.path.normcase(os.path.abspath("/tmp/a.CR3"))
 
     class FakePanel:
-        def isVisible(self):
+        def isVisible(self) -> bool:
             return True
 
-        def set_lens_correction_available(self, *a):
+        def set_lens_correction_available(self, *a) -> None:
             pass
 
     class SB:
-        def showMessage(self, *a, **k):
+        def showMessage(self, *a, **k) -> None:
             pass
 
-    def make_mock(*, editor_active=True, n_files=3):
+    def make_mock(*, editor_active: bool = True, n_files: int = 3):
         m = type("M", (), {})()
         m.view_mode = "single"
         m._adjust_overlay_visible = editor_active
@@ -75,10 +77,9 @@ def main() -> int:
     _LIBRAW_UNSUPPORTED_PATHS.clear()
     m4 = make_mock(editor_active=True, n_files=3)
     fake_base = np.zeros((10, 10, 3), dtype=np.uint16)
-    try:
+    # success branch needs more mock plumbing than this test provides
+    with contextlib.suppress(Exception):
         m4._on_adjust_edit_base_ready("/tmp/a.CR3", fake_base, False, "")
-    except Exception:
-        pass  # success branch needs more mock plumbing than this test provides
     check("successful decode does not mark unsupported", key not in _LIBRAW_UNSUPPORTED_PATHS)
     check("successful decode does not navigate", m4._nav_calls == [])
 

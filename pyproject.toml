@@ -1,34 +1,54 @@
+# RAWviewer project configuration.
+#
+# Every tool section below states what it enforces and why. Rule sets are
+# deliberately narrow where the codebase is not yet compliant; the goal is to
+# tighten them over time, never to silence new code. See CLAUDE.md for the
+# coding standards these settings implement.
+
 [project]
 name = "rawviewer"
 version = "3.1.1"
 description = "RAWviewer - Professional RAW Image Viewer with Semantic Search"
+# Supported interpreter range. Code must run on the floor (3.10): no PEP 695
+# `type` aliases, no PEP 701 f-string nesting, no 3.12-only stdlib calls.
 requires-python = ">=3.10,<3.13"
 
+# ---------------------------------------------------------------------------
+# Ruff: linter and formatter (replaces flake8, isort, pyupgrade, black).
+# Run: python -m ruff check <paths>   and   python -m ruff format --check <paths>
+# ---------------------------------------------------------------------------
 [tool.ruff]
-line-length = 120
-target-version = "py312"
+line-length = 120            # Matches the formatter; E501 is ignored because the formatter wraps.
+# Target the floor, not 3.12: otherwise UP rules suggest syntax that 3.10 cannot run.
+# NOTE: currently "py312" (see audit). Change to "py310" when the team agrees.
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
-    "SIM",  # flake8-simplify
+    "E",    # pycodestyle errors: syntax-level style problems.
+    "W",    # pycodestyle warnings: whitespace, trailing spaces.
+    "F",    # pyflakes: unused imports/variables, undefined names.
+    "I",    # isort: import blocks sorted and grouped (stdlib / third-party / first-party).
+    "B",    # flake8-bugbear: likely bugs (mutable defaults, loop-variable capture, bare raise).
+    "C4",   # flake8-comprehensions: avoid needless list()/dict()/set() wrapping.
+    "UP",   # pyupgrade: modern syntax for the target version. Includes UP010
+            # (unnecessary `from __future__` imports) and UP006/UP007/UP035 (PEP 585/604 typing).
+    "SIM",  # flake8-simplify: collapsible if/else, needless bool returns, contextlib.suppress.
 ]
 ignore = [
-    "E501",  # Line length handled by formatter
-    "UP040", # PEP 695 `type` keyword requires Python 3.12; project supports 3.10+
+    "E501",  # Line length: left to the formatter.
+    "UP040", # PEP 695 `type X = ...` aliases need 3.12; the floor is 3.10, so keep TypeAlias.
 ]
+# Not enabled yet, planned: "RUF" (ruff-specific), "ANN" (annotations; overlaps mypy),
+# "D" (docstrings), "PL" (pylint), "N" (naming). Each needs a baseline pass first.
 
 [tool.ruff.format]
-quote-style = "double"
+quote-style = "double"        # Consistent with PEP 8 default and the existing code.
 indent-style = "space"
 
 [tool.ruff.lint.per-file-ignores]
+# Each entry is a file that has a justified reason, not a general exemption.
+# F401 (unused import): package __init__ files re-export names on purpose.
 "src/search/indexer/__init__.py" = ["F401"]
 "src/raw_adjustments/__init__.py" = ["F401"]
 "src/bootstrap_pkg/__init__.py" = ["F401"]
@@ -36,6 +56,7 @@ indent-style = "space"
 "src/rawviewer_ui/widgets/gpu/__init__.py" = ["F401"]
 "src/cache/image_cache/__init__.py" = ["F401"]
 "src/rawviewer_app/processing/__init__.py" = ["F401"]
+# E402 (import not at top): these modules set sys.path, env vars or Qt/OpenMP flags before importing.
 "src/main.py" = ["E402"]
 "src/raw_adjustments/pipeline.py" = ["E402"]
 "src/core/release_update.py" = ["E402"]
@@ -47,70 +68,1266 @@ indent-style = "space"
 "src/rawviewer_ui/widgets/adjust/adjust_part4.py" = ["E402"]
 "src/bootstrap_pkg/helpers.py" = ["E402"]
 
+# ---------------------------------------------------------------------------
+# Mypy: static type checking.
+# Run: python -m mypy <paths>
+# ---------------------------------------------------------------------------
 [tool.mypy]
-python_version = "3.12"
-strict = true
-allow_subclassing_any = true
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+python_version = "3.10"       # Checker dialect: matches the supported floor.
+files = ["src", "scripts", "testplan", "tests", "build.py"]
+mypy_path = "src:typings"     # Local stubs (typings/) plus the src/ package root.
+explicit_package_bases = true # Module names are computed from the repo root, so scripts/ and tests/ import cleanly.
+strict = true                 # Turns on all strict flags below plus the rest of --strict.
+allow_subclassing_any = true  # PyQt6 base classes are untyped; subclassing them must not error.
+warn_return_any = true        # Flag `return x` where x is Any in a function declared to return a concrete type.
+warn_unused_ignores = true    # A `# type: ignore` that no longer hides an error is itself an error.
+disallow_untyped_defs = true  # Every function needs parameter and return annotations.
+disallow_incomplete_defs = true  # Partially annotated signatures are errors.
 
+# Test and script code may be lighter-typed. Loosened per module, never globally.
 [[tool.mypy.overrides]]
 module = ["tests.*", "scripts.*"]
 disallow_untyped_defs = false
 
+# Third-party packages without stubs: treat as Any instead of erroring on import.
 [[tool.mypy.overrides]]
 module = [
-    "PyQt6.*",
     "objc",
     "AppKit",
-    "CoreML",
     "Foundation",
     "Quartz",
+    "CoreML",
+    "Vision",
+    "comtypes",
+    "comtypes.*",
+    "cupy",
+    "cupy.*",
+    "torch",
+    "torch.*",
+    "kornia",
+    "kornia.*",
+    "onnxruntime",
+    "onnxruntime.*",
+    "lensfunpy",
+    "pyexiv2",
+    "qtawesome",
 ]
 ignore_missing_imports = true
 
-# Qt UI modules: PyQt6 lacks comprehensive stubs, so many errors are false positives
+# Legacy per-module error codes. Generated by: python -m scripts.typing.ledger --emit-overrides
+# Each module lists exactly the codes it still has. Delete a module's line when it reaches zero
+# errors; delete the whole block when the list is empty. Never add a module here.
+# Ratchet: python -m scripts.typing.ratchet (counts may only go down).
 [[tool.mypy.overrides]]
 module = [
-    "rawviewer_ui.*",
-    "rawviewer_app.*",
+    "rawviewer_app.window.mixins.adjust_part1",
 ]
-disable_error_code = [
-    "attr-defined",
-    "misc",
-    "no-any-return",
-    "no-untyped-call",
-    "no-untyped-def",
-    "union-attr",
-    "operator",
-    "call-arg",
-    "has-type",
-    "type-arg",
-    "unused-ignore",
-    "assignment",
-]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-arg", "no-any-return", "no-untyped-call", "no-untyped-def", "union-attr", "var-annotated"]
 
-# Autotest utilities: use dynamic attributes and PyQt6 test APIs
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.overlays.location_map_overlay",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-arg", "no-untyped-def", "override", "type-arg", "union-attr", "valid-type", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.engine.engine_part2",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "has-type", "name-defined", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gpu.gpu_view_part2",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "misc", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.ui_build_part2",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.dialogs_part1",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "func-returns-value", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.search_part1",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.metadata_part2",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part4",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.search_part2",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.misc_part3",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.gallery_part2",
+    "rawviewer_app.window.mixins.search_part3",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.misc_part1",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "index", "no-any-return", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "bootstrap_pkg.gui",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "method-assign", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "build",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "operator", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.image_load_part1",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.batch_part1",
+]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.dialogs.color_calibration_dialog",
+]
+disable_error_code = ["arg-type", "assignment", "call-arg", "call-overload", "import-not-found", "no-any-return", "no-redef", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.workers.workers",
+]
+disable_error_code = ["arg-type", "assignment", "call-arg", "call-overload", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.enhanced_processor",
+]
+disable_error_code = ["arg-type", "assignment", "call-arg", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "common_image_loader.loaders",
+]
+disable_error_code = ["arg-type", "assignment", "call-overload", "name-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "operator"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_xmp_roundtrip",
+]
+disable_error_code = ["arg-type", "assignment", "import-not-found", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.image_cache",
+]
+disable_error_code = ["arg-type", "assignment", "misc", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.disk",
+]
+disable_error_code = ["arg-type", "assignment", "no-any-return", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.processing._raw_part2",
+]
+disable_error_code = ["arg-type", "assignment", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_visited_edit_bake",
+]
+disable_error_code = ["arg-type", "assignment", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.spot_heal",
+]
+disable_error_code = ["arg-type", "attr-defined", "call-arg", "index", "misc", "no-any-return", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part1",
+]
+disable_error_code = ["arg-type", "attr-defined", "call-arg", "no-any-return", "no-untyped-call", "no-untyped-def", "operator", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part5",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "method-assign", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.misc_part2",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.navigation_part1",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part3",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.image_load_part2",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.search_part4",
+]
+disable_error_code = ["arg-type", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.manager_part3",
+]
+disable_error_code = ["arg-type", "attr-defined", "misc", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.lifecycle_part1",
+]
+disable_error_code = ["arg-type", "attr-defined", "misc", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "common_image_loader.helpers",
+]
+disable_error_code = ["arg-type", "attr-defined", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.status_part1",
+]
+disable_error_code = ["arg-type", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.overlays.color_checker_overlay",
+]
+disable_error_code = ["arg-type", "call-arg", "import-not-found", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.queries",
+]
+disable_error_code = ["arg-type", "call-arg", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.test_exif_orientation",
+]
+disable_error_code = ["arg-type", "call-overload", "import-not-found", "no-any-return", "no-untyped-def", "union-attr", "untyped-decorator"]
+
+[[tool.mypy.overrides]]
+module = [
+    "common_image_loader.edr",
+]
+disable_error_code = ["arg-type", "call-overload", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.image_cache.full_exif_util",
+]
+disable_error_code = ["arg-type", "call-overload", "no-any-return", "union-attr", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gpu.gpu_item",
+]
+disable_error_code = ["arg-type", "call-overload", "no-untyped-call", "no-untyped-def", "override", "type-arg", "union-attr", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.raw_decode.fast",
+]
+disable_error_code = ["arg-type", "import-not-found", "no-any-return", "no-untyped-call", "no-untyped-def", "return-value", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.test.fast_raw_decode_parity_gate",
+]
+disable_error_code = ["arg-type", "import-not-found", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_folder_fallback",
+]
+disable_error_code = ["arg-type", "import-not-found", "no-untyped-call", "no-untyped-def", "unused-ignore", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_gallery_new_file",
+]
+disable_error_code = ["arg-type", "import-not-found", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.color_calibration",
+]
+disable_error_code = ["arg-type", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_cache_semantics",
+    "testplan.auto.t_gallery_copy_path_button",
+]
+disable_error_code = ["arg-type", "no-untyped-call", "no-untyped-def", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "common_image_loader.mipmap",
+    "testplan.auto.t_gallery_thumb_recovery",
+    "testplan.auto.t_nef_he_detection",
+]
+disable_error_code = ["arg-type", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "metadata.histogram",
+]
+disable_error_code = ["arg-type", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.keys",
+    "raw_adjustments.hsl",
+    "raw_adjustments.xmp_write",
+    "scripts.typing.ledger",
+    "testplan.auto.t_module_import_smoke",
+]
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.image_cache.core",
+]
+disable_error_code = ["assignment", "attr-defined", "call-arg", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part1",
+]
+disable_error_code = ["assignment", "attr-defined", "call-overload", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gpu.gpu_view_part1",
+]
+disable_error_code = ["assignment", "attr-defined", "call-overload", "has-type", "no-any-return", "no-untyped-def", "operator"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.lifecycle_part2",
+]
+disable_error_code = ["assignment", "attr-defined", "comparison-overlap", "has-type", "misc", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_gallery_batch_selection",
+]
+disable_error_code = ["assignment", "attr-defined", "func-returns-value", "has-type", "import-not-found", "misc", "no-untyped-call", "no-untyped-def", "return-value", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.adjust_part4",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "import-not-found", "no-redef", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part6",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "misc", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part2",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "misc", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.engine.engine_part3",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "misc", "no-any-return", "no-untyped-call", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part4",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "no-any-return", "no-redef", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.metadata_part1",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part5",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.image_load_part3",
+]
+disable_error_code = ["assignment", "attr-defined", "has-type", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.adjust_part4",
+]
+disable_error_code = ["assignment", "attr-defined", "index", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.unified_part7",
+    "search.engine.engine_part1",
+]
+disable_error_code = ["assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.pipeline",
+    "search.indexer._rest",
+]
+disable_error_code = ["assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.adjust_part5",
+]
+disable_error_code = ["assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.display_part2",
+]
+disable_error_code = ["assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.gallery_part4",
+]
+disable_error_code = ["assignment", "attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.adjust_part3",
+]
+disable_error_code = ["assignment", "attr-defined", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_worker_no_qpixmap",
+]
+disable_error_code = ["assignment", "attr-defined", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.adjust_part2",
+]
+disable_error_code = ["assignment", "attr-defined", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.exif_extractor",
+]
+disable_error_code = ["assignment", "call-arg", "comparison-overlap", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.raw_image_viewer",
+]
+disable_error_code = ["assignment", "call-arg", "misc"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gpu.gpu_view",
+]
+disable_error_code = ["assignment", "call-arg", "misc", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.backends",
+]
+disable_error_code = ["assignment", "call-overload", "misc", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.helpers",
+]
+disable_error_code = ["assignment", "call-overload", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.worker",
+]
+disable_error_code = ["assignment", "call-overload", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.indexer._config",
+]
+disable_error_code = ["assignment", "call-overload", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.image_cache.thumb_grid_preview",
+]
+disable_error_code = ["assignment", "call-overload", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.test.phase_develop_adjust_linear",
+]
+disable_error_code = ["assignment", "import-not-found", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_queue_reprioritise",
+    "testplan.auto.t_raw_slot_accounting",
+]
+disable_error_code = ["assignment", "method-assign", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "core.ssl_certs",
+    "pyi_rth_ssl_certs",
+]
+disable_error_code = ["assignment", "misc"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_gallery_scroll_date_bubble",
+]
+disable_error_code = ["assignment", "misc", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.pv2012",
+]
+disable_error_code = ["assignment", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.paths",
+]
+disable_error_code = ["assignment", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.optimized_processor",
+]
+disable_error_code = ["assignment", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.auto_adjust",
+]
+disable_error_code = ["assignment", "no-any-return", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "cache.metadata",
+]
+disable_error_code = ["assignment", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_capture_time_only_sort",
+]
+disable_error_code = ["assignment", "no-untyped-call", "no-untyped-def", "return-value", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_skip_same_format_export",
+]
+disable_error_code = ["assignment", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.logging_setup",
+]
+disable_error_code = ["assignment", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.xmp_read",
+]
+disable_error_code = ["assignment", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified",
+    "raw_adjustments",
+    "rawviewer_app.core.widgets.macos",
+    "rawviewer_app.window.mixins.ui_build_part1",
+    "rawviewer_ui.widgets.adjust.adjust_part2",
+]
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.filmstrip",
+]
+disable_error_code = ["attr-defined", "call-arg", "call-overload", "no-any-return", "no-untyped-call", "no-untyped-def", "override", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.adjust_part1",
+]
+disable_error_code = ["attr-defined", "call-arg", "call-overload", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.manager_part1",
+]
+disable_error_code = ["attr-defined", "call-arg", "has-type", "type-arg", "union-attr", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.services.batch",
+    "rawviewer_app.window.adjust_workers",
+]
+disable_error_code = ["attr-defined", "call-arg", "no-untyped-call", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.processing._pixmap_converters",
+]
+disable_error_code = ["attr-defined", "call-arg", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.extraction",
+]
+disable_error_code = ["attr-defined", "call-overload", "comparison-overlap", "no-any-return", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.ui_build_part3",
+]
+disable_error_code = ["attr-defined", "call-overload", "comparison-overlap", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.external_part1",
+]
+disable_error_code = ["attr-defined", "call-overload", "func-returns-value", "no-untyped-call", "no-untyped-def", "union-attr", "unused-ignore", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.external_part2",
+]
+disable_error_code = ["attr-defined", "call-overload", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "unused-ignore", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part7",
+]
+disable_error_code = ["attr-defined", "call-overload", "has-type", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.raw_decode.exposure_clipping",
+]
+disable_error_code = ["attr-defined", "call-overload", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.adjust_part5",
+]
+disable_error_code = ["attr-defined", "call-overload", "no-any-return", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.adjust_part6",
+]
+disable_error_code = ["attr-defined", "call-overload", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part3",
+]
+disable_error_code = ["attr-defined", "has-type", "misc", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.engine.engine_part5",
+]
+disable_error_code = ["attr-defined", "has-type", "misc", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.misc_part4",
+]
+disable_error_code = ["attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.gallery_part1",
+]
+disable_error_code = ["attr-defined", "has-type", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.gallery_part5",
+]
+disable_error_code = ["attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.gallery.gallery_part6",
+]
+disable_error_code = ["attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.navigation_part2",
+]
+disable_error_code = ["attr-defined", "has-type", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.status_part2",
+]
+disable_error_code = ["attr-defined", "has-type", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.long_functions",
+]
+disable_error_code = ["attr-defined", "import-not-found"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_spot_heal",
+]
+disable_error_code = ["attr-defined", "import-not-found", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.core.widgets.title_bar",
+]
+disable_error_code = ["attr-defined", "method-assign", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.engine.engine_part7",
+]
+disable_error_code = ["attr-defined", "misc", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.shortcuts_part1",
+]
+disable_error_code = ["attr-defined", "misc", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "search.engine.engine_part4",
+]
+disable_error_code = ["attr-defined", "misc", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.adjust_part3",
+]
+disable_error_code = ["attr-defined", "name-defined", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.gallery_part3",
+]
+disable_error_code = ["attr-defined", "no-any-return", "no-redef", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.unified_part2",
+    "processing.unified.unified_part5",
+]
+disable_error_code = ["attr-defined", "no-any-return", "no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.raw_decode.scunet",
+]
+disable_error_code = ["attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "return-value", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.unified_part1",
+]
+disable_error_code = ["attr-defined", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.unified_part4",
+    "processing.unified.unified_part6",
+]
+disable_error_code = ["attr-defined", "no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.unified_part3",
+]
+disable_error_code = ["attr-defined", "no-any-return", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.viewer.session_mixin",
+]
+disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.macos",
+]
+disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def", "type-arg", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.mixins.settings_part1",
+    "testplan.auto.t_adjust_copy_paste_shortcuts",
+    "testplan.auto.t_dodge_burn_brush_wheel",
+    "testplan.auto.t_gallery_hover_prefetch",
+]
+disable_error_code = ["attr-defined", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "main",
+]
+disable_error_code = ["attr-defined", "no-untyped-call", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.window.bootstrap",
+    "rawviewer_app.window.qt_helpers",
+    "rawviewer_ui.dialogs.release_update_dialog",
+]
+disable_error_code = ["attr-defined", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.manager_part2",
+]
+disable_error_code = ["attr-defined", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "core.events",
+]
+disable_error_code = ["call-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.helpers",
+]
+disable_error_code = ["call-arg", "call-overload", "method-assign", "no-any-return", "no-untyped-def", "override", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets",
+]
+disable_error_code = ["call-arg", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.processing._raw_part1",
+]
+disable_error_code = ["call-arg", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.overlays.crop_overlay",
+    "rawviewer_ui.widgets.tone_curve_widget",
+]
+disable_error_code = ["call-arg", "no-untyped-call", "no-untyped-def", "override"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.preload_manager",
+]
+disable_error_code = ["call-arg", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.core.widgets.task_progress_dialog",
+    "rawviewer_app.core.widgets.thumbnail_label",
+    "rawviewer_ui.dialogs.mobileclip_download_dialog",
+]
+disable_error_code = ["call-arg", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "common_image_loader.exif_display",
+]
+disable_error_code = ["call-overload", "no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_coreml_multiarray_bridge",
+]
+disable_error_code = ["call-overload", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "metadata.subject_area",
+    "scripts.size_report",
+    "testplan.auto.t_auto_straighten",
+    "testplan.auto.t_auto_tone",
+    "testplan.auto.t_dpreview_samples",
+    "testplan.auto.t_effects_vignette_dehaze",
+    "testplan.auto.t_lite_packaging_no_torch",
+    "testplan.auto.t_wb_picker_coords",
+]
+disable_error_code = ["import-not-found"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.raw_decode.gpu_processor",
+]
+disable_error_code = ["import-not-found", "index", "no-any-return", "no-untyped-call", "no-untyped-def", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.tools.shadow_tuning_sweep",
+]
+disable_error_code = ["import-not-found", "index", "no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.tools.shadow_tuning_render",
+]
+disable_error_code = ["import-not-found", "index", "no-untyped-call", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.raw_decode.gpu_bridge",
+]
+disable_error_code = ["import-not-found", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_adjust_section_order",
+]
+disable_error_code = ["import-not-found", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_ai_denoise_amount",
+    "testplan.auto.t_ai_denoise_gating",
+    "testplan.auto.t_ai_denoise_preview_export_golden",
+    "testplan.auto.t_channel_tone_curve",
+    "testplan.auto.t_crop_overlay",
+    "testplan.auto.t_display_brightness",
+    "testplan.auto.t_dodge_burn",
+    "testplan.auto.t_dodge_burn_reset",
+    "testplan.auto.t_dodge_burn_undo",
+    "testplan.auto.t_gpu_return_linear",
+    "testplan.auto.t_half_decode_return_linear",
+    "testplan.auto.t_hsl_correctness",
+    "testplan.auto.t_lut_cube",
+    "testplan.auto.t_memory_tier_overlay",
+    "testplan.auto.t_params_supported_user_wb",
+    "testplan.auto.t_pv2012_preview_lite",
+    "testplan.auto.t_shadow_edge_aware_damp",
+    "testplan.auto.t_shadow_smoothed_ratio",
+    "testplan.auto.t_tone_engine",
+    "testplan.auto.t_wb_sanity",
+]
+disable_error_code = ["import-not-found", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.bench.bench_gpu_isp",
+    "scripts.models.export_mobileclip2_coreml",
+    "testplan.auto.t_perf_baseline",
+    "testplan.auto.t_splash_copy",
+]
+disable_error_code = ["import-not-found", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_sidecar_progressive",
+]
+disable_error_code = ["index", "no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.manager",
+    "rawviewer_ui.widgets.gallery.justified_gallery",
+    "search.engine.semantic_index",
+]
+disable_error_code = ["misc"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.widgets.adjust.image_adjust_panel",
+]
+disable_error_code = ["misc", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.chroma_denoise",
+    "raw_adjustments.detail_enhance",
+    "raw_adjustments.effects",
+]
+disable_error_code = ["no-any-return"]
+
+[[tool.mypy.overrides]]
+module = [
+    "enhanced_raw_processor.thumbnail_extractor",
+    "metadata.backend",
+]
+disable_error_code = ["no-any-return", "no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "processing.unified.helpers",
+    "raw_adjustments.apply",
+    "raw_adjustments.lut",
+    "raw_adjustments.tone_recovery",
+    "rawviewer_app.core.widgets.overlays",
+]
+disable_error_code = ["no-any-return", "no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "core.burst_grouping",
+    "raw_adjustments.tone_curve",
+]
+disable_error_code = ["no-any-return", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "image_load_manager.helpers",
+    "raw_adjustments.saved_edits",
+]
+disable_error_code = ["no-any-return", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.dodge_burn",
+]
+disable_error_code = ["no-any-return", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.transform",
+]
+disable_error_code = ["no-any-return", "type-arg", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "bootstrap_pkg",
+]
+disable_error_code = ["no-untyped-call"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.core.widgets.resize_grip",
+    "rawviewer_app.window.platform_win",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.lens_correction",
+    "rawviewer_app.core.widgets.batch_export_dialog",
+    "rawviewer_app.window.splash",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_idle_timer_trigger",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def", "type-arg", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.core.widgets.confirm_dialog",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_app.core.widgets.share",
+    "rawviewer_app.window.windows_shell",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_adjust_loading_overlay",
+    "testplan.auto.t_adjust_panel_dock",
+    "testplan.auto.t_adjust_workflow_restore",
+    "testplan.auto.t_batch_export_ai_amount",
+    "testplan.auto.t_cr3_preview_perf",
+    "testplan.auto.t_ctrl_wheel_zoom_anchor",
+    "testplan.auto.t_detail_enhance_perf",
+    "testplan.auto.t_edit_base_max_edge",
+    "testplan.auto.t_editor_skip_unsupported",
+    "testplan.auto.t_exif_cache_concurrency",
+    "testplan.auto.t_filmstrip_editor_hidden",
+    "testplan.auto.t_full_decode_dedup",
+    "testplan.auto.t_gallery_closes_editor",
+    "testplan.auto.t_gallery_thumb_perf",
+    "testplan.auto.t_he_nef_thumbnail",
+    "testplan.auto.t_idle_timer_structure",
+    "testplan.auto.t_libraw_cache_stamp",
+    "testplan.auto.t_nef_he_editing_export",
+    "testplan.auto.t_search_bar_animation",
+    "testplan.auto.t_slider_specs",
+    "testplan.auto.t_unpack_stash_lru",
+]
+disable_error_code = ["no-untyped-call", "no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "bootstrap_pkg.splash",
+    "common_image_loader",
+    "common_image_loader.runtime",
+    "core.download_progress",
+    "core.perf_metrics",
+    "core.profile",
+    "core.theme",
+    "image_load_manager",
+    "processing",
+    "rawviewer_app.core.widgets.metadata_bar",
+    "rawviewer_app.core.widgets.warning_dialog",
+    "scripts.check_file_sizes",
+    "scripts.models.download_mobileclip_coreml",
+    "scripts.models.download_mobileclip_onnx",
+]
+disable_error_code = ["no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = [
+    "rawviewer_ui.overlays.composition_grid",
+]
+disable_error_code = ["no-untyped-def", "override"]
+
+[[tool.mypy.overrides]]
+module = [
+    "raw_adjustments.refinery_denoise",
+]
+disable_error_code = ["no-untyped-def", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = [
+    "bootstrap_pkg.helpers",
+]
+disable_error_code = ["no-untyped-def", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = [
+    "testplan.auto.t_macos_open_dialog",
+]
+disable_error_code = ["no-untyped-def", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = [
+    "scripts.packaging.make_app_icons",
+]
+disable_error_code = ["return-value"]
+
+# Autotest harnesses drive the UI with dynamic attributes by design. Codes merged from their
+# legacy per-module entries (union), since mypy rejects a module listed in two override blocks.
 [[tool.mypy.overrides]]
 module = [
     "gallery_autotest",
     "nav_autotest",
 ]
 disallow_untyped_defs = false
-disable_error_code = ["attr-defined", "misc", "operator", "no-untyped-call", "assignment"]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-overload", "index", "misc", "no-untyped-call", "no-untyped-def", "operator"]
 
-# Platform-specific modules with missing stub coverage
+# Platform modules with no usable stubs (Windows COM, macOS bridges, bootstrap worker).
+# Codes merged from their legacy per-module entries (union).
 [[tool.mypy.overrides]]
 module = [
     "platform_support.windows_share",
     "platform_support.display_brightness",
-    "platform_support.win_launcher",
     "bootstrap_pkg.worker",
     "bootstrap_pkg.constants",
 ]
 ignore_missing_imports = true
-disable_error_code = ["attr-defined", "misc", "assignment", "no-untyped-def"]
+disable_error_code = ["arg-type", "assignment", "attr-defined", "call-arg", "misc", "no-untyped-def", "type-arg"]
 
+# ---------------------------------------------------------------------------
+# Pytest: unit and regression tests.
+# Run: python -m pytest tests -q
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]         # Only collect from tests/; never from build or vendored code.
+# Tests insert src/ on sys.path themselves, so no pythonpath setting is needed.
+# QT_QPA_PLATFORM=offscreen is set inside the test modules that create widgets.
 
+# ---------------------------------------------------------------------------
+# Dev tooling (PEP 735). Never shipped in the installer. Mirrored in the pixi `dev` feature.
+# Run: python -m pytest tests -q ; python -m mypy ; python -m scripts.typing.ratchet
+# ---------------------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "mypy==2.4.0",
+    "ruff==0.17.2",
+    "pytest==9.2.0",
+    "pytest-qt==4.5.0",
+    "libcst==1.9.0",
+    "autotyping==24.9.0",
+    "MonkeyType==23.3.0",
+    "types-psutil==7.2.2.20261122",
+    "types-Send2Trash==2.2.0.20261114",
+]

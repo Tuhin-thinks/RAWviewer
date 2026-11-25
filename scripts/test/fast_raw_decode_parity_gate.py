@@ -41,9 +41,7 @@ os.environ["RAWVIEWER_WB_SANITY"] = "0"
 # a demosaic-tolerant threshold when a GPU backend is available.
 os.environ["RAWVIEWER_GPU_BACKEND"] = "cpu_only"
 
-DEFAULT_SAMPLE_GLOBS = [
-    p for p in os.environ.get("RAWVIEWER_TEST_SAMPLES", "").split(os.pathsep) if p
-]
+DEFAULT_SAMPLE_GLOBS = [p for p in os.environ.get("RAWVIEWER_TEST_SAMPLES", "").split(os.pathsep) if p]
 
 
 def collect_files(args):
@@ -57,7 +55,6 @@ def collect_files(args):
 
 def main() -> int:
     import rawpy
-
     from fast_raw_decode import (
         decode_half_from_unpacked,
         finish_full_decode,
@@ -133,16 +130,16 @@ def main() -> int:
     if smoke is not None:
         import cv2
 
-        params = dict(
-            use_camera_wb=True,
-            use_auto_wb=False,
-            no_auto_bright=True,
-            output_bps=8,
-            gamma=(2.222, 4.5),
-            bright=1.0,
-            user_flip=0,
-            half_size=False,
-        )
+        params = {
+            "use_camera_wb": True,
+            "use_auto_wb": False,
+            "no_auto_bright": True,
+            "output_bps": 8,
+            "gamma": (2.222, 4.5),
+            "bright": 1.0,
+            "user_flip": 0,
+            "half_size": False,
+        }
         out = try_fast_raw_decode(smoke, params)
         name = os.path.basename(smoke)
         if out is None:
@@ -160,9 +157,8 @@ def main() -> int:
                 print(f"PASS  split unpack+finish byte-identical for {name}")
             with rawpy.imread(smoke) as raw:
                 ref = raw.postprocess(
-                    demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR, **{
-                        k: v for k, v in params.items() if k != "half_size"
-                    }
+                    demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR,
+                    **{k: v for k, v in params.items() if k != "half_size"},
                 )
             ok = out.dtype == np.uint8 and out.shape == ref.shape
             small_o = cv2.resize(out, (ref.shape[1] // 4, ref.shape[0] // 4), interpolation=cv2.INTER_AREA)
@@ -247,8 +243,13 @@ def main() -> int:
             with _rawpy.imread(path) as raw:
                 t = raw.extract_thumb()
             residual = frd._wb_correction_from_jpeg(
-                path, t.data, u.mosaic, u.pattern, u.black,
-                u.scale_mul, u.rgb_cam,
+                path,
+                t.data,
+                u.mosaic,
+                u.pattern,
+                u.black,
+                u.scale_mul,
+                u.rgb_cam,
                 np.asarray(corrected, dtype=np.float64),
             )
             if residual is not None:

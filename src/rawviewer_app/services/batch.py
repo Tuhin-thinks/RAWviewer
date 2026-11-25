@@ -5,7 +5,6 @@ coalesced progress via Qt signals. Cancel is polled between files (and between
 export stages inside a single file), so a cancel lands quickly. Nothing here
 touches caches or QPixmaps — file-system spread only.
 """
-from __future__ import annotations
 
 import logging
 import os
@@ -57,7 +56,7 @@ def _should_skip_reencode(
     ext = os.path.splitext(source_path)[1].lower()
     if ext not in _BYPASS_EXT.get(export_format, frozenset()):
         return False
-    from raw_adjustments import is_default_adjustments
+    from raw_adjustments.checks import is_default_adjustments
 
     return is_default_adjustments(adj)
 
@@ -74,7 +73,7 @@ def copy_one_file(
     Raises on failure; a failed sidecar copy is non-fatal (logged, skipped) —
     the image itself matters more than its saved edits.
     """
-    from raw_adjustments import resolve_xmp_path
+    from raw_adjustments.xmp_read import resolve_xmp_path
 
     dest = unique_destination(dest_dir, os.path.basename(src), reserved)
     shutil.copy2(src, dest, follow_symlinks=False)
@@ -88,9 +87,7 @@ def copy_one_file(
                     follow_symlinks=False,
                 )
         except Exception as exc:
-            logger.warning(
-                "[BATCH] Sidecar copy skipped for %s: %s", os.path.basename(src), exc
-            )
+            logger.warning("[BATCH] Sidecar copy skipped for %s: %s", os.path.basename(src), exc)
     return dest
 
 
@@ -105,9 +102,7 @@ def discard_one_file(src: str) -> str:
     target_path = os.path.join(discard_folder, filename)
     counter = 1
     while os.path.lexists(target_path):
-        target_path = os.path.join(
-            discard_folder, f"{base}_discarded_{counter}{ext}"
-        )
+        target_path = os.path.join(discard_folder, f"{base}_discarded_{counter}{ext}")
         counter += 1
     os.rename(src, target_path)
     return target_path
@@ -130,7 +125,7 @@ class BatchFileOpWorker(QRunnable):
         mode: str = "copy",
         signals: BatchFileOpSignals | None = None,
         cancel_event: threading.Event | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.paths = list(paths)
         self.dest_dir = dest_dir
@@ -230,9 +225,10 @@ def export_one_file(
     xmp_warning = None
     cancelled = cancel_event if cancel_event is not None else threading.Event()
     try:
-        from processing.unified import UnifiedImageProcessor
-        from raw_adjustments import resolve_xmp_path, write_xmp_adjustments_for_file
+        from processing.unified.processor import UnifiedImageProcessor
         from raw_adjustments.pipeline import ExportCancelled, export_adjusted_image
+        from raw_adjustments.xmp_read import resolve_xmp_path
+        from raw_adjustments.xmp_write import write_xmp_adjustments_for_file
 
         # Best-effort: keep the source file's sidecar in sync with what's
         # being baked/copied. This must NOT block the export itself.
@@ -288,10 +284,7 @@ def export_one_file(
             detail_bits = []
             try:
                 if processor.is_libraw_unsupported(file_path):
-                    detail_bits.append(
-                        "LibRaw cannot demosaic this file and no usable "
-                        "embedded JPEG was found."
-                    )
+                    detail_bits.append("LibRaw cannot demosaic this file and no usable embedded JPEG was found.")
             except Exception:
                 pass
             if last_decode_err is not None:
@@ -364,7 +357,7 @@ class BatchExportWorker(QRunnable):
         name_suffix: str = "_edited",
         use_ai_denoise: bool = False,
         ai_amount: float | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.paths = list(paths)
         self.dest_dir = dest_dir
@@ -384,7 +377,7 @@ class BatchExportWorker(QRunnable):
     }
 
     def run(self) -> None:
-        from raw_adjustments import load_adjustments_for_file
+        from raw_adjustments.xmp_read import load_adjustments_for_file
 
         total = len(self.paths)
         ok = 0
@@ -399,12 +392,8 @@ class BatchExportWorker(QRunnable):
                 name = os.path.basename(src)
                 self.signals.progress.emit(i, total, name)
                 base, _ = os.path.splitext(name)
-                ext = self._EXT_BY_FORMAT.get(
-                    (self.export_format or "").strip().lower(), ".jpg"
-                )
-                output_path = unique_destination(
-                    self.dest_dir, f"{base}{self.name_suffix}{ext}", reserved
-                )
+                ext = self._EXT_BY_FORMAT.get((self.export_format or "").strip().lower(), ".jpg")
+                output_path = unique_destination(self.dest_dir, f"{base}{self.name_suffix}{ext}", reserved)
                 adj = {}
                 try:
                     adj = dict(load_adjustments_for_file(src) or {})
@@ -429,9 +418,7 @@ class BatchExportWorker(QRunnable):
                     detail.append((src, None, output_path))
                 else:
                     failed += 1
-                    detail.append(
-                        (src, type(err).__name__ + ": " + (str(err) or repr(err)), None)
-                    )
+                    detail.append((src, type(err).__name__ + ": " + (str(err) or repr(err)), None))
                 self.signals.progress.emit(i + 1, total, name)
             want_cancel = self.cancel_event.is_set()
         except Exception as exc:  # worker-level failure (never lose completion)

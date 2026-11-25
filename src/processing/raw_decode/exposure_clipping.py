@@ -1,7 +1,5 @@
 """Highlight / shadow clipping masks for single-image view."""
 
-from __future__ import annotations
-
 import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
@@ -48,9 +46,7 @@ def clipping_counts(
     lo_threshold: int = DEFAULT_LO_THRESHOLD,
 ) -> tuple[int, int, int]:
     """Return (highlight_pixels, shadow_pixels, total_pixels)."""
-    highlight, shadow = clipping_masks(
-        rgb, hi_threshold=hi_threshold, lo_threshold=lo_threshold
-    )
+    highlight, shadow = clipping_masks(rgb, hi_threshold=hi_threshold, lo_threshold=lo_threshold)
     total = int(rgb.shape[0] * rgb.shape[1])
     return int(np.count_nonzero(highlight)), int(np.count_nonzero(shadow)), total
 
@@ -66,9 +62,7 @@ def clipping_overlay_rgba(
     """Build H×W×4 uint8 RGBA overlay aligned to rgb dimensions."""
     h, w = rgb.shape[:2]
     work, _scale = _downsample_rgb(rgb, max_sample)
-    hi, lo = clipping_masks(
-        work, hi_threshold=hi_threshold, lo_threshold=lo_threshold
-    )
+    hi, lo = clipping_masks(work, hi_threshold=hi_threshold, lo_threshold=lo_threshold)
     if not np.any(hi) and not np.any(lo):
         return np.zeros((h, w, 4), dtype=np.uint8)
 
@@ -91,9 +85,7 @@ def clipping_overlay_rgba(
     # image in a single pass, and the per-plane version paid four
     # fromarray/resize/asarray round trips for the same result.
     rgba = Image.fromarray(np.ascontiguousarray(small_rgba), mode="RGBA")
-    return np.ascontiguousarray(
-        np.asarray(rgba.resize((w, h), resample), dtype=np.uint8)
-    )
+    return np.ascontiguousarray(np.asarray(rgba.resize((w, h), resample), dtype=np.uint8))
 
 
 def rgba_array_to_qpixmap(rgba: np.ndarray) -> QPixmap:
@@ -144,7 +136,7 @@ def rgb_array_from_pixmap(pixmap: QPixmap, max_side: int = 0) -> np.ndarray | No
     if bits is None:
         return None
     try:
-        raw = bits.asstring(h * bpl) if hasattr(bits, "asstring") else bytes(memoryview(bits)[:h * bpl])
+        raw = bits.asstring(h * bpl) if hasattr(bits, "asstring") else bytes(memoryview(bits)[: h * bpl])
     except (BufferError, TypeError, AttributeError):
         return None
     arr = np.frombuffer(bytearray(raw), dtype=np.uint8).reshape(h, bpl)

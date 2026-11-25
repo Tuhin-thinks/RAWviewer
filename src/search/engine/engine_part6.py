@@ -1,5 +1,4 @@
 """Engine mixin part 6 of 7 for SemanticImageIndex."""
-from __future__ import annotations
 
 import os
 import re
@@ -35,6 +34,7 @@ class EnginePart6:
             return []
 
         import time
+
         t0 = time.time()
 
         indexable_paths, _ = self._filter_duplicate_raw_companions(file_paths)
@@ -47,7 +47,7 @@ class EnginePart6:
         # Build map of canonical path to row
         row_map = {}
         for r in rows:
-            fp = r['file_path']
+            fp = r["file_path"]
             row_map[self._canonical_path(fp)] = r
 
         pending: list[str] = []
@@ -61,19 +61,19 @@ class EnginePart6:
                 continue
 
             row = row_map.get(cp)
-            sr = _coerce_int(self._row_value(row, 'semantic_ready')) if row else 0
-            dim = _coerce_int(self._row_value(row, 'dim')) if row else 0
+            sr = _coerce_int(self._row_value(row, "semantic_ready")) if row else 0
+            dim = _coerce_int(self._row_value(row, "dim")) if row else 0
             if (not row) or sr == 0 or (sr == 1 and dim == 0):
                 pending.append(original)
                 continue
 
             # Check if file changed on disk (mtime or size mismatch)
-            row_size = self._row_value(row, 'file_size', None)
+            row_size = self._row_value(row, "file_size", None)
             if row_size is None or _coerce_int(row_size) != int(st.st_size):
                 pending.append(original)
                 continue
 
-            row_mtime_ns = self._row_value(row, 'mtime_ns', None)
+            row_mtime_ns = self._row_value(row, "mtime_ns", None)
             if row_mtime_ns is not None:
                 try:
                     if _coerce_int(row_mtime_ns) != self._mtime_ns_from_stat(st):
@@ -82,19 +82,20 @@ class EnginePart6:
                 except Exception:
                     pass
             else:
-                row_mtime = self._row_value(row, 'file_mtime', None)
+                row_mtime = self._row_value(row, "file_mtime", None)
                 mtime = _coerce_float(row_mtime)
                 if mtime is None or not self._mtime_matches(mtime, st):
                     pending.append(original)
                     continue
 
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug(
             "[INDEX] Pending scan: %d pending of %d paths in %.4fs (bulk)",
             len(pending),
             len(file_paths),
-            time.time() - t0
+            time.time() - t0,
         )
         return pending
 
@@ -165,7 +166,7 @@ class EnginePart6:
         rows = self._fetch_rows_for_paths(indexable_paths)
         row_map = {}
         for r in rows:
-            fp = r['file_path']
+            fp = r["file_path"]
             row_map[self._canonical_path(fp)] = r
 
         pending: list[str] = []
@@ -206,7 +207,7 @@ class EnginePart6:
         # SQLite parameter limit is usually 999; use 500 to be safe
         chunk_size = 500
         for i in range(0, len(unique_canonical), chunk_size):
-            chunk = unique_canonical[i:i+chunk_size]
+            chunk = unique_canonical[i : i + chunk_size]
             placeholders = ",".join(["?"] * len(chunk))
             # IMPORTANT: Do NOT filter by model_name here.
             # Metadata fields (face_count, gps_lat/lon, camera_model, city, iso,
@@ -229,7 +230,7 @@ class EnginePart6:
             """
             rows = self._conn.execute(query, [*chunk, self.model_name]).fetchall()
             for r in rows:
-                fp = r['file_path']
+                fp = r["file_path"]
                 if fp not in found_map:
                     # First match wins: preferred model first (ORDER BY above), then any row
                     found_map[fp] = r
@@ -249,30 +250,30 @@ class EnginePart6:
                 # Use a dictionary as a proxy for sqlite3.Row
                 # RAWviewer's UI components are hardened to handle missing metadata
                 mock_row = {
-                    'file_path': cp,
-                    'file_name': file_name,
-                    'file_signature': "",
-                    'dim': 0,
-                    'embedding': None,
-                    'capture_time': "",
-                    'camera_model': "",
-                    'lens_model': "",
-                    'iso': 0,
-                    'gps_lat': None,
-                    'gps_lon': None,
-                    'width': 0,
-                    'height': 0,
-                    'city': "",
-                    'landmark': "",
-                    'admin1': "",
-                    'country': "",
-                    'country_code': "",
-                    'face_count': 0,
-                    'semantic_ready': 0,
-                    'file_size': 0,
-                    'file_mtime': 0,
-                    'mtime_ns': 0,
-                    'model_name': self.model_name
+                    "file_path": cp,
+                    "file_name": file_name,
+                    "file_signature": "",
+                    "dim": 0,
+                    "embedding": None,
+                    "capture_time": "",
+                    "camera_model": "",
+                    "lens_model": "",
+                    "iso": 0,
+                    "gps_lat": None,
+                    "gps_lon": None,
+                    "width": 0,
+                    "height": 0,
+                    "city": "",
+                    "landmark": "",
+                    "admin1": "",
+                    "country": "",
+                    "country_code": "",
+                    "face_count": 0,
+                    "semantic_ready": 0,
+                    "file_size": 0,
+                    "file_mtime": 0,
+                    "mtime_ns": 0,
+                    "model_name": self.model_name,
                 }
                 results.append(mock_row)
 
@@ -305,7 +306,7 @@ class EnginePart6:
         result_map = {}
         chunk_size = 500
         for i in range(0, len(unique_canonical), chunk_size):
-            chunk = unique_canonical[i:i+chunk_size]
+            chunk = unique_canonical[i : i + chunk_size]
             placeholders = ",".join(["?"] * len(chunk))
             query = f"""
                 SELECT file_path, width, height, orientation, capture_time
@@ -317,7 +318,7 @@ class EnginePart6:
             """
             rows = self._conn.execute(query, [*chunk, self.model_name]).fetchall()
             for r in rows:
-                fp = r['file_path']
+                fp = r["file_path"]
                 if fp not in result_map:
                     orig_path = canonical_to_original[fp]
                     w = _coerce_int(r["width"])
@@ -467,9 +468,7 @@ class EnginePart6:
                 start = idx + 1
         return False
 
-    def _apply_filters(
-        self, rows: Sequence[MetadataRow], query_text: str
-    ) -> tuple[list[MetadataRow], str]:
+    def _apply_filters(self, rows: Sequence[MetadataRow], query_text: str) -> tuple[list[MetadataRow], str]:
         """
         Parse a mixed query and filter rows.
 
@@ -515,6 +514,7 @@ class EnginePart6:
 
         parts = [p for p in raw.split() if p.strip()]
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"[SEARCH] Raw query: '{query_text}' -> Normalized: '{raw}'")
 
@@ -566,7 +566,10 @@ class EnginePart6:
                             r
                             for r in filtered
                             if self._contains_loose(
-                                str(self._row_value(r, "file_name") or os.path.basename(str(self._row_value(r, "file_path") or ""))),
+                                str(
+                                    self._row_value(r, "file_name")
+                                    or os.path.basename(str(self._row_value(r, "file_path") or ""))
+                                ),
                                 needle,
                             )
                         ]
@@ -586,7 +589,8 @@ class EnginePart6:
                 needle = t.split(":", 1)[1].strip().lower()
                 if needle:
                     filtered = [
-                        r for r in filtered
+                        r
+                        for r in filtered
                         if self._contains_location_place(str(r["city"] or ""), needle)
                         or self._contains_location_place(str(self._row_value(r, "landmark") or ""), needle)
                     ]
@@ -596,10 +600,7 @@ class EnginePart6:
                 matched = True
                 needle = t.split(":", 1)[1].strip().lower()
                 if needle:
-                    filtered = [
-                        r for r in filtered
-                        if self._contains_location_place(str(r["admin1"] or ""), needle)
-                    ]
+                    filtered = [r for r in filtered if self._contains_location_place(str(r["admin1"] or ""), needle)]
                 continue
 
             if low.startswith("country:"):
@@ -618,20 +619,12 @@ class EnginePart6:
 
             if low == "has:gps":
                 matched = True
-                filtered = [
-                    r
-                    for r in filtered
-                    if r["gps_lat"] is not None and r["gps_lon"] is not None
-                ]
+                filtered = [r for r in filtered if r["gps_lat"] is not None and r["gps_lon"] is not None]
                 continue
 
             if low == "no:gps":
                 matched = True
-                filtered = [
-                    r
-                    for r in filtered
-                    if r["gps_lat"] is None or r["gps_lon"] is None
-                ]
+                filtered = [r for r in filtered if r["gps_lat"] is None or r["gps_lon"] is None]
                 continue
 
             if low in self._FACE_COUNT_POSITIVE_TOKENS:
@@ -663,10 +656,11 @@ class EnginePart6:
                         target_lon = float(parts[1])
                         # Filter by images within ~50km radius (approx 0.5 degrees)
                         filtered = [
-                            r for r in filtered
-                            if r["gps_lat"] is not None and
-                            abs((_coerce_float(r["gps_lat"]) or 0.0) - target_lat) < 0.5 and
-                            abs((_coerce_float(r["gps_lon"]) or 0.0) - target_lon) < 0.5
+                            r
+                            for r in filtered
+                            if r["gps_lat"] is not None
+                            and abs((_coerce_float(r["gps_lat"]) or 0.0) - target_lat) < 0.5
+                            and abs((_coerce_float(r["gps_lon"]) or 0.0) - target_lon) < 0.5
                         ]
                 except Exception:
                     pass
@@ -698,9 +692,17 @@ class EnginePart6:
                 if key == "iso":
                     filtered = [r for r in filtered if _ok(_coerce_int(self._row_value(r, "iso")))]
                 elif key == "year":
-                    filtered = [r for r in filtered if _ok(self._parse_capture_year(str(self._row_value(r, "capture_time") or "")))]
+                    filtered = [
+                        r
+                        for r in filtered
+                        if _ok(self._parse_capture_year(str(self._row_value(r, "capture_time") or "")))
+                    ]
                 elif key == "month":
-                    filtered = [r for r in filtered if _ok(self._parse_capture_month(str(self._row_value(r, "capture_time") or "")))]
+                    filtered = [
+                        r
+                        for r in filtered
+                        if _ok(self._parse_capture_month(str(self._row_value(r, "capture_time") or "")))
+                    ]
                 elif key == "width":
                     filtered = [r for r in filtered if _ok(_coerce_int(self._row_value(r, "width")))]
                 elif key == "height":
@@ -718,10 +720,7 @@ class EnginePart6:
 
             if not matched:
                 bare = low.strip().lstrip(".")
-                if (
-                    re.fullmatch(r"[a-z0-9]{2,15}", bare or "")
-                    and bare in self._FORMAT_HINT_FILENAME_TOKENS
-                ):
+                if re.fullmatch(r"[a-z0-9]{2,15}", bare or "") and bare in self._FORMAT_HINT_FILENAME_TOKENS:
                     matched = True
                     filtered = [r for r in filtered if self._row_matches_format_specs(r, [bare])]
                     continue
@@ -748,7 +747,5 @@ class EnginePart6:
             "exif",
             "metadata",
         }
-        semantic_terms = [
-            t for t in semantic_terms if (t or "").strip().lower() not in metadata_stopwords
-        ]
+        semantic_terms = [t for t in semantic_terms if (t or "").strip().lower() not in metadata_stopwords]
         return filtered, " ".join(semantic_terms).strip()

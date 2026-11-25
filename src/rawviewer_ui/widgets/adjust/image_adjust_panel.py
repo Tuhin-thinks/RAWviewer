@@ -1,5 +1,4 @@
 """ImageAdjustPanelWidget: image adjustment panel, assembled from mixin parts."""
-from __future__ import annotations
 
 from collections import OrderedDict
 
@@ -8,7 +7,7 @@ from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QLabel, QSlider, QWidget
 
 from core import theme
-from raw_adjustments import DEFAULT_ADJUSTMENTS
+from raw_adjustments.defaults import DEFAULT_ADJUSTMENTS
 from raw_adjustments.hsl import HSL_COLOR_NAMES
 
 from .adjust_part1 import AdjustPart1
@@ -26,7 +25,7 @@ from .helpers import (
 class ImageAdjustPanelWidget(AdjustPart1, AdjustPart2, AdjustPart3, AdjustPart4, AdjustPart5, AdjustPart6, QWidget):
     """Image adjustment panel widget."""
 
-    def __init__(self, parent=None, histogram_widget=None):
+    def __init__(self, parent=None, histogram_widget=None) -> None:
         super().__init__(parent)
         self._sliders: dict[str, QSlider] = {}
         self._value_labels: dict[str, QLabel] = {}
