@@ -88,3 +88,22 @@ pyobjc-framework-Cocoa = "*"
 pyobjc-framework-Quartz = "*"
 pyobjc-framework-CoreML = "*"
 pyobjc-framework-Vision = "*"
+
+# ---------------------------------------------------------------------------
+# Dev tooling for typing and tests. Mirrors [dependency-groups] dev in pyproject.toml.
+# Never shipped in the installer. Use: pixi run -e dev python -m mypy
+# ---------------------------------------------------------------------------
+[feature.dev.pypi-dependencies]
+mypy = "==2.4.0"
+ruff = "==0.17.2"
+pytest = "==9.2.0"
+pytest-qt = "==4.5.0"
+libcst = "==1.9.0"
+autotyping = "==24.9.0"
+MonkeyType = "==23.3.0"
+types-psutil = "==7.2.2.20261122"
+types-Send2Trash = "==2.2.0.20261114"
+
+# The dev env keeps the default runtime features so mypy resolves the app's own dependencies.
+[environments]
+dev = ["default", "dev"]
