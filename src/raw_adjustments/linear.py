@@ -162,7 +162,7 @@ def _apply_display_stage(
 
 def _linear_pipeline_worker_count(height: int) -> int:
     # Shared tuning point with raw_adjustments' banded sRGB pipeline.
-    from raw_adjustments.apply import banded_worker_count
+    from raw_adjustments.banding import banded_worker_count
 
     return banded_worker_count(height)
 
@@ -416,7 +416,7 @@ def _process_linear_edit_buffer_banded(
     progress_cb=None,
 ) -> np.ndarray:
     """Row-band parallel pipeline: banded pre-AI, whole-image AI barrier, banded post-AI."""
-    from raw_adjustments.apply import band_ranges, banded_executor
+    from raw_adjustments.banding import band_ranges, banded_executor
 
     # 16px overlap pad handles bilateral / guided filter radii (up to r=12) and spot heal
     full_h = int(img.shape[0])
@@ -600,7 +600,7 @@ def _apply_display_stage_banded(img: np.ndarray, merged: dict[str, float], n_wor
     row-independent). Reuses raw_adjustments._BAND_PAD_PX -- same blur radii,
     same padding math as _apply_adjustments_to_srgb_banded.
     """
-    from raw_adjustments.apply import _BAND_PAD_PX, band_ranges, banded_executor
+    from raw_adjustments.banding import _BAND_PAD_PX, band_ranges, banded_executor
     from raw_adjustments.effects import DEHAZE_KEY
 
     if abs(float(merged.get(DEHAZE_KEY, 0.0) or 0.0)) > 1e-3:
