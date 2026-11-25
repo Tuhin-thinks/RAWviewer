@@ -3,6 +3,14 @@
 Status snapshot for branch `typing/upgrade`. Written when the scope was reduced to what is
 already implemented. Nothing in this file is a mainstream version change.
 
+## Related documents
+
+- `docs/TYPING_UPGRADE_PLAN.md`: the main typing upgrade plan. It holds the global rules for every
+  agent, including the rule that trivial moves skip ruff, mypy and pytest. This file tracks progress
+  against that plan.
+- `docs/typing/P2b_cycle_plan.md`: the detailed plan for the feedback edges in the import cycle.
+- `docs/typing/import_layers.md` and `.json`: the generated import layers (`python -m scripts.typing.import_tree --write`).
+
 ## Scope decision
 
 The typing upgrade is paused at the import-cycle phase (P2b). The user asked to:
