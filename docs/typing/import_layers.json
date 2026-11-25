@@ -1,0 +1,1244 @@
+[
+ {
+  "level": 0,
+  "modules": [
+   "bootstrap_pkg.constants"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.app_version"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.build_profile"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.comparison_mode"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.config"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.download_progress"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.dpreview_samples"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.errors"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.events"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.location_map"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.logging"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.perf_metrics"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.ssl_certs"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "core.theme"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "gallery_autotest"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "metadata"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "metadata.exifread_af"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "nav_autotest"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "platform_support"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "platform_support.display_brightness"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "platform_support.win_launcher"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "platform_support.windows_share"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.image"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw_decode"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw_decode.exposure_clipping"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw_decode.gil"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "pyi_rth_macos_process_pool"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "pyi_rth_release_defaults"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "pyi_rth_ssl_certs"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.chroma_denoise"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.effects"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.file_extensions"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.hsl"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.lens_correction"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.refinery_denoise"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.tone_curve"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "raw_adjustments.transform"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.core"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.core.widgets.helpers"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.core.widgets.thumbnail_label"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.services"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.window"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.window.bootstrap"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_app.window.state"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.dialogs"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.dialogs.mobileclip_download_dialog"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.gallery_scroll"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.overlays"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.overlays.composition_grid"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_state"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "search.database"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "search.indexer._shared"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "bootstrap_pkg.helpers"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "core"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "core.release_update"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "metadata.backend"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "metadata.histogram"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "raw_adjustments.defaults"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "raw_adjustments.pv2012"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.core.widgets.share"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.env"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.signals"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.window.logging_setup"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.window.paths"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "rawviewer_app.window.windows_shell"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
+   "search.types"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "bootstrap_pkg.worker"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "metadata.subject_area"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "raw_adjustments.auto_adjust"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_app.core.widgets.macos"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_app.core.widgets.metadata_bar"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_app.core.widgets.resize_grip"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_app.core.widgets.title_bar"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_app.window.platform_win"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.dialogs.release_update_dialog"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.overlays.color_checker_overlay"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.overlays.crop_overlay"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.overlays.location_map_overlay"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.widgets"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "rawviewer_ui.widgets.tone_curve_widget"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "bootstrap_pkg.gui"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "rawviewer_app.core.widgets.confirm_dialog"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "rawviewer_app.window.splash"
+  ]
+ },
+ {
+  "level": 3,
+  "modules": [
+   "rawviewer_ui.widgets.filmstrip"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "bootstrap_pkg"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "rawviewer_app.core.widgets.overlays"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "rawviewer_app.core.widgets.task_progress_dialog"
+  ]
+ },
+ {
+  "level": 4,
+  "modules": [
+   "rawviewer_app.core.widgets.warning_dialog"
+  ]
+ },
+ {
+  "level": 5,
+  "modules": [
+   "bootstrap"
+  ]
+ },
+ {
+  "level": 5,
+  "modules": [
+   "bootstrap_pkg.torch",
+   "cache",
+   "cache.disk",
+   "cache.image_cache",
+   "cache.image_cache.core",
+   "cache.image_cache.full_exif_util",
+   "cache.image_cache.thumb_grid_preview",
+   "cache.keys",
+   "cache.memory",
+   "cache.metadata",
+   "common_image_loader",
+   "common_image_loader.edr",
+   "common_image_loader.exif_display",
+   "common_image_loader.helpers",
+   "common_image_loader.loaders",
+   "common_image_loader.mipmap",
+   "common_image_loader.runtime",
+   "core.profile",
+   "enhanced_raw_processor",
+   "enhanced_raw_processor.enhanced_processor",
+   "enhanced_raw_processor.exif_extractor",
+   "enhanced_raw_processor.extraction",
+   "enhanced_raw_processor.optimized_processor",
+   "enhanced_raw_processor.preload_manager",
+   "enhanced_raw_processor.thumbnail_extractor",
+   "image_cache",
+   "image_load_manager",
+   "image_load_manager.helpers",
+   "image_load_manager.manager",
+   "image_load_manager.manager_part1",
+   "image_load_manager.manager_part2",
+   "image_load_manager.manager_part3",
+   "image_load_manager.worker",
+   "processing.raw_decode.fast",
+   "processing.raw_decode.gpu_bridge",
+   "processing.raw_decode.gpu_processor",
+   "processing.raw_decode.scunet",
+   "processing.unified",
+   "processing.unified.helpers",
+   "processing.unified.processor",
+   "processing.unified.unified_part1",
+   "processing.unified.unified_part2",
+   "processing.unified.unified_part3",
+   "processing.unified.unified_part4",
+   "processing.unified.unified_part5",
+   "processing.unified.unified_part6",
+   "processing.unified.unified_part7",
+   "raw_adjustments",
+   "raw_adjustments.apply",
+   "raw_adjustments.checks",
+   "raw_adjustments.color_calibration",
+   "raw_adjustments.detail_enhance",
+   "raw_adjustments.dodge_burn",
+   "raw_adjustments.lut",
+   "raw_adjustments.pipeline",
+   "raw_adjustments.saved_edits",
+   "raw_adjustments.spot_heal",
+   "raw_adjustments.tone_recovery",
+   "raw_adjustments.xmp_read",
+   "raw_adjustments.xmp_write"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "bootstrap_pkg.splash"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "core.burst_grouping"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "core.memory_pressure"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "core.upgrade_compat"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "processing.raw_decode.pool_worker"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "pyi_rth_profile_defaults"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "raw_adjustments.xmp_presets"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.core.widgets.batch_export_dialog"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.processing._pixmap_converters"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.processing._raw_part1"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.services.batch"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.viewer.session_mixin"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_app.workers.workers"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.helpers"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.helpers"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_item"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_view_part1"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_view_part2"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_app.core.widgets"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_app.processing._raw_part2"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_app.viewer"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_app.workers"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part1"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part2"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part3"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part5"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part6"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part1"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part2"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part3"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part4"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part5"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part6"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.gallery_part7"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "rawviewer_ui.widgets.gpu.gpu_view"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "search.indexer._config"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_app.processing"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_ui.dialogs.color_calibration_dialog"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.adjust_part4"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_ui.widgets.gallery.justified_gallery"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "rawviewer_ui.widgets.gpu"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "search.indexer._rest"
+  ]
+ },
+ {
+  "level": 9,
+  "modules": [
+   "rawviewer_ui.widgets.adjust.image_adjust_panel"
+  ]
+ },
+ {
+  "level": 9,
+  "modules": [
+   "rawviewer_ui.widgets.gallery"
+  ]
+ },
+ {
+  "level": 9,
+  "modules": [
+   "search.indexer"
+  ]
+ },
+ {
+  "level": 10,
+  "modules": [
+   "rawviewer_ui.widgets.adjust"
+  ]
+ },
+ {
+  "level": 10,
+  "modules": [
+   "search.backends"
+  ]
+ },
+ {
+  "level": 10,
+  "modules": [
+   "search.engine.engine_part4"
+  ]
+ },
+ {
+  "level": 11,
+  "modules": [
+   "rawviewer_app.window.lazy"
+  ]
+ },
+ {
+  "level": 11,
+  "modules": [
+   "search.engine.engine_part5"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.adjust_workers"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.adjust_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part1"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part4"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part6"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.gallery_part1"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.gallery_part3"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.image_load_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.image_load_part3"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.lifecycle_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.metadata_part1"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.metadata_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.misc_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.misc_part3"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.misc_part4"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.navigation_part2"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.settings_part1"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.mixins.shortcuts_part1"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "rawviewer_app.window.qt_helpers"
+  ]
+ },
+ {
+  "level": 12,
+  "modules": [
+   "search.engine",
+   "search.engine.engine_part1",
+   "search.engine.engine_part2",
+   "search.engine.engine_part3",
+   "search.engine.engine_part6",
+   "search.engine.engine_part7",
+   "search.engine.semantic_index",
+   "search.queries"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.macos"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.adjust_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.adjust_part3"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.adjust_part4"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.adjust_part5"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.batch_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part3"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.gallery_part2"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.gallery_part4"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.gallery_part5"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.image_load_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.lifecycle_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.navigation_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.status_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.status_part2"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "rawviewer_app.window.mixins.ui_build_part1"
+  ]
+ },
+ {
+  "level": 13,
+  "modules": [
+   "search"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.dialogs_part1"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.display_part5"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.external_part1"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.external_part2"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.misc_part1"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.search_part1"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.search_part2"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.search_part3"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.search_part4"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.ui_build_part2"
+  ]
+ },
+ {
+  "level": 14,
+  "modules": [
+   "rawviewer_app.window.mixins.ui_build_part3"
+  ]
+ },
+ {
+  "level": 15,
+  "modules": [
+   "rawviewer_app.window.mixins"
+  ]
+ },
+ {
+  "level": 16,
+  "modules": [
+   "rawviewer_app.window.raw_image_viewer"
+  ]
+ },
+ {
+  "level": 17,
+  "modules": [
+   "main"
+  ]
+ }
+]
