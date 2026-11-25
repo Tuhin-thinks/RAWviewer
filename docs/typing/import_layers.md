@@ -6,16 +6,16 @@ Rule: finish every unit in layer N before starting layer N+1. Units inside one l
 are independent and may run in parallel. A cycle unit is typed as one piece.
 
 ```text
-work units: 196 (2 cycles)
+work units: 202 (2 cycles)
   layer  0:  56 units,  56 modules
   layer  1:  14 units,  14 modules
   layer  2:  14 units,  14 modules
   layer  3:   4 units,   4 modules
   layer  4:   4 units,   4 modules
-  layer  5:   2 units,  61 modules
-  layer  6:  18 units,  18 modules
-  layer  7:  18 units,  18 modules
-  layer  8:   6 units,   6 modules
+  layer  5:   2 units,  55 modules
+  layer  6:  22 units,  22 modules
+  layer  7:  19 units,  19 modules
+  layer  8:   7 units,   7 modules
   layer  9:   3 units,   3 modules
   layer 10:   3 units,   3 modules
   layer 11:   2 units,   2 modules
@@ -31,19 +31,19 @@ work units: 196 (2 cycles)
 
 - `common_image_loader`: 59
 - `core.config`: 48
-- `rawviewer_app.window`: 47
 - `rawviewer_app.window.lazy`: 47
+- `rawviewer_app.window`: 47
 - `image_cache`: 39
 - `core`: 37
 - `core.theme`: 37
-- `raw_adjustments`: 32
+- `image_load_manager.helpers`: 27
 - `rawviewer_app.window.qt_helpers`: 24
 - `rawviewer_app.window.paths`: 23
-- `enhanced_raw_processor`: 23
-- `image_load_manager`: 22
-- `processing.unified`: 16
+- `enhanced_raw_processor.extraction`: 22
+- `raw_adjustments.xmp_read`: 22
+- `raw_adjustments.checks`: 17
+- `processing.unified.helpers`: 15
 - `raw_adjustments.dodge_burn`: 15
-- `raw_adjustments.pipeline`: 14
 
 ## Units by layer
 
@@ -140,13 +140,17 @@ work units: 196 (2 cycles)
 - L4: `rawviewer_app.core.widgets.task_progress_dialog`
 - L4: `rawviewer_app.core.widgets.warning_dialog`
 - L5: `bootstrap`
-- L5 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.disk`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.keys`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor`, `enhanced_raw_processor.enhanced_processor`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.preload_manager`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.raw_decode.gpu_bridge`, `processing.raw_decode.gpu_processor`, `processing.raw_decode.scunet`, `processing.unified`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments`, `raw_adjustments.apply`, `raw_adjustments.checks`, `raw_adjustments.color_calibration`, `raw_adjustments.detail_enhance`, `raw_adjustments.dodge_burn`, `raw_adjustments.lut`, `raw_adjustments.pipeline`, `raw_adjustments.saved_edits`, `raw_adjustments.spot_heal`, `raw_adjustments.tone_recovery`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
+- L5 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.disk`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.keys`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.raw_decode.gpu_bridge`, `processing.raw_decode.gpu_processor`, `processing.raw_decode.scunet`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments.apply`, `raw_adjustments.checks`, `raw_adjustments.color_calibration`, `raw_adjustments.detail_enhance`, `raw_adjustments.dodge_burn`, `raw_adjustments.lut`, `raw_adjustments.pipeline`, `raw_adjustments.saved_edits`, `raw_adjustments.spot_heal`, `raw_adjustments.tone_recovery`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
 - L6: `bootstrap_pkg.splash`
 - L6: `core.burst_grouping`
 - L6: `core.memory_pressure`
 - L6: `core.upgrade_compat`
+- L6: `enhanced_raw_processor.enhanced_processor`
+- L6: `image_load_manager`
 - L6: `processing.raw_decode.pool_worker`
+- L6: `processing.unified`
 - L6: `pyi_rth_profile_defaults`
+- L6: `raw_adjustments`
 - L6: `raw_adjustments.xmp_presets`
 - L6: `rawviewer_app.core.widgets.batch_export_dialog`
 - L6: `rawviewer_app.processing._pixmap_converters`
@@ -159,6 +163,7 @@ work units: 196 (2 cycles)
 - L6: `rawviewer_ui.widgets.gpu.gpu_item`
 - L6: `rawviewer_ui.widgets.gpu.gpu_view_part1`
 - L6: `rawviewer_ui.widgets.gpu.gpu_view_part2`
+- L7: `enhanced_raw_processor.preload_manager`
 - L7: `rawviewer_app.core.widgets`
 - L7: `rawviewer_app.processing._raw_part2`
 - L7: `rawviewer_app.viewer`
@@ -177,6 +182,7 @@ work units: 196 (2 cycles)
 - L7: `rawviewer_ui.widgets.gallery.gallery_part7`
 - L7: `rawviewer_ui.widgets.gpu.gpu_view`
 - L7: `search.indexer._config`
+- L8: `enhanced_raw_processor`
 - L8: `rawviewer_app.processing`
 - L8: `rawviewer_ui.dialogs.color_calibration_dialog`
 - L8: `rawviewer_ui.widgets.adjust.adjust_part4`

@@ -578,15 +578,11 @@
    "common_image_loader.mipmap",
    "common_image_loader.runtime",
    "core.profile",
-   "enhanced_raw_processor",
-   "enhanced_raw_processor.enhanced_processor",
    "enhanced_raw_processor.exif_extractor",
    "enhanced_raw_processor.extraction",
    "enhanced_raw_processor.optimized_processor",
-   "enhanced_raw_processor.preload_manager",
    "enhanced_raw_processor.thumbnail_extractor",
    "image_cache",
-   "image_load_manager",
    "image_load_manager.helpers",
    "image_load_manager.manager",
    "image_load_manager.manager_part1",
@@ -597,7 +593,6 @@
    "processing.raw_decode.gpu_bridge",
    "processing.raw_decode.gpu_processor",
    "processing.raw_decode.scunet",
-   "processing.unified",
    "processing.unified.helpers",
    "processing.unified.processor",
    "processing.unified.unified_part1",
@@ -607,7 +602,6 @@
    "processing.unified.unified_part5",
    "processing.unified.unified_part6",
    "processing.unified.unified_part7",
-   "raw_adjustments",
    "raw_adjustments.apply",
    "raw_adjustments.checks",
    "raw_adjustments.color_calibration",
@@ -649,13 +643,37 @@
  {
   "level": 6,
   "modules": [
+   "enhanced_raw_processor.enhanced_processor"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "image_load_manager"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
    "processing.raw_decode.pool_worker"
   ]
  },
  {
   "level": 6,
   "modules": [
+   "processing.unified"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
    "pyi_rth_profile_defaults"
+  ]
+ },
+ {
+  "level": 6,
+  "modules": [
+   "raw_adjustments"
   ]
  },
  {
@@ -728,6 +746,12 @@
   "level": 6,
   "modules": [
    "rawviewer_ui.widgets.gpu.gpu_view_part2"
+  ]
+ },
+ {
+  "level": 7,
+  "modules": [
+   "enhanced_raw_processor.preload_manager"
   ]
  },
  {
@@ -836,6 +860,12 @@
   "level": 7,
   "modules": [
    "search.indexer._config"
+  ]
+ },
+ {
+  "level": 8,
+  "modules": [
+   "enhanced_raw_processor"
   ]
  },
  {
