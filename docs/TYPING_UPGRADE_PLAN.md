@@ -445,12 +445,29 @@ Full strict runs over the whole repo take minutes and were the main time sink. R
 1. **Never run the full repo during a packet.** Run mypy on the packet's own package only:
    `MYPYPATH=src:typings python -m mypy --config-file <strict.ini> --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases --follow-imports=silent <package-dir-or-file>`
    `--follow-imports=silent` keeps errors in dependencies out of the report, so the count is only the packet's own files.
-2. **Use the incremental cache.** Mypy keeps `.mypy_cache`; re-runs on unchanged modules are seconds. Keep one cache per worktree. A fresh worktree starts cold, so copy an existing `.mypy_cache` into it before the first run (the cache is not committed).
-3. **Use the daemon for iteration.** `dmypy run -- <same flags>` then `dmypy check <files>` re-checks only the changed modules. Use `dmypy stop` at the end of a packet.
+2. **Use the incremental cache.** Mypy keeps `.mypy_cache`. Measured on this repo (2026-11-26): a warm `mypy --strict src` rerun takes about 1 second and reports the same errors as the cold run. Keep one cache per worktree. A fresh worktree starts cold, so copy an existing `.mypy_cache` into it before the first run (the cache is not committed).
+3. **Do not use the daemon on Windows.** `dmypy` starts its server with `os.fork()`, which Windows does not have, so `dmypy run` fails at startup (tested 2026-11-26). Use plain `mypy` with the incremental cache (rule 2). Where `dmypy` is wanted for a long iteration loop, run it under WSL; that is untested.
 4. **Full-repo runs happen once per phase, at the gate only:** the ledger (`scripts.typing.ledger`) and the ratchet. Packets report per-file counts from their scoped run, and the lead merges those numbers into the baseline.
 5. **Scope the ledger.** Add `--scope <path>` to `scripts/typing/ledger.py` so the ratchet can compare one package against its baseline entries. This is a Phase 0 follow-up; until it exists, packets use rule 1 and skip the ratchet.
 6. **Parallel packets use separate worktrees and caches**, so they do not contend for a shared `.mypy_cache`.
 7. **Keep the venv free of scratch tools.** Dev tools go in the scratchpad, and `MYPYPATH` includes the pytest copy so `import pytest` is not `Any`.
+
+## Measured status and estimate (2026-11-26)
+
+Measured on `main` at `3c9d464` with mypy 2.4.0, read-only, nothing edited:
+
+- Default config (`mypy src`): **77 errors** in 20 files.
+- Strict (`mypy --strict src`): **80 errors** in 28 files. Largest: `cache` (19), `raw_adjustments.linear` (17), `processing.raw_decode.gpu_bridge` (6), `cache.memory` (4).
+- Codes (strict): `attr-defined` 35, `import-untyped` 9, `no-untyped-def` 9, `no-any-return` 9.
+- The per-layer breakdown is in `docs/typing/PENDING_WORK.md`.
+
+Caveats: the strict run passes `--strict` globally, so the `[tool.mypy]` overrides are not applied the way they are in the default run. Some errors fall in files outside the layer map. Neither the ledger nor the ratchet was run for these counts.
+
+Remaining-work estimate, revised from measurements:
+
+- Import-cycle work (40-module cycle, 8-module `search.engine` cycle): about 1 to 2 days of agent time.
+- Mypy fixes for the 80 strict errors: a few hours, since the errors are few and concentrated.
+- Total: about 2 to 3 days of agent time. This replaces the earlier 3 to 5 weeks, which assumed a much larger error count.
 
 ## Bottom-up order: import layers (replaces the Phase 3 packet ordering where they conflict)
 

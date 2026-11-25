@@ -89,6 +89,8 @@ Method notes:
 - Ruff `--fix` can delete re-export imports that look unused. Use one import per name with
   `# noqa: F401  # re-export`, and re-run the name checker after any `--fix`.
 
+Estimate (agent time): the remaining import-cycle work is 1 to 2 days, and the strict mypy fixes are a few hours. Total: about 2 to 3 days. The earlier 3 to 5 week estimate assumed far more mypy errors.
+
 ## Pending: `search.engine` cycle (8 modules)
 
 Out of scope for P2b. It is a separate package-level cycle (`search.engine` and its parts). Plan it
@@ -99,6 +101,12 @@ as its own batch after the 40-module cycle.
 Mypy strict typing, bottom-up. Use `docs/typing/import_layers.md` for the order. Do not start a
 layer until the cycles below it are broken. Run mypy on single packages, not the whole tree, to keep
 runs fast (see `docs/TYPING_UPGRADE_PLAN.md`).
+
+Measured 2026-11-26 on `3c9d464`: 80 errors under `mypy --strict src` (28 files), or 77 under the
+default config. Per layer: L0 16, L1 4, L2 1, L4 17, L6 33, L7 3, L9 1, L11 2, L14 2, L15 1. Most
+are `attr-defined` (35), `import-untyped` (9), `no-untyped-def` (9) and `no-any-return` (9). Use
+plain `mypy` with its incremental cache: a warm rerun takes about 1 second. `dmypy` does not run on
+Windows (it needs `os.fork`).
 
 ## Pending: branches and worktrees (keep until the user confirms)
 
