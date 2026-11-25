@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core import theme
-from raw_adjustments import CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, SLIDER_SPECS
+from raw_adjustments.defaults import CHROMA_NR_ON_VALUE, DEFAULT_ADJUSTMENTS, SLIDER_SPECS
 from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
 
 from .helpers import (

@@ -10,7 +10,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
 
 from common_image_loader import is_raw_file
-from image_load_manager import Priority
+from image_load_manager.helpers import Priority
 
 from .helpers import (
     _focus_gallery_switch_logs,

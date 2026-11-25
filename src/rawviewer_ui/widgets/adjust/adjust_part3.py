@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core import theme
-from raw_adjustments import (
+from raw_adjustments.defaults import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,
     DEFAULT_ADJUSTMENTS,

@@ -11,7 +11,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QScrollArea
 
 from image_cache import LRUCache
-from image_load_manager import Priority, get_image_load_manager
+from image_load_manager.helpers import Priority, get_image_load_manager
 from rawviewer_ui.widgets import ThumbnailLabel
 
 from .helpers import _env_int, _env_true

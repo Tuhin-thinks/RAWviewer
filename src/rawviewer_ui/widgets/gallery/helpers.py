@@ -10,7 +10,7 @@ from PyQt6.QtGui import QImage, QPixmap, QTransform
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from core import theme
-from image_load_manager import Priority
+from image_load_manager.helpers import Priority
 
 logger = logging.getLogger(__name__)
 

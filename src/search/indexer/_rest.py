@@ -638,7 +638,7 @@ def _apply_exif_rotation_to_pil(file_path: str, im: PilImage, cache) -> PilImage
         # verify=True: orientation here transposes indexed pixels (worker thread).
         exif_data = cache.get_exif(file_path, verify=True)
         if not exif_data:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             exif_data = EXIFExtractor().extract_exif_data(file_path)
 
@@ -710,10 +710,8 @@ def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode:
     if ext in RAW_FILE_EXTENSIONS:
         if not qt_decode:
             try:
-                from enhanced_raw_processor import (
-                    ThumbnailExtractor,
-                    extract_embedded_jpeg_by_scan,
-                )
+                from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
+                from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
                 arr = extract_embedded_jpeg_by_scan(file_path, max_size)
                 if arr is None:
@@ -745,7 +743,8 @@ def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode:
         try:
             from PyQt6.QtGui import QImage
 
-            from enhanced_raw_processor import ThumbnailExtractor, _thumbnail_via_qimage_reader
+            from enhanced_raw_processor.extraction import _thumbnail_via_qimage_reader
+            from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
             thumb = ThumbnailExtractor().extract_thumbnail_from_raw(
                 file_path, max_size=max_size, allow_scan_fallback=True
@@ -758,7 +757,7 @@ def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode:
                 if isinstance(thumb, QImage):
                     if not qt_decode:
                         raise RuntimeError("Qt image in face-scan path")
-                    from enhanced_raw_processor import _qimage_to_rgb_array
+                    from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
                     arr = _qimage_to_rgb_array(thumb)
                     if arr is None:
@@ -780,7 +779,7 @@ def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode:
             pass
         if qt_decode:
             try:
-                from processing.unified import UnifiedImageProcessor
+                from processing.unified.processor import UnifiedImageProcessor
 
                 thumb = UnifiedImageProcessor().process_thumbnail(file_path, allow_heavy_fallback=True)
                 if thumb is not None:
@@ -789,7 +788,7 @@ def _load_index_source_image(file_path: str, max_size: int = 1024, *, qt_decode:
                     else:
                         from PyQt6.QtGui import QImage
 
-                        from enhanced_raw_processor import _qimage_to_rgb_array
+                        from enhanced_raw_processor.extraction import _qimage_to_rgb_array
 
                         if isinstance(thumb, QImage):
                             arr = _qimage_to_rgb_array(thumb)

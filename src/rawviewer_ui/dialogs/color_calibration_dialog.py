@@ -559,7 +559,7 @@ class ColorCalibrationDialog(QDialog):
 
     def _load_calibration_file(self, path: str) -> None:
         try:
-            from processing.unified import UnifiedImageProcessor
+            from processing.unified.processor import UnifiedImageProcessor
 
             img = UnifiedImageProcessor().decode_raw_edit_base(path, use_full_resolution=False)
         except Exception as exc:
