@@ -39,7 +39,8 @@ def main() -> int:
     tmpd = tempfile.mkdtemp()
     try:
         img = os.path.join(tmpd, "t.CR3")
-        open(img, "wb").write(b"stub")
+        with open(img, "wb") as fh:
+            fh.write(b"stub")
 
         adj = dict(DEFAULT_ADJUSTMENTS)
         adj[AS_SHOT_TEMP_KEY] = 5500.0
@@ -123,7 +124,8 @@ def main() -> int:
         adj2[AS_SHOT_TEMP_KEY] = 5500.0
         adj2["Exposure2012"] = 0.5
         write_xmp_adjustments_for_file(img, adj2)
-        text = open(xmp, encoding="utf-8").read()
+        with open(xmp, encoding="utf-8") as fh:
+            text = fh.read()
         check("merge keeps GrainAmount", "GrainAmount" in text and "25" in text)
         check("merge keeps LookTable", "LookTable" in text)
         check("merge writes Exposure2012", "Exposure2012" in text)

@@ -2,7 +2,7 @@
   "schema": 1,
   "command": "mypy --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases src scripts testplan tests build.py",
   "totals": {
-    "errors": 8333,
+    "errors": 8332,
     "any": 258,
     "type_ignore": 37,
     "by_code": {
@@ -16,7 +16,7 @@
       "arg-type": 168,
       "has-type": 150,
       "call-arg": 136,
-      "var-annotated": 134,
+      "var-annotated": 133,
       "union-attr": 132,
       "call-overload": 96,
       "operator": 41,
@@ -1358,7 +1358,7 @@
     },
     "testplan/auto/t_batch_export_ai_amount.py": {
       "no-untyped-def": 3,
-      "var-annotated": 2
+      "var-annotated": 1
     },
     "testplan/auto/t_cache_semantics.py": {
       "arg-type": 1,

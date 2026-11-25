@@ -116,15 +116,27 @@ def main() -> int:
     from enhanced_raw_processor import _detect_nef_he_compression
 
     cases = [
-        ("tag 0x0093: High Efficiency (13)", dict(nef_compression_value=13), True),
-        ("tag 0x0093: High Efficiency* (14)", dict(nef_compression_value=14), True),
-        ("tag 0x0093: Lossless (3, not HE)", dict(nef_compression_value=3), False),
-        ("tag 0x0093: Uncompressed (2, not HE)", dict(nef_compression_value=2), False),
-        ("tag 0x0051 (Z9-gen relocation): High Efficiency (13)", dict(nef_compression_value=13, via_tag51=True), True),
-        ("tag 0x0051 (Z9-gen relocation): High Efficiency* (14)", dict(nef_compression_value=14, via_tag51=True), True),
-        ("tag 0x0051 (Z9-gen relocation): Lossless (3, not HE)", dict(nef_compression_value=3, via_tag51=True), False),
-        ("Nikon MakerNote, no compression tag anywhere (older format)", dict(nef_compression_value=None), None),
-        ("non-Nikon MakerNote", dict(nef_compression_value=None, nikon_makernote=False), None),
+        ("tag 0x0093: High Efficiency (13)", {"nef_compression_value": 13}, True),
+        ("tag 0x0093: High Efficiency* (14)", {"nef_compression_value": 14}, True),
+        ("tag 0x0093: Lossless (3, not HE)", {"nef_compression_value": 3}, False),
+        ("tag 0x0093: Uncompressed (2, not HE)", {"nef_compression_value": 2}, False),
+        (
+            "tag 0x0051 (Z9-gen relocation): High Efficiency (13)",
+            {"nef_compression_value": 13, "via_tag51": True},
+            True,
+        ),
+        (
+            "tag 0x0051 (Z9-gen relocation): High Efficiency* (14)",
+            {"nef_compression_value": 14, "via_tag51": True},
+            True,
+        ),
+        (
+            "tag 0x0051 (Z9-gen relocation): Lossless (3, not HE)",
+            {"nef_compression_value": 3, "via_tag51": True},
+            False,
+        ),
+        ("Nikon MakerNote, no compression tag anywhere (older format)", {"nef_compression_value": None}, None),
+        ("non-Nikon MakerNote", {"nef_compression_value": None, "nikon_makernote": False}, None),
     ]
 
     tmpd = tempfile.mkdtemp()

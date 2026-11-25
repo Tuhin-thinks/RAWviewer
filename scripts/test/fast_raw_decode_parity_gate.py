@@ -130,16 +130,16 @@ def main() -> int:
     if smoke is not None:
         import cv2
 
-        params = dict(
-            use_camera_wb=True,
-            use_auto_wb=False,
-            no_auto_bright=True,
-            output_bps=8,
-            gamma=(2.222, 4.5),
-            bright=1.0,
-            user_flip=0,
-            half_size=False,
-        )
+        params = {
+            "use_camera_wb": True,
+            "use_auto_wb": False,
+            "no_auto_bright": True,
+            "output_bps": 8,
+            "gamma": (2.222, 4.5),
+            "bright": 1.0,
+            "user_flip": 0,
+            "half_size": False,
+        }
         out = try_fast_raw_decode(smoke, params)
         name = os.path.basename(smoke)
         if out is None:

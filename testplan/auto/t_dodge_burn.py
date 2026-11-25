@@ -48,7 +48,7 @@ def main() -> int:
     check("dodge brightens center", dodged[50, 75, 0] > img[50, 75, 0])
     check("dodge leaves far corner unchanged", np.allclose(dodged[2, 2], img[2, 2], atol=1e-4))
     # Soft circular kernel: bbox corners stay near empty (not a filled square).
-    x0, y0, x1, y1 = 75 - 20 - 1, 50 - 20 - 1, 75 + 20 + 2, 50 + 20 + 2
+    x0, y0 = 75 - 20 - 1, 50 - 20 - 1
     corner = float(abs(mask.data[y0, x0]))
     center = float(abs(mask.data[50, 75]))
     check(
@@ -165,7 +165,8 @@ def main() -> int:
         )
 
         img_path = os.path.join(tmpd, "t.CR3")
-        open(img_path, "wb").write(b"stub")
+        with open(img_path, "wb") as fh:
+            fh.write(b"stub")
         adj[STRENGTH_KEY] = 2.1
         write_xmp_adjustments_for_file(img_path, adj)
         check("sidecar written for mask-only edit", os.path.isfile(resolve_xmp_path(img_path)))

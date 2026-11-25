@@ -38,7 +38,8 @@ def main() -> int:
     tmpd = tempfile.mkdtemp()
     try:
         img_path = os.path.join(tmpd, "prog.CR3")
-        open(img_path, "wb").write(b"stub")
+        with open(img_path, "wb") as fh:
+            fh.write(b"stub")
         adj = dict(DEFAULT_ADJUSTMENTS)
         adj[AS_SHOT_TEMP_KEY] = 5500.0
         adj["Exposure2012"] = 0.75

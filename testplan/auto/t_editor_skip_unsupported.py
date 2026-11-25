@@ -2,6 +2,7 @@
 """Editor mode: a failed/unsupported edit-base decode must silently skip
 to the next editable image, not leave the editor stuck with an error."""
 
+import contextlib
 import os
 import sys
 
@@ -76,10 +77,9 @@ def main() -> int:
     _LIBRAW_UNSUPPORTED_PATHS.clear()
     m4 = make_mock(editor_active=True, n_files=3)
     fake_base = np.zeros((10, 10, 3), dtype=np.uint16)
-    try:
+    # success branch needs more mock plumbing than this test provides
+    with contextlib.suppress(Exception):
         m4._on_adjust_edit_base_ready("/tmp/a.CR3", fake_base, False, "")
-    except Exception:
-        pass  # success branch needs more mock plumbing than this test provides
     check("successful decode does not mark unsupported", key not in _LIBRAW_UNSUPPORTED_PATHS)
     check("successful decode does not navigate", m4._nav_calls == [])
 

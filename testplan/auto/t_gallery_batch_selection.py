@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import types
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
@@ -178,18 +179,16 @@ def main() -> int:
     )
 
     # --- source pins --------------------------------------------------------
-    src = open(
+    src = Path(
         os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_ui", "widgets", "__init__.py"),
-        encoding="utf-8",
-    ).read()
+    ).read_text(encoding="utf-8")
     check(
         "no _STYLE_SELECTED / setStyleSheet in selection path",
         "_STYLE_SELECTED" not in src and "self.setStyleSheet(\n            self._STYLE_SELECTED" not in src,
     )
-    bops_src = open(
+    bops_src = Path(
         os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "services", "batch.py"),
-        encoding="utf-8",
-    ).read()
+    ).read_text(encoding="utf-8")
     check(
         "no UI/cache imports in batch_ops (QPixmaps stay on UI thread)",
         "from PyQt6.QtGui import" not in bops_src and "from image_cache" not in bops_src,
@@ -197,16 +196,12 @@ def main() -> int:
     from _source_utils import main_source
 
     vp = main_source()
+    widgets_src = Path(
+        os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "core", "widgets.py")
+    ).read_text(encoding="utf-8")
     check(
         "TaskProgressDialog rename complete (no ExportProgressDialog left)",
-        "ExportProgressDialog" not in vp
-        and open(
-            os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "core", "widgets.py"),
-            encoding="utf-8",
-        )
-        .read()
-        .count("ExportProgressDialog")
-        == 0,
+        "ExportProgressDialog" not in vp and widgets_src.count("ExportProgressDialog") == 0,
     )
     check(
         "single export reuses export_one_file (no duplicated decode body)",
@@ -252,7 +247,7 @@ def main() -> int:
             "copy preserves mtime and source untouched",
             os.path.getmtime(copied) == 1500000000
             and os.path.isfile(a)
-            and open(copied, "rb").read() == b"imagepayload",
+            and Path(copied).read_bytes() == b"imagepayload",
         )
 
         copied_sidecar = copy_one_file(a, dst_dir, set())  # will copy a.xmp alongside

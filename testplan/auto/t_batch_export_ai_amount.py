@@ -77,21 +77,16 @@ def main() -> int:
     from rawviewer_app.services.batch import export_one_file
 
     tmp = tempfile.mkdtemp()
+
     # A real RAW decode isn't available in the test env, so stub the pipeline.
     # Verify only the adj dict is mutated with the override amount before
     # export_adjusted_image is called.
-    calls = []
-
     class _StubWorker:
         def decode_raw_edit_base(self, *a, **kw):
             raise RuntimeError("stub")
 
     def _fake_load_adj(path):
         return {"AIDenoiseAmount": 100.0, "Exposure2012": 0.1}
-
-    import rawviewer_app.services.batch as bo
-
-    orig_load = bo.load_adjustments_for_file if hasattr(bo, "load_adjustments_for_file") else None
 
     err, _ = export_one_file(
         os.path.join(tmp, "fake.CR3"),

@@ -68,11 +68,11 @@ def main() -> int:
         check("both modes produce the same shape", same_shape)
         if same_shape:
             g = out_gamma.astype(np.float64) / 255.0
-            l = out_linear.astype(np.float64) / 65535.0
+            lin = out_linear.astype(np.float64) / 65535.0
             check(
                 "linear output is not just a rescaled copy of the gamma output "
                 "(i.e. the gamma curve was actually skipped, not reapplied then undone)",
-                not np.allclose(g, l, atol=0.01),
+                not np.allclose(g, lin, atol=0.01),
             )
 
     print(f"\n{len(FAILURES)} failure(s)")

@@ -200,10 +200,11 @@ def main() -> int:
         "dead discard_folder parameter removed",
         "discard_folder='Discard'" not in src and "_ = discard_folder" not in src,
     )
-    sm = open(
+    with open(
         os.path.join(os.path.dirname(__file__), "..", "..", "src", "rawviewer_app", "viewer", "session_mixin.py"),
         encoding="utf-8",
-    ).read()
+    ) as fh:
+        sm = fh.read()
     check(
         "dead _scan_top_level_only removed from the worker",
         "_scan_top_level_only" not in sm,
