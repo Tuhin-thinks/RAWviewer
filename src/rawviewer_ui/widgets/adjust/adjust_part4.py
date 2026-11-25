@@ -7,14 +7,13 @@ from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from core import theme
-from raw_adjustments import (
+from raw_adjustments.checks import is_pv2012_tone_slider, recovery_baseline_slider_hints
+from raw_adjustments.defaults import (
     AS_SHOT_TEMP_KEY,
     CHROMA_NR_ON_VALUE,
     DEFAULT_ADJUSTMENTS,
     RECOVERY_BASELINE_KEY,
     SLIDER_SPECS,
-    is_pv2012_tone_slider,
-    recovery_baseline_slider_hints,
 )
 from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as DB_DEFAULT_STRENGTH
 from raw_adjustments.dodge_burn import STRENGTH_KEY as DB_STRENGTH_KEY
@@ -65,7 +64,7 @@ class AdjustPart4:
                 # still skip any leftover "0,0;255,255" so Reset clears XMP.
                 if not serial:
                     continue
-                from raw_adjustments import tone_curve_serial_is_active
+                from raw_adjustments.checks import tone_curve_serial_is_active
 
                 if tone_curve_serial_is_active(serial):
                     out[key] = serial

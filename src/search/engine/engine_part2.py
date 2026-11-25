@@ -259,7 +259,7 @@ class EnginePart2:
                 try:
                     orientation = result.get("orientation") or 1
 
-                    from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+                    from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
                     from image_cache import get_image_cache
 
                     t_cache = time.time()

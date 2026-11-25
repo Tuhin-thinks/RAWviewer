@@ -618,7 +618,7 @@ class GalleryPart2:
         if base is None or base.isNull():
             return False
         try:
-            from image_load_manager import _gallery_grid_min_dim
+            from image_load_manager.helpers import _gallery_grid_min_dim
 
             dpr = float(base.devicePixelRatio() or 1.0)
             effective = max(int(base.width() * dpr), int(base.height() * dpr))
@@ -713,7 +713,7 @@ class GalleryPart2:
         for_display); nothing is written back to the thumbnail caches.
         """
         try:
-            from raw_adjustments import apply_saved_edits_for_display
+            from raw_adjustments.saved_edits import apply_saved_edits_for_display
 
             return apply_saved_edits_for_display(file_path, arr)
         except Exception:

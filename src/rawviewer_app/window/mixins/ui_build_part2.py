@@ -277,7 +277,7 @@ class UiBuildPart2:
         self.single_image_location_map.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.single_image_location_map.hide()
 
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         self.single_image_adjust_panel = None
         self.single_image_adjust_histogram = None
@@ -1052,7 +1052,7 @@ class UiBuildPart2:
         self._shortcut_toggle_clipping_overlay.activated.connect(self._toggle_clipping_overlay)
 
         self._shortcut_toggle_adjust_panel = None
-        from raw_adjustments import editing_features_enabled as _editing_on
+        from raw_adjustments.xmp_read import editing_features_enabled as _editing_on
 
         if _editing_on():
             self._shortcut_toggle_adjust_panel = QShortcut(QKeySequence(Qt.Key.Key_E), self)

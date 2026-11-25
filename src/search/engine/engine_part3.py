@@ -436,10 +436,8 @@ class EnginePart3:
                     index_thumbnail_needs_orient_fix,
                     is_raw_file,
                 )
-                from enhanced_raw_processor import (
-                    ThumbnailExtractor,
-                    extract_embedded_jpeg_by_scan,
-                )
+                from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
+                from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor
 
                 arr = _cached_index_source_array(cache, path)
                 if arr is not None and not index_thumbnail_needs_orient_fix(path, arr, cache=cache):
@@ -728,7 +726,7 @@ class EnginePart3:
         if not exif_batch:
             return
         try:
-            from enhanced_raw_processor import RAW_EXIF_SENSOR_META_VER
+            from enhanced_raw_processor.extraction import RAW_EXIF_SENSOR_META_VER
             from image_cache import get_image_cache
 
             cache = get_image_cache()

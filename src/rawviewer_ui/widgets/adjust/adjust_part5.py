@@ -21,7 +21,7 @@ from .helpers import (
 
 class AdjustPart5:
     def _build_anamorphic_row(self, sect: CollapsibleSection) -> None:
-        from raw_adjustments import ANAMORPHIC_DESQUEEZE_PRESETS
+        from raw_adjustments.defaults import ANAMORPHIC_DESQUEEZE_PRESETS
 
         wrap = QWidget()
         col = QVBoxLayout(wrap)
