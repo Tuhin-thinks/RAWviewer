@@ -436,3 +436,17 @@ signatures. The tests/scripts override is deleted, because strict applies everyw
 - **Merge churn in the shared host files:** they are generated, so regenerate them and never merge by
   hand.
 - **About 9k edits overall.** The ratchet makes each packet independently safe to merge and to revert.
+
+## Measurement strategy: scoped and incremental mypy (applies to every packet and phase)
+
+Full strict runs over the whole repo take minutes and were the main time sink. Rules:
+
+1. **Never run the full repo during a packet.** Run mypy on the packet's own package only:
+   `MYPYPATH=src:typings python -m mypy --config-file <strict.ini> --strict --python-version 3.10 --allow-subclassing-any --ignore-missing-imports --explicit-package-bases --follow-imports=silent <package-dir-or-file>`
+   `--follow-imports=silent` keeps errors in dependencies out of the report, so the count is only the packet's own files.
+2. **Use the incremental cache.** Mypy keeps `.mypy_cache`; re-runs on unchanged modules are seconds. Keep one cache per worktree. A fresh worktree starts cold, so copy an existing `.mypy_cache` into it before the first run (the cache is not committed).
+3. **Use the daemon for iteration.** `dmypy run -- <same flags>` then `dmypy check <files>` re-checks only the changed modules. Use `dmypy stop` at the end of a packet.
+4. **Full-repo runs happen once per phase, at the gate only:** the ledger (`scripts.typing.ledger`) and the ratchet. Packets report per-file counts from their scoped run, and the lead merges those numbers into the baseline.
+5. **Scope the ledger.** Add `--scope <path>` to `scripts/typing/ledger.py` so the ratchet can compare one package against its baseline entries. This is a Phase 0 follow-up; until it exists, packets use rule 1 and skip the ratchet.
+6. **Parallel packets use separate worktrees and caches**, so they do not contend for a shared `.mypy_cache`.
+7. **Keep the venv free of scratch tools.** Dev tools go in the scratchpad, and `MYPYPATH` includes the pytest copy so `import pytest` is not `Any`.
