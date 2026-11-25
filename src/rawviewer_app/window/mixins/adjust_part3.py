@@ -531,7 +531,7 @@ class AdjustPart3:
         ):
             return
         try:
-            from raw_adjustments.lut import lut_chooser_as_shot_display_u8
+            from raw_adjustments.linear import lut_chooser_as_shot_display_u8
 
             base = getattr(self, "_adjust_preview_base_rgb_fast", None)
             if base is None:

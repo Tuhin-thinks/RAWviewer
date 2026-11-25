@@ -645,3 +645,25 @@ def linear_to_export_uint16_srgb(img: np.ndarray, adj: dict[str, float] | None =
     idx = np.clip(display * 65535.0 + 0.5, 0, 65535).astype(np.uint16)
     encoded = apply_pipeline_lut_encoded(gamma_curve16()[idx], merged, 65535.0)
     return apply_channel_curves_encoded(encoded, merged, 65535.0)
+
+
+def lut_chooser_as_shot_display_u8(
+    base: np.ndarray,
+    adj: dict | None = None,
+) -> np.ndarray:
+    """Tiny as-shot display RGB for LUT thumbs.
+
+    Downscales once, then encodes with identity adj. ``adj`` is accepted so
+    a helper call can pass the live Adjust dict; Exposure and other user
+    sliders are ignored (see ``lut_chooser_identity_adj``). uint8 buffers
+    are treated as already display-referred (embedded JPEG / browse).
+    """
+    from raw_adjustments.lut import downscale_rgb_for_lut_preview, lut_chooser_identity_adj
+    identity = lut_chooser_identity_adj(adj)
+    tiny = downscale_rgb_for_lut_preview(base)
+    if tiny is None or getattr(tiny, "ndim", 0) < 2:
+        return tiny
+    if getattr(tiny, "dtype", None) == np.uint8:
+        return np.ascontiguousarray(tiny)
+        lin = process_linear_edit_buffer(tiny, identity, preview=True)
+    return np.ascontiguousarray(linear_to_display_uint8(lin, identity))

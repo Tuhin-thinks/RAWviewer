@@ -293,27 +293,6 @@ def lut_chooser_identity_adj(adj: dict | None = None) -> dict:
     return out
 
 
-def lut_chooser_as_shot_display_u8(
-    base: np.ndarray,
-    adj: dict | None = None,
-) -> np.ndarray:
-    """Tiny as-shot display RGB for LUT thumbs.
-
-    Downscales once, then encodes with identity adj. ``adj`` is accepted so
-    a helper call can pass the live Adjust dict; Exposure and other user
-    sliders are ignored (see ``lut_chooser_identity_adj``). uint8 buffers
-    are treated as already display-referred (embedded JPEG / browse).
-    """
-    identity = lut_chooser_identity_adj(adj)
-    tiny = downscale_rgb_for_lut_preview(base)
-    if tiny is None or getattr(tiny, "ndim", 0) < 2:
-        return tiny
-    if getattr(tiny, "dtype", None) == np.uint8:
-        return np.ascontiguousarray(tiny)
-    from raw_adjustments.linear import linear_to_display_uint8, process_linear_edit_buffer
-
-    lin = process_linear_edit_buffer(tiny, identity, preview=True)
-    return np.ascontiguousarray(linear_to_display_uint8(lin, identity))
 
 
 def lut_preview_cache_key(
