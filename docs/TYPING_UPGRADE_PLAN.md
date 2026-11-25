@@ -97,6 +97,7 @@ enforces all of this.
    3. Run the typing upgrade on an integration branch `typing/upgrade`, with one PR per work packet.
 
 ## Global rules for every agent (read before any edit)
+- **Trivial moves skip the heavy gates.** A pure relocation (move a def or constant to another module, repoint its imports, no logic change) needs only `import_tree` and `import_smoke.py`. Run `ruff`, `mypy` and `pytest` only when the change alters logic, signatures or types. Decide per change; the user has granted this.
 - **Forbidden:**
   - Any new `# type: ignore`. The only exception is a third-party stub gap, written exactly
     `# type: ignore[<code>]  # <lib> stub gap: <why>`.
