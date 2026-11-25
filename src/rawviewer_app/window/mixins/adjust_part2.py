@@ -315,7 +315,7 @@ class AdjustPart2:
             return
         self._preview_upgrade_attempted_paths.add(norm_fp)
         try:
-            from image_load_manager import Priority
+            from image_load_manager.helpers import Priority
 
             self.image_manager.load_image(
                 file_path,
@@ -374,7 +374,7 @@ class AdjustPart2:
     def _retry_composite_dng_embedded_preview(self, file_path: str, error_message: str) -> bool:
         """After LibRaw full decode fails on composite HDR DNG, load embedded thumbnail once."""
         from common_image_loader import dng_prefers_embedded_preview_first, is_raw_file
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         if not file_path or not is_raw_file(file_path):
             return False
@@ -547,7 +547,7 @@ class AdjustPart2:
         XML for every tile on every pass (that stalled large-folder gallery
         re-entry).
         """
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         if not editing_features_enabled():
             return False
@@ -555,11 +555,8 @@ class AdjustPart2:
             return False
         try:
             from common_image_loader import is_raw_file
-            from raw_adjustments import (
-                is_default_adjustments,
-                load_adjustments_from_xmp,
-                resolve_xmp_path,
-            )
+            from raw_adjustments.checks import is_default_adjustments
+            from raw_adjustments.xmp_read import load_adjustments_from_xmp, resolve_xmp_path
 
             if not is_raw_file(file_path):
                 return False
@@ -725,7 +722,7 @@ class AdjustPart2:
                         with contextlib.suppress(Exception):
                             cache.reset()
                 try:
-                    from processing.unified import release_edit_base_cache
+                    from processing.unified.helpers import release_edit_base_cache
 
                     release_edit_base_cache()
                 except Exception:
@@ -878,7 +875,7 @@ class AdjustPart2:
         return True
 
     def _toggle_adjust_panel(self) -> None:
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         if not editing_features_enabled():
             return

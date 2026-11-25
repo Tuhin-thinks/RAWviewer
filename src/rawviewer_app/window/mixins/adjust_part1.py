@@ -48,7 +48,7 @@ class AdjustPart1:
         return bool(getattr(self, "_raw_recovery_active", False))
 
     def _adjust_panel_active(self) -> bool:
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         if not editing_features_enabled():
             return False
@@ -542,7 +542,7 @@ class AdjustPart1:
         if not file_path:
             return
         try:
-            from image_load_manager import Priority
+            from image_load_manager.helpers import Priority
 
             self.image_manager.load_image(
                 file_path,

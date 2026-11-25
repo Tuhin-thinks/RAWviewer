@@ -117,16 +117,16 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     get_image_cache = _get_image_cache
     initialize_cache = _initialize_cache
 
-    from enhanced_raw_processor import EnhancedRAWProcessor as _EnhancedRAWProcessor
-    from enhanced_raw_processor import PreloadManager as _PreloadManager
-    from enhanced_raw_processor import ThumbnailExtractor as _ThumbnailExtractor
+    from enhanced_raw_processor.enhanced_processor import EnhancedRAWProcessor as _EnhancedRAWProcessor
+    from enhanced_raw_processor.preload_manager import PreloadManager as _PreloadManager
+    from enhanced_raw_processor.thumbnail_extractor import ThumbnailExtractor as _ThumbnailExtractor
 
     EnhancedRAWProcessor = _EnhancedRAWProcessor
     PreloadManager = _PreloadManager
     ThumbnailExtractor = _ThumbnailExtractor
 
-    from image_load_manager import Priority as _Priority
-    from image_load_manager import get_image_load_manager as _get_image_load_manager
+    from image_load_manager.helpers import Priority as _Priority
+    from image_load_manager.helpers import get_image_load_manager as _get_image_load_manager
 
     get_image_load_manager = _get_image_load_manager
     Priority = _Priority
@@ -167,7 +167,7 @@ def _lazy_import_heavy_modules(splash: Any = None) -> None:
     ThumbnailLabel = _ThumbnailLabel
     ExternalJustifiedGallery = _ExternalJustifiedGallery
     ImageLocationMapWidget = _ImageLocationMapWidget
-    from raw_adjustments import editing_features_enabled as _editing_features_enabled
+    from raw_adjustments.xmp_read import editing_features_enabled as _editing_features_enabled
 
     if _editing_features_enabled():
         from rawviewer_ui.widgets.adjust import ImageAdjustPanelWidget as _ImageAdjustPanelWidget

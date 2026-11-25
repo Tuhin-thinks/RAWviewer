@@ -81,9 +81,10 @@ class AdjustPart3:
         heal_serial = ""
         has_edit = False
         try:
-            from raw_adjustments import is_default_adjustments, load_adjustments_for_file
+            from raw_adjustments.checks import is_default_adjustments
             from raw_adjustments.dodge_burn import MASK_KEY
             from raw_adjustments.spot_heal import MASK_KEY as HEAL_MASK_KEY
+            from raw_adjustments.xmp_read import load_adjustments_for_file
 
             # XML parse only -- cheap. The mask blobs (base64 + PNG, at edit
             # base resolution, can be multi-MB) are decoded further below on
@@ -160,7 +161,7 @@ class AdjustPart3:
             ):
                 # Cached base: immediately fetch and display lens status
                 try:
-                    from processing.unified import UnifiedImageProcessor
+                    from processing.unified.processor import UnifiedImageProcessor
 
                     processor = UnifiedImageProcessor()
                     has_profile = processor.lens_profile_available(path)
@@ -469,7 +470,7 @@ class AdjustPart3:
             # Mark it so browse skips a doomed LibRaw retry, then move on
             # instead of leaving the editor stuck.
             try:
-                from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+                from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
                 _LIBRAW_UNSUPPORTED_PATHS.add(os.path.normcase(os.path.abspath(file_path)))
             except Exception:
@@ -638,7 +639,7 @@ class AdjustPart3:
 
             import cv2
 
-            from raw_adjustments import _kelvin_to_rgb
+            from raw_adjustments.checks import _kelvin_to_rgb
 
             inv_g = 1.0 / 2.222
             f = 2.0 ** ((float(adj.get("Exposure2012", 0.0)) - float(last_adj.get("Exposure2012", 0.0))) / 2.222)

@@ -47,7 +47,7 @@ def import_xmp_preset(src_path: str) -> str:
     if not src_path.lower().endswith(".xmp"):
         raise ValueError("Only .xmp preset files are supported")
     # Validate: must parse as adjustments (empty is ok — still a valid XMP).
-    from raw_adjustments import load_adjustments_from_xmp
+    from raw_adjustments.xmp_read import load_adjustments_from_xmp
 
     load_adjustments_from_xmp(src_path)
     dest_name = os.path.basename(src_path)
@@ -65,6 +65,6 @@ def remove_managed_preset(name: str) -> None:
 
 def load_preset_adjustments(name: str) -> dict[str, float]:
     """Load global edit settings from a managed preset basename."""
-    from raw_adjustments import load_adjustments_from_xmp
+    from raw_adjustments.xmp_read import load_adjustments_from_xmp
 
     return load_adjustments_from_xmp(managed_preset_path(name))

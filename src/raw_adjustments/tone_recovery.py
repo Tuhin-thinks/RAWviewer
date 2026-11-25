@@ -387,7 +387,7 @@ def decode_and_recover_raw(
     if not file_path or not os.path.isfile(file_path):
         return None
     try:
-        from enhanced_raw_processor import _rawpy_global_lock
+        from enhanced_raw_processor.extraction import _rawpy_global_lock
 
         with _rawpy_global_lock, rawpy.imread(file_path) as raw:
             rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))
@@ -425,7 +425,7 @@ def decode_raw_for_edr_rgb(
     if not file_path or not os.path.isfile(file_path):
         return None
     try:
-        from enhanced_raw_processor import _rawpy_global_lock
+        from enhanced_raw_processor.extraction import _rawpy_global_lock
 
         with _rawpy_global_lock, rawpy.imread(file_path) as raw:
             rgb = raw.postprocess(**recovery_decode_params(half_size=True, for_file=file_path))

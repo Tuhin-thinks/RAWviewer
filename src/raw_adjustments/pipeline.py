@@ -10,13 +10,9 @@ logger = logging.getLogger(__name__)
 _scunet_availability_logged = False
 
 from core.errors import ExportCancelled, RAWViewerError  # noqa: F401
-from raw_adjustments import (
-    DEFAULT_ADJUSTMENTS,
-    RECOVERY_BASELINE_KEY,
-    is_default_adjustments,
-    uses_recovery_tone_map,
-)
+from raw_adjustments.checks import is_default_adjustments, uses_recovery_tone_map
 from raw_adjustments.chroma_denoise import apply_chroma_denoise, apply_luma_denoise, chroma_denoise_enabled
+from raw_adjustments.defaults import DEFAULT_ADJUSTMENTS, RECOVERY_BASELINE_KEY
 from raw_adjustments.dodge_burn import DEFAULT_STRENGTH as _DB_DEFAULT_STRENGTH
 from raw_adjustments.dodge_burn import MASK_KEY as _DB_MASK_KEY
 from raw_adjustments.dodge_burn import MASK_OBJ_KEY as _DB_MASK_OBJ_KEY
@@ -39,13 +35,13 @@ def _linear_float_from_buffer(rgb_image: np.ndarray) -> np.ndarray:
 
 
 def _kelvin_to_rgb(k: float) -> tuple[float, float, float]:
-    from raw_adjustments import _kelvin_to_rgb as kelvin
+    from raw_adjustments.checks import _kelvin_to_rgb as kelvin
 
     return kelvin(k)
 
 
 def _apply_wb_tint(img: np.ndarray, merged: dict[str, float]) -> np.ndarray:
-    from raw_adjustments import wb_reference_temperature
+    from raw_adjustments.checks import wb_reference_temperature
 
     ref_temp = wb_reference_temperature(merged)
     temp_val = float(merged.get("Temperature", ref_temp))
@@ -185,7 +181,7 @@ def _apply_display_stage(
 
 def _linear_pipeline_worker_count(height: int) -> int:
     # Shared tuning point with raw_adjustments' banded sRGB pipeline.
-    from raw_adjustments import banded_worker_count
+    from raw_adjustments.apply import banded_worker_count
 
     return banded_worker_count(height)
 
@@ -472,7 +468,7 @@ def _process_linear_edit_buffer_banded(
     progress_cb=None,
 ) -> np.ndarray:
     """Row-band parallel pipeline: banded pre-AI, whole-image AI barrier, banded post-AI."""
-    from raw_adjustments import band_ranges, banded_executor
+    from raw_adjustments.apply import band_ranges, banded_executor
 
     # 16px overlap pad handles bilateral / guided filter radii (up to r=12) and spot heal
     full_h = int(img.shape[0])
@@ -1006,7 +1002,7 @@ def _apply_display_stage_banded(img: np.ndarray, merged: dict[str, float], n_wor
     row-independent). Reuses raw_adjustments._BAND_PAD_PX -- same blur radii,
     same padding math as _apply_adjustments_to_srgb_banded.
     """
-    from raw_adjustments import _BAND_PAD_PX, band_ranges, banded_executor
+    from raw_adjustments.apply import _BAND_PAD_PX, band_ranges, banded_executor
     from raw_adjustments.effects import DEHAZE_KEY
 
     if abs(float(merged.get(DEHAZE_KEY, 0.0) or 0.0)) > 1e-3:

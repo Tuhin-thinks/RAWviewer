@@ -56,7 +56,7 @@ def _should_skip_reencode(
     ext = os.path.splitext(source_path)[1].lower()
     if ext not in _BYPASS_EXT.get(export_format, frozenset()):
         return False
-    from raw_adjustments import is_default_adjustments
+    from raw_adjustments.checks import is_default_adjustments
 
     return is_default_adjustments(adj)
 
@@ -73,7 +73,7 @@ def copy_one_file(
     Raises on failure; a failed sidecar copy is non-fatal (logged, skipped) —
     the image itself matters more than its saved edits.
     """
-    from raw_adjustments import resolve_xmp_path
+    from raw_adjustments.xmp_read import resolve_xmp_path
 
     dest = unique_destination(dest_dir, os.path.basename(src), reserved)
     shutil.copy2(src, dest, follow_symlinks=False)
@@ -225,9 +225,10 @@ def export_one_file(
     xmp_warning = None
     cancelled = cancel_event if cancel_event is not None else threading.Event()
     try:
-        from processing.unified import UnifiedImageProcessor
-        from raw_adjustments import resolve_xmp_path, write_xmp_adjustments_for_file
+        from processing.unified.processor import UnifiedImageProcessor
         from raw_adjustments.pipeline import ExportCancelled, export_adjusted_image
+        from raw_adjustments.xmp_read import resolve_xmp_path
+        from raw_adjustments.xmp_write import write_xmp_adjustments_for_file
 
         # Best-effort: keep the source file's sidecar in sync with what's
         # being baked/copied. This must NOT block the export itself.
@@ -376,7 +377,7 @@ class BatchExportWorker(QRunnable):
     }
 
     def run(self) -> None:
-        from raw_adjustments import load_adjustments_for_file
+        from raw_adjustments.xmp_read import load_adjustments_for_file
 
         total = len(self.paths)
         ok = 0

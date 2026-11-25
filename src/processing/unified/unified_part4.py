@@ -132,7 +132,7 @@ class UnifiedPart4:
             return cached_exif, cached_thumb
 
         try:
-            from enhanced_raw_processor import _rawpy_global_lock
+            from enhanced_raw_processor.extraction import _rawpy_global_lock
 
             with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
                 max_size_val = self._raw_thumbnail_extract_max_size(None, allow_heavy_fallback=True)
@@ -179,7 +179,7 @@ class UnifiedPart4:
         logger = logging.getLogger(__name__)
         target = memory_preview_max_edge()
         try:
-            from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+            from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
             scanned = extract_embedded_jpeg_by_scan(file_path, target)
             if scanned is not None:
@@ -267,7 +267,7 @@ class UnifiedPart4:
         logger = logging.getLogger(__name__)
         target = memory_preview_max_edge()
         try:
-            from enhanced_raw_processor import _rawpy_global_lock
+            from enhanced_raw_processor.extraction import _rawpy_global_lock
             from processing.raw_decode.fast import (
                 decode_half_from_unpacked,
                 params_supported_half,

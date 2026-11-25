@@ -50,7 +50,7 @@ class UnifiedPart7:
                 # embedded JPEG. Detect directly (~0.05ms) so every task routes
                 # to the embedded ladder regardless of EXIF-cache timing.
                 try:
-                    from enhanced_raw_processor import _detect_nef_he_compression
+                    from enhanced_raw_processor.extraction import _detect_nef_he_compression
 
                     he = _detect_nef_he_compression(file_path)
                 except Exception:
@@ -152,7 +152,7 @@ class UnifiedPart7:
                 self.cache.put_preview(file_path, preview)
                 return preview
             try:
-                from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+                from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
                 scanned = extract_embedded_jpeg_by_scan(file_path, mem_max)
                 if scanned is not None:
@@ -213,7 +213,7 @@ class UnifiedPart7:
                             self.cache.put_preview(file_path, preview)
                             return preview
                     try:
-                        from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+                        from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
                         scanned = extract_embedded_jpeg_by_scan(file_path, mem_max)
                         if scanned is not None:
@@ -265,7 +265,7 @@ class UnifiedPart7:
 
             def _load_task_cancelled() -> bool:
                 try:
-                    from image_load_manager import worker_thread_local
+                    from image_load_manager.helpers import worker_thread_local
 
                     t = getattr(worker_thread_local, "task", None)
                     return bool(t is not None and t.is_cancelled())
@@ -273,7 +273,7 @@ class UnifiedPart7:
                     return False
 
             if use_full_resolution or params.get("half_size"):
-                from enhanced_raw_processor import _rawpy_global_lock as _fast_lock
+                from enhanced_raw_processor.extraction import _rawpy_global_lock as _fast_lock
                 from processing.raw_decode.fast import (
                     DecodeCancelled,
                     decode_half_from_unpacked,
@@ -403,7 +403,7 @@ class UnifiedPart7:
                     return None
                 import time as _time
 
-                from enhanced_raw_processor import _heavy_fallback_semaphore, _rawpy_global_lock
+                from enhanced_raw_processor.extraction import _heavy_fallback_semaphore, _rawpy_global_lock
 
                 # Keep the rawpy fallback consistent with the fast path's
                 # embedded-JPEG WB sanity correction (misparsed as-shot WB on
@@ -546,12 +546,9 @@ class UnifiedPart7:
                             if self._async_cache_gen_current(fp) != expected:
                                 return
 
-                            from raw_adjustments import (
-                                apply_adjustments_to_rgb,
-                                is_default_adjustments,
-                                load_adjustments_for_file,
-                                sidecar_adjustments_enabled,
-                            )
+                            from raw_adjustments.apply import apply_adjustments_to_rgb
+                            from raw_adjustments.checks import is_default_adjustments
+                            from raw_adjustments.xmp_read import load_adjustments_for_file, sidecar_adjustments_enabled
 
                             source = rgb
                             already_preview_sized = False
@@ -644,7 +641,7 @@ class UnifiedPart7:
             # LibRaw failed here, so a retry will predictably fail the same
             # way; there is no true decode to ever upgrade to.
             try:
-                from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+                from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
                 lim = 8192 if use_full_resolution else memory_preview_max_edge()
                 scanned = extract_embedded_jpeg_by_scan(file_path, lim)
@@ -712,7 +709,7 @@ class UnifiedPart7:
             cached_exif = self.cache.get_exif(file_path, verify=True)
             prev = self.cache.get_preview(file_path)
             if prev is not None:
-                from raw_adjustments import mark_array_as_already_adjusted
+                from raw_adjustments.saved_edits import mark_array_as_already_adjusted
 
                 if target_size is not None:
                     h, w = prev.shape[:2]
@@ -803,7 +800,7 @@ class UnifiedPart7:
 
         # RAW Path: Open once, extract both
         try:
-            from enhanced_raw_processor import _rawpy_global_lock
+            from enhanced_raw_processor.extraction import _rawpy_global_lock
 
             with _rawpy_global_lock, rawpy_imread_warm(file_path) as raw:
                 # 1. Extract EXIF (verified with rawpy sensor sizes)
@@ -845,7 +842,7 @@ class UnifiedPart7:
         full-size JPEG only to downscale it for live Adjust.
         """
         try:
-            from enhanced_raw_processor import extract_embedded_jpeg_by_scan
+            from enhanced_raw_processor.extraction import extract_embedded_jpeg_by_scan
 
             # 0 = largest embed (export); 2048 = live-Adjust budget.
             max_size = 0 if use_full_resolution else 2048
