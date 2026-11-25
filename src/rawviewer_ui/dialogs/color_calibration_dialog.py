@@ -22,10 +22,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-try:
-    import rawviewer_ui.theme as theme
-except ModuleNotFoundError:
-    from core import theme as theme
+from core import theme
 from core.dpreview_samples import dpreview_open_url
 from raw_adjustments.color_calibration import (
     calibrate_camera_curves_and_hsl,
@@ -470,10 +467,7 @@ class ColorCalibrationDialog(QDialog):
         return theme.form_secondary_button_stylesheet()
 
     def _alert(self, title: str, body: str) -> None:
-        try:
-            from rawviewer_app.core.widgets import CustomWarningDialog
-        except ModuleNotFoundError:
-            from widgets import CustomWarningDialog
+        from rawviewer_app.core.widgets import CustomWarningDialog
         CustomWarningDialog(
             self,
             title=title,

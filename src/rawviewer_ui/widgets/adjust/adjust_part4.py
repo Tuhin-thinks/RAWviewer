@@ -711,10 +711,7 @@ class AdjustPart4:
             return
         from PyQt6.QtWidgets import QDialog
 
-        try:
-            from rawviewer_app.core.widgets import CustomConfirmDialog
-        except ModuleNotFoundError:
-            from widgets import CustomConfirmDialog
+        from rawviewer_app.core.widgets import CustomConfirmDialog
 
         iso_bit = f" (ISO {iso})" if iso else ""
         dlg = CustomConfirmDialog(

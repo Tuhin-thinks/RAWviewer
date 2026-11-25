@@ -495,7 +495,7 @@ def _gpu_gamma_lut(device, torch_mod) -> Any:
     key = str(device)
     lut = _GAMMA_LUT_GPU.get(key)
     if lut is None:
-        from fast_raw_decode import gamma_curve16
+        from processing.raw_decode.fast import gamma_curve16
 
         # 16-bit curve, indexed by a 16-bit input -> keep as int64 index
         # source; convert once to a device-resident float LUT for gather.
@@ -586,7 +586,7 @@ def _gpu_demosaic_pytorch_body(
 
     def _abort_if_cancelled() -> None:
         if cancel_check is not None and cancel_check():
-            from fast_raw_decode import DecodeCancelled
+            from core.errors import DecodeCancelled
 
             raise DecodeCancelled(unpacked.file_path)
 
@@ -688,7 +688,7 @@ def _gpu_demosaic_pytorch_body(
             # Synchronize producer stream so GUI-thread CUDA-GL map sees data.
             with contextlib.suppress(Exception):
                 torch.cuda.current_stream(device).synchronize()
-            from gpu_gl_bridge import DeviceRgb
+            from processing.raw_decode.gpu_bridge import DeviceRgb
 
             out = DeviceRgb(
                 tensor=rgb_final.contiguous(),
@@ -715,7 +715,7 @@ def _cupy_gamma_lut() -> Any:
     """CuPy-resident copy of the shared 16-bit gamma curve (see _gpu_gamma_lut)."""
     global _GAMMA_LUT_CUPY
     if _GAMMA_LUT_CUPY is None:
-        from fast_raw_decode import gamma_curve16
+        from processing.raw_decode.fast import gamma_curve16
 
         _GAMMA_LUT_CUPY = cupy.array(gamma_curve16().astype(np.float32))
     return _GAMMA_LUT_CUPY
@@ -793,7 +793,7 @@ def gpu_demosaic_cupy_unpacked(
 
     def _abort_if_cancelled() -> None:
         if cancel_check is not None and cancel_check():
-            from fast_raw_decode import DecodeCancelled
+            from core.errors import DecodeCancelled
 
             raise DecodeCancelled(unpacked.file_path)
 
@@ -898,7 +898,7 @@ def try_gpu_decode_from_unpacked(
 
     if retain_device is None:
         try:
-            from gpu_gl_bridge import cuda_gl_enabled
+            from processing.raw_decode.gpu_bridge import cuda_gl_enabled
 
             retain_device = bool(cuda_gl_enabled()) and not return_linear
         except Exception:
@@ -921,7 +921,7 @@ def try_gpu_decode_from_unpacked(
     elapsed_ms = 0.0
     with gate:
         if cancel_check is not None and cancel_check():
-            from fast_raw_decode import DecodeCancelled
+            from core.errors import DecodeCancelled
 
             raise DecodeCancelled(unpacked.file_path)
 
@@ -959,7 +959,7 @@ def try_gpu_decode_from_unpacked(
             # defeating the cancel_check calls added to the demosaic
             # bodies (the caller never learns the decode was cancelled and
             # falls through to a rawpy decode nobody wants anymore).
-            from fast_raw_decode import DecodeCancelled
+            from core.errors import DecodeCancelled
 
             if isinstance(e, DecodeCancelled):
                 raise
