@@ -625,7 +625,7 @@ class LifecyclePart1:
         Keeps ``SIDECAR_ADJUST`` / ``EDITED_PREVIEWS`` off by default.
         """
         from common_image_loader import is_raw_file
-        from raw_adjustments import edited_previews_enabled
+        from raw_adjustments.xmp_read import edited_previews_enabled
 
         if not path or not is_raw_file(path):
             return

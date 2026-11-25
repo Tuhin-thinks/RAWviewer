@@ -80,7 +80,7 @@ class MiscPart3:
         if cached_exif and cached_exif.get("nef_he_compressed") is False:
             return False
         try:
-            from enhanced_raw_processor import _detect_nef_he_compression
+            from enhanced_raw_processor.extraction import _detect_nef_he_compression
 
             return _detect_nef_he_compression(file_path) is True
         except Exception:
@@ -90,7 +90,7 @@ class MiscPart3:
         if not file_path:
             return False
         try:
-            from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+            from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
             return os.path.normcase(os.path.abspath(file_path)) in _LIBRAW_UNSUPPORTED_PATHS
         except Exception:
@@ -103,7 +103,7 @@ class MiscPart3:
             _mark_libraw_unsupported(os.path.normcase(os.path.abspath(file_path)))
         except Exception:
             try:
-                from processing.unified import _LIBRAW_UNSUPPORTED_PATHS
+                from processing.unified.helpers import _LIBRAW_UNSUPPORTED_PATHS
 
                 _LIBRAW_UNSUPPORTED_PATHS.add(os.path.normcase(os.path.abspath(file_path)))
             except Exception:

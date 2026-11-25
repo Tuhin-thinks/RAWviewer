@@ -38,7 +38,7 @@ class ShortcutsPart1:
                 "G -- Cycle composition guide on both panes\n"
                 "C / Esc -- Exit Compare mode"
             )
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         # Editor-open: show Adjust-relevant shortcuts (H/M are browse-only).
         if getattr(self, "_adjust_overlay_visible", False):
@@ -200,7 +200,7 @@ class ShortcutsPart1:
         self._toggle_auto_tone_preview()
 
     def _shortcut_activate_adjust_panel(self) -> None:
-        from raw_adjustments import editing_features_enabled
+        from raw_adjustments.xmp_read import editing_features_enabled
 
         if not editing_features_enabled():
             return

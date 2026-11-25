@@ -398,7 +398,7 @@ class MetadataPart1:
     def get_orientation_from_exif(self, file_path):
         """Extract orientation via EXIFExtractor (RAW fallbacks included)."""
         try:
-            from enhanced_raw_processor import EXIFExtractor
+            from enhanced_raw_processor.exif_extractor import EXIFExtractor
 
             exif = EXIFExtractor().extract_exif_data(file_path)
             if exif:
@@ -863,7 +863,7 @@ class MetadataPart1:
             try:
                 import time
 
-                from image_load_manager import Priority, get_image_load_manager
+                from image_load_manager.helpers import Priority, get_image_load_manager
 
                 manager = get_image_load_manager()
                 viewer = self

@@ -683,7 +683,7 @@ class DialogsPart1:
                 )
             return
 
-        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
+        from raw_adjustments.checks import solve_white_balance_from_sample, wb_reference_temperature
 
         radius = 3
         y0, y1 = max(0, cy - radius), min(h, cy + radius + 1)
@@ -707,8 +707,8 @@ class DialogsPart1:
             if hasattr(self, "status_bar"):
                 self.status_bar.showMessage("Auto WB needs a decoded RAW edit base -- try again in a moment", 3000)
             return
-        from raw_adjustments import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.auto_adjust import estimate_neutral_rgb
+        from raw_adjustments.checks import solve_white_balance_from_sample, wb_reference_temperature
         from raw_adjustments.pipeline import _linear_float_from_buffer
 
         est = estimate_neutral_rgb(_linear_float_from_buffer(base))

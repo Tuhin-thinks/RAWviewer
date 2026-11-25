@@ -89,7 +89,7 @@ class SettingsPart1:
             lm = getattr(self, "image_manager", None)
             if lm is None:
                 return
-            from image_load_manager import Priority
+            from image_load_manager.helpers import Priority
 
             if hasattr(lm, "cancel_tasks_by_priority"):
                 lm.cancel_tasks_by_priority(Priority.PRELOAD_NEXT)
@@ -106,7 +106,7 @@ class SettingsPart1:
         if self._in_nav_quiet_window():
             QTimer.singleShot(200, self._drain_filmstrip_prefetch_chunk)
             return
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         chunk = _env_int("RAWVIEWER_FILMSTRIP_FLUSH_CHUNK", 4, minimum=1)
         interval_ms = _env_int("RAWVIEWER_FILMSTRIP_FLUSH_INTERVAL_MS", 180, minimum=0)
@@ -360,7 +360,7 @@ class SettingsPart1:
                     return
             except Exception:
                 pass
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         zoomed = self._single_view_is_zoomed_in()
         n = len(self.image_files)
@@ -384,7 +384,7 @@ class SettingsPart1:
 
         if self._should_defer_nav_preload():
             return
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         for path in paths or []:
             if not path:
@@ -420,7 +420,7 @@ class SettingsPart1:
 
     def _idle_display_prefetch_tick(self) -> None:
         """Background prefetch of display-quality buffers for upcoming navigation targets."""
-        from image_load_manager import Priority
+        from image_load_manager.helpers import Priority
 
         if not _env_true("RAWVIEWER_IDLE_DISPLAY_PREFETCH", default=True):
             return

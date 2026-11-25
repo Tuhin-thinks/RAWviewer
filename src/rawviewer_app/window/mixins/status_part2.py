@@ -73,7 +73,7 @@ class StatusPart2:
             if hasattr(self, "rotate_bottom_button"):
                 self.rotate_bottom_button.setVisible(show_rotate)
             if hasattr(self, "adjust_bottom_button"):
-                from raw_adjustments import editing_features_enabled
+                from raw_adjustments.xmp_read import editing_features_enabled
 
                 # Unlike rotate, stays visible while the panel is open -- it is
                 # the panel's on-screen toggle (EMBER icon = active).
