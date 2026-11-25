@@ -8,6 +8,12 @@
  {
   "level": 0,
   "modules": [
+   "cache_limits"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
    "core.app_version"
   ]
  },
@@ -177,6 +183,12 @@
   "level": 0,
   "modules": [
    "processing.raw_decode.gil"
+  ]
+ },
+ {
+  "level": 0,
+  "modules": [
+   "processing.raw_decode.gpu_bridge"
   ]
  },
  {
@@ -374,6 +386,12 @@
  {
   "level": 1,
   "modules": [
+   "cache.keys"
+  ]
+ },
+ {
+  "level": 1,
+  "modules": [
    "core"
   ]
  },
@@ -398,7 +416,6 @@
  {
   "level": 1,
   "modules": [
-   "processing.raw_decode.gpu_bridge",
    "processing.raw_decode.gpu_processor"
   ]
  },
@@ -490,6 +507,12 @@
   "level": 2,
   "modules": [
    "bootstrap_pkg.worker"
+  ]
+ },
+ {
+  "level": 2,
+  "modules": [
+   "cache.disk"
   ]
  },
  {
@@ -701,12 +724,10 @@
   "modules": [
    "bootstrap_pkg.torch",
    "cache",
-   "cache.disk",
    "cache.image_cache",
    "cache.image_cache.core",
    "cache.image_cache.full_exif_util",
    "cache.image_cache.thumb_grid_preview",
-   "cache.keys",
    "cache.memory",
    "cache.metadata",
    "common_image_loader",

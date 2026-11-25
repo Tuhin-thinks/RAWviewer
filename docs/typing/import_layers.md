@@ -6,14 +6,14 @@ Rule: finish every unit in layer N before starting layer N+1. Units inside one l
 are independent and may run in parallel. A cycle unit is typed as one piece.
 
 ```text
-work units: 219 (3 cycles)
-  layer  0:  61 units,  61 modules
-  layer  1:  20 units,  21 modules
-  layer  2:  17 units,  17 modules
+work units: 223 (2 cycles)
+  layer  0:  63 units,  63 modules
+  layer  1:  21 units,  21 modules
+  layer  2:  18 units,  18 modules
   layer  3:   7 units,   7 modules
   layer  4:   8 units,   8 modules
   layer  5:   3 units,   3 modules
-  layer  6:   1 units,  42 modules
+  layer  6:   1 units,  40 modules
   layer  7:  20 units,  20 modules
   layer  8:  15 units,  15 modules
   layer  9:   7 units,   7 modules
@@ -35,8 +35,8 @@ work units: 219 (3 cycles)
 - `rawviewer_app.window`: 47
 - `rawviewer_app.window.lazy`: 47
 - `image_cache`: 39
-- `core`: 37
 - `core.theme`: 37
+- `core`: 37
 - `image_load_manager.helpers`: 27
 - `rawviewer_app.window.qt_helpers`: 24
 - `rawviewer_app.window.paths`: 23
@@ -49,6 +49,7 @@ work units: 219 (3 cycles)
 ## Units by layer
 
 - L0: `bootstrap_pkg.constants`
+- L0: `cache_limits`
 - L0: `core.app_version`
 - L0: `core.build_profile`
 - L0: `core.comparison_mode`
@@ -78,6 +79,7 @@ work units: 219 (3 cycles)
 - L0: `processing.raw_decode.exposure_clipping`
 - L0: `processing.raw_decode.gamma`
 - L0: `processing.raw_decode.gil`
+- L0: `processing.raw_decode.gpu_bridge`
 - L0: `pyi_rth_macos_process_pool`
 - L0: `pyi_rth_release_defaults`
 - L0: `pyi_rth_ssl_certs`
@@ -110,11 +112,12 @@ work units: 219 (3 cycles)
 - L0: `search.database`
 - L0: `search.indexer._shared`
 - L1: `bootstrap_pkg.helpers`
+- L1: `cache.keys`
 - L1: `core`
 - L1: `core.release_update`
 - L1: `metadata.backend`
 - L1: `metadata.histogram`
-- L1 (cycle): `processing.raw_decode.gpu_bridge`, `processing.raw_decode.gpu_processor`
+- L1: `processing.raw_decode.gpu_processor`
 - L1: `processing.raw_decode.scunet`
 - L1: `raw_adjustments.defaults`
 - L1: `raw_adjustments.detail_enhance`
@@ -130,6 +133,7 @@ work units: 219 (3 cycles)
 - L1: `rawviewer_app.window.windows_shell`
 - L1: `search.types`
 - L2: `bootstrap_pkg.worker`
+- L2: `cache.disk`
 - L2: `metadata.subject_area`
 - L2: `raw_adjustments.auto_adjust`
 - L2: `raw_adjustments.color_calibration`
@@ -164,7 +168,7 @@ work units: 219 (3 cycles)
 - L5: `bootstrap`
 - L5: `raw_adjustments.apply`
 - L5: `raw_adjustments.pipeline`
-- L6 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.disk`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.keys`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments.saved_edits`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
+- L6 (cycle): `bootstrap_pkg.torch`, `cache`, `cache.image_cache`, `cache.image_cache.core`, `cache.image_cache.full_exif_util`, `cache.image_cache.thumb_grid_preview`, `cache.memory`, `cache.metadata`, `common_image_loader`, `common_image_loader.edr`, `common_image_loader.exif_display`, `common_image_loader.helpers`, `common_image_loader.loaders`, `common_image_loader.mipmap`, `common_image_loader.runtime`, `core.profile`, `enhanced_raw_processor.exif_extractor`, `enhanced_raw_processor.extraction`, `enhanced_raw_processor.optimized_processor`, `enhanced_raw_processor.thumbnail_extractor`, `image_cache`, `image_load_manager.helpers`, `image_load_manager.manager`, `image_load_manager.manager_part1`, `image_load_manager.manager_part2`, `image_load_manager.manager_part3`, `image_load_manager.worker`, `processing.raw_decode.fast`, `processing.unified.helpers`, `processing.unified.processor`, `processing.unified.unified_part1`, `processing.unified.unified_part2`, `processing.unified.unified_part3`, `processing.unified.unified_part4`, `processing.unified.unified_part5`, `processing.unified.unified_part6`, `processing.unified.unified_part7`, `raw_adjustments.saved_edits`, `raw_adjustments.xmp_read`, `raw_adjustments.xmp_write`
 - L7: `bootstrap_pkg.splash`
 - L7: `core.burst_grouping`
 - L7: `core.memory_pressure`
