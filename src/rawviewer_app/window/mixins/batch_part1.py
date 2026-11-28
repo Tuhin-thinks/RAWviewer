@@ -139,6 +139,7 @@ class BatchPart1:
             title = {
                 "copy": "Copying Images",
                 "trash": "Deleting Images",
+                "delete": "Permanently Deleting Images",
                 "discard": "Moving to Discard",
             }.get(kind, "Batch Operation")
 
@@ -204,10 +205,11 @@ class BatchPart1:
         verb = {
             "copy": "Copied",
             "trash": "Deleted",
+            "delete": "Permanently deleted",
             "discard": "Discarded",
             "edited": "Exported",
         }.get(kind, "Processed")
-        if kind in ("trash", "discard"):
+        if kind in ("trash", "delete", "discard"):
             self._after_batch_removal(kind, detail)
             return
         if hasattr(self, "status_bar"):
@@ -261,7 +263,7 @@ class BatchPart1:
             removed_paths.append(src)
         if removed_paths:
             self._remove_files_from_active_image_list(removed_paths)
-        verb = "Deleted" if kind == "trash" else "Discarded"
+        verb = {"trash": "Deleted", "delete": "Permanently deleted"}.get(kind, "Discarded")
         removed = len(removed_paths)
         if hasattr(self, "status_bar") and self.status_bar is not None:
             msg = f"{verb} {removed} image{'s' if removed != 1 else ''}"

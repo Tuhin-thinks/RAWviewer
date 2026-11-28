@@ -158,7 +158,7 @@ class LifecyclePart1:
         self._loading_from_filmstrip = False  # Flag for filmstrip loading
         self._gallery_selected_paths = set()  # normpath keys for multi-select in gallery
         self._gallery_selection_anchor = None  # normpath key for Shift+click range
-        self._gallery_last_select_action = None  # "toggle" | "shift": gate shift-range extension
+        self._gallery_focus_key = None  # keyboard/anchor focus tile (Explorer-style cursor)
         # Burst grouping + compare (H)
         self._burst_groups = []
         self._burst_path_to_group = {}

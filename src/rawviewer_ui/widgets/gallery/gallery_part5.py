@@ -327,23 +327,17 @@ class GalleryPart5:
                                     if hasattr(pv, "_gallery_event_modifiers")
                                     else e.modifiers()
                                 )
-                                if (
-                                    hasattr(pv, "_gallery_has_shift_modifier")
-                                    and pv._gallery_has_shift_modifier(mods)
-                                    and not (
-                                        hasattr(pv, "_gallery_has_extend_modifier")
-                                        and pv._gallery_has_extend_modifier(mods)
-                                    )
-                                ):
-                                    pv._gallery_shift_click_selection(target_path)
+                                plain = not (
+                                    pv._gallery_has_shift_modifier(mods)
+                                    or pv._gallery_has_extend_modifier(mods)
+                                )
+                                if plain and pv._gallery_is_plain_press_on_group(target_path):
+                                    # Explorer: pressing an item inside a multi-selection keeps the
+                                    # group so it can be dragged. A release without a drag collapses
+                                    # the selection to this item (see _on_thumb_release).
+                                    _w._press_collapse_pending = True
                                     return
-                                if hasattr(pv, "_gallery_has_extend_modifier") and pv._gallery_has_extend_modifier(
-                                    mods
-                                ):
-                                    if hasattr(pv, "_gallery_toggle_path_selection"):
-                                        pv._gallery_toggle_path_selection(target_path)
-                                    return
-                                pv._gallery_item_clicked(target_path)
+                                pv._gallery_dispatch_click(target_path)
                             return
                     except Exception:
                         pass
@@ -370,6 +364,20 @@ class GalleryPart5:
                         ThumbnailLabel.mouseReleaseEvent(_w, e)
                         return
                     pv = self.parent_viewer
+                    if getattr(_w, "_dbl_pending", False):
+                        # Release after a double-click: the open already happened; don't re-select.
+                        _w._dbl_pending = False
+                        _w._press_collapse_pending = False
+                        e.accept()
+                        return
+                    if getattr(_w, "_press_collapse_pending", False):
+                        _w._press_collapse_pending = False
+                        if not _w._drag_started and pv is not None and _w.file_path:
+                            pv._gallery_select_single(_w.file_path)
+                        _w._drag_start_pos = None
+                        _w._drag_started = False
+                        e.accept()
+                        return
                     mods = (
                         pv._gallery_event_modifiers(e)
                         if pv is not None and hasattr(pv, "_gallery_event_modifiers")
@@ -393,6 +401,12 @@ class GalleryPart5:
                     self._on_gallery_thumb_hover(_w, entered=False)
                     ThumbnailLabel.leaveEvent(_w, e)
 
+                def _on_thumb_double(path, _w=w):
+                    pv = self.parent_viewer
+                    if pv is not None and path:
+                        pv._gallery_open_path(path)
+
+                w.double_clicked.connect(_on_thumb_double)
                 w.mousePressEvent = _on_thumb_press
                 w.mouseReleaseEvent = _on_thumb_release
                 w.enterEvent = _on_thumb_enter

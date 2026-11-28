@@ -835,7 +835,8 @@ class GalleryPart2:
             self._gallery_thumb_labels[file_path] = thumb_label
 
             # Make clickable
-            thumb_label.clicked.connect(self._gallery_item_clicked)
+            thumb_label.clicked.connect(self._gallery_dispatch_click)
+            thumb_label.double_clicked.connect(self._gallery_open_path)
 
             # Load pixmap and scale it
             pixmap = self._get_gallery_pixmap(file_path)
