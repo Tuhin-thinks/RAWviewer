@@ -58,6 +58,17 @@
 
 Full changelog: [`RELEASE_NOTES.md`](RELEASE_NOTES.md)
 
+## 3.1.2 test builds (pre-release)
+
+Source-only test pre-releases on top of 3.1.1. Not a mainstream version, and no packaged build (EXE) is attached. [test.2](https://github.com/Tuhin-thinks/RAWviewer/releases/tag/v3.1.2-test.2), [test.1](https://github.com/Tuhin-thinks/RAWviewer/releases/tag/v3.1.2-test.1). Day-to-day work happens on **`develop`**, which feature branches start from; `main` carries the tested state.
+
+- **Fewer import cycles**: the largest import cycle went from 61 modules to 40, by moving shared helpers (adjustments, cache limits, camera white balance, GPU workspaces) into small leaf modules. No behaviour change.
+- **Typing and lint cleanup**: `from __future__ import annotations` removed, ruff formatting applied, and typing tools added under `scripts/typing/`. Rules for contributors are in [`CLAUDE.md`](CLAUDE.md).
+- **Docs for the remaining work**: [`docs/TYPING_UPGRADE_PLAN.md`](docs/TYPING_UPGRADE_PLAN.md) and [`docs/typing/PENDING_WORK.md`](docs/typing/PENDING_WORK.md) (measured mypy counts included).
+- **Verified**: 15 tests pass, all 269 modules import, and the app launched three times with `launch_dev.bat lite` with no tracebacks.
+- **Known issue (older than this work)**: a `Could not pre-seed semantic metadata` warning on launch in the Lite profile. It is caught and logged, and the app keeps running.
+- **Next**: Explorer-style gallery multi-select (Shift and Ctrl+Shift range select) and Recycle Bin or permanent delete.
+
 ## 3.1.1 (bug fixes)
 
 A small fix release on top of 3.1.0. [Release page](https://github.com/Tuhin-thinks/RAWviewer/releases/tag/v3.1.1).
