@@ -147,7 +147,7 @@ That's the whole culling workflow. Everything else below is optional.
 <details>
 <summary><strong>All browsing &amp; gallery shortcuts</strong></summary>
 
-Open a folder (menu, drag-and-drop, or double-click a photo). Scroll the **gallery**; click a thumbnail for full-screen view. On **large folders** (thousands of photos), the **Gallery** button appears once capture-time sorting finishes, so thumbnails are in shooting order; if metadata is already cached, sort is instant. In gallery view, drag the **size slider** in the bottom bar to change thumbnail size.
+Open a folder (menu, drag-and-drop, or double-click a photo). Scroll the **gallery**; click a thumbnail to select it and **double-click** (or press **Enter**) for full-screen view. On **large folders** (thousands of photos), the **Gallery** button appears once capture-time sorting finishes, so thumbnails are in shooting order; if metadata is already cached, sort is instant. In gallery view, drag the **size slider** in the bottom bar to change thumbnail size.
 
 | Key | Action |
 |-----|--------|
@@ -158,12 +158,16 @@ Open a folder (menu, drag-and-drop, or double-click a photo). Scroll the **galle
 | **0–5** | Star rating (**0** clears; bottom stars in single view too) |
 | **6–9** | Color label (Red / Yellow / Green / Blue; **Shift+6** Purple; same key clears) |
 | **K** | Edit keywords |
-| **↓** | Move to Discard folder |
-| **Delete** | Delete image(s) |
+| **↓** | Single view: move to Discard folder |
+| **Delete** | Delete image(s) to the Recycle Bin / Trash |
+| **Shift+Delete** | Gallery: delete selection permanently (confirmation, cannot be undone) |
+| **Ctrl+↓** | Gallery: move selection to Discard folder |
 | **Esc** | Gallery: clear selection → exit filters · Single view: back to gallery |
+| **Click** | Gallery: select only this photo |
 | **Ctrl/Cmd+click** | Gallery: toggle selection |
-| **Shift+click** | Gallery: select range (visible order) |
-| **↑** | Gallery: scroll up · Compare: promote candidate |
+| **Shift+click** | Gallery: select range from the anchor (Explorer-style) · **Ctrl+Shift+click** adds the range |
+| **Arrows / Home / End** | Gallery: move the cursor; **Shift** extends the range, **Ctrl** moves without selecting, **Ctrl+Space** toggles |
+| **↑** | Gallery: move up · Compare: promote candidate |
 | **C** | Toggle Compare mode on/off (requires multiple images selected) |
 | **E** | Show / hide **Adjust** panel |
 | **G** | Cycle composition guide |

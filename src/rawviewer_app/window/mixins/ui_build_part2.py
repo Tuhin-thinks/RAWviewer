@@ -1113,6 +1113,39 @@ class UiBuildPart2:
         self._shortcut_gallery_down_shift.setContext(Qt.ShortcutContext.ApplicationShortcut)
         self._shortcut_gallery_down_shift.activated.connect(self._shortcut_activate_gallery_down)
 
+        # Explorer-style gallery selection: modified arrows extend/move the cursor.
+        # Modifiers are read at activation time (QApplication.keyboardModifiers).
+        self._gallery_key_shortcuts = []
+        for seq, slot in (
+            ("Shift+Up", self._shortcut_activate_gallery_up),
+            ("Shift+Left", self._shortcut_activate_nav_prev),
+            ("Shift+Right", self._shortcut_activate_nav_next),
+            ("Ctrl+Up", self._shortcut_activate_gallery_up),
+            ("Ctrl+Left", self._shortcut_activate_nav_prev),
+            ("Ctrl+Right", self._shortcut_activate_nav_next),
+            ("Ctrl+Shift+Up", self._shortcut_activate_gallery_up),
+            ("Ctrl+Shift+Down", self._shortcut_activate_gallery_down),
+            ("Ctrl+Shift+Left", self._shortcut_activate_nav_prev),
+            ("Ctrl+Shift+Right", self._shortcut_activate_nav_next),
+            ("Home", self._shortcut_gallery_home),
+            ("End", self._shortcut_gallery_end),
+            ("Shift+Home", self._shortcut_gallery_home),
+            ("Shift+End", self._shortcut_gallery_end),
+            ("Ctrl+Home", self._shortcut_gallery_home),
+            ("Ctrl+End", self._shortcut_gallery_end),
+            ("Ctrl+Space", self._shortcut_gallery_toggle_focus),
+            ("Return", self._shortcut_gallery_enter),
+            ("Enter", self._shortcut_gallery_enter),
+        ):
+            sc = QShortcut(QKeySequence(seq), self)
+            sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
+            sc.activated.connect(slot)
+            self._gallery_key_shortcuts.append(sc)
+        # Ctrl+Down: gallery Discard (plain Down is now cursor movement).
+        self._shortcut_gallery_discard_sc = QShortcut(QKeySequence("Ctrl+Down"), self)
+        self._shortcut_gallery_discard_sc.setContext(Qt.ShortcutContext.ApplicationShortcut)
+        self._shortcut_gallery_discard_sc.activated.connect(self._shortcut_activate_ctrl_down)
+
         app = QApplication.instance()
         if app is not None and not getattr(self, "_app_key_filter_installed", False):
             app.installEventFilter(self)

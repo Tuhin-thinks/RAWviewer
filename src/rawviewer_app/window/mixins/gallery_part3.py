@@ -353,7 +353,8 @@ class GalleryPart3:
             self._gallery_thumb_labels[file_path] = thumb_label
 
             # Make clickable
-            thumb_label.mousePressEvent = lambda e, fp=file_path: self._gallery_item_clicked(fp)
+            thumb_label.mousePressEvent = lambda e, fp=file_path: self._gallery_dispatch_click(fp)
+            thumb_label.mouseDoubleClickEvent = lambda e, fp=file_path: self._gallery_open_path(fp)
 
             # Load thumbnail asynchronously with staggered delay to avoid blocking UI
             # Each item gets a slightly longer delay to spread out the loading
@@ -466,7 +467,8 @@ class GalleryPart3:
             self._gallery_thumb_labels[file_path] = thumb_label
 
             # Make clickable
-            thumb_label.mousePressEvent = lambda e, fp=file_path: self._gallery_item_clicked(fp)
+            thumb_label.mousePressEvent = lambda e, fp=file_path: self._gallery_dispatch_click(fp)
+            thumb_label.mouseDoubleClickEvent = lambda e, fp=file_path: self._gallery_open_path(fp)
 
             # Create item widget - set fixed height to match row
             item_widget = QWidget()
@@ -920,7 +922,8 @@ class GalleryPart3:
         item_layout.addWidget(thumb_label)
 
         # Make item clickable
-        thumb_label.clicked.connect(self._gallery_item_clicked)
+        thumb_label.clicked.connect(self._gallery_dispatch_click)
+        thumb_label.double_clicked.connect(self._gallery_open_path)
 
         # Store references
         item.thumb_label = thumb_label

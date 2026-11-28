@@ -212,13 +212,17 @@ class DialogsPart1:
             gl_pending,
         )
 
-    def _confirm_bulk_deletion(self, count: int, *, discard: bool) -> bool:
+    def _confirm_bulk_deletion(self, count: int, *, discard: bool, permanent: bool = False) -> bool:
         if count <= 0:
             return False
         if discard:
             title = "Confirm Move to Discard"
             verb = "move"
             detail = "They will be moved to a Discard folder next to the originals."
+        elif permanent:
+            title = "Confirm Permanent Delete"
+            verb = "permanently delete"
+            detail = "They will NOT go to the Recycle Bin. This cannot be undone."
         else:
             title = "Confirm Delete"
             verb = "delete"
