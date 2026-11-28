@@ -7,6 +7,7 @@ from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QLabel
 
+from core.config import _norm_path
 from rawviewer_ui.widgets import ThumbnailLabel
 
 from .helpers import _focus_gallery_switch_logs, _orient_debug_enabled
@@ -341,10 +342,13 @@ class GalleryPart7:
         pv = self.parent_viewer
         if pv is None or not hasattr(pv, "_is_gallery_path_selected"):
             return
+        focus = getattr(pv, "_gallery_focus_key", None)
         for w in self._visible_widgets.values():
             path = getattr(w, "file_path", None)
             if path and hasattr(w, "set_gallery_selected"):
                 w.set_gallery_selected(pv._is_gallery_path_selected(path))
+            if path and hasattr(w, "set_gallery_focused"):
+                w.set_gallery_focused(bool(focus) and _norm_path(path) == focus)
 
     def refresh_gallery_burst_visuals(self) -> None:
         """Sync burst stack count badges on visible thumbnails."""
@@ -400,17 +404,6 @@ class GalleryPart7:
         try:
             pv = self.parent_viewer
             if target_path and pv is not None:
-                mods = pv._gallery_event_modifiers(e) if hasattr(pv, "_gallery_event_modifiers") else e.modifiers()
-                shift = hasattr(pv, "_gallery_has_shift_modifier") and pv._gallery_has_shift_modifier(mods)
-                extend = hasattr(pv, "_gallery_has_extend_modifier") and pv._gallery_has_extend_modifier(mods)
-                if shift and not extend:
-                    if hasattr(pv, "_gallery_shift_click_selection"):
-                        pv._gallery_shift_click_selection(target_path)
-                    return
-                if extend:
-                    if hasattr(pv, "_gallery_toggle_path_selection"):
-                        pv._gallery_toggle_path_selection(target_path)
-                    return
-                pv._gallery_item_clicked(target_path)
+                pv._gallery_dispatch_click(target_path)
         except Exception:
             pass

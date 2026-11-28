@@ -232,6 +232,8 @@ class ShortcutsPart1:
         return False
 
     def _shortcut_activate_nav_prev(self) -> None:
+        if self._gallery_key_move("left"):
+            return
         if self._nav_shortcut_defers_to_slider(-1):
             return
         if getattr(self, "view_mode", "") == "compare":
@@ -247,6 +249,8 @@ class ShortcutsPart1:
         self._navigate_single_view_step(-1)
 
     def _shortcut_activate_nav_next(self) -> None:
+        if self._gallery_key_move("right"):
+            return
         if self._nav_shortcut_defers_to_slider(+1):
             return
         if getattr(self, "view_mode", "") == "compare":
@@ -338,7 +342,45 @@ class ShortcutsPart1:
         if self._compare_session_plan() is not None:
             self._enter_compare_mode()
 
+    def _gallery_key_move(self, direction: str) -> bool:
+        """Explorer-style gallery cursor move; True when handled (gallery view, not typing)."""
+        if getattr(self, "view_mode", "") != "gallery" or self._shortcut_blocked_by_text_input():
+            return False
+        from PyQt6.QtWidgets import QApplication
+
+        return bool(self._gallery_keyboard_move(direction, QApplication.keyboardModifiers()))
+
+    def _shortcut_gallery_home(self) -> None:
+        self._gallery_key_move("home")
+
+    def _shortcut_gallery_end(self) -> None:
+        self._gallery_key_move("end")
+
+    def _shortcut_gallery_enter(self) -> None:
+        vm = getattr(self, "view_mode", "")
+        if vm == "gallery" and not self._shortcut_blocked_by_text_input():
+            self._gallery_open_focused()
+        elif vm == "single" and self._filmstrip_handles_input():
+            # Preserve the pre-existing Enter behaviour (filmstrip commit) now that Enter is a shortcut.
+            bar = self._filmstrip_bar()
+            if bar:
+                bar.commit_selection()
+
+    def _shortcut_gallery_toggle_focus(self) -> None:
+        if getattr(self, "view_mode", "") == "gallery" and not self._shortcut_blocked_by_text_input():
+            self._gallery_toggle_focused()
+
+    def _shortcut_activate_ctrl_down(self) -> None:
+        """Ctrl+Down: gallery Discard of the selection (plain Down moves the cursor); else as Down."""
+        if getattr(self, "view_mode", "") == "gallery":
+            if self._gallery_has_selection():
+                self.discard_gallery_selection()
+            return
+        self._shortcut_activate_gallery_down()
+
     def _shortcut_activate_gallery_up(self) -> None:
+        if self._gallery_key_move("up"):
+            return
         if self._shortcut_blocked_by_text_input():
             return
         vm = getattr(self, "view_mode", "single")
@@ -373,10 +415,8 @@ class ShortcutsPart1:
                 self._compare_handle_reject_candidate()
             return
         if vm == "gallery":
-            if self._gallery_has_selection():
-                self.discard_gallery_selection()
-                return
-            self._scroll_gallery_vertical(1)
+            if not self._gallery_key_move("down"):
+                self._scroll_gallery_vertical(1)
             return
         if vm == "single":
             self.move_current_image_to_discard()
@@ -508,7 +548,10 @@ class ShortcutsPart1:
                 self._compare_handle_delete(shift_pressed)
                 return True
             if vm == "gallery" and self._gallery_has_selection():
-                self.delete_gallery_selection()
+                if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                    self.permanent_delete_gallery_selection()
+                else:
+                    self.delete_gallery_selection()
                 return True
             if vm == "single":
                 self.delete_current_image()

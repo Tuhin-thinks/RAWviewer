@@ -5,12 +5,13 @@ import logging
 import os
 import sys
 
-from PyQt6.QtCore import QSize, Qt, QTimer
+from PyQt6.QtCore import QRect, QSize, Qt, QTimer
 
 from core import theme
 from core.config import _env_int, _norm_path
 
 from .. import lazy
+from ..gallery_selection import SelectionState, apply_click, apply_move, toggle
 from ..lazy import is_raw_file, qta
 from ..paths import _require_str_path
 from ..qt_helpers import _qta_icon
@@ -19,44 +20,68 @@ lazy.register(sys.modules[__name__])
 
 
 class GalleryPart4:
-    def _gallery_shift_click_selection(self, file_path: str) -> None:
-        """Shift+click range selection.
+    def _gallery_dispatch_click(self, file_path: str) -> None:
+        """Single entry point for gallery tile clicks (Explorer semantics).
 
-        A Shift+click only extends an inclusive range when the previous action was
-        also a Shift+click. The first Shift+click after a Cmd/Ctrl+click (or any
-        non-shift action) just sets a fresh range anchor and selects that one tile,
-        so picking 4th→6th after Cmd+click 2nd won't pull in the 3rd.
+        Plain click selects only this item; Ctrl/Cmd toggles; Shift replaces the
+        selection with the anchor..item range; Ctrl+Shift adds that range.
+        Double-click opens (see _gallery_open_path).
         """
+        mods = self._gallery_event_modifiers()
+        extend = self._gallery_has_extend_modifier(mods)
+        if self._gallery_has_shift_modifier(mods):
+            self._gallery_range_select(file_path, additive=extend)
+        elif extend:
+            self._gallery_toggle_path_selection(file_path)
+        else:
+            self._gallery_select_single(file_path)
+
+    def _gallery_is_plain_press_on_group(self, file_path: str) -> bool:
+        """True when a plain press lands on an item inside a multi-selection (drag candidate)."""
+        selected = getattr(self, "_gallery_selected_paths", None) or set()
+        return len(selected) > 1 and self._is_gallery_path_selected(file_path)
+
+    def _gallery_select_single(self, file_path: str) -> None:
+        """Plain click: the tile (or its whole burst stack) becomes the selection."""
         canonical = self._gallery_canonical_path(file_path)
         if not canonical:
             return
         key = _norm_path(canonical)
-        paths = self._gallery_selection_ordered_paths()
-        norm_list = [_norm_path(p) for p in paths if p]
-        if key not in norm_list:
+        self._gallery_selected_paths = set(self._gallery_selection_keys_for_tile(file_path))
+        self._gallery_selection_anchor = key
+        self._gallery_focus_key = key
+        self._gallery_refresh_selection_ui()
+
+    def _gallery_range_select(self, file_path: str, *, additive: bool) -> None:
+        """Shift+click (replace) or Ctrl+Shift+click (add) range from the anchor."""
+        canonical = self._gallery_canonical_path(file_path)
+        if not canonical:
             return
-        selected = set(getattr(self, "_gallery_selected_paths", set()) or set())
-        anchor = getattr(self, "_gallery_selection_anchor", None)
-        last_action = getattr(self, "_gallery_last_select_action", None)
-        if last_action != "shift" or not anchor or anchor not in norm_list:
-            self._gallery_selection_anchor = key
-            self._gallery_last_select_action = "shift"
-            selected.add(key)
-            self._gallery_set_selection_keys(selected)
+        key = _norm_path(canonical)
+        order = [_norm_path(p) for p in self._gallery_selection_ordered_paths() if p]
+        if key not in order:
             return
-        try:
-            i0 = norm_list.index(anchor)
-            i1 = norm_list.index(key)
-        except ValueError:
-            self._gallery_selection_anchor = key
-            self._gallery_last_select_action = "shift"
-            selected.add(key)
-            self._gallery_set_selection_keys(selected)
-            return
-        lo, hi = (i0, i1) if i0 <= i1 else (i1, i0)
-        selected |= {norm_list[i] for i in range(lo, hi + 1)}
-        self._gallery_last_select_action = "shift"
-        self._gallery_set_selection_keys(selected)
+        state = SelectionState(
+            selected=frozenset(getattr(self, "_gallery_selected_paths", set()) or set()),
+            anchor=getattr(self, "_gallery_selection_anchor", None),
+            focus=getattr(self, "_gallery_focus_key", None),
+        )
+        new = apply_click(state, order, key, ctrl=additive, shift=True)
+        self._gallery_apply_selection_state(new)
+
+    def _gallery_apply_selection_state(self, state: SelectionState) -> None:
+        """Write a SelectionState back, expanding burst-stack covers to their members."""
+        norm_map = self._gallery_norm_path_map()
+        expanded: set[str] = set()
+        for k in state.selected:
+            path = norm_map.get(k)
+            if path is None:
+                expanded.add(k)
+            else:
+                expanded |= self._gallery_selection_keys_for_tile(path)
+        self._gallery_selection_anchor = state.anchor
+        self._gallery_focus_key = state.focus
+        self._gallery_set_selection_keys(expanded)
 
     def _gallery_canonical_path(self, file_path: str) -> str | None:
         if not file_path or not self.image_files:
@@ -87,7 +112,7 @@ class GalleryPart4:
         if selected:
             selected.clear()
         self._gallery_selection_anchor = None
-        self._gallery_last_select_action = None
+        self._gallery_focus_key = None
         self._gallery_refresh_selection_ui()
 
     def _request_clear_gallery_selection(self) -> None:
@@ -104,7 +129,7 @@ class GalleryPart4:
         files = self._gallery_files_for_display()
         self._gallery_set_selection_keys({_norm_path(p) for p in files if p})
         self._gallery_selection_anchor = None
-        self._gallery_last_select_action = None
+        self._gallery_focus_key = None
 
     def _prune_gallery_selection_to_displayed(self, display_files=None) -> None:
         """Drop selected keys that are not in the currently displayed set.
@@ -445,7 +470,7 @@ class GalleryPart4:
         else:
             selected.add(storage_key)
         self._gallery_selection_anchor = storage_key
-        self._gallery_last_select_action = "toggle"
+        self._gallery_focus_key = storage_key
         self._gallery_set_selection_keys(selected)
 
     def _gallery_selected_canonical_paths(self) -> list[str]:
@@ -493,6 +518,107 @@ class GalleryPart4:
             return
         self._start_batch_removal("trash", paths)
 
+    def permanent_delete_gallery_selection(self) -> None:
+        """Shift+Delete: remove the selection for good, skipping the Recycle Bin."""
+        paths = self._gallery_selected_canonical_paths()
+        if not paths:
+            self.status_bar.showMessage("No images selected in gallery", 2500)
+            return
+        self._stop_slideshow()
+        if not self._confirm_bulk_deletion(len(paths), discard=False, permanent=True):
+            return
+        self._start_batch_removal("delete", paths)
+
+    def _gallery_keyboard_move(self, direction: str, mods: Qt.KeyboardModifier) -> bool:
+        """Arrow/Home/End in the gallery with Explorer rules. direction: left|right|up|down|home|end."""
+        order = [_norm_path(p) for p in self._gallery_selection_ordered_paths() if p]
+        if not order:
+            return False
+        focus = getattr(self, "_gallery_focus_key", None)
+        if focus not in order:
+            focus = None
+        if direction == "home":
+            target = order[0]
+        elif direction == "end":
+            target = order[-1]
+        elif focus is None:
+            target = order[0]
+        else:
+            i = order.index(focus)
+            if direction in ("left", "right"):
+                target = order[max(0, min(len(order) - 1, i + (1 if direction == "right" else -1)))]
+            else:
+                target = self._gallery_vertical_neighbor(focus, order, down=direction == "down")
+        state = SelectionState(
+            selected=frozenset(getattr(self, "_gallery_selected_paths", set()) or set()),
+            anchor=getattr(self, "_gallery_selection_anchor", None),
+            focus=focus,
+        )
+        new = apply_move(
+            state,
+            order,
+            target,
+            ctrl=self._gallery_has_extend_modifier(mods),
+            shift=self._gallery_has_shift_modifier(mods),
+        )
+        self._gallery_apply_selection_state(new)
+        self._gallery_scroll_key_into_view(target)
+        return True
+
+    def _gallery_layout_rects(self) -> dict[str, QRect]:
+        """normpath key -> tile rect in scroll-content coordinates (virtualized layout items)."""
+        gj = getattr(self, "gallery_justified", None)
+        items = getattr(gj, "_gallery_layout_items", None) or []
+        return {_norm_path(it["file_path"]): it["rect"] for it in items if it.get("file_path") and "rect" in it}
+
+    def _gallery_vertical_neighbor(self, focus: str, order: list[str], down: bool) -> str:
+        """Tile in the adjacent row whose horizontal centre is closest (rows are justified, so uneven)."""
+        rects = self._gallery_layout_rects()
+        cur = rects.get(focus)
+        if cur is None:
+            i = order.index(focus)
+            return order[max(0, min(len(order) - 1, i + (4 if down else -4)))]
+        cx = cur.center().x()
+        rows = [k for k in order if k in rects and (rects[k].top() > cur.bottom() if down else rects[k].bottom() < cur.top())]
+        if not rows:
+            return focus
+        # nearest row first, then nearest centre within it
+        row_y = min(rects[k].top() for k in rows) if down else max(rects[k].top() for k in rows)
+        same_row = [k for k in rows if abs(rects[k].top() - row_y) <= max(4, cur.height() // 4)]
+        return min(same_row or rows, key=lambda k: abs(rects[k].center().x() - cx))
+
+    def _gallery_scroll_key_into_view(self, key: str) -> None:
+        rect = self._gallery_layout_rects().get(key)
+        gs = getattr(self, "gallery_scroll", None)
+        sb = gs.verticalScrollBar() if gs is not None else None
+        viewport = gs.viewport() if gs is not None else None
+        if rect is None or sb is None or viewport is None:
+            return
+        top, view_h = sb.value(), viewport.height()
+        if rect.top() < top:
+            sb.setValue(rect.top() - 8)
+        elif rect.bottom() > top + view_h:
+            sb.setValue(rect.bottom() - view_h + 8)
+
+    def _gallery_toggle_focused(self) -> None:
+        """Ctrl+Space: flip the focused tile in or out of the selection."""
+        focus = getattr(self, "_gallery_focus_key", None)
+        if not focus:
+            return
+        state = SelectionState(
+            selected=frozenset(getattr(self, "_gallery_selected_paths", set()) or set()),
+            anchor=getattr(self, "_gallery_selection_anchor", None),
+            focus=focus,
+        )
+        self._gallery_apply_selection_state(toggle(state, focus))
+
+    def _gallery_open_focused(self) -> None:
+        """Enter: open the focused tile (or the only selected one)."""
+        key = getattr(self, "_gallery_focus_key", None)
+        path = self._gallery_norm_path_map().get(key) if key else None
+        if path:
+            self._gallery_open_path(path)
+
     def discard_gallery_selection(self) -> None:
         paths = self._gallery_selected_canonical_paths()
         if not paths:
@@ -503,15 +629,8 @@ class GalleryPart4:
             return
         self._start_batch_removal("discard", paths)
 
-    def _gallery_item_clicked(self, file_path):
-        """Handle gallery item click - burst stack, single view, or selection."""
-        mods = self._gallery_event_modifiers()
-        if self._gallery_has_shift_modifier(mods) and not self._gallery_has_extend_modifier(mods):
-            self._gallery_shift_click_selection(file_path)
-            return
-        if self._gallery_has_extend_modifier(mods):
-            self._gallery_toggle_path_selection(file_path)
-            return
+    def _gallery_open_path(self, file_path: str) -> None:
+        """Double-click / Enter: open the burst group, or single view, for this item."""
         if (
             getattr(self, "view_mode", "") == "gallery"
             and not getattr(self, "_burst_group_view_active", False)

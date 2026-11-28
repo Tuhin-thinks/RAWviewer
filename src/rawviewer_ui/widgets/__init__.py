@@ -45,6 +45,7 @@ class ThumbnailLabel(QLabel):
     """
 
     clicked = pyqtSignal(str, object)  # file_path, QMouseEvent
+    double_clicked = pyqtSignal(str)  # file_path: open (Explorer double-click)
 
     _STYLE_DEFAULT = "ThumbnailLabel { background: transparent; }"
     _CHECK_MARGIN = 6
@@ -56,6 +57,8 @@ class ThumbnailLabel(QLabel):
         super().__init__(parent)
         self.original_pixmap = None
         self._gallery_selected = False
+        self._gallery_focused = False  # keyboard cursor tile (dotted rect)
+        self._dbl_pending = False  # swallow the release that follows a double-click
         self._check_hover = False
         self._tile_hovered = False
         self._copy_hover = False
@@ -86,7 +89,25 @@ class ThumbnailLabel(QLabel):
         else:
             super().mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.file_path:
+            self._dbl_pending = True
+            event.accept()
+            self.double_clicked.emit(self.file_path)
+        else:
+            super().mouseDoubleClickEvent(event)
+
+    def set_gallery_focused(self, focused: bool) -> None:
+        focused = bool(focused)
+        if focused != self._gallery_focused:
+            self._gallery_focused = focused
+            self.update()
+
     def mouseReleaseEvent(self, event):
+        if self._dbl_pending:
+            self._dbl_pending = False
+            event.accept()
+            return
         if event.button() == Qt.MouseButton.LeftButton:
             drag_started = self._drag_started
             self._drag_start_pos = None
@@ -247,6 +268,11 @@ class ThumbnailLabel(QLabel):
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._gallery_focused:
+            pen = QPen(QColor(theme.INK), 1.5, Qt.PenStyle.DashLine)
+            painter.setPen(pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRect(self.rect().adjusted(2, 2, -3, -3))
         rect = self.selection_check_rect()
         x, y, s = rect.x(), rect.y(), rect.width()
         if self._gallery_selected:

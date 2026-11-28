@@ -116,7 +116,7 @@ class BatchFileOpSignals(QObject):
 
 
 class BatchFileOpWorker(QRunnable):
-    """Serial copy/trash/discard over a snapshot of paths."""
+    """Serial copy/trash/delete/discard over a snapshot of paths."""
 
     def __init__(
         self,
@@ -157,6 +157,10 @@ class BatchFileOpWorker(QRunnable):
                         detail.append((src, None, dest))
                     elif self.mode == "trash":
                         send2trash(os.path.normpath(src))
+                        detail.append((src, None, None))
+                    elif self.mode == "delete":
+                        # Permanent: bypasses the Recycle Bin / Trash (Shift+Delete in the gallery).
+                        os.remove(os.path.normpath(src))
                         detail.append((src, None, None))
                     elif self.mode == "discard":
                         dest = discard_one_file(src)
